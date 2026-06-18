@@ -69,12 +69,14 @@ interface AcceptRequestPayload {
 interface StartRequestPayload {
     requestId: string;
     userId: number;
+    user?: { id: number; role?: string; permissions?: string[] };
 }
 
 interface CompleteRequestPayload {
     requestId: string;
     report: RequestReport;
     userId: number;
+    user?: { id: number; role?: string; permissions?: string[] };
 }
 
 interface CancelRequestPayload {
@@ -241,8 +243,16 @@ export const requestActions = {
     'request:triage': ({ requestId, notes, urgency, userId }: TriageRequestPayload) => db.updateRequestStatus(requestId, ServiceRequestStatus.Triaged, userId, notes, undefined, urgency ? { urgency } : undefined),
     'request:admin_accept': ({ requestId, leadResponderId, notes, urgency, userId }: AdminAcceptRequestPayload) => db.adminAcceptAndAssignRequest(requestId, leadResponderId, userId, notes, urgency),
     'request:accept': ({ requestId, memberId, userId }: AcceptRequestPayload) => db.acceptRequest(requestId, memberId, userId),
-    'request:start': ({ requestId, userId }: StartRequestPayload) => db.updateRequestStatus(requestId, ServiceRequestStatus.InProgress, userId, 'Mission started.', undefined, undefined),
-    'request:complete': ({ requestId, report, userId }: CompleteRequestPayload) => db.completeRequest(requestId, report, userId),
+    // start/complete are Member-default but act on a caller-supplied id — verify
+    // the caller is a responder on (or has duty over) the request first.
+    'request:start': async ({ requestId, userId, user }: StartRequestPayload) => {
+        if (user) await db.assertRequestResponderOrDuty(requestId, user);
+        return db.updateRequestStatus(requestId, ServiceRequestStatus.InProgress, userId, 'Mission started.', undefined, undefined);
+    },
+    'request:complete': async ({ requestId, report, userId, user }: CompleteRequestPayload) => {
+        if (user) await db.assertRequestResponderOrDuty(requestId, user);
+        return db.completeRequest(requestId, report, userId, user);
+    },
     // cancel/rate act on a caller-supplied request id and are held by every
     // Client — verify ownership (or a duty permission) first so a Client cannot
     // cancel/rate another user's request.

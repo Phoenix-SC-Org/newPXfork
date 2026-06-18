@@ -218,30 +218,43 @@ export const toUser = (dbUser: UserRowWithEmbeds | null | undefined): User | und
         probationStart: dbUser.probation_start || undefined,
         probationEnd: dbUser.probation_end || undefined,
         tenureStartDate: dbUser.tenure_start_date ?? null,
+        // tokens_valid_from ships via add-user-session-revocation (idempotent in
+        // schema.sql); pre-migration rows read undefined → no per-user revocation.
+        tokensValidFrom: (dbUser as { tokens_valid_from?: string | null }).tokens_valid_from ?? null,
     };
 };
 
+// Hard-blank the private/security fields on an already-mapped User so that
+// embedding it in a member-visible payload can never leak adminNotes /
+// personnelNotes / conductRecord / clearance / limiting markers / permissions /
+// discord id / RSI verification state — the omission is enforced, not incidental.
+// Operates on a mapped User (e.g. a getUserById result) where toMiniUser cannot.
+export const blankSensitiveUserFields = (full: User): User => ({
+    ...full,
+    discordId: '',
+    permissions: [],
+    adminNotes: undefined,
+    personnelNotes: undefined,
+    clearanceLevel: undefined,
+    limitingMarkers: [],
+    conductRecord: [],
+    rsiHandlePending: undefined,
+    rsiVerificationCode: undefined,
+});
+
+// minifyUser blanks a mapped User (or passes through nullish), for callers that
+// already hold a hydrated User and need a safe-to-embed projection.
+export const minifyUser = (full: User | null | undefined): User | undefined =>
+    full ? blankSensitiveUserFields(full) : undefined;
+
 // Minimal user projection for embedding a user INSIDE another row (warrant
 // issuer/claimer, intel/bulletin/wiki author, request client, op participant,
-// etc.). Reuses toUser for public identity + professional fields, but hard-blanks
-// private/security fields so that widening an embed's SELECT can never leak
-// adminNotes / personnelNotes / conductRecord / clearance / limiting markers /
-// permissions / discord id — the omission is enforced rather than incidental.
+// etc.). Reuses toUser for public identity + professional fields, then blanks
+// private/security fields via the shared helper.
 export const toMiniUser = (dbUser: UserRowWithEmbeds | null | undefined): User | undefined => {
     const full = toUser(dbUser);
     if (!full) return undefined;
-    return {
-        ...full,
-        discordId: '',
-        permissions: [],
-        adminNotes: undefined,
-        personnelNotes: undefined,
-        clearanceLevel: undefined,
-        limitingMarkers: [],
-        conductRecord: [],
-        rsiHandlePending: undefined,
-        rsiVerificationCode: undefined,
-    };
+    return blankSensitiveUserFields(full);
 };
 
 export const toRank = (dbRank: RankRow | null | undefined): Rank => {

@@ -11,6 +11,7 @@
 import { supabase, handleSupabaseError, safeFetch, broadcastToOrg } from './common.js';
 import { getFullOperationDetails } from './ops.js';
 import { callAlliancePeer } from './alliances.js';
+import { getMaxShareableClearance } from './system.js';
 import { sanitizeImageUrl } from '../imageUrl.js';
 import { toMirroredOperation } from './mappers.js';
 import {
@@ -26,6 +27,11 @@ const nowIso = () => new Date().toISOString();
 // Reconcile pulls per peer per cycle — catch-up after downtime is spread over
 // successive 2-minute cycles instead of flooding the peer's rate limit.
 const MAX_RECONCILE_PULLS_PER_CYCLE = 5;
+
+// Cap allied participant rows per (op, peer). The PK includes the peer-controlled
+// remote_user_handle, so without this an accepted ally could spam distinct handles
+// to inflate operation_allied_participants and pollute host op-detail with ghosts.
+const MAX_ALLIED_PARTICIPANTS_PER_PEER = 200;
 
 // --- Display-only user projection: name + avatar, NO real id / email / perms. ---
 function displayUser(u: Partial<User> | undefined, synthId: number): User {
@@ -159,7 +165,25 @@ export async function buildOperationSnapshot(opId: string, recipientPeerId?: str
     const op = await getFullOperationDetails(opId);
     if (!op) return null;
     const restricted = await operationHasSyncRestrictedMarker(opId);
-    return projectOperationSnapshot(op as HydratedOperation, restricted, recipientPeerId);
+    if (restricted) return null;
+
+    // Clearance ceiling at the federation egress. An operation must not be shared
+    // above the LESSER of the org-wide shareable ceiling and this peer's
+    // outbound_max_clearance — exactly as getAllianceShareableData bounds intel.
+    // Without it a classified op (ROE / commander notes / comms-plan channel ids
+    // / locations / member identity) would leak in full to an ally configured for
+    // a lower clearance. Fail closed: an unknown peer resolves to ceiling 0.
+    const opClearance = (op as HydratedOperation).clearanceLevel ?? 0;
+    const globalMax = await getMaxShareableClearance();
+    let peerMax = 0;
+    if (recipientPeerId) {
+        const { data: peer } = await supabase.from('alliance_peers')
+            .select('outbound_max_clearance').eq('id', recipientPeerId).maybeSingle();
+        peerMax = peer?.outbound_max_clearance ?? 0;
+    }
+    if (opClearance > Math.min(globalMax, peerMax)) return null;
+
+    return projectOperationSnapshot(op as HydratedOperation, false, recipientPeerId);
 }
 
 /** Monotonic version bump — version-gates snapshots on the guest side. */
@@ -184,12 +208,19 @@ export async function inviteAllyToOperation(opId: string, peerId: string): Promi
     if (!peer || peer.status !== 'Active' || (peer.channels as { operations?: boolean } | null)?.operations !== true) {
         throw new Error('Peer is not an active ally with joint operations enabled.');
     }
+    // Defense-in-depth alongside the egress ceiling in buildOperationSnapshot:
+    // refuse the invite outright when the op cannot be shared with this peer
+    // (clearance ceiling exceeded, or a sync-restricted marker). buildOperationSnapshot
+    // returns null in both cases; reuse it so we don't share or even invite.
+    const summary = await buildOperationSnapshot(opId, peerId); // scope to this ally
+    if (!summary) {
+        throw new Error('This operation cannot be shared with this ally (clearance ceiling exceeded or sync-restricted).');
+    }
     const { error } = await supabase.from('operation_allied_orgs')
         .upsert({ operation_id: opId, peer_id: peerId, accepted: false, invited_at: nowIso() }, { onConflict: 'operation_id,peer_id' });
     handleSupabaseError({ error, message: 'Failed to invite ally' });
     await bumpOperationVersion(opId);
     const env = await opEnvelope(opId);
-    const summary = await buildOperationSnapshot(opId, peerId); // scope to this ally
     await callAlliancePeer(peerId, '/api/alliance/op-mirror/invite', { method: 'POST', body: { ...env, snapshot: summary } })
         .catch((e) => log.warn('invite push failed', { opId, peerId, err: e }));
     broadcastToOrg('operation_update', { operationId: opId });
@@ -350,6 +381,16 @@ export async function upsertAlliedParticipant(opId: string, peerId: string, p: A
     if (!ally?.accepted) throw new Error('forbidden');
     const handle = String(p.remoteUserHandle || '').slice(0, 120);
     if (!handle) throw new Error('malformed_request');
+    // Bound how many participants a single peer can register for one op. A new
+    // handle past the cap is refused; an existing handle still updates (it's an
+    // upsert, not growth).
+    const { count } = await supabase.from('operation_allied_participants')
+        .select('id', { count: 'exact', head: true }).eq('operation_id', opId).eq('peer_id', peerId);
+    if ((count || 0) >= MAX_ALLIED_PARTICIPANTS_PER_PEER) {
+        const { data: existingRow } = await supabase.from('operation_allied_participants')
+            .select('remote_user_handle').eq('operation_id', opId).eq('peer_id', peerId).eq('remote_user_handle', handle).maybeSingle();
+        if (!existingRow) throw new Error('participant_limit_reached');
+    }
     // Peer-supplied participant fields are stored AND re-rendered in the host's op
     // detail (and re-forwarded in the snapshot). Clamp the avatar to a safe https
     // image URL (reject javascript:/data:/http: → null) and length-cap the free
@@ -760,6 +801,17 @@ async function pullMirrorFromHost(
     const snapshot = boundedInboundSnapshot(payload.snapshot);
 
     if (kind === 'missing-accepted' || kind === 'missing-invite') {
+        // Ownership guard — mirrors receiveMirrorInvite/receiveMirrorPush. This is
+        // the ONLY reconcile branch that writes via the id-only PK upsert (every
+        // other branch scopes its UPDATE with .eq('host_peer_id', peerId)). Without
+        // this check a co-ally serving a forged manifest listing another trusted
+        // host's opId would clobber that mirror — taking it over, redirecting our
+        // members' RSVP PII to the attacker, and locking out the real host. Refuse
+        // when the row already belongs to a different host.
+        const { data: existing } = await supabase.from('mirrored_operations')
+            .select('host_peer_id').eq('id', opId).maybeSingle();
+        if (existing && existing.host_peer_id !== peerId) return 'skipped';
+
         const accepted = kind === 'missing-accepted';
         const { error } = await supabase.from('mirrored_operations').upsert({
             id: opId, host_peer_id: peerId,

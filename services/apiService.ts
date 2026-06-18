@@ -142,6 +142,19 @@ class ApiService {
         return response.json();
     }
 
+    // Server half of the OAuth login-CSRF defense: mint the HttpOnly nonce
+    // cookie BEFORE redirecting to Discord. Same-origin fetch, so the cookie is
+    // set on our domain and replayed on the discord_callback POST. Throws on
+    // failure so the caller can abort the redirect (fail-closed).
+    async beginOAuth(nonce: string): Promise<void> {
+        const response = await fetch(`${API_URL}/services?target=auth&action=auth:begin_oauth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'auth:begin_oauth', payload: { nonce } }),
+        });
+        if (!response.ok) throw new Error('Failed to begin OAuth handshake');
+    }
+
     async discordCallback(code: string, state: string | null, redirectUri: string): Promise<{ user: any, isNewUser: boolean, adminSetupToken?: string, identityToken?: string }> {
         // Explicitly send action in query param to bypass auth middleware logic if body parsing fails
         const response = await fetch(`${API_URL}/services?target=auth&action=auth:discord_callback`, {

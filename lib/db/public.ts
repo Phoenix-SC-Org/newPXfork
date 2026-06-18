@@ -1,5 +1,5 @@
 import { supabase, handleSupabaseError } from './common.js';
-import { getAllSettings } from './system.js';
+import { getPublicSettings } from './system.js';
 import { opaqueId } from '../publicId.js';
 import { tryParseTiptapJson, tiptapJsonToSafeHtml, isEmptyTiptapDoc } from '../tiptapValidate.js';
 import { sanitizePublicLinkUrl } from '../linkUrl.js';
@@ -41,7 +41,7 @@ export async function getPublicPageData(slug: string): Promise<PublicPageRespons
     // The ONLY gate is the admin-controlled publicPageConfig.enabled flag.
     if (!slug || typeof slug !== 'string') return null;
 
-    const settings = await getAllSettings();
+    const settings = await getPublicSettings();
     const cfg = settings.publicPageConfig;
     if (!cfg || cfg.enabled !== true) return null;
 

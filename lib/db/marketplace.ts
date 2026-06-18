@@ -297,6 +297,17 @@ export async function createMarketplaceListing(input: CreateListingInput, userId
 export async function updateMarketplaceListing(id: string, patch: Partial<CreateListingInput> & { status?: string }, userId: number): Promise<void> {
     const { data: row } = await supabase.from('marketplace_listings').select('id, seller_id, kind').eq('id', id).maybeSingle();
     if (!row || (row as { seller_id: number }).seller_id !== userId) throw new Error(ERR_LISTING);   // owner-only
+    // A seller (this is the owner-only path) cannot REOPEN a listing a moderator
+    // closed — moderation_closed_at is stamped by reviewMarketplaceReport on
+    // takedown. Soft-fail (treat as not-closed) when the column predates the
+    // schema redeploy, since no moderation flag can exist yet on such a DB.
+    if (patch.status === 'active') {
+        const { data: modRow, error: modErr } = await supabase.from('marketplace_listings')
+            .select('moderation_closed_at').eq('id', id).maybeSingle();
+        if (!modErr && (modRow as { moderation_closed_at?: string | null } | null)?.moderation_closed_at) {
+            throw new Error('This listing was closed by a moderator and cannot be reopened.');
+        }
+    }
     const db: Record<string, unknown> = { updated_at: nowIso() };
     if (patch.title !== undefined) db.title = stripHtmlSingleLine(patch.title, 160);
     if (patch.description !== undefined) db.description = stripHtml(patch.description, 4000) || null;
@@ -339,6 +350,14 @@ export async function proposeMarketplaceContract(input: ProposeContractInput, us
     const listing = l as unknown as { id: string; seller_id: number; kind: string; listing_type: string; title: string; quantity: number | null; quantity_claimed: number; status: string } | null;
     if (!listing || listing.status !== 'active') throw new Error(ERR_LISTING);
     if (listing.seller_id === userId) throw new Error('You cannot contract your own listing.');
+
+    // Dedup: a proposer may hold only ONE live (non-terminal) contract per listing.
+    // Without this, proposed contracts don't reserve quantity, so the over-claim
+    // guard never trips and one member can flood a seller / bloat the table.
+    const { data: liveContract } = await supabase.from('marketplace_contracts')
+        .select('id').eq('listing_id', listing.id).eq('proposed_by_id', userId)
+        .in('status', ['proposed', 'accepted', 'delivered']).maybeSingle();
+    if (liveContract) throw new Error('You already have an active contract on this listing.');
 
     const isItem = listing.kind === 'item';
     let qty: number | null = null;
@@ -742,8 +761,17 @@ export async function reviewMarketplaceReport(id: number, decision: 'actioned' |
             .select('id, seller_id, status, title').eq('id', report.listing_id).maybeSingle();
         const listing = l as unknown as { id: string; seller_id: number; status: string; title: string } | null;
         if (listing && listing.status !== 'closed') {
-            const { error: upErr } = await supabase.from('marketplace_listings')
-                .update({ status: 'closed', updated_at: nowIso() }).eq('id', listing.id);
+            // Stamp moderation_closed_at so the seller can't simply reopen the
+            // listing (updateMarketplaceListing refuses status:active while set).
+            const closePatch: Record<string, unknown> = { status: 'closed', updated_at: nowIso(), moderation_closed_at: nowIso() };
+            let { error: upErr } = await supabase.from('marketplace_listings')
+                .update(closePatch).eq('id', listing.id);
+            // Soft-fail if the column predates the schema redeploy — still close it.
+            const upCode = (upErr as { code?: string } | null)?.code;
+            if (upErr && (upCode === '42703' || upCode === 'PGRST204')) {
+                delete closePatch.moderation_closed_at;
+                ({ error: upErr } = await supabase.from('marketplace_listings').update(closePatch).eq('id', listing.id));
+            }
             if (upErr) { log.error('report-takedown listing close failed', { err: upErr, id: listing.id }); return; }
             emit({ listingId: listing.id });
             // Notify the owner their listing was removed by moderation (best-effort).

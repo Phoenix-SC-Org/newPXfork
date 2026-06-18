@@ -523,6 +523,13 @@ export const DataCoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // RLS-dead — this id-less nudge re-fetches the filtered subset live.
                 debugLog('[Realtime] External Tools Update Broadcast Received');
                 callFetcher('external_tools');
+            })
+            .on('broadcast', { event: 'announcement_update' }, () => {
+                // announcements carry an audience boundary, so they are excluded
+                // from the realtime publication too — this id-less nudge re-fetches
+                // the server-side audience-filtered subset live.
+                debugLog('[Realtime] Announcement Update Broadcast Received');
+                callFetcher('announcements');
             });
 
         if (hasPerm('finance:view')) {
@@ -618,7 +625,9 @@ export const DataCoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ['roles', 'main'],
             ['locations', 'main'],
             ['radio_channels', 'main'],
-            ['announcements', 'announcements'],
+            // announcements + external_tools are audience-scoped (excluded from the
+            // realtime publication) — driven by the announcement_update /
+            // external_tools_update broadcast nudges above, not postgres_changes.
             ['external_tools', 'external_tools'],
             // Reference / award tables that are mutated by admin:* handlers but
             // had no broadcast — without these entries, awarded certs /

@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const h = vi.hoisted(() => ({ settings: {} as Record<string, any> }));
 vi.mock('../lib/db/common', () => ({ supabase: {}, handleSupabaseError: () => {} }));
-vi.mock('../lib/db/system', () => ({ getAllSettings: async () => h.settings }));
+vi.mock('../lib/db/system', () => ({ getAllSettings: async () => h.settings, getPublicSettings: async () => h.settings }));
 
 import { getPublicPageData } from '../lib/db/public';
 

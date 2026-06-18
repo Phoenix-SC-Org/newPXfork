@@ -114,8 +114,15 @@ async function validateClaimCode(submittedCode: string): Promise<boolean> {
         throw new Error("Invalid setup code.");
     }
 
-    // Valid — delete so it can't be reused.
-    await db.supabase.from('settings').delete().eq('key', 'admin_setup_code');
+    // Valid — atomically consume. The DELETE returns the row only to the caller
+    // that actually removed it, so two concurrent valid submissions of the same
+    // code can't both win (the loser deletes 0 rows → treated as already claimed).
+    // Closes the SELECT-then-DELETE TOCTOU that could otherwise mint two admins.
+    const { data: consumed } = await db.supabase.from('settings')
+        .delete().eq('key', 'admin_setup_code').select('key');
+    if (!consumed || consumed.length === 0) {
+        throw new Error("This setup code was just used. Restart the server to generate a new one if needed.");
+    }
     return true;
 }
 
@@ -235,7 +242,7 @@ export const authActions = {
                 user = { ...user, avatarUrl };
             }
 
-            const token = signToken({ userId: user.id, roleId: user.roleId });
+            const token = signToken({ userId: user.id });
             // The self record returned at login must not carry admin-only fields
             // (adminNotes) or another-user's-eyes-only material. Strip with the
             // user as their own requester: personal data (personnel notes /
@@ -317,7 +324,7 @@ export const authActions = {
             rsiVerified,
         });
         if (!user) throw new Error("Failed to create user.");
-        const token = signToken({ userId: user.id, roleId: user.roleId });
+        const token = signToken({ userId: user.id });
         return { ...user, token };
     },
     'org:claim': async ({ code, userId }: OrgClaimPayload) => {

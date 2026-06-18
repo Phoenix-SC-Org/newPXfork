@@ -26,7 +26,7 @@ describe('admin-setup grant (C1)', () => {
     });
 
     it('a session token is NOT accepted as an admin-setup grant (and vice versa)', () => {
-        const session = signToken({ userId: 1, roleId: 2 });
+        const session = signToken({ userId: 1 });
         expect(verifyAdminSetupGrant(session)).toBeNull();
         // A grant carries purpose:'admin_setup' so it must not pass as a session.
         const grant = signAdminSetupGrant('discord-123');

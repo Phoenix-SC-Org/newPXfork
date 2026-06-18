@@ -110,8 +110,8 @@ export default async function publicHandler(req: Request, res: Response) {
                 if (!page || !page.modules?.testimonials) return notFound(res);
                 // Need featuredTestimonialIds — NOT in the redacted page payload.
                 // Fetch the raw config directly here (server-side only).
-                const { getAllSettings } = await import('../lib/db/system.js');
-                const settings = await getAllSettings();
+                const { getPublicSettings } = await import('../lib/db/system.js');
+                const settings = await getPublicSettings();
                 const featured = Array.isArray(settings.publicPageConfig?.featuredTestimonialIds)
                     ? settings.publicPageConfig.featuredTestimonialIds
                     : [];

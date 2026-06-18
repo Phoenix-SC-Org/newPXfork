@@ -41,7 +41,9 @@ vi.mock('../lib/db', () => ({
                     maybeSingle: async () => { spies.validateNote(t); return { data: { value: { code: 'SETUP-x', failed_attempts: 0 } }, error: null }; },
                 }),
             }),
-            delete: () => ({ eq: async () => ({ data: null, error: null }) }),
+            // Atomic consume: delete().eq().select() returns the consumed row to
+            // the winning caller (validateClaimCode treats 0 rows as already-claimed).
+            delete: () => ({ eq: () => ({ select: async () => ({ data: [{ key: 'admin_setup_code' }], error: null }) }) }),
         }),
     },
     // A new user — proceeds to mint the adminSetupToken only if the guard passed.

@@ -250,18 +250,52 @@ export async function adminAcceptAndAssignRequest(requestId: string, leadRespond
     handleSupabaseError({ error, message: 'Failed to assign request' });
 }
 
-export async function completeRequest(requestId: string, report: RequestReport, userId: number) {
+type RequestActor = { id: number; role?: string; permissions?: string[] };
+
+// Duty over a request = staff who run the dispatch board (NOT the member-default
+// request:start/complete/accept perms). Used to gate the reputation write inside
+// completeRequest and to authorize start/complete on requests one isn't assigned to.
+function hasRequestDuty(user: { role?: string; permissions?: string[] } | undefined): boolean {
+    const perms = Array.isArray(user?.permissions) ? user!.permissions! : [];
+    return user?.role === 'Admin'
+        || perms.includes('request:dispatch') || perms.includes('request:triage')
+        || perms.includes('request:set_lead') || perms.includes('request:manage_responders')
+        || perms.includes('request:update');
+}
+
+/**
+ * request:start / request:complete are in the Member default set but act on a
+ * caller-supplied request id, so verify the caller is actually a responder on (or
+ * has duty over) the request. Without this, any Member could drive arbitrary
+ * requests to completion — and via the completion report reach the reputation RPC.
+ * Duty holders manage any request; otherwise only the lead/assigned responder.
+ */
+export async function assertRequestResponderOrDuty(requestId: string, user: RequestActor): Promise<void> {
+    if (hasRequestDuty(user)) return;
+    const { data: req } = await supabase.from('service_requests').select('lead_responder_id').eq('id', requestId).maybeSingle();
+    if (!req) throw new Error('Request not found.');
+    if (req.lead_responder_id === user.id) return;
+    const { data: responder } = await supabase.from('request_responders')
+        .select('user_id').eq('request_id', requestId).eq('user_id', user.id).maybeSingle();
+    if (responder) return;
+    throw new Error('Forbidden: you are not assigned to this request.');
+}
+
+export async function completeRequest(requestId: string, report: RequestReport, userId: number, actor?: RequestActor) {
 
     await updateRequestStatus(requestId, report.outcome || ServiceRequestStatus.Success, userId, report.notes, report, undefined);
-    if (report.clientReputationChange) {
+    // The completion report's reputation adjustment reaches the admin-only
+    // reputation RPC, so honor it ONLY for a duty holder — a member-reachable
+    // completion must not be able to move a client's reputation (priv-esc).
+    if (report.clientReputationChange && hasRequestDuty(actor)) {
         const { data: req } = await supabase.from('service_requests').select('client_id')
             .eq('id', requestId)
-            
+
             .maybeSingle();
         if (req && req.client_id) {
             const { data: user } = await supabase.from('users').select('reputation')
                 .eq('id', req.client_id)
-                
+
                 .maybeSingle();
             if (user) {
                 const newRep = Math.max(0, Math.min(100, user.reputation + report.clientReputationChange));

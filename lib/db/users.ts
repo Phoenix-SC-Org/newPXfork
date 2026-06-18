@@ -152,11 +152,13 @@ export async function getUserById(userId: number) {
 }
 
 export async function getUserByAuthId(authId: string) {
-    const query = supabase.from('users').select(USER_SELECT_QUERY).eq('auth_user_id', authId);
+    // Filter deleted_at like getUserById: a soft-deleted/banned user must not
+    // resolve to an authenticated session via this fallback resolver either.
+    const query = supabase.from('users').select(USER_SELECT_QUERY).eq('auth_user_id', authId).is('deleted_at', null);
     const { data, error } = await query.maybeSingle();
     if (!error) return toUser(data);
     log.warn('full user query failed, trying fallback', { authId, message: error.message });
-    const fallbackQuery = supabase.from('users').select(USER_LIST_SELECT_QUERY).eq('auth_user_id', authId);
+    const fallbackQuery = supabase.from('users').select(USER_LIST_SELECT_QUERY).eq('auth_user_id', authId).is('deleted_at', null);
     const { data: fallback, error: fbErr } = await fallbackQuery.maybeSingle();
     if (!fbErr && fallback) return toUser(fallback);
     return null;
@@ -245,11 +247,17 @@ export async function createUser(userData: { discordId: string, name: string, av
     return toUser(data);
 }
 
+// The un-delete-on-login write copies ONLY these display fields from the caller's
+// blob — never spread `updates` raw, which could carry role_id / reputation /
+// clearance and turn a re-login into a privilege escalation (mass-assignment).
+const REACTIVATE_FIELDS = ['name', 'avatar_url'] as const;
+
 export async function reactivateUser(userId: number, updates: Partial<Tables<'users'>>) {
-    const query = supabase.from('users').update({
-        ...updates,
-        deleted_at: null
-    }).eq('id', userId);
+    const safe: Record<string, unknown> = { deleted_at: null };
+    for (const f of REACTIVATE_FIELDS) {
+        if (updates[f] !== undefined) safe[f] = updates[f];
+    }
+    const query = supabase.from('users').update(safe).eq('id', userId);
 
     const { data, error } = await query.select(USER_SELECT_QUERY).single();
 
@@ -1079,16 +1087,44 @@ export async function deleteUser(userId: number) {
 
     // Anonymise display identity but retain discord_id and rsi_handle for abuse
     // prevention (reputation integrity, ban-evasion detection).
-    const { error } = await supabase.from('users').update({
-        deleted_at: new Date().toISOString(),
+    const now = new Date().toISOString();
+    const updates: Record<string, unknown> = {
+        deleted_at: now,
         name: 'Deleted User',
         avatar_url: 'https://cdn.discordapp.com/embed/avatars/0.png',
         voice_channel_name: null,
-        is_duty: false
-    }).eq('id', userId);
+        is_duty: false,
+        // Invalidate the removed user's live sessions immediately — getUserById
+        // already filters deleted_at, but stamping the watermark is belt-and-braces
+        // (and covers any path that resolves the user without that filter).
+        tokens_valid_from: now,
+    };
+    let { error } = await supabase.from('users').update(updates).eq('id', userId);
+    // Soft-fail if tokens_valid_from predates the schema redeploy.
+    const code = (error as { code?: string } | null)?.code;
+    if (error && (code === '42703' || code === 'PGRST204')) {
+        delete updates.tokens_valid_from;
+        ({ error } = await supabase.from('users').update(updates).eq('id', userId));
+    }
     handleSupabaseError({ error, message: 'Failed to delete user' });
 
     await broadcastUserUpdate(userId);
+}
+
+/**
+ * Revoke a single user's live sessions by advancing their tokens_valid_from
+ * watermark to now — every HMAC token issued before this is then 401'd
+ * (force_logout) by the dispatcher. For a compromised/leaked token of a member
+ * who should stay active (unlike deleteUser, which also removes them).
+ */
+export async function revokeUserSessions(targetUserId: number): Promise<void> {
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) throw new Error('Invalid user id.');
+    const { data: target } = await supabase.from('users').select('id').eq('id', targetUserId).maybeSingle();
+    if (!target) throw new Error('User not found.');
+    const { error } = await supabase.from('users')
+        .update({ tokens_valid_from: new Date().toISOString() }).eq('id', targetUserId);
+    handleSupabaseError({ error, message: 'Failed to revoke user sessions' });
+    await broadcastUserUpdate(targetUserId);
 }
 
 /**
@@ -1301,7 +1337,7 @@ export async function cleanupInactiveDutyUsers() {
     const allCleaned: Array<Pick<Tables<'users'>, 'id' | 'name'>> = [];
 
     try {
-        const { brandingConfig } = await getAllSettings();
+        const { brandingConfig } = await getAllSettings({ decryptSecrets: false });
         const timeoutMins = brandingConfig.dutyTimeoutMinutes || 30;
         const cutoff = new Date(Date.now() - timeoutMins * 60 * 1000).toISOString();
 
@@ -1338,7 +1374,7 @@ export async function cleanupInactiveDutyUsers() {
 }
 
 export async function initiateRsiHandleUpdate(userId: number, newHandle: string) {
-    const { brandingConfig } = await getAllSettings();
+    const { brandingConfig } = await getAllSettings({ decryptSecrets: false });
     // Whitelabel prefix based on org name
     const prefix = brandingConfig.name ? brandingConfig.name.substring(0, 6).toUpperCase().replace(/[^A-Z]/g, '') : 'ORG';
     const code = `${prefix}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;

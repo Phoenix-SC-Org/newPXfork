@@ -172,11 +172,27 @@ export async function getRequestDetail(requestId: string, currentUser?: { id: nu
     return request;
 }
 
-export async function getAnnouncementsState() {
+export async function getAnnouncementsState(currentUser?: { role?: string; permissions?: string[] } | null) {
     const { data, error } = await supabase.from('announcements').select('*')
         .order('publish_date', { ascending: false }).limit(100);
     handleSupabaseError({ error, message: 'Failed to get announcements' });
-    return { announcements: (data || []).map(toAnnouncement) };
+    let announcements = (data || []).map(toAnnouncement);
+    // Audience scoping server-side (mirrors + ENFORCES the HRNoticesTab client
+    // filter): an Admin-only / staff-only notice body must not ship to a Client.
+    // Managers (Admin or admin:config:notices) see all for the management tab.
+    const canManage = currentUser?.role === 'Admin'
+        || (Array.isArray(currentUser?.permissions) && currentUser!.permissions!.includes('admin:config:notices'));
+    if (!canManage) {
+        const role = currentUser?.role;
+        announcements = announcements.filter((a) => {
+            if (!role || !Array.isArray(a.audience)) return false;
+            if (a.audience.includes(role)) return true;
+            // Dispatcher inherits Member-targeted notices (mirrors the client alias).
+            if (a.audience.includes('Member') && role === 'Dispatcher') return true;
+            return false;
+        });
+    }
+    return { announcements };
 }
 
 export async function getDiscordState() {
@@ -318,9 +334,9 @@ export async function getState(currentUser?: any) {
     // data — they ride the now-gated 'discord' subset, fetched by the
     // Discord settings tab on mount.
     const [main, reqs, anns, operations, tools, settings, warrants, hrState, intelState] = await Promise.all([
-        getMainState(), getRequestsState(currentUser), getAnnouncementsState(),
+        getMainState(), getRequestsState(currentUser), getAnnouncementsState(currentUser),
         wantOps ? getOperationsState(currentUser) : empty,
-        getExternalToolsState(currentUser), system.getAllSettings(),
+        getExternalToolsState(currentUser), system.getAllSettings({ decryptSecrets: false }),
         wantWarrants ? getWarrantsState() : empty,
         wantHr ? hr.getHRState(currentUser) : empty,
         wantIntel ? getIntelState(currentUser) : empty,

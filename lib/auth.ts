@@ -25,7 +25,6 @@ const TOKEN_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface AuthToken {
     userId: number;
-    roleId: number;
     exp: number;
 }
 
@@ -72,12 +71,19 @@ export function verifyToken(token: string | undefined): AuthToken | null {
 
     try {
         const payload = JSON.parse(Buffer.from(encodedData, 'base64').toString());
-        if (Date.now() > payload.exp) return null;
+        // Validate the decoded JSON shape AFTER the HMAC check. The signature
+        // already blocks forgery without JWT_SECRET; this is defense-in-depth
+        // against payload drift — e.g. a non-numeric exp would make the expiry
+        // comparison a silent no-op (`> NaN` is false).
+        if (typeof payload !== 'object' || payload === null) return null;
         // A session token must NOT carry a non-session purpose (e.g. an admin-setup
         // grant). This prevents a short-lived grant token from being replayed as a
         // full session token. Session tokens have no `purpose` field.
         if (payload.purpose) return null;
-        return payload as AuthToken;
+        if (typeof payload.userId !== 'number' || typeof payload.exp !== 'number') return null;
+        if (Date.now() > payload.exp) return null;
+        // Return a normalised token — never trust extra fields a payload might carry.
+        return { userId: payload.userId, exp: payload.exp };
     } catch {
         return null;
     }

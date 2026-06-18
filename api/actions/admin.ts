@@ -41,6 +41,24 @@ import type {
 // payloads below keep a stable shared marker without churning every signature.
 type OrgScopedPayload = Record<never, never>;
 
+// Danger-Zone (full reset / full wipe) destroys ALL data. Defense beyond the
+// dispatcher's admin:db:destroy perm gate: require the genuine Admin role AND a
+// confirmation phrase validated server-side — the typed phrase must never be a
+// browser-only gate. Fails closed on a missing/incorrect phrase or non-Admin.
+interface DangerZonePayload extends OrgScopedPayload {
+    user?: { role?: string };
+    confirmPhrase?: string;
+}
+
+function assertDangerZone(user: { role?: string } | undefined, confirmPhrase: string | undefined, expected: string): void {
+    if (user?.role !== 'Admin') {
+        throw new Error('Only an Admin may perform this action.');
+    }
+    if (typeof confirmPhrase !== 'string' || confirmPhrase.trim() !== expected) {
+        throw new Error(`Confirmation phrase incorrect. Type "${expected}" exactly to proceed.`);
+    }
+}
+
 // Config-update handlers: spread `...rest` into the matching db.update*Config
 // call. rest is a partial config tree.
 type DiscordConfigPayload = OrgScopedPayload & Partial<DiscordConfig>;
@@ -610,9 +628,18 @@ export const adminActions = {
     'admin:db:reset_finances': () => db.resetFinancesData(),
     'admin:db:reset_quartermaster': () => db.resetQuartermasterData(),
     // Danger Zone. userId is the dispatcher-injected acting admin (ACTOR_ID_FIELDS),
-    // never client-supplied — full_reset restores exactly that account.
-    'admin:db:full_reset': ({ userId }: { userId: number }) => db.fullResetOrg(userId),
-    'admin:db:full_wipe': () => db.fullWipeOrg(),
+    // never client-supplied — full_reset restores exactly that account. The typed
+    // confirmation phrase is validated HERE (server-side) — never trust the
+    // browser-only gate — and the action requires the genuine Admin role in
+    // addition to the admin:db:destroy perm enforced by the dispatcher.
+    'admin:db:full_reset': ({ userId, user, confirmPhrase }: DangerZonePayload & { userId: number }) => {
+        assertDangerZone(user, confirmPhrase, 'RESET');
+        return db.fullResetOrg(userId);
+    },
+    'admin:db:full_wipe': ({ user, confirmPhrase }: DangerZonePayload) => {
+        assertDangerZone(user, confirmPhrase, 'WIPE EVERYTHING');
+        return db.fullWipeOrg();
+    },
 
     // --- Maintenance mode + force-logout (org-wide operational settings) ---
     'admin:get_platform_settings': () => db.getPlatformSettings(),
@@ -625,6 +652,9 @@ export const adminActions = {
     // Timestamp is set server-side (now) so a client can't backdate it; tokens
     // issued before it are 401'd by the dispatcher/read-path enforcement.
     'admin:force_logout_all': () => db.updatePlatformSettings({ force_logout_timestamp: new Date().toISOString() }),
+    // Revoke ONE user's live sessions (compromised/leaked token) without removing
+    // the account. targetUserId is a target-identity field (not actor-forced).
+    'admin:revoke_user_sessions': ({ targetUserId }: { targetUserId: number }) => db.revokeUserSessions(targetUserId),
 
     // --- Optional module toggles (warehouse/quartermaster/finances/leaderboard/
     // externalTools) — local on/off switches stored in the 'orgFeatures' blob,

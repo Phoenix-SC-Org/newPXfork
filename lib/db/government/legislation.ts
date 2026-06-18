@@ -323,12 +323,25 @@ export async function createMotion(data: MotionInput): Promise<GovernmentMotion 
     const safeDescription = data.description && typeof data.description === 'object'
         ? sanitizeTiptapJson(data.description, 'wiki')
         : (data.description || null);
+    // restricted_to_position_ids is an integer[] (no FK constraint possible), so
+    // validate each id refers to a real position before storing the vote-restriction
+    // set — otherwise a gov:manage holder could write arbitrary/garbage ids.
+    let restrictedIds: number[] | null = null;
+    if (Array.isArray(data.restrictedToPositionIds) && data.restrictedToPositionIds.length > 0) {
+        const wanted = [...new Set(data.restrictedToPositionIds.filter((n) => Number.isInteger(n)))];
+        const { data: found } = await supabase.from('government_positions').select('id').in('id', wanted);
+        const valid = new Set((found || []).map((p: { id: number }) => p.id));
+        if (wanted.some((id) => !valid.has(id))) {
+            throw new Error('One or more restricted positions do not exist.');
+        }
+        restrictedIds = wanted;
+    }
     const payload = {
         title: data.title,
         description: safeDescription,
         status: 'Open',
         created_by_id: data.userId,
-        restricted_to_position_ids: data.restrictedToPositionIds || null,
+        restricted_to_position_ids: restrictedIds,
         is_secret_ballot: data.isSecretBallot ?? false,
     };
     const { data: result, error } = await supabase.from('government_motions')

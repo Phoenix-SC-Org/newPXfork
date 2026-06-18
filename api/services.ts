@@ -2,7 +2,8 @@
 import { randomUUID } from 'node:crypto';
 import { Request, Response } from 'express';
 import * as db from '../lib/db.js';
-import { verifyToken, isSessionForceLoggedOut } from '../lib/auth.js';
+import { verifyToken, isSessionForceLoggedOut, tokenIssuedAt } from '../lib/auth.js';
+import { buildOAuthStateCookie, clearOAuthStateCookie, readOAuthStateCookie, nonceMatches, isValidNonceShape } from '../lib/oauthStateCookie.js';
 import { isOpaqueServerError } from '../lib/errors.js';
 import { getClientIp } from '../lib/clientIp.js';
 import { checkAuthRateLimit } from '../lib/authRateLimit.js';
@@ -34,7 +35,7 @@ type ActionHandler = (payload: any, token?: string) => Promise<unknown>;
 
 // Public actions are dispatched without auth/permission checks. They short-circuit
 // at the public-action handler before the protected-prefix BOLA gate runs.
-export const PUBLIC_ACTIONS: readonly string[] = ['auth:discord_callback', 'auth:finalize_setup', 'auth:redeem_setup_code', 'system:get_push_config', 'system:preflight'];
+export const PUBLIC_ACTIONS: readonly string[] = ['auth:begin_oauth', 'auth:discord_callback', 'auth:finalize_setup', 'auth:redeem_setup_code', 'system:get_push_config', 'system:preflight'];
 
 // Action prefixes that require a permission entry in fullPermissionMap. Any
 // authenticated request to an action with one of these prefixes is gated by
@@ -317,15 +318,22 @@ export const fullPermissionMap: Record<string, string> = {
     'admin:db:check': 'admin:access',
     'admin:db:repair': 'admin:access',
     'admin:db:prune': 'admin:access',
-    'admin:db:reset_finances': 'admin:access',
-    'admin:db:reset_quartermaster': 'admin:access',
-    'admin:db:full_reset': 'admin:access',
-    'admin:db:full_wipe': 'admin:access',
+    // Domain-scoped destructive resets require the domain's management perm, not
+    // bare dashboard access (a finance-blind dashboard user must not erase the
+    // treasury / quartermaster audit trail).
+    'admin:db:reset_finances': 'finance:manage',
+    'admin:db:reset_quartermaster': 'qm:manage',
+    // Catastrophic full-DB destruction: a dedicated high-bar perm (NOT seeded to
+    // Dispatcher). The handler additionally requires the genuine Admin role + a
+    // server-validated confirmation phrase.
+    'admin:db:full_reset': 'admin:db:destroy',
+    'admin:db:full_wipe': 'admin:db:destroy',
     'admin:import_org': 'admin:access',
     'system:complete_setup': 'admin:access',
     'admin:get_platform_settings': 'admin:access',
     'admin:update_platform_settings': 'admin:access',
     'admin:force_logout_all': 'admin:access',
+    'admin:revoke_user_sessions': 'admin:user:update_role',
     'admin:update_features': 'admin:config:features',
 
     // Global Catalog Management (ships / items / commodities / locations)
@@ -763,7 +771,7 @@ export default async function handler(req: Request, res: Response) {
     // auth bootstrap actions skip force-logout. user:heartbeat skips maintenance
     // but is still subject to force-logout, so a revoked session can't keep
     // heart-beating indefinitely.
-    const forceLogoutBypass = ['auth:discord_callback', 'auth:finalize_setup', 'auth:redeem_setup_code', 'system:get_push_config', 'system:preflight'];
+    const forceLogoutBypass = ['auth:begin_oauth', 'auth:discord_callback', 'auth:finalize_setup', 'auth:redeem_setup_code', 'system:get_push_config', 'system:preflight'];
     const maintenanceBypass = ['user:heartbeat', ...forceLogoutBypass];
     if (!forceLogoutBypass.includes(action) || !maintenanceBypass.includes(action)) {
         try {
@@ -796,6 +804,39 @@ export default async function handler(req: Request, res: Response) {
             }
         } catch (e) {
             log.warn('maintenance check failed', { err: e });
+        }
+    }
+
+    // --- OAUTH STATE-COOKIE BINDING (server half of login-CSRF defense) ---
+    // begin_oauth mints an HttpOnly nonce cookie before the redirect; the callback
+    // refuses to exchange the code unless the state nonce echoed back matches that
+    // cookie (constant-time). Derive Secure from the forwarded proto (TLS is
+    // terminated upstream by the Coolify/Nixpacks deploy).
+    {
+        const reqSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        if (action === 'auth:begin_oauth') {
+            const nonce = (payload as { nonce?: unknown } | null)?.nonce;
+            if (!isValidNonceShape(nonce)) {
+                return res.status(400).json({ success: false, message: 'Invalid OAuth nonce.' });
+            }
+            res.setHeader('Set-Cookie', buildOAuthStateCookie(nonce, reqSecure));
+            return res.status(200).json({ success: true, data: { ok: true } });
+        }
+        if (action === 'auth:discord_callback') {
+            const cookieNonce = readOAuthStateCookie(req.headers['cookie']);
+            // The nonce is the last ':'-segment of state (login:<nonce> /
+            // admin_setup:<key>:<nonce>) — reuse it rather than a separate field.
+            const state = (payload as { state?: unknown } | null)?.state;
+            const sentNonce = typeof state === 'string' ? (state.split(':').pop() || null) : null;
+            if (!nonceMatches(sentNonce, cookieNonce)) {
+                // Fail closed BEFORE the code is exchanged. Clear the cookie so a
+                // retry starts a fresh begin_oauth round.
+                res.setHeader('Set-Cookie', clearOAuthStateCookie(reqSecure));
+                log.warn('oauth state binding failed', { hasCookie: !!cookieNonce, hasNonce: typeof sentNonce === 'string' });
+                return res.status(403).json({ success: false, message: 'OAuth state validation failed. Please try signing in again.', code: 'OAUTH_STATE_INVALID' });
+            }
+            // One-time use: clear the cookie now that it has been consumed.
+            res.setHeader('Set-Cookie', clearOAuthStateCookie(reqSecure));
         }
     }
 
@@ -850,6 +891,15 @@ export default async function handler(req: Request, res: Response) {
     }
 
     const fullUser = user;
+
+    // Per-user session revocation: an HMAC token issued before this user's
+    // tokens_valid_from watermark (set by an admin revoke or a soft-delete/ban)
+    // is rejected. HMAC path only — the Supabase-token fallback has no issued-at.
+    // Fails to a force_logout the client handles.
+    if (decodedUser && fullUser.tokensValidFrom
+        && tokenIssuedAt(decodedUser).toISOString() < fullUser.tokensValidFrom) {
+        return res.status(401).json({ message: 'Session expired. Please log in again.', force_logout: true });
+    }
 
     if (!fullUser) return res.status(401).json({ message: 'Unauthorized: User data unavailable.' });
 

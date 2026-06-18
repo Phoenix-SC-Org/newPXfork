@@ -398,11 +398,22 @@ export async function mergePlatformShips(keepId: number, deleteId: number) {
 
 // --- User Ships (Hangar) ---
 
+// Per-request batch cap + per-user hangar ceiling. A member could otherwise
+// insert hundreds of thousands of rows in one fleet:add_ships call (no UNIQUE on
+// (user_id, ship_id) — and there must not be one, since owning duplicate hulls is
+// legitimate), permanently bloating user_ships and degrading the org-wide read.
+const MAX_SHIPS_PER_REQUEST = 100;
+const MAX_HANGAR_SHIPS = 1000;
+// Upper bound on the org-wide hangar read so one abusive hangar can't make the
+// whole fleet view unbounded. Well above MAX_HANGAR_SHIPS × a realistic roster.
+const USER_SHIPS_READ_LIMIT = 20_000;
+
 export async function getUserShips(): Promise<UserShip[]> {
     const query = supabase.from('user_ships')
         .select('*, ship:platform_ships(id, name, manufacturer, role, size, crew_min, crew_max, cargo_capacity, image_url), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
 
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(USER_SHIPS_READ_LIMIT);
     const data = await safeFetch<UserShipRow[]>(query, [], 'Failed to get user ships');
     return (data || []).map(toUserShip);
 }
@@ -419,6 +430,16 @@ export async function addUserShip(userId: number, shipId: number, customName: st
 }
 
 export async function addUserShips(userId: number, shipIds: number[]) {
+    if (!Array.isArray(shipIds) || shipIds.length === 0) return;
+    if (shipIds.length > MAX_SHIPS_PER_REQUEST) {
+        throw new Error(`Too many ships in one request (max ${MAX_SHIPS_PER_REQUEST}).`);
+    }
+    // Enforce a per-user hangar ceiling so the batch can't balloon the table.
+    const { count } = await supabase.from('user_ships')
+        .select('id', { count: 'exact', head: true }).eq('user_id', userId);
+    if ((count || 0) + shipIds.length > MAX_HANGAR_SHIPS) {
+        throw new Error(`Hangar limit reached (max ${MAX_HANGAR_SHIPS} ships).`);
+    }
     const rows = shipIds.map(shipId => ({
         user_id: userId,
         ship_id: shipId

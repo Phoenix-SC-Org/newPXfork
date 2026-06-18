@@ -315,8 +315,46 @@ export async function reorderGovernmentPositions(branchId: number | null, ordere
 // Position Holders
 // ---------------------------------------------------------------------------
 
+const HOLDER_COLUMNS = 'id, position_id, user_id, appointed_by_id, election_id, started_at, ended_at, end_reason, created_at';
+
 export async function appointPositionHolder(data: Partial<GovernmentPositionHolder>): Promise<GovernmentPositionHolder | null> {
-    // Check current holder count doesn't exceed max_holders
+    // s4-8b: the appointee is a PERMISSION-GRANTING write on a non-forced client
+    // userId — validate it is a real, non-deleted member (+ reject non-finite ids)
+    // rather than relying solely on the DB FK. Same for the position id.
+    if (typeof data.userId !== 'number' || !Number.isInteger(data.userId)) throw new Error('Invalid appointee id.');
+    if (typeof data.positionId !== 'number' || !Number.isInteger(data.positionId)) throw new Error('Invalid position id.');
+    const { data: appointee } = await supabase.from('users').select('id').eq('id', data.userId).is('deleted_at', null).maybeSingle();
+    if (!appointee) throw new Error('Appointee is not a valid member.');
+
+    // race-2: atomic max_holders check + insert under a row lock on the position.
+    const { data: holderId, error: rpcError } = await supabase.rpc('gov_appoint_holder', {
+        p_position_id: data.positionId,
+        p_user_id: data.userId,
+        p_appointed_by_id: data.appointedById || null,
+        p_election_id: data.electionId || null,
+    });
+    if (rpcError) {
+        const msg = typeof rpcError.message === 'string' ? rpcError.message : '';
+        if (msg.includes('position_not_found')) throw new Error('Position not found');
+        if (msg.includes('already_holds')) throw new Error('User already holds this position');
+        if (msg.includes('position_full')) throw new Error('Position is full');
+        const rpcCode = (rpcError as { code?: string }).code;
+        // Soft-fallback if the RPC predates the schema redeploy (function missing):
+        // the non-atomic count-then-insert (prior behavior).
+        if (rpcCode === 'PGRST202' || rpcCode === '42883') {
+            return appointPositionHolderFallback(data);
+        }
+        handleSupabaseError({ error: rpcError, message: 'Failed to appoint position holder' });
+    }
+    broadcastGovernmentUpdate('structure');
+    if (holderId == null) return null;
+    const { data: row } = await supabase.from('government_position_holders')
+        .select(HOLDER_COLUMNS).eq('id', holderId).single();
+    return row ? toGovernmentPositionHolder(row) : null;
+}
+
+// Non-atomic appointment path used only when gov_appoint_holder isn't deployed yet.
+async function appointPositionHolderFallback(data: Partial<GovernmentPositionHolder>): Promise<GovernmentPositionHolder | null> {
     const { data: position } = await supabase.from('government_positions')
         .select('max_holders').eq('id', data.positionId).single();
     if (!position) throw new Error('Position not found');
@@ -324,21 +362,16 @@ export async function appointPositionHolder(data: Partial<GovernmentPositionHold
     const { count } = await supabase.from('government_position_holders')
         .select('id', { count: 'exact', head: true })
         .eq('position_id', data.positionId)
-        
         .is('ended_at', null);
-
     if (count !== null && count >= position.max_holders) {
         throw new Error(`Position is full (${position.max_holders} holder${position.max_holders > 1 ? 's' : ''} max)`);
     }
 
-    // Check user isn't already holding this position
     const { count: existingCount } = await supabase.from('government_position_holders')
         .select('id', { count: 'exact', head: true })
         .eq('position_id', data.positionId)
         .eq('user_id', data.userId)
-        
         .is('ended_at', null);
-
     if (existingCount && existingCount > 0) {
         throw new Error('User already holds this position');
     }
@@ -350,7 +383,7 @@ export async function appointPositionHolder(data: Partial<GovernmentPositionHold
         election_id: data.electionId || null,
     };
     const { data: result, error } = await supabase.from('government_position_holders')
-        .insert(payload).select().single();
+        .insert(payload).select(HOLDER_COLUMNS).single();
     handleSupabaseError({ error, message: 'Failed to appoint position holder' });
     broadcastGovernmentUpdate('structure');
     return result ? toGovernmentPositionHolder(result) : null;

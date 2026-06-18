@@ -187,7 +187,7 @@ const DatabaseToolsTab: React.FC = () => {
         if (!confirmed) return;
         setDangerBusy('reset');
         try {
-            const result = await rpcAction('admin:db:full_reset', {});
+            const result = await rpcAction('admin:db:full_reset', { confirmPhrase: resetPhrase.trim() });
             addToast('Organization Reset', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: result?.message || 'Reset complete. Reloading…' });
             setResetPhrase('');
             // Reload so every context re-hydrates against the clean slate.
@@ -209,7 +209,7 @@ const DatabaseToolsTab: React.FC = () => {
         if (!confirmed) return;
         setDangerBusy('wipe');
         try {
-            await rpcAction('admin:db:full_wipe', {});
+            await rpcAction('admin:db:full_wipe', { confirmPhrase: wipePhrase.trim() });
             // The admin's account no longer exists — drop the local session and
             // show the redeploy prompt (a reload would hit an empty DB).
             try { localStorage.removeItem('myrsi_auth_token'); localStorage.removeItem('myrsi_user'); } catch { /* ignore */ }

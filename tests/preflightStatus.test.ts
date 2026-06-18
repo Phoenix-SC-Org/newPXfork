@@ -61,10 +61,11 @@ describe('getPreflightStatus', () => {
         expect(serialized).not.toContain('session-signing-key');
     });
 
-    it('reports configured state from env + settings (strong secrets)', async () => {
+    it('reports configured state from env + settings (strong secrets, pre-setup)', async () => {
+        // PRE-setup: the wizard needs the real posture. (Once setup_completed is
+        // true the oracle is suppressed — see the next test.)
         h.settingsRows = [
             { key: 'discordConfig', value: { clientId: 'abc' } },
-            { key: 'setup_completed', value: true },
             { key: 'admin_setup_code', value: { code: 'SETUP-DEADBEEF' } },
         ];
         h.adminCount = 1;
@@ -78,8 +79,28 @@ describe('getPreflightStatus', () => {
         expect(status.realtimeEnabled).toBe(true);
         expect(status.secretsEncrypted).toBe(true);
         expect(status.sessionSecretStrong).toBe(true);
-        expect(status.setupCompleted).toBe(true);
+        expect(status.setupCompleted).toBe(false);
         expect(status.setupCodeExists).toBe(true);
+    });
+
+    it('suppresses the posture oracle once setup is complete (onboard-2)', async () => {
+        // setup_completed=true with a WEAK secret + an outstanding claim code: a
+        // post-setup anon caller must not learn either. The sensitive fields all
+        // return safe stubs rather than the real (revealing) values.
+        h.settingsRows = [
+            { key: 'setup_completed', value: true },
+            { key: 'admin_setup_code', value: { code: 'SETUP-LEFTOVER' } },
+        ];
+        h.adminCount = 1;
+        process.env.SUPABASE_JWT_SECRET = 'weak';
+        process.env.SECRETS_ENCRYPTION_KEY = 'weak';
+        process.env.JWT_SECRET = 'weak';
+        const status = await getPreflightStatus();
+        expect(status.setupCompleted).toBe(true);
+        expect(status.setupCodeExists).toBe(false);     // hidden post-setup
+        expect(status.sessionSecretStrong).toBe(true);  // stubbed, not the real (weak) value
+        expect(status.secretsEncrypted).toBe(true);
+        expect(status.realtimeEnabled).toBe(true);
     });
 
     it('rejects secrets below the 32-char entropy floor (present but weak → false)', async () => {

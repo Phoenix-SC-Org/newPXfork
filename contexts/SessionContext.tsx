@@ -634,22 +634,32 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
     }, [currentUser, brandingConfig, addToast, playSound, setEamMessage, setOperationAlert, fetchUserDetail, realtimeToken]);
 
-    const generateOAuthNonce = () => {
+    // Generate the CSRF nonce, store the client (sessionStorage) half, AND mint
+    // the server (HttpOnly cookie) half before redirecting. Returns null if the
+    // server handshake fails so the caller aborts the redirect (fail-closed).
+    const beginOAuth = useCallback(async (): Promise<string | null> => {
         const nonce = crypto.randomUUID();
         sessionStorage.setItem('oauth_csrf_nonce', nonce);
-        return nonce;
-    };
+        try {
+            await apiService.beginOAuth(nonce);
+            return nonce;
+        } catch {
+            addToast("Sign-in Unavailable", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Could not start the secure sign-in handshake. Please try again." });
+            return null;
+        }
+    }, [addToast]);
 
-    const login = useCallback(() => {
+    const login = useCallback(async () => {
         const clientId = discordConfig?.clientId;
         if (!clientId) {
             addToast("Discord Not Configured", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Discord OAuth has not been set up. Contact your administrator." });
             return;
         }
+        const nonce = await beginOAuth();
+        if (!nonce) return;
         const redirectUri = encodeURIComponent(window.location.origin);
-        const nonce = generateOAuthNonce();
         window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=login:${nonce}`;
-    }, [discordConfig, addToast]);
+    }, [discordConfig, addToast, beginOAuth]);
 
     const logout = useCallback(() => {
         localStorage.removeItem('myrsi_auth_token');
@@ -683,18 +693,19 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     }, [pendingUser, refreshUser]);
 
-    const handleFinalizeAdminSetup = useCallback((claimKey?: string) => {
+    const handleFinalizeAdminSetup = useCallback(async (claimKey?: string) => {
         const clientId = discordConfig?.clientId;
         if (!clientId) {
             addToast("Discord Not Configured", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Discord OAuth has not been set up. Contact your administrator." });
             return;
         }
+        const nonce = await beginOAuth();
+        if (!nonce) return;
         const redirectUri = encodeURIComponent(window.location.origin);
-        const nonce = generateOAuthNonce();
         // Pass claimKey and CSRF nonce in state
         const state = claimKey ? `admin_setup:${claimKey}:${nonce}` : `admin_setup::${nonce}`;
         window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
-    }, [discordConfig, addToast]);
+    }, [discordConfig, addToast, beginOAuth]);
 
     // Adapter for the `(action, payload, refresh: boolean)` shape: translate
     // `refresh === true` into a refreshUser call and forward the rest to

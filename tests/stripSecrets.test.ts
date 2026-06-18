@@ -27,4 +27,14 @@ describe('stripSecrets', () => {
         expect(out.radioConfig.url).toBeUndefined();
         expect(out.radioConfig.configured).toBe(true);
     });
+
+    it('aiConfig is rebuilt from an allowlist — an unexpected (future secret-ish) field drops by default', () => {
+        const out = stripSecrets({
+            aiConfig: { enabled: true, model: 'gemini', apiKey: 'secret-ai', orgSecretToken: 'should-not-leak', endpoint: 'https://x' },
+        });
+        expect(out.aiConfig).toEqual({ enabled: true, model: 'gemini' });
+        expect(out.aiConfig.apiKey).toBeUndefined();
+        expect(out.aiConfig.orgSecretToken).toBeUndefined();
+        expect(out.aiConfig.endpoint).toBeUndefined();
+    });
 });

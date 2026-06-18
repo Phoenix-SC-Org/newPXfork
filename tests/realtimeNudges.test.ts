@@ -45,6 +45,7 @@ vi.mock('../lib/push', () => ({ sendPushToAll: () => {} }));
 import {
     addExternalTool, updateExternalTool, reorderExternalTool, deleteExternalTool,
     broadcastSystemAlert,
+    addAnnouncement, updateAnnouncement, deleteAnnouncement,
 } from '../lib/db/system';
 
 beforeEach(() => { h.orgEmits = []; h.channelEmits = []; });
@@ -65,6 +66,21 @@ describe('external_tools mutations emit the external_tools_update nudge', () => 
     it('deleteExternalTool emits it', async () => {
         await deleteExternalTool(1);
         expect(h.orgEmits.map(e => e.event)).toContain('external_tools_update');
+    });
+});
+
+describe('announcement mutations emit the announcement_update nudge (audience-scoped, not postgres_changes)', () => {
+    it('addAnnouncement emits it', async () => {
+        await addAnnouncement({ title: 'X', body: 'b', audience: ['Member'] }, 1);
+        expect(h.orgEmits.map(e => e.event)).toContain('announcement_update');
+    });
+    it('updateAnnouncement emits it', async () => {
+        await updateAnnouncement({ id: 'a1', title: 'X', body: 'b', audience: ['Member'] });
+        expect(h.orgEmits.map(e => e.event)).toContain('announcement_update');
+    });
+    it('deleteAnnouncement emits it', async () => {
+        await deleteAnnouncement('a1');
+        expect(h.orgEmits.map(e => e.event)).toContain('announcement_update');
     });
 });
 

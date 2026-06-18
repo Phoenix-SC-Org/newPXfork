@@ -54,7 +54,7 @@ describe('sanitizeRichHtml (L6 — write-side defense-in-depth strip)', () => {
 
 describe('isSessionForceLoggedOut (L13 — shared force-logout predicate)', () => {
     const SEVEN_D = 7 * 24 * 60 * 60 * 1000;
-    const tokenIssuedAt = (iso: string): AuthToken => ({ userId: 1, roleId: 1, exp: new Date(iso).getTime() + SEVEN_D });
+    const tokenIssuedAt = (iso: string): AuthToken => ({ userId: 1, exp: new Date(iso).getTime() + SEVEN_D });
 
     it('revokes a session issued BEFORE the force-logout timestamp', () => {
         expect(isSessionForceLoggedOut(tokenIssuedAt('2026-01-01T00:00:00.000Z'), '2026-06-01T00:00:00.000Z')).toBe(true);

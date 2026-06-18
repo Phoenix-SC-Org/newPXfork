@@ -4,7 +4,7 @@ import { HydratedOperation, User, UserRole, OperationTemplatePayload } from '../
 import { supabase, handleSupabaseError, safeFetch, broadcastToOrg, broadcastToChannel } from './common.js';
 import { passesClearance, assertCanClassify, type ClearanceUser } from '../clearance.js';
 import { sendPushToUsers } from '../push.js';
-import { toHydratedOperation } from './mappers.js';
+import { toHydratedOperation, minifyUser } from './mappers.js';
 import { getUserById } from './users.js';
 import { bumpOperationVersion, pushOperationToAllies, scheduleAlliedPush } from './operations-federation.js';
 import { stripHtml, stripHtmlSingleLine } from '../textSanitize.js';
@@ -307,8 +307,11 @@ interface CreateOperationInput {
 }
 
 export async function createOperation(opData: CreateOperationInput) {
-    // Ensure we have an owner ID. If calling from API, userId is injected into opData.
-    const ownerId = opData.ownerId || opData.userId;
+    // Owner is the dispatcher-forced authenticated actor (opData.userId), which
+    // MUST win over any client-supplied ownerId — otherwise a caller could set
+    // ownerId to a victim and own/command the op as them. ownerId is only the
+    // fallback for internal callers that don't inject userId.
+    const ownerId = opData.userId || opData.ownerId;
 
     if (!ownerId) {
         throw new Error("Cannot create operation: Missing Owner ID");
@@ -552,7 +555,10 @@ export async function createOperation(opData: CreateOperationInput) {
         maxParticipants: op.max_participants,
         unitId: op.unit_id,
         limitingMarkers: [],
-        owner: owner || fallbackUser,
+        // minify the owner so the create response never leaks the owner's
+        // adminNotes/clearance/markers/permissions/discordId/RSI code (the
+        // fallback is already blank).
+        owner: minifyUser(owner) || fallbackUser,
         unit: undefined,
         location: undefined,
         participants: [],
@@ -759,8 +765,23 @@ export async function updateOperationStatus(operationId: string, status: string,
     void pushOperationToAllies(operationId, 'status_change').catch(() => undefined);
 }
 
+// A user_ships row id is an enumerable PK. When a caller binds a ship to an
+// operation participation row, verify the ship actually belongs to the user that
+// participation is for — otherwise a member could attach another member's ship,
+// leaking its custom_name/loadout via the roster embed and corrupting
+// fleet/payout attribution. No-op when no ship is being set.
+async function assertUserShipOwnedBy(userShipId: number | null | undefined, ownerUserId: number, fnName: string): Promise<void> {
+    if (!userShipId) return;
+    const { data, error } = await supabase.from('user_ships').select('user_id').eq('id', userShipId).maybeSingle();
+    if (error) handleSupabaseError({ error, message: `${fnName}: failed to verify ship ownership` });
+    if (!data || data.user_id !== ownerUserId) {
+        throw new Error('Selected ship does not belong to this user.');
+    }
+}
+
 export async function joinOperation(operationId: string, userId: number, joinCode?: string, roleRequested?: string, shipUtilized?: string, shipId?: number, userShipId?: number) {
     await verifyOperationAccess(operationId);
+    await assertUserShipOwnedBy(userShipId, userId, 'joinOperation');
 
     // Fetch operation details for join code / capacity checks
     const { data: op } = await supabase.from('operations').select('is_special, join_code, max_participants').eq('id', operationId).single();
@@ -771,29 +792,46 @@ export async function joinOperation(operationId: string, userId: number, joinCod
         }
     }
 
-    // Check capacity
-    if (op && op.max_participants) {
-        const { count } = await supabase.from('operation_participants').select('*', { count: 'exact', head: true }).eq('operation_id', operationId);
-        if ((count || 0) >= op.max_participants) {
+    // Atomic capacity-check + upsert under a row lock (race-1) — concurrent joins
+    // serialise on the operations row so max_participants can't be overshot.
+    const { error: rpcError } = await supabase.rpc('op_join_participant', {
+        p_operation_id: operationId,
+        p_user_id: userId,
+        p_role_requested: roleRequested ?? null,
+        p_ship_utilized: shipUtilized ?? null,
+        p_ship_id: shipId ?? null,
+        p_user_ship_id: userShipId ?? null,
+    });
+    if (rpcError) {
+        if (typeof rpcError.message === 'string' && rpcError.message.includes('operation_full')) {
             throw new Error("Operation is full.");
+        }
+        const rpcCode = (rpcError as { code?: string }).code;
+        // Soft-fallback if the RPC predates the schema redeploy (function missing):
+        // the non-atomic count-then-upsert (the prior behavior).
+        if (rpcCode === 'PGRST202' || rpcCode === '42883') {
+            if (op && op.max_participants) {
+                const { count } = await supabase.from('operation_participants').select('*', { count: 'exact', head: true }).eq('operation_id', operationId);
+                if ((count || 0) >= op.max_participants) throw new Error("Operation is full.");
+            }
+            const { error } = await supabase.from('operation_participants').upsert({
+                operation_id: operationId,
+                user_id: userId,
+                role_requested: roleRequested,
+                ship_utilized: shipUtilized,
+                ship_id: shipId || null,
+                user_ship_id: userShipId || null,
+                attendance_status: 'Registered',
+                is_ready: false,
+            }, { onConflict: 'operation_id,user_id', ignoreDuplicates: false });
+            handleSupabaseError({ error, message: 'Failed to join operation' });
+        } else {
+            handleSupabaseError({ error: rpcError, message: 'Failed to join operation' });
         }
     }
 
-    const { error } = await supabase.from('operation_participants').upsert({
-        operation_id: operationId,
-        user_id: userId,
-        role_requested: roleRequested,
-        ship_utilized: shipUtilized,
-        ship_id: shipId || null,
-        user_ship_id: userShipId || null,
-        attendance_status: 'Registered',
-        is_ready: false,
-    }, { onConflict: 'operation_id,user_id', ignoreDuplicates: false });
-    if (!error) {
-        const joiner = await getUserById(userId);
-        await logOperationEntry(operationId, 'JOIN', `${joiner?.name || 'Unknown'} joined the operation`, userId);
-    }
-    handleSupabaseError({ error, message: 'Failed to join operation' });
+    const joiner = await getUserById(userId);
+    await logOperationEntry(operationId, 'JOIN', `${joiner?.name || 'Unknown'} joined the operation`, userId);
     await broadcastOperationUpdate(operationId);
 }
 
@@ -828,12 +866,25 @@ export async function addOperationParticipant(operationId: string, targetUserId:
 export async function updateOperationParticipant(operationId: string, targetUserId: number, updates: Record<string, unknown>) {
     await verifyOperationAccess(operationId);
 
+    // The target must already be a participant — this mutates an existing row,
+    // not creates one, so refuse to silently no-op against a non-participant id.
+    const { data: existingParticipant } = await supabase.from('operation_participants')
+        .select('user_id').eq('operation_id', operationId).eq('user_id', targetUserId).maybeSingle();
+    if (!existingParticipant) {
+        throw new Error('Target user is not a participant of this operation.');
+    }
+
     const dbUpdates: Record<string, unknown> = {};
     if (updates.roleRequested !== undefined) dbUpdates.role_requested = updates.roleRequested;
     if (updates.shipUtilized !== undefined) dbUpdates.ship_utilized = updates.shipUtilized;
     if (updates.attendanceStatus !== undefined) dbUpdates.attendance_status = updates.attendanceStatus;
     if (updates.shipId !== undefined) dbUpdates.ship_id = updates.shipId || null;
-    if (updates.userShipId !== undefined) dbUpdates.user_ship_id = updates.userShipId || null;
+    if (updates.userShipId !== undefined) {
+        const reqUserShipId = typeof updates.userShipId === 'number' ? updates.userShipId : null;
+        // Ship must belong to the participant the row is for, not the caller.
+        await assertUserShipOwnedBy(reqUserShipId, targetUserId, 'updateOperationParticipant');
+        dbUpdates.user_ship_id = reqUserShipId;
+    }
 
     const { error } = await supabase.from('operation_participants').update(dbUpdates)
         .eq('operation_id', operationId).eq('user_id', targetUserId);
@@ -1085,6 +1136,7 @@ export async function resetOperationReadiness(operationId: string) {
 
 export async function rsvpOperation(operationId: string, userId: number, rsvpStatus: string, shipId?: number, userShipId?: number) {
     await verifyOperationAccess(operationId);
+    await assertUserShipOwnedBy(userShipId, userId, 'rsvpOperation');
 
     const updates: Record<string, unknown> = { rsvp_status: rsvpStatus, rsvp_at: new Date().toISOString() };
     if (shipId !== undefined) updates.ship_id = shipId || null;

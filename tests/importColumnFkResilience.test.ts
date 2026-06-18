@@ -183,3 +183,34 @@ describe('importer cross-table FK + schema-divergence resilience', () => {
         expect(ins!.rows[0].source_feed_id).toBeNull(); // dropped link, report still imports
     });
 });
+
+describe('importer secret / operational-key hardening (s8-a / importer-3)', () => {
+    it('drops secret/transient columns from any imported row (SECRET_DROP_COLUMNS)', async () => {
+        const ndjson = [
+            '{"kind":"header","version":1,"tableOrder":["users"],"manifest":{"users":1}}',
+            '{"kind":"row","t":"users","r":{"id":1,"name":"A","discord_id":"d1","rsi_handle_pending":"PendingName","rsi_verification_code":"VERIFY-9","key_hash":"kh","password_hash":"ph","webhook_secret":"ws"}}',
+        ].join('\n');
+        await importOrgData(ndjson);
+        const ins = h.inserts.find((i) => i.table === 'users');
+        expect(ins).toBeTruthy();
+        const row = ins!.rows[0];
+        // SECRET_DROP_COLUMNS are deleted entirely…
+        for (const c of ['rsi_handle_pending', 'key_hash', 'password_hash', 'webhook_secret']) {
+            expect(row[c], `${c} must not be imported`).toBeUndefined();
+        }
+        // …and the users handler additionally nulls rsi_verification_code (belt-and-braces).
+        expect(row.rsi_verification_code ?? null).toBeNull();
+    });
+
+    it('does NOT import operational/runtime settings keys (platformSettings / orgFeatures)', async () => {
+        const ndjson = [
+            '{"kind":"header","version":1,"tableOrder":["settings"],"manifest":{"settings":2}}',
+            '{"kind":"row","t":"settings","r":{"key":"platformSettings","value":{"maintenance_mode":true}}}',
+            '{"kind":"row","t":"settings","r":{"key":"orgFeatures","value":{"warehouse":false}}}',
+        ].join('\n');
+        await importOrgData(ndjson);
+        const settingsInserts = h.inserts.filter((i) => i.table === 'settings').flatMap((i) => i.rows);
+        expect(settingsInserts.some((r) => r.key === 'platformSettings')).toBe(false);
+        expect(settingsInserts.some((r) => r.key === 'orgFeatures')).toBe(false);
+    });
+});

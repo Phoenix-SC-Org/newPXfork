@@ -144,10 +144,15 @@ export function stripSecrets(state: any): any {
         };
     }
 
-    // AI config: strip the Gemini API key
+    // AI config: rebuild from an allowlist (NOT a denylist) so a future
+    // secret-ish field added to AIConfig drops by default instead of riding the
+    // authenticated state payload to every member.
     if (cleaned.aiConfig) {
-        const { apiKey, ...safeAiConfig } = cleaned.aiConfig;
-        cleaned.aiConfig = safeAiConfig;
+        const a = cleaned.aiConfig as { enabled?: unknown; model?: unknown };
+        cleaned.aiConfig = {
+            enabled: !!a.enabled,
+            ...(typeof a.model === 'string' ? { model: a.model } : {}),
+        };
     }
 
     // Radio config: strip LiveKit API key and secret, expose configured flag
@@ -367,7 +372,7 @@ async function handleInitialState(req: Request, res: Response) {
     if (adminCount === 0) {
         let settings;
         try {
-            settings = await db.getAllSettings();
+            settings = await db.getAllSettings({ decryptSecrets: false });
         } catch (e) {
             // Fallback for settings if DB is down
             log.warn('failed to fetch settings, using defaults', { err: e });
@@ -427,7 +432,7 @@ async function handleInitialState(req: Request, res: Response) {
     if (!currentUser) {
         let bootSettings;
         try {
-            bootSettings = await db.getAllSettings();
+            bootSettings = await db.getAllSettings({ decryptSecrets: false });
         } catch (e) {
             log.warn('failed to fetch boot settings, using defaults', { err: e });
             bootSettings = { brandingConfig: { name: 'Organization', iconUrl: '/icon.svg' }, discordConfig: {} };
@@ -532,7 +537,7 @@ async function handleState(req: Request, res: Response) {
                 // settings_update; getMainState alone omits these.
                 const [mainState, settings] = await Promise.all([
                     db.getMainState(),
-                    db.getAllSettings(),
+                    db.getAllSettings({ decryptSecrets: false }),
                 ]);
                 // Bulk roster: every member fetches every other member's record,
                 // so non-privileged callers must not see others' adminNotes /
@@ -615,7 +620,7 @@ async function handleState(req: Request, res: Response) {
                 if (!state) return res.status(404).json({ message: "Request not found" });
                 return res.status(200).json(state);
             }
-            case 'announcements': state = await db.getAnnouncementsState(); break;
+            case 'announcements': state = await db.getAnnouncementsState(currentUser); break;
             case 'discord': state = await db.getDiscordState(); break;
             case 'operations': state = await db.getOperationsState(currentUser); break;
             case 'warrants': state = await db.getWarrantsState(); break;
@@ -754,7 +759,7 @@ async function handleState(req: Request, res: Response) {
             case 'government_elections': state = { governmentElections: await db.getElectionsState().catch(() => []) }; break;
             case 'government_legislation': state = { governmentLegislation: await db.getLegislationState().catch(() => []) }; break;
             case 'government_motions': state = { governmentMotions: await db.getMotionsState().catch(() => []) }; break;
-            case 'settings': state = await db.getAllSettings(); break;
+            case 'settings': state = await db.getAllSettings({ decryptSecrets: false }); break;
             // No subset → legacy "full state" refresh (now permission-gated inside
             // getState). A non-empty UNKNOWN subset string is rejected rather than
             // silently falling through to the full aggregate (defence-in-depth so a

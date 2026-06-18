@@ -7,7 +7,7 @@ import { toWikiPage } from './mappers.js';
 import { stripHtmlSingleLine } from '../textSanitize.js';
 import { sanitizeTiptapJson } from '../tiptapValidate.js';
 import { updateWikiHomeConfig } from './system.js';
-import { assertCanClassify, passesClearance, type ClearanceUser } from '../clearance.js';
+import { assertCanClassify, passesClearance, filterByClearance, type ClearanceUser } from '../clearance.js';
 import { log as baseLog } from '../log.js';
 
 const log = baseLog.child({ module: 'db.wiki' });
@@ -272,8 +272,11 @@ export async function reorderWikiPages(pages: { id: string; sortOrder: number }[
     broadcastWikiUpdate();
 }
 
-export async function exportWikiPages(): Promise<WikiExportBundle> {
-    const pages = await getWikiPages();
+export async function exportWikiPages(actor?: ClearanceUser | null): Promise<WikiExportBundle> {
+    // Apply the SAME clearance filter as the read path (api/query.ts wiki subset)
+    // so an export can never exfiltrate page bodies/marker names the actor cannot
+    // read in the UI. Fail-closed: an absent actor is treated as clearance 0.
+    const pages = filterByClearance(await getWikiPages(), actor);
 
     const { data: brandingRow } = await supabase
         .from('settings')

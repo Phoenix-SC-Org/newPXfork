@@ -55,11 +55,9 @@ const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full space-y-6">
 
-                <VersionCard version="15.1.0-open" title="Marketplace + Hardening" isLatest>
-                    <li><strong className="text-sky-400">[Marketplace]</strong> <strong className="font-semibold text-slate-100">Restored Marketplace feature with new chrome.</strong> This one speaks for itself. The marketplace is back and looking a fair bit better.</li>
-                    <li><strong className="text-sky-400">[Security]</strong> <strong className="font-semibold text-slate-100">Another security pass.</strong> I went back through the platform again and tightened the checks on who can see what across operations, intelligence, HR, the marketplace, and alliance sharing. Most of this is invisible day to day, which is the point: information only ever reaches the people it is meant to. Appropriate tests have been wired in.</li>
-                    <li><strong className="font-semibold text-slate-100">Operation templates now respect clearance.</strong> A template saved from a classified operation now inherits that operation's clearance, so its plan can only be seen and reused by people cleared for it, not everyone in the org.</li>
-                    <li><strong className="font-semibold text-slate-100">For self-hosters.</strong> This update adds a few database columns. After updating, re-run schema.sql in your Supabase SQL editor to pick them up. The schema is impotent so it is safe to run.</li>
+                <VersionCard version="15.1.1-open" title="Hardening Pass" isLatest>
+                    <li><strong className="text-sky-400">[Security]</strong> <strong className="font-semibold text-slate-100">Another round of hardening.</strong> I worked back through the platform and tightened a wide range of access and validation checks across operations, intel, the marketplace, alliance sharing, and sign-in and session handling. This closed a number of edge cases found in a deep review. Almost all of it is invisible day to day; the point is that data and actions stay with the people they are meant for. Tests were added to keep it that way. These reflect improvements made in the hosted version of myrsi.org since the release of 15.1.0-open</li>
+                    <li><strong className="font-semibold text-slate-100">For self-hosters.</strong> This update adds a few database columns and helper functions. After updating, re-run schema.sql in your Supabase SQL editor to pick them up. It is idempotent, so it is safe to run.</li>
                 </VersionCard>
 
                 <div className="space-y-6">
@@ -68,6 +66,12 @@ const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
                         Version History
                         <span className="h-px bg-slate-700 grow ml-4"></span>
                     </h3>
+
+                    <VersionCard version="15.1.0-open" title="Marketplace + Hardening">
+                        <li><strong className="text-sky-400">[Marketplace]</strong> <strong className="font-semibold text-slate-100">Restored Marketplace feature with new chrome.</strong> This one speaks for itself. The marketplace is back and looking a fair bit better.</li>
+                        <li><strong className="text-sky-400">[Security]</strong> <strong className="font-semibold text-slate-100">Another security pass.</strong> I went back through the platform again and tightened the checks on who can see what across operations, intelligence, HR, the marketplace, and alliance sharing. Most of this is invisible day to day, which is the point: information only ever reaches the people it is meant to. Appropriate tests have been wired in.</li>
+                        <li><strong className="font-semibold text-slate-100">Operation templates now respect clearance.</strong> A template saved from a classified operation now inherits that operation's clearance, so its plan can only be seen and reused by people cleared for it, not everyone in the org.</li>
+                    </VersionCard>
 
                     <VersionCard version="15.0.0-open" title="The Open-Source Release">
                         <li><strong className="text-green-400">[Release]</strong> <strong className="font-semibold text-slate-100">Open-Source, Self-Hosted Build</strong>: MyRSI.org is now available as a self-hostable build under a source-available, noncommercial licence. One deployment runs one organisation — bring your own Supabase project and Discord application, drop in your environment config, and a polished first-run setup wizard walks you from a preflight environment check through Discord sign-in, the one-time admin claim code, RSI handle verification, and an optional import of your existing data. The first Discord login that redeems the console setup code becomes Admin.</li>

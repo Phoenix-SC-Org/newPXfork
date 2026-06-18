@@ -137,6 +137,15 @@ const NULL_FKS: Record<string, string[]> = {
     warrants: ['source_feed_id'],
 };
 
+// Secret / transient per-install columns that must NEVER carry over from a source
+// export, on ANY table (table-agnostic + future-proof). A hand-crafted or
+// pre-hardening NDJSON could otherwise import a verification token, pending
+// rename, or hashed credential verbatim. Dropped (not nulled) in prepareRow so a
+// column the fork schema lacks is simply absent rather than a stray null insert.
+const SECRET_DROP_COLUMNS = new Set<string>([
+    'rsi_verification_code', 'rsi_handle_pending', 'key_hash', 'password_hash', 'webhook_secret',
+]);
+
 /**
  * Catalog FK remap config. The exporter embedded the remote catalog row's stable
  * external key under an alias equal to the catalog table name. We resolve the
@@ -348,6 +357,9 @@ function prepareRow(
     // 2. Strip embed aliases (joined objects, never columns).
     for (const k of STRIP_ALWAYS) if (k in row) delete row[k];
 
+    // 2b. Drop secret / transient per-install columns on every table.
+    for (const k of SECRET_DROP_COLUMNS) if (k in row) delete row[k];
+
     // 3. Defensive: drop organization_id if a stray slipped through.
     if ('organization_id' in row) delete row.organization_id;
 
@@ -536,6 +548,12 @@ const SETTINGS_IMPORT_DENYLIST = new Set<string>([
     // imported admin_setup_code lets an export holder claim Admin; an imported
     // setup_completed skips first-boot; schema_version is owned by schema.sql).
     'admin_setup_code', 'setup_completed', 'schema_version',
+    // Operational / runtime state — importing a doctored export must not be able to
+    // bootstrap a fresh instance into maintenance mode / a force-logout loop
+    // (platformSettings), flip module toggles (orgFeatures), surface a stale
+    // emergency broadcast (active_eam), or seed a federation pairing secret
+    // (allianceLocalPairingCode).
+    'platformSettings', 'orgFeatures', 'active_eam', 'allianceLocalPairingCode',
 ]);
 
 // Tables NEVER imported even though the export carries them: deployment-LOCAL

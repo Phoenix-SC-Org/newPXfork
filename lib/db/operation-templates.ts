@@ -14,7 +14,9 @@ import type {
 
 // operation_templates row plus the joined creator name embed.
 type TemplateRow = Tables<'operation_templates'> & {
-    creator?: { name?: string | null } | null;
+    // PostgREST returns a to-one embed as an object at runtime, but the explicit
+    // select string types it as an array — accept both shapes.
+    creator?: { name?: string | null } | { name?: string | null }[] | null;
     // Generated types lag the clearance columns on operation_templates.
     classification_level?: number | null;
     limiting_marker_ids?: Array<number | string> | null;
@@ -47,14 +49,17 @@ function toTemplate(row: TemplateRow | null): OperationTemplate | null {
         name: row.name,
         description: row.description || undefined,
         createdBy: row.created_by ?? undefined,
-        createdByName: row.creator?.name || undefined,
+        createdByName: (Array.isArray(row.creator) ? row.creator[0] : row.creator)?.name || undefined,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         payload: row.payload as unknown as OperationTemplatePayload,
     };
 }
 
-const TEMPLATE_SELECT = '*, creator:users!operation_templates_created_by_fkey(name)';
+// Explicit columns (never '*'): a const-defined wildcard evades the wildcard
+// ratchet + the no-select-* lint, and is "one missed mapper away" from leaking a
+// future column.
+const TEMPLATE_SELECT = 'id, name, description, created_by, created_at, updated_at, payload, classification_level, limiting_marker_ids, creator:users!operation_templates_created_by_fkey(name)';
 
 // ---------------------------------------------------------------------------
 // CRUD

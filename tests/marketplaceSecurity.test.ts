@@ -120,6 +120,33 @@ describe('listing ownership (M3)', () => {
     });
 });
 
+describe('contract-spam dedup (mkt-authz-1)', () => {
+    it('refuses a second live contract from the same proposer on a listing', async () => {
+        seedListing();
+        seedContract({ id: 'C1', proposed_by_id: BUYER, status: 'proposed' });
+        await expect(proposeMarketplaceContract({ listingId: 'L1', quantity: 1 }, BUYER))
+            .rejects.toThrow(/already have an active contract/i);
+    });
+    it('allows a proposal when the proposer has no live contract on the listing', async () => {
+        seedListing();
+        h.tables.marketplace_contracts = [];
+        await expect(proposeMarketplaceContract({ listingId: 'L1', quantity: 1 }, BUYER)).resolves.toBeTruthy();
+    });
+});
+
+describe('reopen-after-moderation guard (s4-10d / s7b)', () => {
+    it('the seller cannot reopen a moderator-closed listing', async () => {
+        seedListing({ status: 'closed', moderation_closed_at: '2026-06-18T00:00:00Z' });
+        await expect(updateMarketplaceListing('L1', { status: 'active' }, SELLER)).rejects.toThrow(/closed by a moderator/i);
+        expect(h.tables.marketplace_listings[0].status).toBe('closed');
+    });
+    it('the seller can still reopen a self-closed listing (no moderation flag)', async () => {
+        seedListing({ status: 'closed' });
+        await updateMarketplaceListing('L1', { status: 'active' }, SELLER);
+        expect(h.tables.marketplace_listings[0].status).toBe('active');
+    });
+});
+
 describe('propose (M9 no over-claim, own-listing block)', () => {
     it('rejects contracting your own listing', async () => {
         seedListing();

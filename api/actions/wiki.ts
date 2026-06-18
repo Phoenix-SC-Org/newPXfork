@@ -52,7 +52,7 @@ export const wikiActions = {
     'wiki:update_page': ({ id, data, userId, user }: UpdateWikiPagePayload) => db.updateWikiPage(id, data, userId, user),
     'wiki:delete_page': ({ id }: DeleteWikiPagePayload) => db.deleteWikiPage(id),
     'wiki:reorder_pages': ({ pages }: ReorderWikiPagesPayload) => db.reorderWikiPages(pages),
-    'wiki:export_pages': () => db.exportWikiPages(),
+    'wiki:export_pages': ({ user }: { user?: User }) => db.exportWikiPages(user),
     'wiki:import_pages': ({ bundle, mode, importHomeConfig, userId, user }: ImportWikiPagesPayload) =>
         db.importWikiPages(bundle, mode, !!importHomeConfig, userId, user),
 };

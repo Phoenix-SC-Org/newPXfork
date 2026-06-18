@@ -65,7 +65,7 @@ interface CreateUnitPostPayload extends ActorPayload {
 interface DeleteUnitPostPayload extends ActorPayload {
     postId: string;
     unitId?: number;
-    user?: { id?: number; unit?: { id?: number; leaderId?: number } | null };
+    user?: { id?: number; permissions?: string[]; unit?: { id?: number; leaderId?: number } | null };
 }
 
 /** Per-unit detail updates applied through db.updateUnit (camelCase fields). */
@@ -135,13 +135,12 @@ export const userActions = {
         return db.createUnitPost(unitId, userId, content);
     },
     'unit:delete_post': async ({ postId, unitId, userId, user }: DeleteUnitPostPayload) => {
-        // unitId is sent alongside postId so the membership gate can apply; a legacy
-        // caller that omits it skips only that gate.
+        // unitId is sent alongside postId so the restricted-unit access gate can
+        // apply to the claimed unit; a legacy caller that omits it skips only that.
+        // Authorization for the DELETE itself is computed inside deleteUnitPost
+        // against the POST's OWN unit — never the client-supplied unitId.
         if (unitId) await db.assertUnitAccess(unitId, userId);
-        // Scope deletion to the author's own post unless the caller is this
-        // unit's leader.
-        const isLeader = !!user?.unit && user.unit.id === unitId && user.unit.leaderId === userId;
-        return db.deleteUnitPost(postId, { actorUserId: userId, allowAny: isLeader });
+        return db.deleteUnitPost(postId, { id: userId, permissions: user?.permissions });
     },
     'unit:update_details': ({ unitId, updates }: UpdateUnitDetailsPayload) => {
         // This is the unit-LEADER edit path — the dispatcher lets a unit's own

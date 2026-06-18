@@ -58,21 +58,42 @@ export interface SettingsBlob {
 // `defaults`; DB rows overlay them (including dynamic keys like admin_setup_code,
 // captured via a local cast on the reduce). Decrypt/merge steps reintroduce
 // secret-bearing supersets, so they carry localized `as` casts.
-export async function getAllSettings(): Promise<SettingsBlob> {
-    const query = supabase.from('settings').select('*');
+export async function getAllSettings(opts?: { decryptSecrets?: boolean }): Promise<SettingsBlob> {
+    const query = supabase.from('settings').select('key, value');
 
     const { data, error } = await query;
     if (error && error.code === '42P01') return { brandingConfig: { name: 'OPERATIONS', iconUrl: defaultIconUrl }, discordConfig: {}, heroCardConfig: {}, openGraphConfig: {}, radioConfig: {}, aiConfig: { enabled: false }, systemConfig: { appUrl: '' }, wikiHomeConfig: {}, governmentsConfig: { enabled: false }, publicPageConfig: DEFAULT_PUBLIC_PAGE_CONFIG };
     handleSupabaseError({ error, message: 'Failed to get settings' });
     const defaults: SettingsBlob = { discordConfig: {}, brandingConfig: { name: 'OPERATIONS', iconUrl: defaultIconUrl }, heroCardConfig: {}, openGraphConfig: {}, radioConfig: {}, aiConfig: { enabled: false }, systemConfig: { appUrl: '' }, wikiHomeConfig: {}, governmentsConfig: { enabled: false }, publicPageConfig: DEFAULT_PUBLIC_PAGE_CONFIG };
     const result = ((data || []) as Array<{ key: string; value: unknown }>).reduce((acc: SettingsBlob, curr) => { (acc as unknown as Record<string, unknown>)[curr.key] = curr.value; return acc; }, defaults);
-    // Decrypt sensitive fields after reading from DB
-    result.discordConfig = decryptConfigSecrets('discordConfig', result.discordConfig) as DiscordConfig;
-    result.radioConfig = decryptConfigSecrets('radioConfig', result.radioConfig) as Partial<RadioConfig>;
-    // Merge separately-stored geminiKey back into aiConfig for frontend consumption
-    if (result.geminiKey) {
-        const decryptedGeminiKey = typeof result.geminiKey === 'string' ? decryptSecret(result.geminiKey) : result.geminiKey;
-        result.aiConfig = { ...result.aiConfig, apiKey: decryptedGeminiKey };
+    // Decrypt sensitive fields after reading from DB. Client-facing / boot /
+    // public read paths pass { decryptSecrets: false } so live credentials are
+    // never pulled into memory there — stripSecrets becomes defense-in-depth, not
+    // the only line. Server-internal consumers that need plaintext omit the opt.
+    if (opts?.decryptSecrets !== false) {
+        result.discordConfig = decryptConfigSecrets('discordConfig', result.discordConfig) as DiscordConfig;
+        result.radioConfig = decryptConfigSecrets('radioConfig', result.radioConfig) as Partial<RadioConfig>;
+        // Merge separately-stored geminiKey back into aiConfig for frontend consumption
+        if (result.geminiKey) {
+            const decryptedGeminiKey = typeof result.geminiKey === 'string' ? decryptSecret(result.geminiKey) : result.geminiKey;
+            result.aiConfig = { ...result.aiConfig, apiKey: decryptedGeminiKey };
+        }
+    }
+    return result;
+}
+
+// Minimal reader for pre-JWT / unauthenticated surfaces (public org page,
+// testimonials). Selects only the public-intent config keys and NEVER decrypts a
+// secret — so the anonymous path can't pull the Discord/LiveKit/Gemini
+// credentials into memory at all.
+export async function getPublicSettings(): Promise<Pick<SettingsBlob, 'publicPageConfig' | 'brandingConfig'>> {
+    const fallback = { brandingConfig: { name: 'OPERATIONS', iconUrl: defaultIconUrl }, publicPageConfig: DEFAULT_PUBLIC_PAGE_CONFIG } as Pick<SettingsBlob, 'publicPageConfig' | 'brandingConfig'>;
+    const { data, error } = await supabase.from('settings').select('key, value').in('key', ['publicPageConfig', 'brandingConfig']);
+    if (error && error.code === '42P01') return fallback;
+    handleSupabaseError({ error, message: 'Failed to get public settings' });
+    const result = { ...fallback };
+    for (const row of (data || []) as Array<{ key: string; value: unknown }>) {
+        (result as unknown as Record<string, unknown>)[row.key] = row.value;
     }
     return result;
 }
@@ -126,6 +147,18 @@ export async function getPreflightStatus(): Promise<{
             if (!discordClientId) discordClientId = (byKey.get('discordConfig') as { clientId?: string } | undefined)?.clientId || undefined;
         }
     } catch { /* dbConnected stays false (DB unreachable) */ }
+
+    // Once setup is complete, this PUBLIC action stops being a posture oracle: an
+    // anonymous caller must not learn whether secrets are weak/encrypted, whether
+    // an admin exists, or whether a claim code is outstanding. The wizard only
+    // calls preflight pre-setup, so a post-setup caller gets nothing actionable.
+    if (setupCompleted) {
+        return {
+            dbConnected, adminExists: true, discordConfigured: true,
+            realtimeEnabled: true, secretsEncrypted: true, sessionSecretStrong: true,
+            setupCompleted: true, setupCodeExists: false,
+        };
+    }
     try {
         const roles = await getSystemRoles();
         if (dbConnected && roles.admin) {
@@ -441,6 +474,12 @@ export async function getRoleDetails(roleId: number) {
 
 export async function updateRolePermissions(roleId: number, permissionNames: string[]) {
     const id = parseInt(roleId.toString());
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid role id.');
+
+    // Validate the target role exists BEFORE rewriting its permissions — the
+    // delete-leg would otherwise run unchecked against a phantom/forged id.
+    const { data: role } = await supabase.from('roles').select('id').eq('id', id).maybeSingle();
+    if (!role) throw new Error('Role not found.');
 
     const { data: perms } = await supabase.from('permissions').select('id, name').in('name', permissionNames);
     const permIds = perms?.map(p => p.id) || [];
@@ -645,6 +684,10 @@ export async function addAnnouncement(data: Partial<Announcement>, userId: numbe
         expiry_date: data.expiryDate,
         author: user?.name || 'Unknown'
     });
+    // id-only nudge — announcements are NOT in the realtime publication (their
+    // audience boundary would leak via a raw postgres_changes row); clients
+    // refetch the audience-scoped 'announcements' subset.
+    broadcastToOrg('announcement_update', {});
 }
 export async function updateAnnouncement(data: Partial<Announcement>) {
     const query = supabase.from('announcements').update({
@@ -655,10 +698,12 @@ export async function updateAnnouncement(data: Partial<Announcement>) {
         expiry_date: data.expiryDate
     }).eq('id', data.id);
     await query;
+    broadcastToOrg('announcement_update', { id: data.id });
 }
 export async function deleteAnnouncement(id: string) {
     const query = supabase.from('announcements').delete().eq('id', id);
     await query;
+    broadcastToOrg('announcement_update', { id });
 }
 
 // --- ORG MANAGEMENT ---
@@ -680,6 +725,7 @@ const GLOBAL_PERMISSIONS = [
     { name: 'admin:config:api', description: "Manage API Keys", category: 'System' },
     { name: 'admin:config:tools', description: "Manage External Tools", category: 'System' },
     { name: 'admin:config:catalog', description: "Manage Global Catalog (Ships/Items/Commodities/Locations)", category: 'System' },
+    { name: 'admin:db:destroy', description: "Destroy all data (full reset / full wipe)", category: 'System' },
     { name: 'admin:config:notices', description: "Manage Announcements", category: 'System' },
     { name: 'admin:config:roles', description: "Manage Roles & Permissions", category: 'System' },
     { name: 'admin:config:servicetypes', description: "Manage Service Types", category: 'System' },
@@ -1519,18 +1565,30 @@ export async function createUnitPost(unitId: number, userId: number, content: st
     return toUnitPost(data);
 }
 
-export async function deleteUnitPost(postId: string, opts?: { actorUserId?: number; allowAny?: boolean }) {
-    const { data: post } = await supabase.from('unit_posts').select('unit_id').eq('id', postId).maybeSingle();
+export async function deleteUnitPost(postId: string, actor?: { id?: number; permissions?: string[] }) {
+    const { data: post } = await supabase.from('unit_posts').select('unit_id, author_id').eq('id', postId).maybeSingle();
     if (!post) return; // already gone
-    let q = supabase.from('unit_posts').delete()
-        .eq('id', postId).eq('unit_id', post.unit_id);
-    // unit:delete_post is gated only at the read-level user:view:roster perm. A
-    // member may delete only their OWN post; unit leaders/managers (allowAny) may
-    // delete any post in the unit.
-    if (!opts?.allowAny && opts?.actorUserId !== undefined) {
-        q = q.eq('author_id', opts.actorUserId);
+
+    // unit:delete_post is gated only at the read-level user:view:roster perm, so
+    // authorize the delete here against the POST's OWN unit (NOT any client unitId):
+    // the author, the post-unit's leader, or a moderator (units:view_all; Admin
+    // holds it via all-perms) may delete. Anyone else is refused.
+    const actorId = actor?.id;
+    const isAuthor = actorId !== undefined && post.author_id === actorId;
+
+    let isLeader = false;
+    if (!isAuthor && actorId !== undefined && post.unit_id != null) {
+        const { data: unit } = await supabase.from('units').select('leader_id').eq('id', post.unit_id).maybeSingle();
+        isLeader = !!unit && unit.leader_id === actorId;
     }
-    const { error } = await q;
+
+    const canModerate = !!actor?.permissions?.includes('units:view_all');
+
+    if (!isAuthor && !isLeader && !canModerate) {
+        throw new Error('You are not authorized to delete this post.');
+    }
+
+    const { error } = await supabase.from('unit_posts').delete().eq('id', postId);
     handleSupabaseError({ error, message: 'Failed to delete post' });
 }
 

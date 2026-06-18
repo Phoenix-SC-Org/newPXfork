@@ -516,6 +516,10 @@ export interface User {
     probationEnd?: string;
     /** Admin override for tenure start. When set, replaces createdAt for "member since" / tenure displays. Null = use createdAt. */
     tenureStartDate?: string | null;
+    /** Per-user session-revocation watermark. HMAC tokens issued before this are
+     *  rejected (force_logout) by the dispatcher. Set by an admin revoke or by a
+     *  soft-delete/ban. Null = no per-user revocation in effect. */
+    tokensValidFrom?: string | null;
 }
 
 /** A single HR or Government position assignment in a user's career timeline. Source: user_position_history_unified view. */

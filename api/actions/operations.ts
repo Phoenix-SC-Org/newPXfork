@@ -651,20 +651,21 @@ export const operationActions = {
         await db.broadcastOpChange(operationId);
     },
 
-    // Logistics
-    'operation:add_logistics': async ({ operationId, data }: AddLogisticsPayload) => {
-        await db.verifyOperationAccess(operationId);
+    // Logistics. Clearance-aware gate (read/write parity) so a member who can't
+    // see a restricted op can't mutate its logistics by id either.
+    'operation:add_logistics': async ({ operationId, data, user }: AddLogisticsPayload & { user?: Parameters<typeof db.assertOpVisibleToUser>[1] }) => {
+        await db.assertOpVisibleToUser(operationId, user);
         const r = await db.addLogisticsItem(operationId, data);
         await db.broadcastOpChange(operationId);
         return r;
     },
-    'operation:update_logistics': async ({ itemId, data, operationId }: UpdateLogisticsPayload) => {
-        await db.verifyOperationAccess(operationId);
+    'operation:update_logistics': async ({ itemId, data, operationId, user }: UpdateLogisticsPayload & { user?: Parameters<typeof db.assertOpVisibleToUser>[1] }) => {
+        await db.assertOpVisibleToUser(operationId, user);
         await db.updateLogisticsItem(itemId, data, operationId);
         await db.broadcastOpChange(operationId);
     },
-    'operation:delete_logistics': async ({ itemId, operationId }: DeleteLogisticsPayload) => {
-        await db.verifyOperationAccess(operationId);
+    'operation:delete_logistics': async ({ itemId, operationId, user }: DeleteLogisticsPayload & { user?: Parameters<typeof db.assertOpVisibleToUser>[1] }) => {
+        await db.assertOpVisibleToUser(operationId, user);
         await db.deleteLogisticsItem(itemId, operationId);
         await db.broadcastOpChange(operationId);
     },
@@ -696,8 +697,8 @@ export const operationActions = {
         await db.broadcastOpChange(operationId);
         return r;
     },
-    'operation:delete_aar_entry': async ({ entryId, operationId }: DeleteAarEntryPayload) => {
-        await db.verifyOperationAccess(operationId);
+    'operation:delete_aar_entry': async ({ entryId, operationId, user }: DeleteAarEntryPayload & { user?: Parameters<typeof db.assertOpVisibleToUser>[1] }) => {
+        await db.assertOpVisibleToUser(operationId, user);
         await db.deleteAAREntry(entryId, operationId);
         await db.broadcastOpChange(operationId);
     },

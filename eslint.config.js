@@ -246,4 +246,19 @@ export default [
             '@typescript-eslint/no-explicit-any': 'error',
         },
     },
+
+    // Vite inlines every `import.meta.env.VITE_*` value into the PUBLIC client
+    // bundle, so referencing one ships it to every visitor. There are none today;
+    // ban the pattern in client code so a future VITE_<secret> can't be added
+    // silently. A genuinely public VITE_ value must opt in with an eslint-disable
+    // + a comment confirming it carries no secret. (HANDOFF s8-bb, generic.)
+    {
+        files: ['components/**/*.{ts,tsx}', 'contexts/**/*.{ts,tsx}', 'hooks/**/*.{ts,tsx}', 'services/**/*.{ts,tsx}', '*.tsx'],
+        rules: {
+            'no-restricted-syntax': ['error', {
+                selector: "MemberExpression[object.type='MemberExpression'][object.object.type='MetaProperty'][object.property.name='env'][property.name=/^VITE_/]",
+                message: 'Do not reference import.meta.env.VITE_* in client code — Vite inlines it into the public bundle. If it is genuinely non-secret, add an eslint-disable with a justifying comment.',
+            }],
+        },
+    },
 ];

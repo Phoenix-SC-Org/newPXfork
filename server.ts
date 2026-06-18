@@ -7,6 +7,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { randomBytes } from 'node:crypto';
 import { getClientIp } from './lib/clientIp.js';
 import { pruneAuthRateLimitBuckets } from './lib/authRateLimit.js';
+import { pruneAiRateLimitBuckets } from './lib/aiRateLimit.js';
 import { log as baseLog } from './lib/log.js';
 
 const log = baseLog.child({ module: 'server' });
@@ -49,6 +50,7 @@ setInterval(() => {
         if (now - ts > SCANNER_LOG_DEDUPE_MS * 5) lastScannerLog.delete(ip);
     }
     pruneAuthRateLimitBuckets(now);
+    pruneAiRateLimitBuckets(now);
 }, 60_000).unref?.();
 
 function bumpAbuseCounter(ip: string): void {
@@ -186,8 +188,15 @@ app.use(compression());
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
+    // '0' disables the legacy XSS auditor, which is itself an XS-leak oracle on
+    // old browsers; CSP is the real control here. (Modern guidance, per OWASP.)
+    res.setHeader('X-XSS-Protection', '0');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Sever the cross-origin window.opener handle (XS-leak side channels). Discord
+    // OAuth is a top-level redirect, so same-origin is safe.
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    // Deny powerful features org-wide; microphone=(self) only for the LiveKit radio.
+    res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), payment=(), usb=(), microphone=(self)');
 
     // Per-request CSP nonce. The SSR handler (api/index.ts) stamps it onto the
     // <script> tags it serves so script-src can drop 'unsafe-inline'. HTML
@@ -200,7 +209,7 @@ app.use((req, res, next) => {
     // base-uri 'self' blocks an injected <base> from re-rooting relative URLs;
     // form-action 'self' blocks an injected form from exfiltrating to an
     // attacker origin. Neither falls back to default-src.
-    res.setHeader('Content-Security-Policy', `default-src 'self'; base-uri 'self'; form-action 'self'; script-src 'self' 'nonce-${cspNonce}' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https: wss://*.supabase.co wss://*.livekit.cloud; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://drive.google.com https://calendar.google.com https://www.google.com https://open.spotify.com https://codepen.io https://stackblitz.com; media-src 'self' blob: https:; manifest-src 'self';`);
+    res.setHeader('Content-Security-Policy', `default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'nonce-${cspNonce}' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https: wss://*.supabase.co wss://*.livekit.cloud; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://docs.google.com https://drive.google.com https://calendar.google.com https://www.google.com https://open.spotify.com https://codepen.io https://stackblitz.com; media-src 'self' blob: https:; manifest-src 'self';`);
     // Only set HSTS if using HTTPS in production
     if (process.env.NODE_ENV === 'production') {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -402,7 +411,7 @@ app.post('/api/admin/import-stream', express.text({ type: () => true, limit: '64
             // A merge can re-anchor the admin onto a new users.id; issue a fresh
             // session token so the client stays authenticated as the merged identity.
             if (result.reanchoredAdminUserId != null && result.reanchoredAdminUserId !== decoded.userId) {
-                const token = signToken({ userId: result.reanchoredAdminUserId, roleId: result.reanchoredAdminRoleId ?? 0 });
+                const token = signToken({ userId: result.reanchoredAdminUserId });
                 write({ type: 'reauth', token, userId: result.reanchoredAdminUserId });
             }
         } catch (err) {
@@ -755,6 +764,22 @@ app.get(/(.*)/, async (req, res) => {
     }
 });
 
+// Terminal handler for anything the routes above didn't match — primarily a
+// stray NON-GET to a SPA path (stale service worker / bfcache replay). Without
+// it, the request falls through to Express's finalhandler, which serves a bare
+// error page with no app shell, so pwa-init.js never runs to self-heal the stale
+// SW and the user is stuck until a hard refresh.
+app.all(/(.*)/, (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(404).json({ message: 'Not found' });
+    }
+    bumpAbuseCounter(getClientIp(req));
+    if (req.method === 'OPTIONS') return res.status(204).end();
+    // Hardcoded literal '/' — NEVER derive the Location from req.path/host (open-redirect).
+    return res.redirect(303, '/');
+});
+
 // Cron jobs run in-process, each wrapped in withCronLease (a table-based lease,
 // see lib/cronLock.ts) so they are safe under multi-instance deploys: only the
 // instance holding the unexpired lease runs a given job per tick.
@@ -843,6 +868,14 @@ const server = isMainModule ? app.listen(Number(port), '0.0.0.0', () => {
 
     log.info('cron jobs initialized');
 }) : null;
+
+// Slowloris mitigation: cap how long a client may take to send headers / a full
+// request. More valuable self-hosted (direct origin, no CDN in front). Guarded —
+// `server` is null on test import.
+if (server) {
+    server.requestTimeout = 60_000;
+    server.headersTimeout = 20_000;
+}
 
 // Graceful Shutdown
 const gracefulShutdown = (signal: string) => {

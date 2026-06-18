@@ -37,16 +37,37 @@ export function isPrivateIpv4(host: string): boolean {
 /**
  * True for IPv6 addresses that must not be reached by server-side fetches:
  * loopback (::1), unspecified (::), link-local (fe80::/10), unique-local
- * (fc00::/7), and IPv4-mapped (::ffff:a.b.c.d) wrapping a private v4. Used by the
- * SSRF DNS-resolution guard (lib/ssrf.ts).
+ * (fc00::/7), IPv4-mapped (::ffff:a.b.c.d), and the transition ranges that embed
+ * an IPv4 destination — NAT64 (64:ff9b::/96), 6to4 (2002::/16), and
+ * IPv4-compatible (::a.b.c.d) — when the embedded v4 is private. Used by the SSRF
+ * DNS-resolution guard (lib/ssrf.ts).
  */
 export function isPrivateIpv6Address(addr: string): boolean {
     const a = addr.toLowerCase().replace(/^\[|\]$/g, '');
     if (a === '::1' || a === '::') return true;
     if (a.startsWith('fe8') || a.startsWith('fe9') || a.startsWith('fea') || a.startsWith('feb')) return true; // fe80::/10
     if (a.startsWith('fc') || a.startsWith('fd')) return true; // fc00::/7 unique-local
-    const mapped = a.match(/::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-    if (mapped && isPrivateIpv4(mapped[1])) return true;
+
+    // Any DOTTED embedded v4 (covers ::ffff:1.2.3.4, ::1.2.3.4, 64:ff9b::1.2.3.4).
+    const dotted = a.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+    if (dotted && isPrivateIpv4(dotted[1])) return true;
+
+    // Decode an embedded v4 from two hex hextets (e.g. 0a00:0001 → 10.0.0.1).
+    const hx = (hi: string, lo: string): string | null => {
+        const h = parseInt(hi, 16), l = parseInt(lo, 16);
+        if (Number.isNaN(h) || Number.isNaN(l)) return null;
+        return `${(h >> 8) & 0xff}.${h & 0xff}.${(l >> 8) & 0xff}.${l & 0xff}`;
+    };
+    // NAT64 64:ff9b::/96 — embedded v4 in the trailing 32 bits.
+    let m = a.match(/^64:ff9b:(?::)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (m) { const v4 = hx(m[1], m[2]); if (v4 && isPrivateIpv4(v4)) return true; }
+    // IPv4-compatible ::xxxx:yyyy (excluding the ::ffff: form handled by the dotted catch).
+    m = a.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (m && m[1] !== 'ffff') { const v4 = hx(m[1], m[2]); if (v4 && isPrivateIpv4(v4)) return true; }
+    // 6to4 2002::/16 — embedded v4 in the two hextets after 2002.
+    m = a.match(/^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4})/);
+    if (m) { const v4 = hx(m[1], m[2]); if (v4 && isPrivateIpv4(v4)) return true; }
+
     return false;
 }
 

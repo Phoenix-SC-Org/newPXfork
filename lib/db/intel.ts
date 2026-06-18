@@ -4,7 +4,7 @@ import { WarrantStatus, HydratedIntelligenceReport, IntelBulletin,
     IntelSubjectType, IntelThreatLevel, DossierData, WarrantNote
 } from '../../types.js';
 import { supabase, handleSupabaseError, safeFetch, broadcastToOrg } from './common.js';
-import { requireUuid } from '../pgrest.js';
+import { requireUuid, escapeLikePattern } from '../pgrest.js';
 import { stripHtml, stripHtmlSingleLine } from '../textSanitize.js';
 import { toHydratedWarrant, toHydratedIntelReport, toIntelBulletin, toMiniUser } from './mappers.js';
 import { verifyApiKey, getPublicFeedData } from './system.js';
@@ -804,8 +804,11 @@ export async function getIntelTargetIndex(user?: ClearanceUser | null): Promise<
 // intel-analytics widget is built.
 
 export async function updateIntelAffiliation(targetId: string, affiliatedOrg: string) {
-    const { error } = await supabase.from('intel_reports').update({ affiliated_org: affiliatedOrg })
-        .ilike('target_id', targetId)
+    // Escape LIKE metacharacters so targetId='%' can't mass-overwrite affiliation
+    // across every report; clamp affiliated_org like the create path (no raw store).
+    const { error } = await supabase.from('intel_reports')
+        .update({ affiliated_org: stripHtmlSingleLine(affiliatedOrg, 200) || null })
+        .ilike('target_id', escapeLikePattern(targetId))
         ;
     handleSupabaseError({ error, message: 'Failed to update affiliation' });
     await broadcastIntelUpdate({ kind: 'report' });
@@ -927,6 +930,23 @@ const normalizeString = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase
 const MAX_FEED_RESPONSE_BYTES = 8 * 1024 * 1024;
 const MAX_FEED_ITEMS = 1000;
 const MAX_FEED_TAGS = 20;
+// Peer-supplied timestamps are untrusted: a far-future created_at would pin an
+// ally's item to the top of the feed forever, and a year-9999 expires_at would
+// make a bulletin never auto-expire. Clamp created_at to <= now; cap expiry +
+// duration to a ceiling.
+const MAX_BULLETIN_DURATION_MIN = 30 * 24 * 60; // 30 days
+const clampPastIso = (value: unknown): string => {
+    const now = Date.now();
+    const t = typeof value === 'string' ? Date.parse(value) : NaN;
+    return new Date(Number.isFinite(t) && t < now ? t : now).toISOString();
+};
+const clampBulletinExpiry = (value: unknown): string => {
+    const now = Date.now();
+    const ceiling = now + MAX_BULLETIN_DURATION_MIN * 60 * 1000;
+    const t = typeof value === 'string' ? Date.parse(value) : NaN;
+    if (!Number.isFinite(t)) return new Date(now + 24 * 60 * 60 * 1000).toISOString();
+    return new Date(Math.min(Math.max(t, now), ceiling)).toISOString();
+};
 const sanitizeFeedTags = (tags: unknown): string[] =>
     Array.isArray(tags) ? tags.slice(0, MAX_FEED_TAGS).map((t) => stripHtmlSingleLine(String(t), 40)).filter(Boolean) : [];
 
@@ -1322,10 +1342,12 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                             continue;
                         }
 
-                        // Check for content match within THIS org only
+                        // Check for content match within THIS org only. Escape LIKE
+                        // metacharacters in the peer-supplied target so a value of
+                        // '%' can't match every row (full-table scan + mis-linking).
                         const { data: internalMatches } = await supabase.from('intel_reports')
                             .select('id, summary, external_id')
-                            .ilike('target_id', cleanTarget)
+                            .ilike('target_id', escapeLikePattern(cleanTarget))
                             ;
 
                         const existingInternal = (internalMatches || []).find(
@@ -1374,7 +1396,7 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                                 tags: cleanTags,
                                 summary: cleanSummary,
                                 affiliated_org: cleanAffiliated,
-                                created_at: r.created_at,
+                                created_at: clampPastIso(r.created_at),
                                 source_feed_id: feed.id,
                                 external_id: r.id,
                                 external_author: feed.label,
@@ -1436,7 +1458,7 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
 
                         const { data: existing } = await supabase.from('warrants')
                             .select('id')
-                            .ilike('target_rsi_handle', cleanHandle)
+                            .ilike('target_rsi_handle', escapeLikePattern(cleanHandle))
                             .eq('reason', cleanReason)
 
                             .maybeSingle();
@@ -1517,9 +1539,10 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                                 bulletinMarkerIds = resolved.ids;
                             }
 
-                            // Calculate expiry: use remote expires_at, or default to 24h from now
-                            const expiresAt = b.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-                            const durationMinutes = b.duration_minutes || 1440;
+                            // Calculate expiry: clamp the remote expires_at to [now, now+30d]
+                            // (default 24h), and bound duration so a peer can't pin a bulletin.
+                            const expiresAt = clampBulletinExpiry(b.expires_at);
+                            const durationMinutes = Math.min(Math.max(1, b.duration_minutes || 1440), MAX_BULLETIN_DURATION_MIN);
                             const { data: insertedBulletin, error: bulletinInsertErr } = await supabase.from('intel_bulletins').insert({
                                 title: cleanTitle,
                                 body: cleanBody,
@@ -1528,7 +1551,7 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                                 duration_minutes: durationMinutes,
                                 expires_at: expiresAt,
                                 classification_level: b.classification_level || 0,
-                                created_at: b.created_at || new Date().toISOString(),
+                                created_at: clampPastIso(b.created_at),
                                 // Mark provenance so the UI shows the "ALLY" badge and
                                 // we never re-share this ingested bulletin (loop guard).
                                 source_organization_id: feed.id,

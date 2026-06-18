@@ -385,6 +385,24 @@ describe('reconcileMirrorsWithPeer — healing', () => {
         await reconcileMirrorsWithPeer('peerA');
         expect(h.tables.mirrored_operations.find(m => m.id === 'op2')).toMatchObject({ accepted: false, revoked_at: null });
     });
+    it('fed-sync-1: missing-* heal does NOT clobber a mirror owned by a DIFFERENT host', async () => {
+        // A mirror legitimately held for otherHost. peerB serves a forged manifest
+        // listing the same opId; reconcile sees no peerB-owned row for it and would
+        // (pre-fix) upsert by the id-only PK, taking the row over. The ownership
+        // guard must skip it: content/owner/version stay intact.
+        h.tables.mirrored_operations = [{ id: 'op1', host_peer_id: 'otherHost', version: 7, accepted: true, revoked_at: null, snapshot: { name: 'legit' } }];
+        h.respond = (_p, path) => {
+            if (path === '/api/alliance/op-manifest') return manifest({ op1: 9 });
+            if (path.startsWith('/api/alliance/op/op1')) return { status: 200, json: { v: 1, op_id: 'op1', version: 9, snapshot: { name: 'ATTACKER' } } };
+            return null;
+        };
+        const r = await reconcileMirrorsWithPeer('peerB');
+        const row = h.tables.mirrored_operations.find(m => m.id === 'op1')!;
+        expect(row.host_peer_id).toBe('otherHost');
+        expect((row.snapshot as { name: string }).name).toBe('legit');
+        expect(row.version).toBe(7);
+        expect(r.pulled).toBe(0);
+    });
     it('stale mirrors pull with ?since= and apply version-gated', async () => {
         h.tables.mirrored_operations = [{ id: 'op1', host_peer_id: 'peerA', version: 3, accepted: true, revoked_at: null }];
         h.respond = (_p, path) => {

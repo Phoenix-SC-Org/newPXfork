@@ -21,6 +21,18 @@ export function safeSearchTerm(raw: unknown, maxLen = 100): string {
     return raw.replace(/[^a-zA-Z0-9 _-]/g, '').trim().slice(0, maxLen);
 }
 
+/**
+ * Escape PostgreSQL LIKE/ILIKE metacharacters (%, _, \) so a value matches
+ * LITERALLY in a parameterized .ilike(). Use for dedup/lookup keyed on an
+ * externally-supplied value (e.g. a federation peer's target_id) — without it a
+ * value of '%' degenerates into a match-everything wildcard (full-table scan +
+ * cross-record mis-linking). Returns '' for non-strings.
+ */
+export function escapeLikePattern(value: unknown): string {
+    if (typeof value !== 'string') return '';
+    return value.replace(/[\\%_]/g, (m) => `\\${m}`);
+}
+
 /** Return a UUID if it matches the canonical shape, otherwise throw. */
 export function requireUuid(value: unknown, field = 'id'): string {
     if (typeof value !== 'string' || !UUID_RE.test(value)) {
