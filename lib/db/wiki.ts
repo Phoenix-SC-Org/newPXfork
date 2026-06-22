@@ -43,14 +43,18 @@ function generateSlug(title: string): string {
 export async function getWikiPages(): Promise<WikiPage[]> {
     const query = supabase.from('wiki_pages')
         .select(`
-            *,
+            id, parent_page_id, title, slug, content, classification_level, sort_order, created_by_id, updated_by_id, created_at, updated_at, menu_structure_locked,
             createdBy:users!wiki_pages_created_by_id_fkey(id, name, avatar_url, role_id),
             updatedBy:users!wiki_pages_updated_by_id_fkey(id, name, avatar_url, role_id),
             wiki_page_limiting_markers(marker:security_limiting_markers(id, name, code))
         `)
         .order('sort_order', { ascending: true });
 
-    const data = await safeFetch<Parameters<typeof toWikiPage>[0][]>(query, [], 'Failed to get wiki pages');
+    const data = await safeFetch<Parameters<typeof toWikiPage>[0][]>(
+        query as unknown as PromiseLike<{ data: Parameters<typeof toWikiPage>[0][] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get wiki pages',
+    );
     return data.map(toWikiPage);
 }
 
@@ -65,7 +69,7 @@ export async function getWikiPages(): Promise<WikiPage[]> {
 export async function getWikiPageById(pageId: string): Promise<WikiPage | null> {
     const { data, error } = await supabase.from('wiki_pages')
         .select(`
-            *,
+            id, parent_page_id, title, slug, content, classification_level, sort_order, created_by_id, updated_by_id, created_at, updated_at, menu_structure_locked,
             createdBy:users!wiki_pages_created_by_id_fkey(id, name, avatar_url, role_id),
             updatedBy:users!wiki_pages_updated_by_id_fkey(id, name, avatar_url, role_id),
             wiki_page_limiting_markers(marker:security_limiting_markers(id, name, code))
@@ -73,7 +77,7 @@ export async function getWikiPageById(pageId: string): Promise<WikiPage | null> 
         .eq('id', pageId)
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get wiki page slice' });
-    return data ? toWikiPage(data as Parameters<typeof toWikiPage>[0]) : null;
+    return data ? toWikiPage(data as unknown as Parameters<typeof toWikiPage>[0]) : null;
 }
 
 export async function createWikiPage(payload: WikiPagePayload, userId: number, actor?: ClearanceUser | null): Promise<WikiPage> {
@@ -125,7 +129,7 @@ export async function createWikiPage(payload: WikiPagePayload, userId: number, a
         sort_order: nextOrder,
         created_by_id: userId,
         updated_by_id: userId
-    }).select().single();
+    }).select('id, parent_page_id, title, slug, content, classification_level, sort_order, created_by_id, updated_by_id, created_at, updated_at, menu_structure_locked').single();
 
     handleSupabaseError({ error, message: 'Failed to create wiki page' });
 
@@ -136,7 +140,8 @@ export async function createWikiPage(payload: WikiPagePayload, userId: number, a
     }
 
     broadcastWikiUpdate(page?.id);
-    return toWikiPage(page);
+    if (!page) throw new Error('Failed to create wiki page');
+    return toWikiPage(page as unknown as Parameters<typeof toWikiPage>[0]);
 }
 
 export async function updateWikiPage(id: string, payload: WikiPagePayload, userId: number, actor?: ClearanceUser | null) {

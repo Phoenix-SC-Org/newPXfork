@@ -135,13 +135,13 @@ export async function broadcastOpChange(operationId: string) {
 // throws PGRST201 "Ambiguous Join" — silently empties the entire ops list.
 // The bang-prefixed FK constraint name forces the direct relationship.
 const OPS_SELECT = `
-    *,
+    id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, scheduled_start, scheduled_end, is_special, join_code, clearance_level, is_training, max_participants, unit_id, discord_event_id, discord_announcement_channel_id, discord_announcement_message_id, template_id, additional_location_texts, is_joint, joint_version, roe, commander_notes, comms_plan, live_status, aar_summary, aar_lessons_learned, aar_submitted_at, aar_submitted_by, aar_ai_generated_at, location_text, location_id,
     owner:users!operations_owner_id_fkey(id, name, avatar_url),
-    participants:operation_participants(*, user:users!operation_participants_user_id_fkey(id, name, avatar_url, role_id, rank:ranks(name, icon_url)), ship:platform_ships!operation_participants_ship_id_fkey(id, name, image_url)),
-    log:operation_log_entries(*, author:users!operation_log_entries_author_id_fkey(id, name, avatar_url)),
+    participants:operation_participants(user_id, joined_at, is_ready, role_requested, ship_utilized, attendance_status, rsvp_status, rsvp_at, ship_id, user_ship_id, live_status, payout_share_percent, payout_paid_at, payout_paid_by, user:users!operation_participants_user_id_fkey(id, name, avatar_url, role_id, rank:ranks(name, icon_url)), ship:platform_ships!operation_participants_ship_id_fkey(id, name, image_url)),
+    log:operation_log_entries(id, operation_id, entry_type, log_entry, author_id, created_at, uec_amount, cost_category, cost_description, author:users!operation_log_entries_author_id_fkey(id, name, avatar_url)),
     limiting_markers:operation_limiting_markers(marker:security_limiting_markers(id, name, code)),
-    unit:units(*),
-    location:locations!operations_location_id_fkey(*)
+    unit:units(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted),
+    location:locations!operations_location_id_fkey(id, name, type, parent_id)
 `;
 
 /**
@@ -188,7 +188,12 @@ export async function getOperations(user?: User | null): Promise<HydratedOperati
     const query = supabase.from('operations').select(OPS_SELECT)
 
         .order('created_at', { ascending: false }).limit(100);
-    const data = await safeFetch<Parameters<typeof toHydratedOperation>[0][]>(query, [], 'Failed to get operations');
+    // PostgREST infers to-one embeds (owner/unit/location) as arrays under explicit
+    // column lists; cast through unknown to the relationship-aware row shape the
+    // mapper consumes (the mapper still controls what reaches the wire).
+    const data = await safeFetch<Parameters<typeof toHydratedOperation>[0][]>(
+        query as unknown as PromiseLike<{ data: Parameters<typeof toHydratedOperation>[0][] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [], 'Failed to get operations');
     log.info('getOperations fetched initial rows', { userId: user.id, initialRows: (data || []).length });
 
     let ops = (data || []).map(toHydratedOperation);
@@ -271,7 +276,7 @@ export async function getOperationByIdLite(operationId: string, user?: User | nu
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get operation slice' });
     if (!data) return null;
-    const op = toHydratedOperation(data as Parameters<typeof toHydratedOperation>[0]);
+    const op = toHydratedOperation(data as unknown as Parameters<typeof toHydratedOperation>[0]);
     return canUserSeeOpInList(user, op) ? op : null;
 }
 
@@ -367,7 +372,7 @@ export async function createOperation(opData: CreateOperationInput) {
             : null,
     };
 
-    let { data: op, error } = await supabase.from('operations').insert(dbPayload).select().single();
+    let { data: op, error } = await supabase.from('operations').insert(dbPayload).select('id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, is_special, join_code, clearance_level, is_training, max_participants, unit_id, is_joint, roe, commander_notes, comms_plan, live_status').single();
 
     // Fallback for outdated DB schemas missing 'Training'/'Social' enum values
     // Error code 22P02 is "invalid text representation" usually for enums
@@ -377,7 +382,7 @@ export async function createOperation(opData: CreateOperationInput) {
         // We ensure is_training is true if it wasn't already, so the UI can still show it somewhat correctly
         if (opData.type === 'Training') dbPayload.is_training = true;
 
-        const retry = await supabase.from('operations').insert(dbPayload).select().single();
+        const retry = await supabase.from('operations').insert(dbPayload).select('id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, is_special, join_code, clearance_level, is_training, max_participants, unit_id, is_joint, roe, commander_notes, comms_plan, live_status').single();
         op = retry.data;
         error = retry.error;
     }
@@ -393,7 +398,7 @@ export async function createOperation(opData: CreateOperationInput) {
     if (error && (errCode === '42703' || errCode === 'PGRST204') && dbPayload.template_id !== undefined) {
         log.warn("db migration: operations.template_id unavailable — retrying op create without template link. if migration was applied, reload postgrest's schema cache (notify pgrst, 'reload schema')", { errCode });
         delete dbPayload.template_id;
-        const retry = await supabase.from('operations').insert(dbPayload).select().single();
+        const retry = await supabase.from('operations').insert(dbPayload).select('id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, is_special, join_code, clearance_level, is_training, max_participants, unit_id, is_joint, roe, commander_notes, comms_plan, live_status').single();
         op = retry.data;
         error = retry.error;
     }
@@ -406,7 +411,7 @@ export async function createOperation(opData: CreateOperationInput) {
         log.warn('db migration: operations.location_text / additional_location_texts unavailable — retrying op create without them. run migrations/add-operations-location-text.sql', { errCode: errCode2 });
         delete dbPayload.location_text;
         delete dbPayload.additional_location_texts;
-        const retry = await supabase.from('operations').insert(dbPayload).select().single();
+        const retry = await supabase.from('operations').insert(dbPayload).select('id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, is_special, join_code, clearance_level, is_training, max_participants, unit_id, is_joint, roe, commander_notes, comms_plan, live_status').single();
         op = retry.data;
         error = retry.error;
     }
@@ -416,12 +421,14 @@ export async function createOperation(opData: CreateOperationInput) {
     if (error && (errCode3 === '42703' || errCode3 === 'PGRST204') && dbPayload.discord_announcement_channel_id !== undefined) {
         log.warn('db migration: operations.discord_announcement_channel_id unavailable — retrying without. run migrations/add-operation-discord-announcement.sql', { errCode: errCode3 });
         delete dbPayload.discord_announcement_channel_id;
-        const retry = await supabase.from('operations').insert(dbPayload).select().single();
+        const retry = await supabase.from('operations').insert(dbPayload).select('id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, is_special, join_code, clearance_level, is_training, max_participants, unit_id, is_joint, roe, commander_notes, comms_plan, live_status').single();
         op = retry.data;
         error = retry.error;
     }
 
     handleSupabaseError({ error, message: 'Failed to create operation' });
+
+    if (!op) throw new Error('Failed to create operation: no row returned.');
 
     // Joint-op security gate: an operation that carries any sync-restricted
     // limiting marker must NOT be sharable as a Joint Operation. We enforce
@@ -582,32 +589,32 @@ export async function createOperation(opData: CreateOperationInput) {
 
 export async function getFullOperationDetails(operationId: string) {
     const query = supabase.from('operations').select(`
-            *,
+            id, name, owner_id, status, type, description, tracks_uec, total_uec, total_costs, payout_mode, created_at, updated_at, active_start_time, active_end_time, scheduled_start, scheduled_end, is_special, join_code, clearance_level, is_training, max_participants, unit_id, discord_event_id, discord_announcement_channel_id, discord_announcement_message_id, template_id, additional_location_texts, is_joint, joint_version, roe, commander_notes, comms_plan, live_status, aar_summary, aar_lessons_learned, aar_submitted_at, aar_submitted_by, aar_ai_generated_at, location_text, location_id,
             owner:users!operations_owner_id_fkey(id, name, avatar_url),
-            participants:operation_participants(*, user:users!operation_participants_user_id_fkey(id, name, avatar_url, role_id, rank:ranks(name, icon_url)), ship:platform_ships!operation_participants_ship_id_fkey(id, name, image_url)),
-            log:operation_log_entries(*, author:users!operation_log_entries_author_id_fkey(id, name, avatar_url)),
+            participants:operation_participants(user_id, joined_at, is_ready, role_requested, ship_utilized, attendance_status, rsvp_status, rsvp_at, ship_id, user_ship_id, live_status, payout_share_percent, payout_paid_at, payout_paid_by, user:users!operation_participants_user_id_fkey(id, name, avatar_url, role_id, rank:ranks(name, icon_url)), ship:platform_ships!operation_participants_ship_id_fkey(id, name, image_url)),
+            log:operation_log_entries(id, operation_id, entry_type, log_entry, author_id, created_at, uec_amount, cost_category, cost_description, author:users!operation_log_entries_author_id_fkey(id, name, avatar_url)),
             limiting_markers:operation_limiting_markers(marker:security_limiting_markers(id, name, code)),
-            unit:units(*),
-            location:locations!operations_location_id_fkey(*)
+            unit:units(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted),
+            location:locations!operations_location_id_fkey(id, name, type, parent_id)
         `).eq('id', operationId).single();
     const { data, error } = await query;
     handleSupabaseError({ error, message: 'Failed to get operation details' });
 
     // Fetch sub-resources in parallel
     const [phases, scheduleEntries, tasks, commandNodes, boardElements, logistics, aarEntries, additionalLocations, alliedOrgs, alliedParticipants] = await Promise.all([
-        safeFetch(supabase.from('operation_phases').select('*').eq('operation_id', operationId).order('sort_order'), [], 'phases'),
-        safeFetch(supabase.from('operation_schedule_entries').select('*').eq('operation_id', operationId).order('sort_order'), [], 'schedule'),
-        safeFetch(supabase.from('operation_tasks').select('*, assigned_user:users!operation_tasks_assigned_user_id_fkey(id, name, avatar_url, role_id), assigned_unit:units!operation_tasks_assigned_unit_id_fkey(*)').eq('operation_id', operationId).order('sort_order'), [], 'tasks'),
-        safeFetch(supabase.from('operation_command_nodes').select('*, assigned_user:users!operation_command_nodes_assigned_user_id_fkey(id, name, avatar_url, role_id), assigned_unit:units!operation_command_nodes_assigned_unit_id_fkey(*)').eq('operation_id', operationId).order('sort_order'), [], 'command_nodes'),
-        safeFetch(supabase.from('operation_board_elements').select('*').eq('operation_id', operationId).order('layer').order('sort_order'), [], 'board'),
-        safeFetch(supabase.from('operation_logistics').select('*').eq('operation_id', operationId).order('created_at'), [], 'logistics'),
-        safeFetch(supabase.from('operation_aar_entries').select('*, author:users!operation_aar_entries_author_id_fkey(id, name, avatar_url, role_id)').eq('operation_id', operationId).order('created_at'), [], 'aar'),
+        safeFetch(supabase.from('operation_phases').select('id, operation_id, name, description, phase_type, sort_order, status, color, created_at').eq('operation_id', operationId).order('sort_order'), [], 'phases'),
+        safeFetch(supabase.from('operation_schedule_entries').select('id, operation_id, label, scheduled_time, phase_id, notes, status, sort_order, created_at').eq('operation_id', operationId).order('sort_order'), [], 'schedule'),
+        safeFetch(supabase.from('operation_tasks').select('id, operation_id, title, description, task_type, assigned_unit_id, assigned_user_id, phase_id, status, priority, sort_order, created_at, assigned_user:users!operation_tasks_assigned_user_id_fkey(id, name, avatar_url, role_id), assigned_unit:units!operation_tasks_assigned_unit_id_fkey(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted)').eq('operation_id', operationId).order('sort_order'), [], 'tasks'),
+        safeFetch(supabase.from('operation_command_nodes').select('id, operation_id, parent_id, label, node_type, assigned_user_id, assigned_unit_id, fleet_group_id, pos_x, pos_y, color, icon, sort_order, live_status, created_at, assigned_user:users!operation_command_nodes_assigned_user_id_fkey(id, name, avatar_url, role_id), assigned_unit:units!operation_command_nodes_assigned_unit_id_fkey(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted)').eq('operation_id', operationId).order('sort_order'), [], 'command_nodes'),
+        safeFetch(supabase.from('operation_board_elements').select('id, operation_id, element_type, label, pos_x, pos_y, width, height, rotation, color, data, layer, sort_order, created_at').eq('operation_id', operationId).order('layer').order('sort_order'), [], 'board'),
+        safeFetch(supabase.from('operation_logistics').select('id, operation_id, item_name, quantity_needed, quantity_fulfilled, fulfilled_by_user_id, category, status, notes, created_at').eq('operation_id', operationId).order('created_at'), [], 'logistics'),
+        safeFetch(supabase.from('operation_aar_entries').select('id, operation_id, author_id, category, content, upvotes, created_at, author:users!operation_aar_entries_author_id_fkey(id, name, avatar_url, role_id)').eq('operation_id', operationId).order('created_at'), [], 'aar'),
         // operation_locations: junction with the locations row hydrated. Soft-fails
         // if the table doesn't exist (migration not yet applied) → empty array.
-        safeFetch(supabase.from('operation_locations').select('is_primary, location:locations(*)').eq('operation_id', operationId), [], 'locations'),
+        safeFetch(supabase.from('operation_locations').select('is_primary, location:locations(id, name, type, parent_id)').eq('operation_id', operationId), [], 'locations'),
         // Alliance P3 joint-op federation: invited allied peers + their members.
-        safeFetch(supabase.from('operation_allied_orgs').select('*, peer:alliance_peers(label, peer_org_name, peer_org_tag, peer_icon_url)').eq('operation_id', operationId), [], 'allied_orgs'),
-        safeFetch(supabase.from('operation_allied_participants').select('*').eq('operation_id', operationId), [], 'allied_participants'),
+        safeFetch(supabase.from('operation_allied_orgs').select('id, operation_id, peer_id, accepted, invited_at, accepted_at, peer:alliance_peers(label, peer_org_name, peer_org_tag, peer_icon_url)').eq('operation_id', operationId), [], 'allied_orgs'),
+        safeFetch(supabase.from('operation_allied_participants').select('operation_id, peer_id, remote_user_handle, display_name, avatar_url, role, ship_text, rsvp_status, is_ready, updated_at').eq('operation_id', operationId), [], 'allied_participants'),
     ]);
 
     const enriched = {
@@ -623,7 +630,7 @@ export async function getFullOperationDetails(operationId: string) {
         allied_orgs: alliedOrgs,
         allied_participants: alliedParticipants,
     };
-    return toHydratedOperation(enriched);
+    return toHydratedOperation(enriched as unknown as Parameters<typeof toHydratedOperation>[0]);
 }
 
 export async function deleteOperation(operationId: string, userId: number) {
@@ -811,7 +818,7 @@ export async function joinOperation(operationId: string, userId: number, joinCod
         // the non-atomic count-then-upsert (the prior behavior).
         if (rpcCode === 'PGRST202' || rpcCode === '42883') {
             if (op && op.max_participants) {
-                const { count } = await supabase.from('operation_participants').select('*', { count: 'exact', head: true }).eq('operation_id', operationId);
+                const { count } = await supabase.from('operation_participants').select('user_id', { count: 'exact', head: true }).eq('operation_id', operationId);
                 if ((count || 0) >= op.max_participants) throw new Error("Operation is full.");
             }
             const { error } = await supabase.from('operation_participants').upsert({
@@ -1002,6 +1009,15 @@ export async function setOperationPayoutSplits(
     if (!Array.isArray(splits) || splits.length === 0) {
         throw new Error('At least one split row is required.');
     }
+    // Each share must be a finite, non-negative percent. Otherwise a negative share
+    // offset by larger positives could still sum to ~100% while handing a member a
+    // negative payout.
+    for (const s of splits) {
+        const p = Number(s.percent);
+        if (!Number.isFinite(p) || p < 0 || p > 100) {
+            throw new Error('Each payout share must be between 0 and 100 percent.');
+        }
+    }
     const sum = splits.reduce((acc, s) => acc + (Number(s.percent) || 0), 0);
     if (sum < 99.9 || sum > 100.1) {
         throw new Error(`Splits must sum to 100% (got ${sum.toFixed(2)}%).`);
@@ -1087,9 +1103,16 @@ export async function toggleParticipantPayoutPaid(
 }
 
 export async function addOperationUec(operationId: string, amount: number, reason: string, userId: number) {
+    // A deposit must be a positive, finite number within a sane bound. Without this a
+    // negative amount could drain the pool and a non-finite / absurd value could
+    // corrupt the running total or overflow it.
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0 || amt > 1_000_000_000_000) {
+        throw new Error('Deposit amount must be a positive number.');
+    }
     await verifyOperationAccess(operationId);
 
-    const { error } = await supabase.rpc('add_uec_to_operation', { op_id: operationId, amount_to_add: amount });
+    const { error } = await supabase.rpc('add_uec_to_operation', { op_id: operationId, amount_to_add: amt });
     if (!error) {
         const actor = await getUserById(userId);
         await logOperationEntry(operationId, 'UEC_DEPOSIT', `${actor?.name || 'Unknown'} deposited ${amount} aUEC. Reason: ${reason}`, userId, amount);
@@ -1192,7 +1215,7 @@ export async function addOperationPhase(operationId: string, data: Record<string
         sort_order: data.sortOrder || 0,
         status: data.status || 'Pending',
         color: data.color || null,
-    }).select().single();
+    }).select('id, operation_id, name, description, phase_type, sort_order, status, color, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add phase' });
     return result;
 }
@@ -1282,7 +1305,7 @@ export async function addScheduleEntry(operationId: string, data: Record<string,
         notes: data.notes || null,
         status: data.status || null,
         sort_order: data.sortOrder || 0,
-    }).select().single();
+    }).select('id, operation_id, label, scheduled_time, phase_id, notes, status, sort_order, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add schedule entry' });
     return result;
 }
@@ -1325,7 +1348,7 @@ export async function addOperationTask(operationId: string, data: Record<string,
         status: data.status || 'Pending',
         priority: data.priority || 'Normal',
         sort_order: data.sortOrder || 0,
-    }).select().single();
+    }).select('id, operation_id, title, description, task_type, assigned_unit_id, assigned_user_id, phase_id, status, priority, sort_order, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add task' });
     return result;
 }
@@ -1372,7 +1395,7 @@ export async function addCommandNode(operationId: string, data: Record<string, u
         color: data.color || null,
         icon: data.icon || null,
         sort_order: data.sortOrder || 0,
-    }).select().single();
+    }).select('id, operation_id, parent_id, label, node_type, assigned_user_id, assigned_unit_id, fleet_group_id, pos_x, pos_y, color, icon, sort_order, live_status, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add command node' });
     return result;
 }
@@ -1454,7 +1477,7 @@ export async function addBoardElement(operationId: string, data: Record<string, 
         data: data.data || {},
         layer: data.layer || 0,
         sort_order: data.sortOrder || 0,
-    }).select().single();
+    }).select('id, operation_id, element_type, label, pos_x, pos_y, width, height, rotation, color, data, layer, sort_order, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add board element' });
     return result;
 }
@@ -1553,7 +1576,7 @@ export async function addLogisticsItem(operationId: string, data: Record<string,
         category: data.category || 'general',
         status: data.status || 'Needed',
         notes: data.notes || null,
-    }).select().single();
+    }).select('id, operation_id, item_name, quantity_needed, quantity_fulfilled, fulfilled_by_user_id, category, status, notes, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add logistics item' });
     return result;
 }
@@ -1621,7 +1644,7 @@ export async function addAAREntry(operationId: string, data: Record<string, unkn
         author_id: data.userId,
         category: data.category || 'observation',
         content: data.content,
-    }).select().single();
+    }).select('id, operation_id, author_id, category, content, upvotes, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add AAR entry' });
     return result;
 }

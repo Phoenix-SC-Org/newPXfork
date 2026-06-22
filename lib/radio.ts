@@ -3,6 +3,7 @@ import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import { getOrgSecret } from './secrets.js';
 import { supabase } from './db/common.js';
 import { assertOpVisibleToUser } from './db/ops.js';
+import { assertUnitAccess } from './db/system.js';
 import { log as baseLog } from './log.js';
 
 const log = baseLog.child({ module: 'lib.radio' });
@@ -122,6 +123,21 @@ export async function generateRadioToken(user: RadioUser, room: string) {
     const channelId = match[1];
     const { data: channel } = await supabase.from('radio_channels').select('id').eq('id', channelId).maybeSingle();
     if (!channel) throw new Error('Unknown radio channel');
+
+    // A channel tied to a restricted unit is private to that unit, the same rule
+    // the unit's text feed enforces. Without this, any signed-in member could mint
+    // a join token for a restricted unit's voice room and listen or talk. Channels
+    // not linked to any unit (general comms) stay open to all members.
+    //
+    // linked_channel_id has no unique constraint, so check EVERY unit linked to the
+    // channel (not one non-deterministic row): the caller must clear assertUnitAccess
+    // for each restricted one. That closes the case where a second (e.g. open) unit is
+    // pointed at a restricted unit's channel to dodge a single-row lookup.
+    const { data: linkedUnits } = await supabase.from('units')
+        .select('id, is_restricted').eq('linked_channel_id', channelId);
+    for (const u of (linkedUnits || [])) {
+        if (u.is_restricted) await assertUnitAccess(u.id, Number(user.id));
+    }
 
     const apiKey = await getOrgSecret('LIVEKIT_API_KEY');
     const apiSecret = await getOrgSecret('LIVEKIT_API_SECRET');

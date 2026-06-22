@@ -139,6 +139,60 @@ describe('stripSensitiveUserFields (M1/M5)', () => {
         expect(out.rsiVerificationCode).toBeUndefined();
         expect(out.conductRecord).toEqual([]);
     });
+
+    it('drops HR/session metadata for a non-self viewer via the allow-list (G3)', () => {
+        const rich = {
+            ...base,
+            jobTitle: 'Quartermaster',
+            rsiVerified: true,
+            voiceChannelName: 'Ops-1',
+            probationStart: '2026-01-01',
+            probationEnd: '2026-02-01',
+            tenureStartDate: '2025-01-01',
+            tokensValidFrom: '2026-06-01',
+            auth_user_id: 'auth-uuid-xyz',
+            // A field nobody allow-listed must not pass through either.
+            someFutureSecret: 'leak-me',
+        } as unknown as User;
+        const out = stripSensitiveUserFields(rich, { id: 42, role: 'Member', permissions: [] }) as unknown as Record<string, unknown>;
+        for (const f of ['jobTitle', 'rsiVerified', 'voiceChannelName', 'probationStart', 'probationEnd', 'tenureStartDate', 'tokensValidFrom', 'auth_user_id', 'someFutureSecret']) {
+            expect(out[f], `${f} must not leak to a non-self viewer`).toBeUndefined();
+        }
+        // ...while the ordinary roster display fields still come through.
+        expect(out.id).toBe(7);
+        expect(out.rsiHandle).toBe('TestPilot');
+    });
+
+    it('lets a member see their OWN HR/session metadata (self path unchanged)', () => {
+        const rich = { ...base, jobTitle: 'Quartermaster', rsiVerified: true, tenureStartDate: '2025-01-01' } as unknown as User;
+        const out = stripSensitiveUserFields(rich, { id: 7, role: 'Member', permissions: [] }) as unknown as Record<string, unknown>;
+        expect(out.jobTitle).toBe('Quartermaster');
+        expect(out.rsiVerified).toBe(true);
+        expect(out.tenureStartDate).toBe('2025-01-01');
+    });
+
+    it('restores HR personnel metadata for an HR-capable (non-Admin) viewer like a Dispatcher (G3 regression guard)', () => {
+        const rich = {
+            ...base, jobTitle: 'Quartermaster', rsiVerified: true,
+            probationStart: '2026-01-01', probationEnd: '2026-02-01', tenureStartDate: '2025-01-01',
+        } as unknown as User;
+        // Dispatcher-shaped HR viewer (role is not Admin, but holds hr:view).
+        const hrViewer = { id: 42, role: 'Dispatcher', permissions: ['hr:view', 'hr:recruiter'] };
+        const out = stripSensitiveUserFields(rich, hrViewer) as unknown as Record<string, unknown>;
+        expect(out.probationEnd).toBe('2026-02-01');   // the Probation tab depends on this
+        expect(out.tenureStartDate).toBe('2025-01-01');
+        expect(out.jobTitle).toBe('Quartermaster');
+        expect(out.rsiVerified).toBe(true);
+
+        // ...but a rank-and-file member — INCLUDING one holding the seeded-default
+        // hr:view (which must NOT confer case-file/personnel PII) — does NOT see them.
+        const rankFile = stripSensitiveUserFields(rich, { id: 42, role: 'Member', permissions: ['hr:view'] }) as unknown as Record<string, unknown>;
+        expect(rankFile.probationEnd).toBeUndefined();
+        expect(rankFile.probationStart).toBeUndefined();
+        expect(rankFile.tenureStartDate).toBeUndefined();
+        expect(rankFile.jobTitle).toBeUndefined();
+        expect(rankFile.rsiVerified).toBeUndefined();
+    });
 });
 
 // --- secret encryption fails CLOSED -----------------------------------------

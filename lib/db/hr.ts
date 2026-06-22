@@ -142,12 +142,16 @@ async function notifyHRStaff(title: string, body: string, data: Record<string, u
 export async function getHRApplications(): Promise<HydratedHRApplication[]> {
     let query = supabase.from('hr_applications')
         .select(`
-            *,
+            id, applicant_name, applicant_discord_id, rsi_handle, status, referral_source, notes, assigned_recruiter_id, linked_user_id, created_at, vetting_data,
             assignedRecruiter:users!hr_applications_assigned_recruiter_id_fkey(id, name, avatar_url, role_id, discord_id, rsi_handle)
         `);
 
     query = query.order('created_at', { ascending: false }).limit(200);
-    const data = await safeFetch<Parameters<typeof toHydratedApplication>[0][]>(query, [], 'Failed to get applicants');
+    const data = await safeFetch<Parameters<typeof toHydratedApplication>[0][]>(
+        query as unknown as PromiseLike<{ data: Parameters<typeof toHydratedApplication>[0][] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get applicants',
+    );
 
     // Map applications without logs/interviews initially.
     // vettingData (background-check verdicts + free-text adjudication — the most
@@ -209,16 +213,20 @@ export async function getAllHRInterviews(): Promise<HydratedHRInterview[]> {
 
     let query = supabase.from('hr_interviews')
         .select(`
-            *,
-            template:hr_interview_templates!hr_interviews_template_id_fkey(*),
+            id, application_id, template_id, interviewer_id, scheduled_at, completed_at, overall_notes, final_score, status, is_recommended,
+            template:hr_interview_templates!hr_interviews_template_id_fkey(id, name, description),
             interviewer:users!hr_interviews_interviewer_id_fkey(id, name, avatar_url, role_id, discord_id, rsi_handle),
-            responses:hr_interview_responses(*),
+            responses:hr_interview_responses(question_id, response_body, score),
             ${applicationJoin}
         `);
 
     query = query.order('scheduled_at', { ascending: true }).limit(100);
 
-    const data = await safeFetch<InterviewQueryRow[]>(query, [], 'Failed to get interviews');
+    const data = await safeFetch<InterviewQueryRow[]>(
+        query as unknown as PromiseLike<{ data: InterviewQueryRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get interviews',
+    );
 
     // Fetch panel members separately (resilient to missing migration)
     const panelMap = await fetchPanelMembers(data.map(d => d.id));
@@ -231,12 +239,16 @@ export async function getAllHRInterviews(): Promise<HydratedHRInterview[]> {
 
 export async function getHRApplicationLogs(applicationId: string) {
     const logsQuery = supabase.from('hr_application_logs')
-        .select('*, user:users(id, name, avatar_url, role_id, discord_id, rsi_handle)')
+        .select('id, application_id, user_id, action_type, message, created_at, user:users(id, name, avatar_url, role_id, discord_id, rsi_handle)')
         .eq('application_id', applicationId)
         .order('created_at', { ascending: false });
 
     type HRApplicationLogRow = Tables<'hr_application_logs'> & { user?: Parameters<typeof toMiniUser>[0] };
-    const logsData = await safeFetch<HRApplicationLogRow[]>(logsQuery, [], 'Failed to get logs');
+    const logsData = await safeFetch<HRApplicationLogRow[]>(
+        logsQuery as unknown as PromiseLike<{ data: HRApplicationLogRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get logs',
+    );
 
     return logsData.map((l) => ({
         id: l.id,
@@ -258,7 +270,14 @@ export async function getApplicationVettingData(id: string): Promise<Record<stri
     return (data?.vetting_data as Record<string, unknown>) ?? null;
 }
 
+// Free-text statement / notes on an application. Generous, but bounded so a single
+// submission can't park a multi-MB blob (the express.json body limit is far larger).
+const MAX_APPLICATION_TEXT = 5000;
+
 export async function createHRApplication(payload: CreateHRApplicationPayload) {
+    if (payload.notes && payload.notes.length > MAX_APPLICATION_TEXT) {
+        throw new Error('Statement is too long.');
+    }
     // 1. Check if RSI Handle belongs to a registered user
     const userQuery = supabase.from('users').select('id, discord_id, name').ilike('rsi_handle', escapeLikePattern(payload.rsiHandle));
 
@@ -280,7 +299,7 @@ export async function createHRApplication(payload: CreateHRApplicationPayload) {
         notes: payload.notes,
         linked_user_id: linkedUserId,
         assigned_recruiter_id: assignedRecruiterId
-    }).select().single();
+    }).select('id, applicant_name, applicant_discord_id, rsi_handle, status, referral_source, notes, assigned_recruiter_id, linked_user_id, created_at, vetting_data').single();
 
     handleSupabaseError({ error, message: 'Failed to file application' });
 
@@ -300,7 +319,7 @@ export async function createHRApplication(payload: CreateHRApplicationPayload) {
     // Never return the raw inserted row — a future hr_applications column would
     // auto-ship to the creator. Map through the same allow-list shape as the read
     // path, vettingData blanked.
-    return data ? { ...toHydratedApplication(data), vettingData: undefined } : data;
+    return data ? { ...toHydratedApplication(data as unknown as Parameters<typeof toHydratedApplication>[0]), vettingData: undefined } : data;
 }
 
 export async function updateApplicationStatus(id: string, status: ApplicationStatus, notes?: string, userId?: number) {
@@ -487,7 +506,7 @@ export async function addApplicationLog(applicationId: string, actionType: strin
 
 // Questions are loaded on demand (getHRInterviewTemplateDetails), not here.
 export async function getHRInterviewTemplates(): Promise<HRInterviewTemplate[]> {
-    const query = supabase.from('hr_interview_templates').select('*');
+    const query = supabase.from('hr_interview_templates').select('id, name, description');
 
     const { data, error } = await query;
     if (error) {
@@ -499,11 +518,11 @@ export async function getHRInterviewTemplates(): Promise<HRInterviewTemplate[]> 
 
 export async function getHRInterviewTemplateDetails(id: number): Promise<HRInterviewTemplate> {
     const { data, error } = await supabase.from('hr_interview_templates')
-        .select('*, questions:hr_interview_questions(*)')
+        .select('id, name, description, questions:hr_interview_questions(id, template_id, question_text, order_index)')
         .eq('id', id)
         .single();
     if (error) handleSupabaseError({ error, message: 'Failed to get template details' });
-    return toHRInterviewTemplate(data);
+    return toHRInterviewTemplate(data as unknown as Parameters<typeof toHRInterviewTemplate>[0]);
 }
 
 export async function createHRInterview(payload: CreateHRInterviewPayload) {
@@ -511,7 +530,7 @@ export async function createHRInterview(payload: CreateHRInterviewPayload) {
     const { count } = await supabase.from('hr_applications').select('id', { count: 'exact', head: true }).eq('id', payload.applicationId);
     if (!count) throw new Error("Application not found or access denied.");
 
-    const { data, error } = await supabase.from('hr_interviews').insert({ application_id: payload.applicationId, template_id: payload.templateId, interviewer_id: payload.interviewerId, scheduled_at: payload.scheduledAt }).select().single();
+    const { data, error } = await supabase.from('hr_interviews').insert({ application_id: payload.applicationId, template_id: payload.templateId, interviewer_id: payload.interviewerId, scheduled_at: payload.scheduledAt }).select('id, application_id, template_id, interviewer_id, scheduled_at, completed_at, overall_notes, final_score, status, is_recommended').single();
     handleSupabaseError({ error, message: 'Failed to create interview' });
 
     // Insert panel members if provided
@@ -533,7 +552,7 @@ export async function createHRInterview(payload: CreateHRInterviewPayload) {
             title: 'Interview Scheduled',
             body: `You have a new interview scheduled for ${new Date(payload.scheduledAt).toLocaleString()}.`,
             tag: 'interview',
-            data: { url: '/hr', interviewId: data.id }
+            data: { url: '/hr', interviewId: data?.id }
         });
     }
 
@@ -659,10 +678,10 @@ export async function reopenHRInterview(interviewId: string, userId: number) {
 export async function getMyInterviews(userId: number): Promise<HydratedHRInterview[]> {
     // Fetch interviews where user is either lead interviewer or a panel member
     const selectFields = `
-        *,
-        template:hr_interview_templates!hr_interviews_template_id_fkey(*),
+        id, application_id, template_id, interviewer_id, scheduled_at, completed_at, overall_notes, final_score, status, is_recommended,
+        template:hr_interview_templates!hr_interviews_template_id_fkey(id, name, description),
         interviewer:users!hr_interviews_interviewer_id_fkey(id, name, avatar_url, role_id, discord_id, rsi_handle),
-        responses:hr_interview_responses(*),
+        responses:hr_interview_responses(question_id, response_body, score),
         application:hr_applications!hr_interviews_application_id_fkey(applicant_name)
     `;
 
@@ -684,7 +703,11 @@ export async function getMyInterviews(userId: number): Promise<HydratedHRIntervi
         // Table may not exist — gracefully skip panel member lookup
     }
 
-    const leadData = await safeFetch<InterviewQueryRow[]>(leadQuery, [], 'Failed to get my interviews');
+    const leadData = await safeFetch<InterviewQueryRow[]>(
+        leadQuery as unknown as PromiseLike<{ data: InterviewQueryRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get my interviews',
+    );
 
     let panelInterviewData: InterviewQueryRow[] = [];
     if (panelInterviewIds.length > 0) {
@@ -692,7 +715,11 @@ export async function getMyInterviews(userId: number): Promise<HydratedHRIntervi
             .select(selectFields)
             .in('id', panelInterviewIds)
             .order('scheduled_at', { ascending: true });
-        panelInterviewData = await safeFetch<InterviewQueryRow[]>(panelQuery, [], 'Failed to get panel interviews');
+        panelInterviewData = await safeFetch<InterviewQueryRow[]>(
+            panelQuery as unknown as PromiseLike<{ data: InterviewQueryRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+            [],
+            'Failed to get panel interviews',
+        );
     }
 
     // Merge and deduplicate (user could be both lead and panel member)
@@ -718,10 +745,13 @@ export async function getMyInterviews(userId: number): Promise<HydratedHRIntervi
 }
 
 export async function getJobPostings(): Promise<JobPosting[]> {
-    const query = supabase.from('hr_job_postings').select('*, position:personnel_positions(*)').order('created_at', { ascending: false });
+    const query = supabase.from('hr_job_postings').select('id, title, department, description, requirements, status, created_at, position_id, position:personnel_positions(id, name, description, icon, department)').order('created_at', { ascending: false });
 
-    return safeFetch<JobPosting[]>(query, [], 'Failed to fetch job gazette')
-        .then(data => data.map(d => toJobPosting(d as unknown as Parameters<typeof toJobPosting>[0])));
+    return safeFetch<JobPosting[]>(
+        query as unknown as PromiseLike<{ data: JobPosting[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to fetch job gazette',
+    ).then(data => data.map(d => toJobPosting(d as unknown as Parameters<typeof toJobPosting>[0])));
 }
 
 export async function createJobPosting(payload: JobPostingPayload) {
@@ -733,9 +763,9 @@ export async function createJobPosting(payload: JobPostingPayload) {
         status: payload.status || 'Open',
         created_by_id: payload.userId,
         position_id: payload.positionId
-    }).select('*, position:personnel_positions(*)').single();
+    }).select('id, title, department, description, requirements, status, created_at, position_id, position:personnel_positions(id, name, description, icon, department)').single();
     handleSupabaseError({ error, message: 'Failed to create job posting' });
-    return toJobPosting(data);
+    return toJobPosting(data as unknown as Parameters<typeof toJobPosting>[0]);
 }
 
 export async function updateJobPosting(payload: JobPostingPayload) {
@@ -760,21 +790,28 @@ export async function deleteJobPosting(id: string) {
 }
 
 export async function applyForJob(payload: { jobId: string, userId: number, statement: string }) {
+    if (payload.statement && payload.statement.length > MAX_APPLICATION_TEXT) {
+        throw new Error('Statement is too long.');
+    }
     // 1. Get Job Details first
     const { data: job, error: jobError } = await supabase.from('hr_job_postings').select('title, position_id').eq('id', payload.jobId).single();
     if (jobError || !job) throw new Error("Job not found");
 
     // 2. Get User Details
-    const { data: user, error: userError } = await supabase.from('users').select('*').eq('id', payload.userId).single();
+    const { data: user, error: userError } = await supabase.from('users').select('id, name, discord_id, rsi_handle').eq('id', payload.userId).single();
     if (userError || !user) throw new Error("User not found or access denied");
 
-    // 3. Create Job Application Record
+    // 3. Create Job Application Record. UNIQUE(applicant_id, job_id) stops a member
+    // re-applying to the same posting (each apply also files an ATS row + pushes HR).
     const { error: jobAppError } = await supabase.from('hr_job_applications').insert({
         job_id: payload.jobId,
         applicant_id: payload.userId,
         statement: payload.statement,
     });
-    if (jobAppError) handleSupabaseError({ error: jobAppError, message: 'Failed to submit job application' });
+    if (jobAppError) {
+        if ((jobAppError as { code?: string }).code === '23505') throw new Error('You have already applied to this job.');
+        handleSupabaseError({ error: jobAppError, message: 'Failed to submit job application' });
+    }
 
     // 4. Create HR Application (ATS Entry) to ensure it appears in the ATS Console
     // We link it to the registered user and note the job in the source.
@@ -883,8 +920,9 @@ export async function processTransferRequest(id: string, status: string, notes?:
 }
 
 export async function createInterviewTemplate(payload: InterviewTemplatePayload) {
-    const { data: template, error } = await supabase.from('hr_interview_templates').insert({ name: payload.name, description: payload.description}).select().single();
+    const { data: template, error } = await supabase.from('hr_interview_templates').insert({ name: payload.name, description: payload.description}).select('id, name, description').single();
     handleSupabaseError({ error, message: 'Failed to create template' });
+    if (!template) throw new Error('Failed to create template');
     if (payload.questions && payload.questions.length > 0) {
         await supabase.from('hr_interview_questions').insert(payload.questions.map((q: string, i: number) => ({ template_id: template.id, question_text: q, order_index: i + 1 })));
     }
@@ -892,7 +930,7 @@ export async function createInterviewTemplate(payload: InterviewTemplatePayload)
     // broadcast is the ONLY propagation path for template changes (they
     // previously didn't propagate at all until a full reload).
     broadcastHRUpdate('templates');
-    return toHRInterviewTemplate({ ...template, questions: payload.questions!.map((q: string, i: number) => ({ id: i, template_id: template.id, question_text: q, order_index: i + 1 })) });
+    return toHRInterviewTemplate({ ...template, questions: payload.questions!.map((q: string, i: number) => ({ id: i, template_id: template.id, question_text: q, order_index: i + 1 })) } as unknown as Parameters<typeof toHRInterviewTemplate>[0]);
 }
 
 export async function updateInterviewTemplate(payload: InterviewTemplatePayload) {
@@ -923,7 +961,7 @@ export async function deleteInterviewTemplate(id: number) {
 // --- POSITION MANAGEMENT ---
 
 export async function getPersonnelPositions(): Promise<PersonnelPosition[]> {
-    const query = supabase.from('personnel_positions').select('*').order('name');
+    const query = supabase.from('personnel_positions').select('id, name, description, icon, department, created_at').order('name');
 
     const { data, error } = await query;
     if (error) {
@@ -939,7 +977,7 @@ export async function createPersonnelPosition(payload: PersonnelPositionPayload)
         name: payload.name,
         description: payload.description,
         icon: payload.icon
-    }).select().single();
+    }).select('id, name, description, icon, department, created_at').single();
     handleSupabaseError({ error, message: 'Failed to create position' });
     return toPersonnelPosition(data);
 }
@@ -1040,9 +1078,13 @@ export function redactTransfersForViewer<T extends { reason?: string; adminNotes
 /** Transfers array producer — shared by getHRState and the hr_transfers
  *  realtime slice subset. */
 export async function getTransferRequests() {
-    const transferQuery = supabase.from('hr_transfer_requests').select('*, user:users!hr_transfer_requests_user_id_fkey(id, name, avatar_url, role_id, discord_id, rsi_handle), targetUnit:units!hr_transfer_requests_target_unit_id_fkey(*)').order('created_at', { ascending: false }).limit(100);
+    const transferQuery = supabase.from('hr_transfer_requests').select('id, user_id, current_unit_id, target_unit_id, reason, status, admin_notes, created_at, updated_at, user:users!hr_transfer_requests_user_id_fkey(id, name, avatar_url, role_id, discord_id, rsi_handle), targetUnit:units!hr_transfer_requests_target_unit_id_fkey(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted)').order('created_at', { ascending: false }).limit(100);
     type TransferRow = Parameters<typeof toTransferRequest>[0];
-    const transfers = await safeFetch<TransferRow[]>(transferQuery, [], 'Transfer fetch fail');
+    const transfers = await safeFetch<TransferRow[]>(
+        transferQuery as unknown as PromiseLike<{ data: TransferRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Transfer fetch fail',
+    );
     return transfers.map(toTransferRequest);
 }
 

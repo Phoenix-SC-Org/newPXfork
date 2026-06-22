@@ -33,20 +33,20 @@ import { getLegislationState, getMotionsState } from './legislation.js';
 export async function getGovernmentStructureState() {
     const [configResult, branchesResult, positionsResult, holdersResult, featureToggleResult] = await Promise.all([
         safeFetch(
-            supabase.from('government_configs').select('*').maybeSingle(),
+            supabase.from('government_configs').select('id, government_type, name, description, constitution_content, created_at, updated_at').maybeSingle(),
             null, 'government_configs'
         ),
         safeFetch(
-            supabase.from('government_branches').select('*').order('sort_order'),
+            supabase.from('government_branches').select('id, name, branch_type, description, sort_order, icon, created_at').order('sort_order'),
             [], 'government_branches'
         ),
         safeFetch(
-            supabase.from('government_positions').select('*').order('sort_order'),
+            supabase.from('government_positions').select('id, branch_id, name, description, fill_method, term_length_days, max_holders, icon, sort_order, permissions_granted, can_propose_legislation, can_vote_legislation, can_veto_legislation, can_call_elections, can_issue_orders, created_at').order('sort_order'),
             [], 'government_positions'
         ),
         safeFetch(
             supabase.from('government_position_holders').select(`
-                *,
+                id, position_id, user_id, appointed_by_id, election_id, started_at, ended_at, end_reason, created_at,
                 user:users!government_position_holders_user_id_fkey(${USER_HYDRATE}),
                 appointed_by:users!government_position_holders_appointed_by_id_fkey(${USER_HYDRATE})
             `).is('ended_at', null),
@@ -60,7 +60,7 @@ export async function getGovernmentStructureState() {
 
     const branches = Array.isArray(branchesResult) ? branchesResult.map(toGovernmentBranch) : [];
     const positions = Array.isArray(positionsResult) ? positionsResult.map(toGovernmentPosition) : [];
-    const holders = Array.isArray(holdersResult) ? holdersResult.map(toGovernmentPositionHolder) : [];
+    const holders = Array.isArray(holdersResult) ? holdersResult.map(r => toGovernmentPositionHolder(r as unknown as Parameters<typeof toGovernmentPositionHolder>[0])) : [];
 
     // Hydrate positions with their current holders
     const holdersByPosition = new Map<number, GovernmentPositionHolder[]>();
@@ -139,7 +139,7 @@ export async function upsertGovernmentConfig(config: Partial<GovernmentConfig>):
     if (existing?.id) payload.id = existing.id;
     const { data, error } = await supabase.from('government_configs')
         .upsert(payload, { onConflict: 'id' })
-        .select()
+        .select('id, government_type, name, description, constitution_content, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to upsert government config' });
     broadcastGovernmentUpdate('structure');
@@ -168,7 +168,7 @@ export async function createGovernmentBranch(data: Partial<GovernmentBranch>): P
         icon: data.icon || null,
     };
     const { data: result, error } = await supabase.from('government_branches')
-        .insert(payload).select().single();
+        .insert(payload).select('id, name, branch_type, description, sort_order, icon, created_at').single();
     handleSupabaseError({ error, message: 'Failed to create government branch' });
     broadcastGovernmentUpdate('structure');
     return result ? toGovernmentBranch(result) : null;
@@ -240,7 +240,7 @@ export async function createGovernmentPosition(data: Partial<GovernmentPosition>
         can_issue_orders: data.canIssueOrders ?? false,
     };
     const { data: result, error } = await supabase.from('government_positions')
-        .insert(payload).select().single();
+        .insert(payload).select('id, branch_id, name, description, fill_method, term_length_days, max_holders, icon, sort_order, permissions_granted, can_propose_legislation, can_vote_legislation, can_veto_legislation, can_call_elections, can_issue_orders, created_at').single();
     handleSupabaseError({ error, message: 'Failed to create government position' });
     broadcastGovernmentUpdate('structure');
     return result ? toGovernmentPosition(result) : null;
@@ -317,12 +317,53 @@ export async function reorderGovernmentPositions(branchId: number | null, ordere
 
 const HOLDER_COLUMNS = 'id, position_id, user_id, appointed_by_id, election_id, started_at, ended_at, end_reason, created_at';
 
-export async function appointPositionHolder(data: Partial<GovernmentPositionHolder>): Promise<GovernmentPositionHolder | null> {
+// The authenticated actor the dispatcher injects, as far as the government
+// authority checks care about it.
+export interface GovActor { id?: number; role?: string; permissions?: string[] }
+
+// Apex government seats (veto / call-elections) may only be hand-filled or cleared by a
+// real org admin. Gate on the Admin role itself, not the admin:access permission: the
+// seeded Dispatcher carries gov:manage and admin:access, so checking the permission
+// would let through the exact role this ceiling is meant to stop.
+function isOrgAdmin(actor?: GovActor): boolean {
+    return actor?.role === 'Admin';
+}
+
+// Authority ceiling for the manual appointment path (gov:appoint_holder). Two rules, so
+// a gov:manage holder such as a Dispatcher cannot grab apex authority:
+//   1. Seats filled by election, succession or merit are not hand-appointable; they come
+//      through their own process. This blocks self-appointing into an elected
+//      presidency, monarchy and so on.
+//   2. Putting someone into an apex office (one that can veto legislation or call
+//      elections) is above routine gov:manage and needs an org admin.
+// The election-conclusion path is exempt and never reaches here (see appointPositionHolder).
+async function assertAppointable(positionId: number, actor?: GovActor): Promise<void> {
+    const { data: pos } = await supabase.from('government_positions')
+        .select('fill_method, can_veto_legislation, can_call_elections')
+        .eq('id', positionId).maybeSingle();
+    if (!pos) throw new Error('Position not found');
+    if (pos.fill_method !== 'Appointed') {
+        throw new Error(`This position is filled by ${String(pos.fill_method).toLowerCase()}, not by direct appointment.`);
+    }
+    if ((pos.can_veto_legislation || pos.can_call_elections) && !isOrgAdmin(actor)) {
+        throw new Error('Appointing into an office that can veto legislation or call elections requires an administrator.');
+    }
+}
+
+export async function appointPositionHolder(data: Partial<GovernmentPositionHolder>, actor?: GovActor): Promise<GovernmentPositionHolder | null> {
     // s4-8b: the appointee is a PERMISSION-GRANTING write on a non-forced client
     // userId — validate it is a real, non-deleted member (+ reject non-finite ids)
     // rather than relying solely on the DB FK. Same for the position id.
     if (typeof data.userId !== 'number' || !Number.isInteger(data.userId)) throw new Error('Invalid appointee id.');
     if (typeof data.positionId !== 'number' || !Number.isInteger(data.positionId)) throw new Error('Invalid position id.');
+
+    // Enforce the authority ceiling only on the manual path. The election conclusion
+    // seats winners with an electionId set — the electorate already chose them, so that
+    // path skips the ceiling.
+    if (data.electionId == null) {
+        await assertAppointable(data.positionId, actor);
+    }
+
     const { data: appointee } = await supabase.from('users').select('id').eq('id', data.userId).is('deleted_at', null).maybeSingle();
     if (!appointee) throw new Error('Appointee is not a valid member.');
 
@@ -389,7 +430,17 @@ async function appointPositionHolderFallback(data: Partial<GovernmentPositionHol
     return result ? toGovernmentPositionHolder(result) : null;
 }
 
-export async function removePositionHolder(holderId: number, reason: string) {
+export async function removePositionHolder(holderId: number, reason: string, actor?: GovActor) {
+    // Evicting the holder of an apex office (veto or call-elections) is admin-only, so a
+    // gov:manage holder can't clear opposition out of powerful seats.
+    const { data: holder } = await supabase.from('government_position_holders')
+        .select('position:government_positions(can_veto_legislation, can_call_elections)')
+        .eq('id', holderId).is('ended_at', null).maybeSingle();
+    const pos = (holder as { position?: { can_veto_legislation?: boolean; can_call_elections?: boolean } | null } | null)?.position;
+    if (pos && (pos.can_veto_legislation || pos.can_call_elections) && !isOrgAdmin(actor)) {
+        throw new Error('Removing the holder of an office that can veto legislation or call elections requires an administrator.');
+    }
+
     const { error } = await supabase.from('government_position_holders')
         .update({ ended_at: new Date().toISOString(), end_reason: reason })
         .eq('id', holderId)

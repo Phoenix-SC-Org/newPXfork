@@ -40,7 +40,7 @@ vi.mock('../lib/secrets', () => ({ getOrgSecret: async () => null }));
 
 import { getDossier, createIntelReport, createIntelBulletin } from '../lib/db/intel';
 import { createOperation } from '../lib/db/ops';
-import { generateOpRadioToken } from '../lib/radio';
+import { generateOpRadioToken, generateRadioToken } from '../lib/radio';
 import { createWikiPage, updateWikiPage } from '../lib/db/wiki';
 import { assertCanClassify } from '../lib/clearance';
 import { getClientIp } from '../lib/clientIp';
@@ -250,6 +250,76 @@ describe('generateOpRadioToken op-visibility gate (H4)', () => {
             { id: 6, permissions: [], clearanceLevel: { level: 9 }, limitingMarkers: [] },
             'op1',
         )).rejects.toThrow(/clearance|operation channel/i);
+    });
+});
+
+describe('generateRadioToken restricted-unit voice gate (G1)', () => {
+    // Drives generateRadioToken -> assertUnitAccess through the same mock. A
+    // viewer that PASSES the gate falls through to the nulled LiveKit secrets and
+    // fails on 'configuration missing', so that string means "gate passed".
+    function radioFixture(opts: { linkedUnit: number | null; restricted: boolean; viewerUnitId: number | null; viewerPerms?: string[] }) {
+        h.resolveQuery = ({ table, calls }) => {
+            if (table === 'radio_channels') return { data: { id: 'chan-1' }, error: null };
+            if (table === 'units') {
+                const eqCols = calls.filter(c => c.method === 'eq').map(c => c.args[0]);
+                // generateRadioToken's linked-units lookup (eq linked_channel_id) — returns an ARRAY.
+                if (eqCols.includes('linked_channel_id')) {
+                    return { data: opts.linkedUnit ? [{ id: opts.linkedUnit, is_restricted: opts.restricted }] : [], error: null };
+                }
+                // assertUnitAccess's restriction lookup (eq id) — single row.
+                return { data: opts.linkedUnit ? { id: opts.linkedUnit, is_restricted: opts.restricted } : null, error: null };
+            }
+            if (table === 'users') return {
+                data: { unit_id: opts.viewerUnitId, role: { role_permissions: (opts.viewerPerms || []).map(name => ({ permission: { name } })) } },
+                error: null,
+            };
+            return { data: null, error: null };
+        };
+    }
+
+    it('a non-member is denied a token for a restricted unit channel', async () => {
+        radioFixture({ linkedUnit: 5, restricted: true, viewerUnitId: 99, viewerPerms: [] });
+        await expect(generateRadioToken({ id: 6, permissions: [] }, 'radio-chan-1'))
+            .rejects.toThrow(/restricted/i);
+    });
+
+    it('a unit member PASSES the gate (then fails on missing LiveKit config)', async () => {
+        radioFixture({ linkedUnit: 5, restricted: true, viewerUnitId: 5, viewerPerms: [] });
+        await expect(generateRadioToken({ id: 5, permissions: [] }, 'radio-chan-1'))
+            .rejects.toThrow(/configuration missing/i);
+    });
+
+    it('a member holding units:view_all PASSES the gate for a restricted channel', async () => {
+        radioFixture({ linkedUnit: 5, restricted: true, viewerUnitId: 99, viewerPerms: ['units:view_all'] });
+        await expect(generateRadioToken({ id: 6, permissions: ['units:view_all'] }, 'radio-chan-1'))
+            .rejects.toThrow(/configuration missing/i);
+    });
+
+    it('a general channel not linked to any unit stays open to all members', async () => {
+        radioFixture({ linkedUnit: null, restricted: false, viewerUnitId: 99, viewerPerms: [] });
+        await expect(generateRadioToken({ id: 6, permissions: [] }, 'radio-chan-1'))
+            .rejects.toThrow(/configuration missing/i);
+    });
+
+    it('denies a non-member even when an OPEN unit is also linked to the restricted channel (multi-unit dodge closed)', async () => {
+        // Two units share the channel: a restricted one (id 5) and the viewer's open
+        // one (id 6). The viewer is a member of the open unit but not the restricted —
+        // they must still be denied (every restricted linked unit is checked).
+        h.resolveQuery = ({ table, calls }) => {
+            if (table === 'radio_channels') return { data: { id: 'chan-1' }, error: null };
+            if (table === 'units') {
+                const eqCols = calls.filter(c => c.method === 'eq').map(c => c.args[0]);
+                if (eqCols.includes('linked_channel_id')) {
+                    return { data: [{ id: 5, is_restricted: true }, { id: 6, is_restricted: false }], error: null };
+                }
+                // assertUnitAccess restriction lookup for the restricted unit id 5
+                return { data: { id: 5, is_restricted: true }, error: null };
+            }
+            if (table === 'users') return { data: { unit_id: 6, role: { role_permissions: [] } }, error: null }; // member of the OPEN unit only
+            return { data: null, error: null };
+        };
+        await expect(generateRadioToken({ id: 9, permissions: [] }, 'radio-chan-1'))
+            .rejects.toThrow(/restricted/i);
     });
 });
 

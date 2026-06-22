@@ -1,6 +1,7 @@
 
 import * as db from '../../lib/db.js';
 import { sendPushToUsers } from '../../lib/push.js';
+import { assertSubmissionRateLimit } from '../../lib/submissionRateLimit.js';
 
 /** Actor-id fields the dispatcher injects on every payload. */
 interface ActorPayload {
@@ -125,8 +126,12 @@ export const userActions = {
     },
 
     // --- HR SELF-SERVICE ---
-    'user:apply_job': (payload: ApplyJobPayload) => db.applyForJob(payload),
-    'user:submit_application': (payload: SubmitApplicationPayload) => db.createHRApplication(payload),
+    // Throttle per authenticated user before the write: each call creates ATS rows
+    // and pushes to every recruiter + admin, so an unthrottled loop is a storage +
+    // notification DoS. The recruiter-filed path (hr:create_application) is not
+    // limited here — only these member-initiated self-service submissions.
+    'user:apply_job': (payload: ApplyJobPayload) => { assertSubmissionRateLimit(payload.userId); return db.applyForJob(payload); },
+    'user:submit_application': (payload: SubmitApplicationPayload) => { assertSubmissionRateLimit(payload.userId); return db.createHRApplication(payload); },
 
     // --- UNIT ACTIONS ---
     // Each per-unit RPC asserts access against the is_restricted flag.

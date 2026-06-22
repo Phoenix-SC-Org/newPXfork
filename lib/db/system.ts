@@ -446,11 +446,11 @@ export const updateSystemConfig = async (config: Record<string, unknown>) => {
 
 export async function getRoleDetails(roleId: number) {
     const id = parseInt(roleId.toString());
-    const { data: role, error: roleError } = await supabase.from('roles').select('*').eq('id', id).single();
+    const { data: role, error: roleError } = await supabase.from('roles').select('id, name, description, is_system').eq('id', id).single();
     if (roleError) handleSupabaseError({ error: roleError, message: 'Failed to fetch role' });
     if (!role) throw new Error("Role not found");
 
-    const { data: allPermissions, error: permError } = await supabase.from('permissions').select('*');
+    const { data: allPermissions, error: permError } = await supabase.from('permissions').select('id, name, description, category');
     if (permError) handleSupabaseError({ error: permError, message: 'Failed to fetch permissions' });
 
     const { data: rolePerms, error: rpError } = await supabase.from('role_permissions').select('permission_id').eq('role_id', id);
@@ -517,7 +517,7 @@ export async function deleteApiKey(id: string) {
 const FEED_PAIRING_STATES = ['legacy', 'manual'];
 
 export async function getTrustedFeeds() {
-    const query = supabase.from('alliance_peers').select('*')
+    const query = supabase.from('alliance_peers').select('id, label, base_url, last_contact_at, created_at, inbound_max_clearance, outbound_key_enc, channels')
         .in('pairing_state', FEED_PAIRING_STATES)
         .order('created_at', { ascending: false });
     interface FeedPeerRow {
@@ -584,7 +584,7 @@ export async function updateTrustedFeed(id: string, updates: { syncReports?: boo
 }
 
 export async function getSecurityClearances() {
-    const query = supabase.from('security_clearances').select('*').order('level', { ascending: true });
+    const query = supabase.from('security_clearances').select('id, name, level, description').order('level', { ascending: true });
     return safeFetch<Tables<'security_clearances'>[]>(query, [], 'Failed to get clearances');
 }
 
@@ -594,7 +594,7 @@ export async function updateSecurityClearance(id: number, name: string, descript
 }
 
 export async function getLimitingMarkers() {
-    const query = supabase.from('security_limiting_markers').select('*').order('name', { ascending: true });
+    const query = supabase.from('security_limiting_markers').select('id, name, code, description, sync_restricted').order('name', { ascending: true });
     return safeFetch<Tables<'security_limiting_markers'>[]>(query, [], 'Failed to get markers');
 }
 
@@ -614,7 +614,7 @@ export async function deleteLimitingMarker(id: number) {
 }
 
 export async function getServiceTypes(): Promise<ServiceTypeConfig[]> {
-    const query = supabase.from('service_types').select('*').order('name');
+    const query = supabase.from('service_types').select('id, name, icon, color, description, is_active, discord_channel_id, created_at').order('name');
     const data = await safeFetch<Parameters<typeof toServiceTypeConfig>[0][]>(query, [], 'Failed to get service types');
     return (data || []).map(toServiceTypeConfig);
 }
@@ -858,7 +858,7 @@ export async function repairDatabase() {
         let triggerSeed = false;
 
         // Check if Roles exist
-        const { count: roleCount } = await supabase.from('roles').select('*', { count: 'exact', head: true });
+        const { count: roleCount } = await supabase.from('roles').select('id', { count: 'exact', head: true });
         if (!roleCount || roleCount < 4) {
             log.info('repair roles missing; flagging for re-seed', { roleCount });
             triggerSeed = true;
@@ -866,7 +866,7 @@ export async function repairDatabase() {
             // Check if Admin Role has Permissions
             const sysRoles = await getSystemRoles();
             if (sysRoles.admin) {
-                const { count: adminPerms } = await supabase.from('role_permissions').select('*', { count: 'exact', head: true }).eq('role_id', sysRoles.admin.id);
+                const { count: adminPerms } = await supabase.from('role_permissions').select('role_id', { count: 'exact', head: true }).eq('role_id', sysRoles.admin.id);
                 if (!adminPerms || adminPerms < 5) { // Admin should have ~60+ perms
                     log.info('repair admin permissions missing; flagging for re-seed', { adminPerms });
                     triggerSeed = true;
@@ -953,7 +953,7 @@ export async function repairDatabase() {
 
         // Ensure at least one Admin exists
         if (repairedRoles.admin) {
-            const { count: adminCount } = await supabase.from('users').select('*', { count: 'exact', head: true })
+            const { count: adminCount } = await supabase.from('users').select('id', { count: 'exact', head: true })
                 .eq('role_id', repairedRoles.admin.id).is('deleted_at', null);
             if (!adminCount || adminCount === 0) {
                 const { data: earliestUser } = await supabase.from('users').select('id')
@@ -1016,11 +1016,11 @@ export async function addUnit(data: UnitInput) {
         linked_channel_id: data.linkedChannelId || null,
         is_restricted: !!data.isRestricted
     };
-    let { data: newUnit, error } = await supabase.from('units').insert(payload).select().single();
+    let { data: newUnit, error } = await supabase.from('units').insert(payload).select('id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted').single();
     if (error?.code === '42703' && 'is_restricted' in payload) {
         log.warn('units.is_restricted column missing — retrying without; run migrations/add-unit-visibility.sql', { migration: true });
         const { is_restricted, ...slim } = payload;
-        ({ data: newUnit, error } = await supabase.from('units').insert(slim).select().single());
+        ({ data: newUnit, error } = await supabase.from('units').insert(slim).select('id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id').single());
     }
     handleSupabaseError({ error, message: 'Failed to create unit' });
     broadcastReferenceDataUpdate();
@@ -1042,7 +1042,7 @@ export async function updateUnit(data: UnitInput) {
     if (data.isRestricted !== undefined) payload.is_restricted = !!data.isRestricted;
     const runUpdate = async (patch: Record<string, unknown>) => {
         const q = supabase.from('units').update(patch).eq('id', data.id);
-        return q.select().single();
+        return q.select('id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id').single();
     };
     let { data: updatedUnit, error } = await runUpdate(payload);
     if (error?.code === '42703' && 'is_restricted' in payload) {
@@ -1548,11 +1548,11 @@ export async function assertUnitAccess(unitId: number, viewerUserId: number): Pr
 
 export async function getUnitFeed(unitId: number): Promise<UnitPost[]> {
     const { data } = await supabase.from('unit_posts')
-        .select('*, author:users(*)')
+        .select('id, unit_id, author_id, content, created_at, pinned, author:users(id, name, display_name, avatar_url, rsi_handle, role_id, reputation, is_duty, is_affiliate, is_vip, created_at, rsi_verified, job_title, voice_channel_name, timezone, date_format, probation_start, probation_end, tenure_start_date)')
         .eq('unit_id', unitId)
         .order('created_at', { ascending: false })
         .limit(50);
-    return (data || []).map(toUnitPost);
+    return (data || []).map((row) => toUnitPost(row as unknown as Parameters<typeof toUnitPost>[0]));
 }
 
 export async function createUnitPost(unitId: number, userId: number, content: string): Promise<UnitPost> {
@@ -1560,9 +1560,10 @@ export async function createUnitPost(unitId: number, userId: number, content: st
         unit_id: unitId,
         author_id: userId,
         content
-    }).select('*, author:users(*)').single();
+    }).select('id, unit_id, author_id, content, created_at, pinned, author:users(id, name, display_name, avatar_url, rsi_handle, role_id, reputation, is_duty, is_affiliate, is_vip, created_at, rsi_verified, job_title, voice_channel_name, timezone, date_format, probation_start, probation_end, tenure_start_date)').single();
     handleSupabaseError({ error, message: 'Failed to post' });
-    return toUnitPost(data);
+    if (!data) throw new Error('Failed to post');
+    return toUnitPost(data as unknown as Parameters<typeof toUnitPost>[0]);
 }
 
 export async function deleteUnitPost(postId: string, actor?: { id?: number; permissions?: string[] }) {
@@ -1973,17 +1974,17 @@ export async function getPublicFeedData(since?: string) {
 export async function runDatabaseHealthCheck() {
     const results: Array<{ check: string; status: string; count: number | null; action?: string }> = [];
     const { count: requests } = await supabase.from('service_requests')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         ;
     results.push({ check: 'Total Service Requests', status: 'OK', count: requests });
 
     const { count: intel } = await supabase.from('intel_reports')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         ;
     results.push({ check: 'Total Intel Reports', status: 'OK', count: intel });
 
     const { count: invalidUsers } = await supabase.from('users')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         
         .is('role_id', null)
         .is('deleted_at', null);
@@ -1991,12 +1992,12 @@ export async function runDatabaseHealthCheck() {
     else results.push({ check: 'User Role Integrity', status: 'OK', count: 0 });
 
     const { count: ops } = await supabase.from('operations')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         ;
     results.push({ check: 'Total Operations Logged', status: 'OK', count: ops });
 
     const { count: apps } = await supabase.from('hr_applications')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         ;
     results.push({ check: 'HR Case Files', status: 'OK', count: apps });
 

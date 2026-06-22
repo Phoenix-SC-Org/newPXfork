@@ -521,6 +521,15 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_discord_id_active
     ON public.users (discord_id) WHERE deleted_at IS NULL;
 
+-- One account per VERIFIED RSI identity. Blocks two live accounts from both holding
+-- a proven claim to the same handle (the race backstop behind the verifyRsiUpdate /
+-- createUser app checks). Case-insensitive to match the app's ILIKE comparisons;
+-- partial on rsi_verified so unverified placeholder handles never collide.
+-- Re-deploy on a populated DB: if two verified live rows already share a handle
+-- (case-insensitive), dedup them first or this index creation fails.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_rsi_handle_verified
+    ON public.users (lower(rsi_handle)) WHERE deleted_at IS NULL AND rsi_verified = true;
+
 
 -- ----- 3.3 Tables referencing users / config (org column dropped) ------------
 
@@ -778,6 +787,14 @@ CREATE TABLE IF NOT EXISTS public.hr_job_applications (
     created_at   timestamptz NOT NULL DEFAULT now()
 );
 
+-- One application per member per job posting. Backstops the per-user submission
+-- throttle so a member can't re-spam the same posting (each apply files an ATS row
+-- and pushes every recruiter). Partial on applicant_id so rows orphaned by a member
+-- deletion (applicant_id NULL) don't collide. Re-deploy on a populated DB: if a
+-- member already has duplicate rows for one job, dedup them first or this fails.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_hr_job_application_per_user
+    ON public.hr_job_applications (applicant_id, job_id) WHERE applicant_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS public.hr_transfer_requests (
     id              uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id         integer REFERENCES public.users(id) ON DELETE SET NULL,
@@ -814,6 +831,26 @@ CREATE TABLE IF NOT EXISTS public.service_requests (
     secondary_client_handles     text[] DEFAULT '{}'::text[],
     client_feedback              text
 );
+
+-- A rating is 1..5 (or unrated/null). Backstops the app-side clamp in rateRequest so
+-- a bad value can never reach the public rating average. Idempotent for re-deploys.
+DO $$ BEGIN
+    ALTER TABLE public.service_requests
+        ADD CONSTRAINT service_requests_client_rating_range
+        CHECK (client_rating IS NULL OR (client_rating BETWEEN 1 AND 5));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- One active SELF-SERVICE request per client. Backstops the count-then-insert check
+-- in createServiceRequest (a concurrent burst could otherwise open several). Scoped to
+-- unregistered_client_rsi_handle IS NULL so staff-logged ad-hoc requests (which set
+-- that handle, and may legitimately stack for one client) are not constrained.
+-- Re-deploy on a populated DB: if a client already has 2+ active self requests, close
+-- the extras first or this index creation fails.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_one_active_self_request
+    ON public.service_requests (client_id)
+    WHERE client_id IS NOT NULL
+      AND unregistered_client_rsi_handle IS NULL
+      AND status IN ('Submitted', 'Triaged', 'Accepted', 'In-Progress');
 
 CREATE TABLE IF NOT EXISTS public.request_responders (
     request_id varchar NOT NULL REFERENCES public.service_requests(id) ON DELETE CASCADE,
@@ -2870,7 +2907,7 @@ RETURNS TABLE (
 AS $$
     SELECT
         COUNT(*) FILTER (WHERE status = 'Success')::int AS total_completed,
-        COALESCE(ROUND(AVG(client_rating) FILTER (WHERE client_rating IS NOT NULL) * 10), 0)::int AS avg_rating_times10,
+        COALESCE(ROUND(AVG(client_rating) FILTER (WHERE client_rating IS NOT NULL AND status = 'Success') * 10), 0)::int AS avg_rating_times10,
         COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 60.0)
                  FILTER (WHERE status = 'Success')), 0)::int AS avg_response_minutes,
         COUNT(*) FILTER (
@@ -3049,9 +3086,11 @@ BEGIN
         -- Require the realtime token's user_id to be a live (non-deleted) member,
         -- like the §6b broadcast policies do, so a banned/removed account loses access
         -- to these tables right away instead of at token expiry — rather than the
-        -- looser `auth.uid() IS NOT NULL`, which any token satisfies.
+        -- looser `auth.uid() IS NOT NULL`, which any token satisfies. The iat vs
+        -- tokens_valid_from check also cuts off a revoked-but-not-deleted session
+        -- (admin "revoke sessions") before the realtime token's own expiry.
         EXECUTE format(
-            'CREATE POLICY authenticated_select ON public.%I FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = NULLIF(auth.jwt()->>''user_id'', '''')::int AND u.deleted_at IS NULL));',
+            'CREATE POLICY authenticated_select ON public.%I FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = NULLIF(auth.jwt()->>''user_id'', '''')::int AND u.deleted_at IS NULL AND (u.tokens_valid_from IS NULL OR to_timestamp(NULLIF(auth.jwt()->>''iat'', '''')::bigint) >= u.tokens_valid_from)));',
             t);
     END LOOP;
 END $$;
@@ -3124,7 +3163,8 @@ CREATE PUBLICATION supabase_realtime FOR TABLE
 -- Org-wide channels: any authenticated, non-deleted member may receive
 -- (payloads are id-only by design; content rides permission-gated fetches).
 -- The deleted_at check cuts a removed user off from even id-only pings
--- without waiting for token expiry.
+-- without waiting for token expiry; the iat vs tokens_valid_from check does
+-- the same for a session an admin revoked (revokeUserSessions) without deleting.
 -- CONTRACT: this topic list is the canonical set of org-wide broadcast
 -- channels (see lib/db/common.ts broadcastToOrg → 'db-changes'; the EAM/
 -- op-alert path → 'auth-alerts'). Adding a new org-wide channel in code
@@ -3139,6 +3179,8 @@ CREATE POLICY rt_recv_org_channels ON realtime.messages
             SELECT 1 FROM public.users u
             WHERE u.id = NULLIF(auth.jwt()->>'user_id', '')::int
               AND u.deleted_at IS NULL
+              AND (u.tokens_valid_from IS NULL
+                   OR to_timestamp(NULLIF(auth.jwt()->>'iat', '')::bigint) >= u.tokens_valid_from)
         )
     );
 
@@ -3165,6 +3207,8 @@ CREATE POLICY rt_recv_op_board ON realtime.messages
             JOIN public.users u
               ON u.id = NULLIF(auth.jwt()->>'user_id', '')::int
              AND u.deleted_at IS NULL
+             AND (u.tokens_valid_from IS NULL
+                  OR to_timestamp(NULLIF(auth.jwt()->>'iat', '')::bigint) >= u.tokens_valid_from)
             LEFT JOIN public.security_clearances sc ON sc.id = u.clearance_level_id
             WHERE o.id::text = substring(realtime.topic() FROM 10)
               AND (
@@ -3333,7 +3377,7 @@ ON CONFLICT (name) DO NOTHING;
 -- JSON string. BUMP this whenever you change the schema (see AMENDMENT RULES at top);
 -- keep it aligned with the app version where practical.
 INSERT INTO public.settings (key, value)
-VALUES ('schema_version', '"15.1.4-open"'::jsonb)
+VALUES ('schema_version', '"15.1.5-open"'::jsonb)
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- Refresh PostgREST schema cache.

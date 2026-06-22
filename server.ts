@@ -109,7 +109,7 @@ import { respondToPair as allianceRespondToPair, getAllianceSelfProfile as allia
     receiveMirrorInvite, receiveMirrorPush, receiveMirrorRevoke,
     getAllyRosterProjection, getAllyFleetProjection, getUserById, importOrgData, getPlatformSettings } from './lib/db.js';
 import { runFirstBootCheck } from './lib/firstBoot.js';
-import { verifyToken, signToken, isSessionForceLoggedOut } from './lib/auth.js';
+import { verifyToken, signToken, isSessionForceLoggedOut, isSessionRevokedByWatermark } from './lib/auth.js';
 import { counts404TowardAbuse, isLoopbackIp } from './lib/abuseFilter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -156,6 +156,9 @@ const app = express();
 // single TLS terminator, 2+ for CDN→LB→app) so req.ip becomes the real client.
 const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS ?? '0');
 app.set('trust proxy', Number.isInteger(trustProxyHops) && trustProxyHops >= 0 ? trustProxyHops : 0);
+// Don't advertise the framework — drop the default `X-Powered-By: Express` header so
+// responses carry no free server fingerprint.
+app.disable('x-powered-by');
 const port = process.env.PORT || 3000;
 
 // --- Early scanner / blackhole gate ---
@@ -408,6 +411,13 @@ app.post('/api/admin/import-stream', express.text({ type: () => true, limit: '64
             return;
         }
         const user = await getUserById(decoded.userId);
+        // Mirror the dispatcher's per-user revocation check too: a token issued before
+        // the user's tokens_valid_from (admin revoke / delete / ban) must not stream an
+        // import here, and must never be re-anchored into a fresh session below.
+        if (isSessionRevokedByWatermark(decoded, user?.tokensValidFrom)) {
+            res.status(401).json({ error: 'Session expired. Please log in again.' });
+            return;
+        }
         const isAdmin = !!user && (user.role === 'Admin' || (Array.isArray(user.permissions) && user.permissions.includes('admin:access')));
         if (!isAdmin) { res.status(403).json({ error: 'Forbidden' }); return; }
 

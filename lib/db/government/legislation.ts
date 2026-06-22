@@ -36,16 +36,16 @@ export async function getLegislationState(): Promise<GovernmentLegislation[]> {
     const result = await safeFetch(
         supabase.from('government_legislation')
             .select(`
-                *,
+                id, title, body, summary, status, author_id, sponsor_position_id, parent_legislation_id, is_constitutional_amendment, voting_start, voting_end, votes_for, votes_against, votes_abstain, passed_at, vetoed_at, vetoed_by_id, veto_reason, repealed_at, repealed_by_legislation_id, created_at, updated_at,
                 author:users!government_legislation_author_id_fkey(${USER_HYDRATE}),
                 sponsor_position:government_positions!government_legislation_sponsor_position_id_fkey(id, name, icon),
                 vetoed_by:users!government_legislation_vetoed_by_id_fkey(${USER_HYDRATE}),
                 comments:government_legislation_comments(
-                    *,
+                    id, legislation_id, user_id, content, created_at,
                     user:users!government_legislation_comments_user_id_fkey(${USER_HYDRATE})
                 ),
                 legislation_votes:government_legislation_votes(
-                    *,
+                    id, legislation_id, user_id, position_id, vote, cast_at,
                     user:users!government_legislation_votes_user_id_fkey(${USER_HYDRATE}),
                     position:government_positions!government_legislation_votes_position_id_fkey(id, name, icon)
                 )
@@ -56,7 +56,9 @@ export async function getLegislationState(): Promise<GovernmentLegislation[]> {
         [], 'government_legislation'
     );
 
-    return Array.isArray(result) ? result.map(toGovernmentLegislation) : [];
+    return Array.isArray(result)
+        ? result.map(r => toGovernmentLegislation(r as unknown as Parameters<typeof toGovernmentLegislation>[0]))
+        : [];
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +69,7 @@ export async function getMotionsState(currentUserId?: number): Promise<Governmen
     const result = await safeFetch(
         supabase.from('government_motions')
             .select(`
-                *,
+                id, title, description, status, created_by_id, restricted_to_position_ids, voting_start, voting_end, votes_for, votes_against, votes_abstain, is_secret_ballot, concluded_at, created_at, updated_at,
                 created_by:users!government_motions_created_by_id_fkey(${USER_HYDRATE})
             `)
             
@@ -76,7 +78,9 @@ export async function getMotionsState(currentUserId?: number): Promise<Governmen
         [], 'government_motions'
     );
 
-    const motions = Array.isArray(result) ? result.map(toGovernmentMotion) : [];
+    const motions = Array.isArray(result)
+        ? result.map(r => toGovernmentMotion(r as unknown as Parameters<typeof toGovernmentMotion>[0]))
+        : [];
 
     // Check if current user has voted on active motions
     if (currentUserId && motions.length > 0) {
@@ -118,7 +122,7 @@ export async function createLegislation(data: Partial<GovernmentLegislation> & {
         is_constitutional_amendment: data.isConstitutionalAmendment ?? false,
     };
     const { data: result, error } = await supabase.from('government_legislation')
-        .insert(payload).select().single();
+        .insert(payload).select('id, title, body, summary, status, author_id, sponsor_position_id, parent_legislation_id, is_constitutional_amendment, voting_start, voting_end, votes_for, votes_against, votes_abstain, passed_at, vetoed_at, vetoed_by_id, veto_reason, repealed_at, repealed_by_legislation_id, created_at, updated_at').single();
     handleSupabaseError({ error, message: 'Failed to create legislation' });
     broadcastGovernmentUpdate('legislation');
     return result ? toGovernmentLegislation(result) : null;
@@ -301,7 +305,7 @@ export async function addLegislationComment(legislationId: number, userId: numbe
         legislation_id: legislationId,
         user_id: userId,
         content: safeContent,
-    }).select().single();
+    }).select('id, legislation_id, user_id, content, created_at').single();
     handleSupabaseError({ error, message: 'Failed to add comment' });
     broadcastGovernmentUpdate('legislation');
     return result ? toGovernmentLegislationComment(result) : null;
@@ -345,7 +349,7 @@ export async function createMotion(data: MotionInput): Promise<GovernmentMotion 
         is_secret_ballot: data.isSecretBallot ?? false,
     };
     const { data: result, error } = await supabase.from('government_motions')
-        .insert(payload).select().single();
+        .insert(payload).select('id, title, description, status, created_by_id, restricted_to_position_ids, voting_start, voting_end, votes_for, votes_against, votes_abstain, is_secret_ballot, concluded_at, created_at, updated_at').single();
     handleSupabaseError({ error, message: 'Failed to create motion' });
     broadcastGovernmentUpdate('motions');
     return result ? toGovernmentMotion(result) : null;

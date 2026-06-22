@@ -66,7 +66,12 @@ export const IframeExtension = Node.create<IframeOptions>({
             [
                 'iframe',
                 mergeAttributes(HTMLAttributes, {
-                    sandbox: 'allow-scripts allow-same-origin allow-popups',
+                    // allow-scripts + allow-same-origin are required for the allow-listed
+                    // embeds (video/docs) to function. allow-popups is dropped: rendering
+                    // never needs it, and it removes a popup-based redirect/phishing vector
+                    // from framed content. The host allow-list (ALLOWED_EMBED_HOSTS) remains
+                    // the primary control over what may be framed at all.
+                    sandbox: 'allow-scripts allow-same-origin',
                     allowfullscreen: this.options.allowFullscreen,
                     style: `width: ${HTMLAttributes.width || '100%'}; height: ${HTMLAttributes.height || '400px'}; border: 1px solid rgba(100, 116, 139, 0.3); border-radius: 0.5rem;`,
                 }),

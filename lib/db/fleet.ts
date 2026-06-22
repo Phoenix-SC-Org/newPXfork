@@ -106,7 +106,7 @@ async function fetchAllVehiclesFromApi(): Promise<ShipMatrixVehicle[]> {
 
 export async function getShipCatalog(): Promise<PlatformShip[]> {
     const { data, error } = await supabase.from('platform_ships')
-        .select('*')
+        .select('id, external_uuid, external_api_id, name, manufacturer, manufacturer_code, role, career, size, crew_min, crew_max, cargo_capacity, length, beam, height, mass, scm_speed, max_speed, health, shield_hp, image_url, wiki_url, pledge_url, msrp, description, production_status, created_at, updated_at')
         .order('manufacturer', { ascending: true })
         .order('name', { ascending: true });
     handleSupabaseError({ error, message: 'Failed to get ship catalog' });
@@ -313,7 +313,7 @@ export async function repairShipCatalogDuplicates() {
 export async function getShipCatalogWithUsage() {
     const [shipsResult, usageResult] = await Promise.all([
         supabase.from('platform_ships')
-            .select('*')
+            .select('id, external_uuid, external_api_id, name, manufacturer, manufacturer_code, role, career, size, crew_min, crew_max, cargo_capacity, length, beam, height, mass, scm_speed, max_speed, health, shield_hp, image_url, wiki_url, pledge_url, msrp, description, production_status, created_at, updated_at')
             .order('manufacturer', { ascending: true })
             .order('name', { ascending: true }),
         supabase.from('user_ships')
@@ -359,7 +359,7 @@ export async function updatePlatformShip(shipId: number, updates: Record<string,
 
 export async function deletePlatformShip(shipId: number) {
     const { count } = await supabase.from('user_ships')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('ship_id', shipId);
 
     if (count && count > 0) {
@@ -410,11 +410,15 @@ const USER_SHIPS_READ_LIMIT = 20_000;
 
 export async function getUserShips(): Promise<UserShip[]> {
     const query = supabase.from('user_ships')
-        .select('*, ship:platform_ships(id, name, manufacturer, role, size, crew_min, crew_max, cargo_capacity, image_url), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
+        .select('id, user_id, ship_id, custom_name, loadout_notes, status, is_primary, created_at, ship:platform_ships(id, name, manufacturer, role, size, crew_min, crew_max, cargo_capacity, image_url), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
 
         .order('created_at', { ascending: false })
         .limit(USER_SHIPS_READ_LIMIT);
-    const data = await safeFetch<UserShipRow[]>(query, [], 'Failed to get user ships');
+    const data = await safeFetch<UserShipRow[]>(
+        query as unknown as PromiseLike<{ data: UserShipRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get user ships',
+    );
     return (data || []).map(toUserShip);
 }
 
@@ -490,10 +494,14 @@ export async function removeUserShips(userShipIds: number[], actorUserId?: numbe
 
 export async function getFleetGroups(): Promise<FleetGroup[]> {
     const query = supabase.from('fleet_groups')
-        .select('*, commander:users!fleet_groups_commander_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
-        
+        .select('id, name, type, parent_id, commander_id, description, icon, sort_order, commander:users!fleet_groups_commander_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
+
         .order('sort_order', { ascending: true });
-    const data = await safeFetch<FleetGroupRow[]>(query, [], 'Failed to get fleet groups');
+    const data = await safeFetch<FleetGroupRow[]>(
+        query as unknown as PromiseLike<{ data: FleetGroupRow[] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [],
+        'Failed to get fleet groups',
+    );
 
     // Fetch group ship assignments. ORDER BY sort_order so the UI's manual
     // ship arrangement persists across reloads and across other clients.
@@ -501,7 +509,7 @@ export async function getFleetGroups(): Promise<FleetGroup[]> {
     let assignments: AssignmentRow[] = [];
     if (groupIds.length > 0) {
         const { data: assignData } = await supabase.from('fleet_group_ships')
-            .select('id, fleet_group_id, sort_order, user_ship:user_ships(*, ship:platform_ships(id, name, manufacturer, role, size, crew_min, crew_max, cargo_capacity, image_url), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id))')
+            .select('id, fleet_group_id, sort_order, user_ship:user_ships(id, user_id, ship_id, custom_name, loadout_notes, status, is_primary, created_at, ship:platform_ships(id, name, manufacturer, role, size, crew_min, crew_max, cargo_capacity, image_url), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id))')
             .in('fleet_group_id', groupIds)
             .order('sort_order', { ascending: true });
         assignments = (assignData || []) as unknown as AssignmentRow[];
@@ -717,11 +725,11 @@ export async function reparentFleetGroup(groupId: number, newParentId: number | 
 export async function getUserShipsByUserIds(userIds: number[]): Promise<UserShip[]> {
     if (!userIds.length) return [];
     const { data, error } = await supabase.from('user_ships')
-        .select('*, ship:platform_ships(*), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
+        .select('id, user_id, ship_id, custom_name, loadout_notes, status, is_primary, created_at, ship:platform_ships(id, external_uuid, external_api_id, name, manufacturer, manufacturer_code, role, career, size, crew_min, crew_max, cargo_capacity, length, beam, height, mass, scm_speed, max_speed, health, shield_hp, image_url, wiki_url, pledge_url, msrp, description, production_status), user:users!user_ships_user_id_fkey(id, name, avatar_url, rsi_handle, role_id)')
         .in('user_id', userIds)
         .order('created_at', { ascending: false });
     handleSupabaseError({ error, message: 'Failed to get user ships by user IDs' });
-    return (data || []).map(toUserShip);
+    return ((data || []) as unknown as UserShipRow[]).map(toUserShip);
 }
 
 // --- Fleet State (combined fetch for query subset) ---

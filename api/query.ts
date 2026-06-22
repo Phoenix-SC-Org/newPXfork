@@ -241,14 +241,25 @@ export function stripSecrets(state: any): any {
 
     // Safety net: the settings blob contains every settings row, so a secret
     // added in the future (named like *_secret, *_api_key, *_password, *_webhook,
-    // or *_token) could reach the browser unless we catch it here. Drop any
-    // top-level text value whose key looks like a secret. Only plain strings are
-    // dropped, so the config objects and lists built above are left untouched.
-    for (const key of Object.keys(cleaned)) {
-        if (typeof cleaned[key] === 'string' && /(_api_key|_secret|_password|_webhook|_token)/i.test(key)) {
-            delete cleaned[key];
+    // or *_token) could reach the browser unless we catch it here. Walk the WHOLE
+    // object — not just the top level — and drop any string/number value whose key
+    // looks like a secret, at any depth. Objects/arrays are recursed into and never
+    // deleted, so the config objects and lists built above are left untouched.
+    const SECRET_KEY = /(_api_key|_secret|_password|_webhook|_token)/i;
+    const scrubSecretKeys = (node: unknown): void => {
+        if (Array.isArray(node)) { for (const item of node) scrubSecretKeys(item); return; }
+        if (!node || typeof node !== 'object') return;
+        const rec = node as Record<string, unknown>;
+        for (const key of Object.keys(rec)) {
+            const val = rec[key];
+            if ((typeof val === 'string' || typeof val === 'number') && SECRET_KEY.test(key)) {
+                delete rec[key];
+            } else if (val && typeof val === 'object') {
+                scrubSecretKeys(val);
+            }
         }
-    }
+    };
+    scrubSecretKeys(cleaned);
 
     return cleaned;
 }
@@ -385,7 +396,7 @@ async function handleInitialState(req: Request, res: Response) {
         const { data: globalAdminRole } = await db.supabase.from('roles')
             .select('id').eq('is_system', true).order('id', { ascending: false }).limit(1).maybeSingle();
         if (globalAdminRole) {
-            const { count } = await db.supabase.from('users').select('*', { count: 'exact', head: true })
+            const { count } = await db.supabase.from('users').select('id', { count: 'exact', head: true })
                 .eq('role_id', globalAdminRole.id)
                 .is('deleted_at', null)
                 .not('discord_id', 'ilike', 'pending_%');
@@ -644,9 +655,14 @@ async function handleState(req: Request, res: Response) {
                 if (!userDetail) {
                     return res.status(404).json({ message: "User not found" });
                 }
-                // Permission-gate sensitive heavy fields. Self always sees
-                // their own personnelNotes / conductRecord / limitingMarkers
-                // (consumed by personal "My X" tabs). adminNotes is admin-only.
+                // Auth-only by design: any member may open another member's profile,
+                // so this subset has no SUBSET_REQUIRED_PERMISSION entry. The payload
+                // is made safe per-viewer instead — stripSensitiveUserFields rebuilds
+                // an allow-list for a non-self / non-admin viewer, so HR/session
+                // metadata (probation, tenure, jobTitle, rsiVerified, voiceChannelName,
+                // tokensValidFrom, auth_user_id) never leaves the server for them.
+                // Self always sees their own personnelNotes / conductRecord /
+                // limitingMarkers (the personal "My X" tabs); adminNotes is admin-only.
                 const filtered = stripSensitiveUserFields(userDetail as any, requesterFromUser(currentUser));
                 return res.status(200).json(filtered);
             }

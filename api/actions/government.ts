@@ -74,15 +74,20 @@ interface ReorderPositionsPayload {
     orderedIds: number[];
 }
 
+/** Actor the dispatcher injects; the gov authority ceiling reads role + permissions. */
+interface GovActor { id?: number; role?: string; permissions?: string[] }
+
 interface AppointHolderPayload {
     positionId: number;
     targetUserId: number;
     userId: number;
+    user?: GovActor;
 }
 
 interface RemoveHolderPayload {
     holderId: number;
     reason?: string;
+    user?: GovActor;
 }
 
 // Election creation data — passed through to db.createElection / db.callByElection
@@ -345,11 +350,11 @@ export const governmentActions = {
         db.reorderGovernmentPositions(branchId ?? null, orderedIds),
 
     // Position Holders
-    'gov:appoint_holder': ({ positionId, targetUserId, userId }: AppointHolderPayload) =>
-        db.appointPositionHolder({ positionId, userId: targetUserId, appointedById: userId }),
+    'gov:appoint_holder': ({ positionId, targetUserId, userId, user }: AppointHolderPayload) =>
+        db.appointPositionHolder({ positionId, userId: targetUserId, appointedById: userId }, user),
 
-    'gov:remove_holder': ({ holderId, reason }: RemoveHolderPayload) =>
-        db.removePositionHolder(holderId, reason || 'removed'),
+    'gov:remove_holder': ({ holderId, reason, user }: RemoveHolderPayload) =>
+        db.removePositionHolder(holderId, reason || 'removed', user),
 
     // Elections
     'gov:create_election': async ({ electionData, userId }: CreateElectionPayload) => {

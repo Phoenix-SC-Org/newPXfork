@@ -86,14 +86,29 @@ describe('stripSecrets', () => {
         expect(out.platformSettings).toEqual({ maintenance_mode: false, maintenance_message: null });
     });
 
-    it('is STRING-guarded — never nulls non-string values whose key looks secret-bearing', () => {
+    it('is STRING-guarded — never nulls non-string values whose key does NOT match the secret pattern', () => {
         const out = stripSecrets({
-            webhook_endpoints: [{ id: 1 }, { id: 2 }],   // array preserved
+            webhook_endpoints: [{ id: 1 }, { id: 2 }],   // array preserved (key not underscore-anchored)
             api_key_rotation: { enabled: true },          // object preserved
-            token_count: 5,                               // number preserved
+            token_count: 5,                               // number preserved (no _token)
         });
         expect(out.webhook_endpoints).toEqual([{ id: 1 }, { id: 2 }]);
         expect(out.api_key_rotation).toEqual({ enabled: true });
         expect(out.token_count).toBe(5);
+    });
+
+    it('recursively drops secret-named scalar values at any depth, keeping safe siblings (G6)', () => {
+        const out: any = stripSecrets({
+            nested: { inner: { discord_webhook: 'https://hooks/xxx', keep_me: 'visible' } },
+            list: [{ smtp_password: 'p', label: 'A' }],
+            rotation_secret: 999,   // number with a matching key — now dropped too
+            note_token: 7,          // _token matches → dropped
+        });
+        expect(out.nested.inner.discord_webhook).toBeUndefined();
+        expect(out.nested.inner.keep_me).toBe('visible');
+        expect(out.list[0].smtp_password).toBeUndefined();
+        expect(out.list[0].label).toBe('A');
+        expect(out.rotation_secret).toBeUndefined();
+        expect(out.note_token).toBeUndefined();
     });
 });

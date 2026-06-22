@@ -32,13 +32,13 @@ export async function listCatalog(): Promise<QmCatalogItem[]> {
     // eagerly loaded — tenants reach them via qm:search_catalog instead. Keeps
     // tenant catalog payloads tiny and avoids rendering a giant card grid.
     const { data, error } = await supabase.from('quartermaster_catalog')
-        .select('*')
+        .select('id, slug, name, category, subcategory, attributes, source, thumbnail_url, wiki_url, created_at, updated_at')
         .eq('source', 'custom')
         .order('category', { ascending: true })
         .order('name', { ascending: true });
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load catalog' });
-    return (data || []).map(toQmCatalogItem);
+    return ((data || []) as unknown as Parameters<typeof toQmCatalogItem>[0][]).map(toQmCatalogItem);
 }
 
 /**
@@ -55,7 +55,7 @@ export async function searchCatalog(
     const safe = q.replace(/[\\%_]/g, (m) => '\\' + m);
     const cap = Math.min(Math.max(limit, 1), 200);
     let qb = supabase.from('quartermaster_catalog')
-        .select('*')
+        .select('id, slug, name, category, subcategory, attributes, source, thumbnail_url, wiki_url, created_at, updated_at')
         .ilike('name', `%${safe}%`);
     // Single-org: catalog rows differ only by `source` ('custom' vs 'platform').
     if (source === 'custom') qb = qb.eq('source', 'custom');
@@ -65,7 +65,7 @@ export async function searchCatalog(
     const { data, error } = await qb;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to search catalog' });
-    return (data || []).map(toQmCatalogItem);
+    return ((data || []) as unknown as Parameters<typeof toQmCatalogItem>[0][]).map(toQmCatalogItem);
 }
 
 /**
@@ -77,12 +77,12 @@ export async function searchCatalog(
  */
 export async function getCatalogItemById(catalogId: number): Promise<QmCatalogItem | null> {
     const { data, error } = await supabase.from('quartermaster_catalog')
-        .select('*')
+        .select('id, slug, name, category, subcategory, attributes, source, thumbnail_url, wiki_url, created_at, updated_at')
         .eq('id', catalogId)
         .eq('source', 'custom')
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get catalog item slice' });
-    return data ? toQmCatalogItem(data) : null;
+    return data ? toQmCatalogItem(data as unknown as Parameters<typeof toQmCatalogItem>[0]) : null;
 }
 
 export interface CatalogInput {
@@ -115,11 +115,11 @@ export async function createCatalogItem(input: CatalogInput): Promise<QmCatalogI
             thumbnail_url: sanitizeImageUrl(input.thumbnailUrl),
             wiki_url: input.wikiUrl ?? null,
         })
-        .select()
+        .select('id, slug, name, category, subcategory, attributes, source, thumbnail_url, wiki_url, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to create catalog item' });
     broadcastToOrg('qm:catalog_update', { catalogId: data?.id });
-    return toQmCatalogItem(data);
+    return toQmCatalogItem(data as unknown as Parameters<typeof toQmCatalogItem>[0]);
 }
 
 export interface CatalogUpdateInput extends Partial<CatalogInput> {
@@ -139,13 +139,13 @@ export async function updateCatalogItem(input: CatalogUpdateInput): Promise<QmCa
     const { data, error } = await supabase.from('quartermaster_catalog')
         .update(patch)
         .eq('id', input.id)
-        
+
         .eq('source', 'custom')
-        .select()
+        .select('id, slug, name, category, subcategory, attributes, source, thumbnail_url, wiki_url, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to update catalog item' });
     broadcastToOrg('qm:catalog_update', { catalogId: input.id });
-    return toQmCatalogItem(data);
+    return toQmCatalogItem(data as unknown as Parameters<typeof toQmCatalogItem>[0]);
 }
 
 export async function deleteCatalogItem(id: number): Promise<void> {
@@ -205,8 +205,8 @@ export async function deleteCatalogItem(id: number): Promise<void> {
 
 export async function listQmLocations(): Promise<QmLocation[]> {
     const { data, error } = await supabase.from('quartermaster_locations')
-        .select('*')
-        
+        .select('id, name, type, parent_id, description, sort_order, created_at, updated_at')
+
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
     if (error && error.code === '42P01') return [];
@@ -221,7 +221,7 @@ export async function listQmLocations(): Promise<QmLocation[]> {
  */
 export async function getQmLocationById(locationId: number): Promise<QmLocation | null> {
     const { data, error } = await supabase.from('quartermaster_locations')
-        .select('*')
+        .select('id, name, type, parent_id, description, sort_order, created_at, updated_at')
         .eq('id', locationId)
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get location slice' });
@@ -247,11 +247,11 @@ export async function createQmLocation(input: LocationInput): Promise<QmLocation
             description: input.description ?? null,
             sort_order: input.sortOrder ?? 0,
         })
-        .select()
+        .select('id, name, type, parent_id, description, sort_order, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to create location' });
     broadcastToOrg('qm:location_update', { locationId: data?.id });
-    return toQmLocation(data);
+    return toQmLocation(data as unknown as Parameters<typeof toQmLocation>[0]);
 }
 
 export interface LocationUpdateInput extends Partial<LocationInput> {
@@ -269,12 +269,12 @@ export async function updateQmLocation(input: LocationUpdateInput): Promise<QmLo
     const { data, error } = await supabase.from('quartermaster_locations')
         .update(patch)
         .eq('id', input.id)
-        
-        .select()
+
+        .select('id, name, type, parent_id, description, sort_order, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to update location' });
     broadcastToOrg('qm:location_update', { locationId: input.id });
-    return toQmLocation(data);
+    return toQmLocation(data as unknown as Parameters<typeof toQmLocation>[0]);
 }
 
 export async function deleteQmLocation(id: number): Promise<void> {
@@ -341,7 +341,7 @@ export async function deleteQmLocation(id: number): Promise<void> {
 // ---------------------------------------------------------------------------
 
 const INVENTORY_SELECT = `
-    *,
+    id, catalog_id, custom_name, location_id, condition, acquired_at, notes, is_archived, created_at, updated_at,
     catalog:quartermaster_catalog(id, slug, name, category, subcategory, thumbnail_url),
     location:quartermaster_locations(id, name, type)
 `;
@@ -381,7 +381,7 @@ export async function listInventory(opts: ListInventoryOptions = {}): Promise<Qm
     const { data, error } = await q;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load inventory' });
-    const items = (data || []).map(toQmInventoryItem);
+    const items = ((data || []) as unknown as Parameters<typeof toQmInventoryItem>[0][]).map(toQmInventoryItem);
     if (items.length === 0) return items;
 
     const ids = items.map((i) => i.id);
@@ -415,7 +415,7 @@ export async function listInventory(opts: ListInventoryOptions = {}): Promise<Qm
 
 /** Cheap count for paginators / stat cards — no row payload. */
 export async function listInventoryCount(opts: ListInventoryOptions = {}): Promise<number> {
-    let q = supabase.from('quartermaster_inventory').select('*', { count: 'exact', head: true });
+    let q = supabase.from('quartermaster_inventory').select('id', { count: 'exact', head: true });
     if (!opts.includeArchived) q = q.eq('is_archived', false);
     if (opts.locationId != null) q = q.eq('location_id', opts.locationId);
     if (opts.catalogId != null) q = q.eq('catalog_id', opts.catalogId);
@@ -466,6 +466,7 @@ export async function createInventoryItem(
         .select(INVENTORY_SELECT)
         .single();
     handleSupabaseError({ error: insErr, message: 'Failed to create inventory item' });
+    if (!row) throw new Error('Failed to create inventory item');
 
     if (initialQty > 0) {
         const { error: movErr } = await supabase.from('quartermaster_inventory_movements')
@@ -480,7 +481,7 @@ export async function createInventoryItem(
 
     broadcastToOrg('qm:inventory_update', { inventoryId: row.id });
     return {
-        ...toQmInventoryItem(row),
+        ...toQmInventoryItem(row as unknown as Parameters<typeof toQmInventoryItem>[0]),
         quantityOnHand: initialQty,
         quantityOnIssue: 0,
     };
@@ -535,7 +536,7 @@ export async function adjustInventoryStock(
 // ---------------------------------------------------------------------------
 
 const ISSUANCE_SELECT = `
-    *,
+    id, inventory_id, issued_to_user_id, quantity, status, requested_at, issued_at, due_back_at, returned_at, returned_quantity, outcome, requested_by_user_id, issued_by_user_id, closed_by_user_id, notes, operation_id, created_at, updated_at,
     inventory:quartermaster_inventory(id, custom_name, catalog:quartermaster_catalog(name, category)),
     issued_to:users!quartermaster_issuances_issued_to_user_id_fkey(id, name, avatar_url, rsi_handle),
     requested_by:users!quartermaster_issuances_requested_by_user_id_fkey(id, name, avatar_url, rsi_handle),
@@ -565,7 +566,7 @@ export async function listIssuances(
     const { data, error } = await q;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load issuances' });
-    return (data || []).map(toQmIssuance);
+    return ((data || []) as unknown as Parameters<typeof toQmIssuance>[0][]).map(toQmIssuance);
 }
 
 export interface RequestIssuanceInput {
@@ -601,7 +602,7 @@ export async function requestIssuance(
         .single();
     handleSupabaseError({ error, message: 'Failed to submit issuance request' });
     broadcastToOrg('qm:issuance_update', { issuanceId: data?.id });
-    return toQmIssuance(data);
+    return toQmIssuance(data as unknown as Parameters<typeof toQmIssuance>[0]);
 }
 
 /**
@@ -617,7 +618,7 @@ export async function getIssuanceById(issuanceId: number): Promise<QmIssuance | 
         .eq('id', issuanceId)
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get issuance slice' });
-    return data ? toQmIssuance(data) : null;
+    return data ? toQmIssuance(data as unknown as Parameters<typeof toQmIssuance>[0]) : null;
 }
 
 export async function fulfilIssuance(
@@ -870,7 +871,7 @@ export async function listMemberRecords(): Promise<QmMemberRecord[]> {
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load member records' });
 
-    const issuances = (data || []).map(toQmIssuance);
+    const issuances = ((data || []) as unknown as Parameters<typeof toQmIssuance>[0][]).map(toQmIssuance);
     const map = new Map<number, QmMemberRecord>();
     for (const iss of issuances) {
         if (!iss.issuedTo) continue;
@@ -1101,7 +1102,7 @@ export async function listOverdueIssuances(): Promise<OverdueIssuanceSummary[]> 
 
 export async function listPlatformItemCategories(): Promise<QmPlatformCategory[]> {
     const { data, error } = await supabase.from('quartermaster_platform_categories')
-        .select('*')
+        .select('id, uex_category_id, uex_category_name, uex_section, display_name, sort_order, is_hidden, created_at, updated_at')
         .order('sort_order', { ascending: true })
         .order('display_name', { ascending: true });
     if (error && error.code === '42P01') return [];
@@ -1120,7 +1121,7 @@ export async function updatePlatformItemCategory(id: number, patch: Record<strin
 
 export async function deletePlatformItemCategory(id: number) {
     const { count } = await supabase.from('quartermaster_catalog')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('platform_category_id', id);
     if (count && count > 0) {
         throw new Error(`Cannot delete: ${count} item row(s) reference this category. Reassign first.`);
@@ -1147,7 +1148,7 @@ export interface ListPlatformItemsOptions {
 export async function getPlatformItemCatalog(opts: ListPlatformItemsOptions = {}): Promise<QmPlatformItem[]> {
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
     const offset = clampListOffset(opts.offset);
-    let qb = supabase.from('quartermaster_catalog').select('*').eq('source', 'platform');
+    let qb = supabase.from('quartermaster_catalog').select('id, slug, name, category, subcategory, attributes, thumbnail_url, wiki_url, external_uuid, external_id, is_vehicle_item, is_commodity, is_harvestable, screenshot_url, store_url, company_name, vehicle_name, quality, size_label, color, color2, game_version, platform_category_id, last_synced_at, created_at, updated_at').eq('source', 'platform');
     if (opts.search && opts.search.trim()) {
         const safe = safeSearchTerm(opts.search); // allow-list before .or()
         if (safe) qb = qb.or(`name.ilike.%${safe}%,subcategory.ilike.%${safe}%,company_name.ilike.%${safe}%`);
@@ -1158,7 +1159,7 @@ export async function getPlatformItemCatalog(opts: ListPlatformItemsOptions = {}
     const { data, error } = await qb;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load platform item catalog' });
-    return (data || []).map(toQmPlatformItem);
+    return ((data || []) as unknown as Parameters<typeof toQmPlatformItem>[0][]).map(toQmPlatformItem);
 }
 
 /**
@@ -1186,7 +1187,7 @@ export async function getPlatformItemCatalogWithUsage(opts: ListPlatformItemsOpt
  * function; uses count-only query so no row payload is sent over the wire.
  */
 export async function getPlatformItemCatalogCount(opts: ListPlatformItemsOptions = {}): Promise<number> {
-    let qb = supabase.from('quartermaster_catalog').select('*', { count: 'exact', head: true }).eq('source', 'platform');
+    let qb = supabase.from('quartermaster_catalog').select('id', { count: 'exact', head: true }).eq('source', 'platform');
     if (opts.search && opts.search.trim()) {
         const safe = safeSearchTerm(opts.search); // allow-list before .or()
         if (safe) qb = qb.or(`name.ilike.%${safe}%,subcategory.ilike.%${safe}%,company_name.ilike.%${safe}%`);
@@ -1321,7 +1322,7 @@ export async function updatePlatformItem(id: number, patch: Record<string, unkno
 
 export async function deletePlatformItem(id: number) {
     const { count } = await supabase.from('quartermaster_inventory')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('catalog_id', id);
     if (count && count > 0) {
         throw new Error(`Cannot delete: ${count} inventory row(s) reference this item. Use merge to reassign them first.`);

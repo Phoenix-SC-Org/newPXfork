@@ -51,11 +51,17 @@ export async function getElectionsState(currentUserId?: number): Promise<Governm
     const electionsResult = await safeFetch(
         supabase.from('government_elections')
             .select(`
-                *,
-                position:government_positions(*),
+                id, position_id, title, description, election_type, status,
+                candidacy_start, candidacy_end, voting_start, voting_end,
+                min_candidates, max_winners, min_voter_turnout_pct, min_vote_threshold_pct,
+                allow_runoff, runoff_top_n, parent_election_id, is_by_election,
+                remaining_term_days, created_by_id, concluded_at, conclusion_reason,
+                certified_by_id, certified_at, eligible_voter_count, total_votes_cast,
+                created_at, updated_at,
+                position:government_positions(id, branch_id, name, description, fill_method, term_length_days, max_holders, icon, sort_order, permissions_granted, can_propose_legislation, can_vote_legislation, can_veto_legislation, can_call_elections, can_issue_orders, created_at),
                 created_by:users!government_elections_created_by_id_fkey(${USER_HYDRATE}),
                 candidates:government_election_candidates(
-                    *,
+                    id, election_id, user_id, platform_statement, declared_at, withdrawn_at, is_winner, vote_count, vote_percentage,
                     user:users!government_election_candidates_user_id_fkey(${USER_HYDRATE})
                 )
             `)
@@ -66,7 +72,7 @@ export async function getElectionsState(currentUserId?: number): Promise<Governm
     );
 
     const elections = Array.isArray(electionsResult)
-        ? electionsResult.map(toGovernmentElection)
+        ? electionsResult.map(r => toGovernmentElection(r as unknown as Parameters<typeof toGovernmentElection>[0]))
         : [];
 
     // Check if current user has voted in active elections
@@ -133,7 +139,7 @@ export async function createElection(data: ElectionInput): Promise<GovernmentEle
         created_by_id: data.userId,
     };
     const { data: result, error } = await supabase.from('government_elections')
-        .insert(payload).select().single();
+        .insert(payload).select('id, position_id, title, description, election_type, status, candidacy_start, candidacy_end, voting_start, voting_end, min_candidates, max_winners, min_voter_turnout_pct, min_vote_threshold_pct, allow_runoff, runoff_top_n, parent_election_id, is_by_election, remaining_term_days, created_by_id, concluded_at, conclusion_reason, certified_by_id, certified_at, eligible_voter_count, total_votes_cast, created_at, updated_at').single();
     handleSupabaseError({ error, message: 'Failed to create election' });
     broadcastGovernmentUpdate('elections');
     return result ? toGovernmentElection(result) : null;
@@ -166,7 +172,7 @@ export async function updateElection(electionId: number, updates: Partial<Govern
 
 export async function advanceElection(electionId: number) {
     const { data: election, error: fetchErr } = await supabase.from('government_elections')
-        .select('*, candidates:government_election_candidates(id, withdrawn_at)')
+        .select('id, status, candidacy_start, candidacy_end, voting_start, min_candidates, candidates:government_election_candidates(id, withdrawn_at)')
         .eq('id', electionId).single();
     if (fetchErr || !election) throw new Error('Election not found');
 
@@ -239,7 +245,7 @@ export async function declareCandidacy(electionId: number, userId: number, state
             user_id: userId,
             platform_statement: statement || null,
         })
-        .select()
+        .select('id, election_id, user_id, platform_statement, declared_at, withdrawn_at, is_winner, vote_count, vote_percentage')
         .single();
     // 23505 = unique_violation: the atomic guard once the partial UNIQUE index
     // exists. Map it to the same user-facing rejection (fail closed).
@@ -394,7 +400,7 @@ export async function castElectionVote(
 
 export async function concludeElection(electionId: number) {
     const { data: election } = await supabase.from('government_elections')
-        .select('*, position:government_positions(max_holders)')
+        .select('id, status, max_winners, election_type, min_voter_turnout_pct, eligible_voter_count, min_vote_threshold_pct, allow_runoff, position_id, voting_end, runoff_top_n, title, created_by_id, candidacy_start, candidacy_end, voting_start, min_candidates, parent_election_id, is_by_election, remaining_term_days, concluded_at, conclusion_reason, certified_by_id, certified_at, total_votes_cast, description, created_at, updated_at, position:government_positions(max_holders)')
         .eq('id', electionId).single();
     if (!election) throw new Error('Election not found');
     if (election.status !== 'Voting') throw new Error('Election is not in voting phase');
@@ -540,7 +546,7 @@ async function createRunoffElection(parentElection: Tables<'government_elections
             parent_election_id: parentElection.id,
             created_by_id: parentElection.created_by_id,
         })
-        .select()
+        .select('id')
         .single();
 
     if (error || !runoff) {

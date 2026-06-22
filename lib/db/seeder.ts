@@ -42,7 +42,7 @@ export async function seedInstall() {
     // Upsert Roles
     const { data: createdRoles, error: rolesError } = await supabase.from('roles')
         .upsert(rolesData, { onConflict: 'name' })
-        .select();
+        .select('id');
 
     if (rolesError || !createdRoles) {
         log.error('roles seed failed', { err: rolesError });

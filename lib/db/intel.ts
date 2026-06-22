@@ -20,9 +20,24 @@ export { toHydratedWarrant, toHydratedIntelReport, toIntelBulletin };
 
 type IntelReportRow = Parameters<typeof toHydratedIntelReport>[0];
 type IntelBulletinRow = Parameters<typeof toIntelBulletin>[0];
+type WarrantRow = Parameters<typeof toHydratedWarrant>[0];
 type WarrantNoteRow = Tables<'warrant_notes'> & { author?: Parameters<typeof toMiniUser>[0] };
 
+// PostgREST infers embedded relations as arrays (`issuedBy: {...}[]`), but the
+// mapper param types model the to-one embeds as single objects. The runtime
+// columns are identical (verified by the column-coverage sweep); only the
+// embed cardinality differs in the inferred type. This alias re-shapes a query
+// (or awaited result) to the mapper's row type for safeFetch / .map() calls.
+type SafeFetchQuery<T> = PromiseLike<{ data: T | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>;
+
 const log = baseLog.child({ module: 'db.intel' });
+
+// intel_bulletins.threat_level is a plain text column (not a DB enum), so a value
+// ingested from a federation peer must be validated in code or arbitrary text would
+// land in the column. Normalise to the known set; anything else falls back to Medium.
+const VALID_THREAT_LEVELS = new Set<string>(Object.values(IntelThreatLevel));
+export const normalizeThreatLevel = (v: unknown): string =>
+    typeof v === 'string' && VALID_THREAT_LEVELS.has(v) ? v : 'Medium';
 
 // Clearance / limiting-marker filter for intel report/bulletin bodies, enforced
 // server-side via the shared clearance util. intel:manage holders (and Admins)
@@ -125,7 +140,7 @@ export async function bulkDeleteWarrants(warrantIds: string[]) {
 
 /** List-row select for warrants — shared by getWarrantsState (lib/db.ts) and
  *  the warrant_slice single-row fetch so the two shapes can never drift. */
-export const WARRANT_SELECT = '*, issuedBy:users!warrants_issued_by_fkey(id, name, avatar_url, role_id), claimedBy:users!warrants_claimed_by_fkey(id, name, avatar_url), feed:alliance_peers(id, label)';
+export const WARRANT_SELECT = 'id, target_rsi_handle, reason, action, uec_reward, status, issued_by, claimed_by, source_feed_id, external_id, notes, created_at, issuedBy:users!warrants_issued_by_fkey(id, name, avatar_url, role_id), claimedBy:users!warrants_claimed_by_fkey(id, name, avatar_url), feed:alliance_peers(id, label)';
 
 /**
  * Single-warrant fetch in the LIST row shape. Backs the realtime
@@ -140,7 +155,7 @@ export async function getWarrantByIdHydrated(warrantId: string) {
         .eq('id', warrantId)
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get warrant slice' });
-    return data ? toHydratedWarrant(data) : null;
+    return data ? toHydratedWarrant(data as unknown as WarrantRow) : null;
 }
 
 // --- WARRANT NOTES (append-only thread) ---
@@ -194,7 +209,7 @@ export async function getWarrantNotes(warrantId: string): Promise<WarrantNote[]>
 
     const { data, error } = await supabase
         .from('warrant_notes')
-        .select('*, author:users!warrant_notes_author_id_fkey(id, name, avatar_url, role_id)')
+        .select('id, warrant_id, author_id, content, created_at, author:users!warrant_notes_author_id_fkey(id, name, avatar_url, role_id)')
         .eq('warrant_id', warrantId)
         .order('created_at', { ascending: false });
     if (error?.code === '42P01') {
@@ -214,7 +229,7 @@ export async function getWarrantNotes(warrantId: string): Promise<WarrantNote[]>
 }
 
 export async function generateReportFromWarrant(warrantId: string, userId: number) {
-    const { data: warrant } = await supabase.from('warrants').select('*')
+    const { data: warrant } = await supabase.from('warrants').select('target_rsi_handle, reason')
         .eq('id', warrantId)
 
         .single();
@@ -250,7 +265,7 @@ export async function createIntelReport(reportData: Record<string, unknown>) {
         created_by_id: reportData.createdById as number | null | undefined,
         affiliated_org: stripHtmlSingleLine(reportData.affiliatedOrg as string | undefined, 200) || null,
         classification_level: (reportData.classificationLevel as number | undefined) || 0
-    }).select().single();
+    }).select('id').single();
 
     handleSupabaseError({ error, message: 'Failed to create intel report' });
 
@@ -301,12 +316,15 @@ export async function updateIntelReport(id: string, updates: Record<string, unkn
 
 // Optimized: Fetch basic user data for creator
 export async function getIntelReportsForTarget(targetId: string): Promise<HydratedIntelligenceReport[]> {
+    // Escape the LIKE pattern so target_id is an exact (case-insensitive) match, not a
+    // wildcard. Without this, targetId='%' turns a per-target lookup into a full-table
+    // scan + dump. The .limit caps the result regardless.
     let query = supabase.from('intel_reports')
-        .select('*, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
-        .ilike('target_id', targetId);
+        .select('id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
+        .ilike('target_id', escapeLikePattern(targetId));
 
-    query = query.order('created_at', { ascending: false });
-    const data = await safeFetch<IntelReportRow[]>(query, [], 'Failed to get reports');
+    query = query.order('created_at', { ascending: false }).limit(500);
+    const data = await safeFetch<IntelReportRow[]>(query as unknown as SafeFetchQuery<IntelReportRow[]>, [], 'Failed to get reports');
     return data.map(toHydratedIntelReport);
 }
 
@@ -322,14 +340,20 @@ function embeddedMarkers(rows?: { marker?: unknown }[] | null): unknown[] {
 // against it. A missing viewer fails closed (treated as clearance 0, no markers,
 // no bypass).
 export async function getDossier(targetId: string, viewer?: OpViewer | null): Promise<DossierData> {
-    const userQuery = supabase.from('users').select('id').ilike('rsi_handle', targetId);
+    // Escape the user-supplied handle so every .ilike below is an exact
+    // (case-insensitive) match, never a wildcard pattern. Without this a targetId of
+    // '%' would match every report/warrant/request and dump the lot (bounded only by
+    // the clearance filter). Used for all the target/handle/affiliated_org lookups
+    // that derive from client input; orgName below comes from DB rows, not the client.
+    const safeTarget = escapeLikePattern(targetId);
+    const userQuery = supabase.from('users').select('id').ilike('rsi_handle', safeTarget);
     const { data: targetUser } = await userQuery.maybeSingle();
     const targetUserId = targetUser?.id;
 
     // 1. Determine Subject Type by looking at latest reports
     const latestQuery = supabase.from('intel_reports')
         .select('subject_type')
-        .ilike('target_id', targetId)
+        .ilike('target_id', safeTarget)
         .order('created_at', { ascending: false })
         .limit(1);
     const { data: latestReport } = await latestQuery.maybeSingle();
@@ -338,7 +362,7 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
 
     // 2. Identify and fetch report data based on type
     let reportsQuery = supabase.from('intel_reports')
-        .select('*, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
+        .select('id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
         .order('created_at', { ascending: false });
 
     const affiliates: { targetId: string, threatLevel: IntelThreatLevel, lastReportedAt: string }[] = [];
@@ -353,7 +377,7 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
         // Populate affiliates with unique people in this org
         const membersQuery = supabase.from('intel_reports')
             .select('target_id, threat_level, created_at, classification_level, intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
-            .ilike('affiliated_org', targetId)
+            .ilike('affiliated_org', safeTarget)
             .order('created_at', { ascending: false });
         const { data: members } = await membersQuery;
 
@@ -379,7 +403,7 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
         // Identify organization affiliation from their reports
         const primaryQuery = supabase.from('intel_reports')
             .select('affiliated_org, threat_level, created_at, classification_level, intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
-            .ilike('target_id', targetId);
+            .ilike('target_id', safeTarget);
         const { data: primaryReports } = await primaryQuery;
 
         const orgMetaMap = new Map<string, { level: IntelThreatLevel, date: string }>();
@@ -399,10 +423,10 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
         });
 
         // Combined Feed: Target reports + Org reports.
-        // Use parameterized .ilike() (Supabase escapes the value) for the primary target.
+        // Exact (escaped) case-insensitive match on the primary target.
         // Org-affiliated reports are fetched via a parallel query below and merged —
         // the previous .or() with sanitized string interpolation was fragile.
-        reportsQuery = reportsQuery.ilike('target_id', targetId);
+        reportsQuery = reportsQuery.ilike('target_id', safeTarget);
 
         // Affiliates are the Orgs they belong to
         orgMetaMap.forEach((meta, name) => {
@@ -421,9 +445,9 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
     if (!isOrg) {
         for (const orgName of orgSet) {
             const q = supabase.from('intel_reports')
-                .select('*, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
+                .select('id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
                 .ilike('target_id', orgName);
-            orgReportPromises.push(safeFetch<IntelReportRow[]>(q, [], 'Failed to get org-affiliated reports'));
+            orgReportPromises.push(safeFetch<IntelReportRow[]>(q as unknown as SafeFetchQuery<IntelReportRow[]>, [], 'Failed to get org-affiliated reports'));
         }
     }
 
@@ -438,10 +462,10 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
         : Promise.resolve([]);
 
     // Build org-scoped warrant query
-    const warrantQuery = supabase.from('warrants').select('*, issuedBy:users!warrants_issued_by_fkey(id, name, avatar_url, role_id), claimedBy:users!warrants_claimed_by_fkey(id, name, avatar_url, role_id), feed:alliance_peers(id, label)').ilike('target_rsi_handle', targetId);
+    const warrantQuery = supabase.from('warrants').select('id, target_rsi_handle, reason, action, uec_reward, status, issued_by, claimed_by, source_feed_id, external_id, notes, created_at, issuedBy:users!warrants_issued_by_fkey(id, name, avatar_url, role_id), claimedBy:users!warrants_claimed_by_fkey(id, name, avatar_url, role_id), feed:alliance_peers(id, label)').ilike('target_rsi_handle', safeTarget);
 
     // Build org-scoped requests query
-    const requestsQuery = supabase.from('service_requests').select('id, client_id, unregistered_client_rsi_handle, service_type, location, description, status, urgency, threat_level, created_at, updated_at').ilike('unregistered_client_rsi_handle', targetId);
+    const requestsQuery = supabase.from('service_requests').select('id, client_id, unregistered_client_rsi_handle, service_type, location, description, status, urgency, threat_level, created_at, updated_at').ilike('unregistered_client_rsi_handle', safeTarget);
 
     // The cached AI summary is synthesized from the FULL dossier (including
     // above-clearance reports/ops/affiliates) and cached globally per target —
@@ -519,7 +543,7 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
     return {
         targetId,
         reports: (mergedReports || []).map(toHydratedIntelReport),
-        warrants: (warrants || []).map(toHydratedWarrant),
+        warrants: ((warrants || []) as unknown as WarrantRow[]).map(toHydratedWarrant),
         requests: mappedRequests,
         operations: mappedOperations,
         affiliates: affiliates,
@@ -535,17 +559,17 @@ export async function getDossier(targetId: string, viewer?: OpViewer | null): Pr
  */
 export async function getRecentIntelReports(subjectType?: string, limit = 50): Promise<HydratedIntelligenceReport[]> {
     let query = supabase.from('intel_reports')
-        .select('*, createdBy:users!intel_reports_created_by_id_fkey(id, name), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))');
+        .select('id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))');
 
     const cappedLimit = Math.min(Math.max(1, limit), 100);
     query = query.order('created_at', { ascending: false })
         .limit(cappedLimit);
     if (subjectType) query = query.eq('subject_type', subjectType);
-    const data = await safeFetch<IntelReportRow[]>(query, [], 'Failed to get recent intel');
+    const data = await safeFetch<IntelReportRow[]>(query as unknown as SafeFetchQuery<IntelReportRow[]>, [], 'Failed to get recent intel');
     return data.map(toHydratedIntelReport);
 }
 
-const INTEL_REPORT_SELECT = '*, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))';
+const INTEL_REPORT_SELECT = 'id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))';
 
 const THREAT_RANK: Record<string, number> = {
     [IntelThreatLevel.Critical]: 4,
@@ -685,7 +709,7 @@ export async function listIntelReports(args: ListIntelReportsArgs): Promise<List
 
     query = query.limit(fetchSize + overscan);
 
-    const data = await safeFetch<IntelReportRow[]>(query, [], 'Failed to list intel reports');
+    const data = await safeFetch<IntelReportRow[]>(query as unknown as SafeFetchQuery<IntelReportRow[]>, [], 'Failed to list intel reports');
     let rows = data || [];
 
     // Drop boundary rows when the search-cursor path was used.
@@ -889,11 +913,11 @@ export async function searchIntelReports(query: string, subjectType?: string): P
         .slice(0, 100);
     if (!safeQuery) return [];
     let q = supabase.from('intel_reports')
-        .select('*, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
+        .select('id, target_id, subject_type, threat_level, tags, summary, evidence_urls, external_author, affiliated_org, created_at, classification_level, createdBy:users!intel_reports_created_by_id_fkey(id, name, avatar_url, role_id), feed:alliance_peers(label), intel_report_limiting_markers(marker:security_limiting_markers(id, name, code))')
         .or(`target_id.ilike.%${safeQuery}%,summary.ilike.%${safeQuery}%,tags.cs.{${safeQuery}}`);
     if (subjectType) q = q.eq('subject_type', subjectType);
     const { data } = await q.limit(50);
-    return (data || []).map(toHydratedIntelReport);
+    return ((data || []) as unknown as IntelReportRow[]).map(toHydratedIntelReport);
 }
 
 // Cap how many rows we read to build the threat-level breakdown, so a large
@@ -1423,7 +1447,7 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                             const { data: inserted, error: insertErr } = await supabase.from('intel_reports').insert({
                                 target_id: cleanTarget,
                                 subject_type: r.subject_type,
-                                threat_level: r.threat_level,
+                                threat_level: normalizeThreatLevel(r.threat_level),
                                 tags: cleanTags,
                                 summary: cleanSummary,
                                 affiliated_org: cleanAffiliated,
@@ -1577,7 +1601,7 @@ export async function syncTrustedFeeds(force?: boolean, onlyPeerIds?: string[]) 
                             const { data: insertedBulletin, error: bulletinInsertErr } = await supabase.from('intel_bulletins').insert({
                                 title: cleanTitle,
                                 body: cleanBody,
-                                threat_level: b.threat_level || 'Medium',
+                                threat_level: normalizeThreatLevel(b.threat_level),
                                 location: cleanLocation,
                                 duration_minutes: durationMinutes,
                                 expires_at: expiresAt,
@@ -1850,11 +1874,12 @@ export async function createIntelBulletin(data: Record<string, unknown>): Promis
         classification_level: (data.classificationLevel as number | undefined) || 0,
         created_by_id: data.createdById as number | undefined,
         shared_with_allies: (data.sharedWithAllies as boolean | undefined) || false
-    }).select().single();
+    }).select('id, title, body, threat_level, location, duration_minutes, expires_at, classification_level, created_by_id, created_at, shared_with_allies, source_organization_id, source_bulletin_id, source_organization_name').single();
 
     handleSupabaseError({ error, message: 'Failed to create intel bulletin' });
+    if (!row) throw new Error('Failed to create intel bulletin');
 
-    if (row && markerIds && markerIds.length > 0) {
+    if (markerIds && markerIds.length > 0) {
         // Mirror createIntelReport: verify the marker ids belong to this org
         // before attaching (don't trust arbitrary client-supplied ids).
         const { data: validMarkers } = await supabase.from('security_limiting_markers')
@@ -1881,16 +1906,16 @@ export async function createIntelBulletin(data: Record<string, unknown>): Promis
     // (index/stats scan intel_reports only) nor the paginated report feed —
     // bulletin_update alone drives the bulletin slice refetch.
 
-    return toIntelBulletin(row);
+    return toIntelBulletin(row as unknown as IntelBulletinRow);
 }
 
 export async function getActiveBulletins(): Promise<IntelBulletin[]> {
     const query = supabase.from('intel_bulletins')
-        .select('*, createdBy:users!intel_bulletins_created_by_id_fkey(id, name, avatar_url, role_id), intel_bulletin_limiting_markers(marker:security_limiting_markers(id, name, code))')
+        .select('id, title, body, threat_level, location, duration_minutes, expires_at, classification_level, created_by_id, created_at, shared_with_allies, source_organization_id, source_bulletin_id, source_organization_name, createdBy:users!intel_bulletins_created_by_id_fkey(id, name, avatar_url, role_id), intel_bulletin_limiting_markers(marker:security_limiting_markers(id, name, code))')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-    const data = await safeFetch<IntelBulletinRow[]>(query, [], 'Failed to get active bulletins');
+    const data = await safeFetch<IntelBulletinRow[]>(query as unknown as SafeFetchQuery<IntelBulletinRow[]>, [], 'Failed to get active bulletins');
     return data.map(toIntelBulletin);
 }
 
@@ -1906,13 +1931,13 @@ export async function getActiveBulletins(): Promise<IntelBulletin[]> {
  */
 export async function getBulletinByIdForViewer(bulletinId: string, user?: ClearanceUser | null): Promise<IntelBulletin | null> {
     const { data, error } = await supabase.from('intel_bulletins')
-        .select('*, createdBy:users!intel_bulletins_created_by_id_fkey(id, name, avatar_url, role_id), intel_bulletin_limiting_markers(marker:security_limiting_markers(id, name, code))')
+        .select('id, title, body, threat_level, location, duration_minutes, expires_at, classification_level, created_by_id, created_at, shared_with_allies, source_organization_id, source_bulletin_id, source_organization_name, createdBy:users!intel_bulletins_created_by_id_fkey(id, name, avatar_url, role_id), intel_bulletin_limiting_markers(marker:security_limiting_markers(id, name, code))')
         .eq('id', bulletinId)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get bulletin slice' });
     if (!data) return null;
-    const bulletin = toIntelBulletin(data as IntelBulletinRow);
+    const bulletin = toIntelBulletin(data as unknown as IntelBulletinRow);
     return filterIntelByClearance([bulletin], user)[0] ?? null;
 }
 

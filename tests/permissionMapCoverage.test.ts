@@ -27,4 +27,12 @@ describe('permission map coverage', () => {
         expect(result.missing).toEqual([]);
         expect(result.stale).toEqual([]);
     });
+
+    it('the recruiter-path HR twins require a real HR perm, not the any-member pseudo-perm (F9/G4)', () => {
+        // Members file via the THROTTLED user:submit_application / user:apply_job. These
+        // twins hit the same sink, so they must NOT be reachable by any authenticated
+        // member (user:manage:self) — otherwise the submission throttle is bypassable.
+        expect(fullPermissionMap['hr:create_application']).toBe('hr:recruiter');
+        expect(fullPermissionMap['hr:apply_job']).toBe('hr:recruiter');
+    });
 });

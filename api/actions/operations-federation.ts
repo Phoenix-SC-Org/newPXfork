@@ -6,8 +6,13 @@
 import * as db from '../../lib/db.js';
 
 interface InviteAllyPayload { operationId: string; peerId: string }
-interface MirrorIdPayload { id: string }
+interface MirrorIdPayload { id: string; user?: { role?: string; permissions?: string[] } }
 interface MirrorRsvpPayload { id: string; rsvpStatus: string; shipText?: string; isReady?: boolean; userId: number }
+
+/** Diplomacy admins may view pending (un-accepted) mirror invites; others may not. */
+function canSeePendingMirror(user?: { role?: string; permissions?: string[] }): boolean {
+    return user?.role === 'Admin' || (user?.permissions || []).includes('alliance:manage');
+}
 
 export const operationsFederationActions = {
     // Host
@@ -17,7 +22,7 @@ export const operationsFederationActions = {
     // Guest mirror surface
     'mirror:list': () => db.listMirroredOperations(false),
     'mirror:list_pending': () => db.listMirroredOperations(true),
-    'mirror:get': ({ id }: MirrorIdPayload) => db.getMirroredOperation(id),
+    'mirror:get': ({ id, user }: MirrorIdPayload) => db.getMirroredOperation(id, canSeePendingMirror(user)),
     'mirror:accept': ({ id }: MirrorIdPayload) => db.acceptMirroredOperation(id),
     'mirror:decline': ({ id }: MirrorIdPayload) => db.declineMirroredOperation(id),
     'mirror:poll': ({ id }: MirrorIdPayload) => db.pollMirroredOperation(id),

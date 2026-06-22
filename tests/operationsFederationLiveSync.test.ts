@@ -49,7 +49,7 @@ vi.mock('../lib/db/common', () => {
         const withEmbeds = (r: Record<string, unknown>) => {
             if (table === 'operation_allied_orgs' && state.selectStr.includes('operation:operations')) {
                 const op = (h.tables['operations'] ?? []).find((o) => o.id === r.operation_id) ?? null;
-                return { ...r, operation: op ? { joint_version: op.joint_version } : null };
+                return { ...r, operation: op ? { joint_version: op.joint_version, clearance_level: op.clearance_level ?? null } : null };
             }
             return r;
         };
@@ -130,7 +130,7 @@ import {
     getOperationSnapshotForPeer, getOperationManifestForPeer,
     removeAlliedParticipant, receiveMirrorPush, receiveMirrorInvite,
     pushOperationToAllies, scheduleAlliedPush, reconcilePeerClearanceShares,
-    reconcileMirrorsWithPeer, __resetReconcileStateForTests,
+    reconcileMirrorsWithPeer, getMirroredOperation, __resetReconcileStateForTests,
 } from '../lib/db/operations-federation';
 import { __resetAllianceSyncStateForTests, tryConsumeToken, ALLIANCE_SYNC_DEFAULTS } from '../lib/db/allianceSyncState';
 
@@ -212,6 +212,31 @@ describe('getOperationManifestForPeer (SECURITY: per-peer scoping, L6)', () => {
         const m = await getOperationManifestForPeer('peerA');
         expect(m.accepted).toEqual({});
         expect(m.invited).toEqual([]);
+    });
+
+    it('withholds an op whose clearance now exceeds the peer ceiling (F17)', async () => {
+        h.globalMax = 5;
+        h.tables.operation_allied_orgs = [
+            { operation_id: 'opHigh', peer_id: 'peerA', accepted: true },
+            { operation_id: 'opOk', peer_id: 'peerA', accepted: true },
+        ];
+        h.tables.operations = [
+            { id: 'opHigh', joint_version: 3, clearance_level: 5 }, // above ceiling
+            { id: 'opOk', joint_version: 1, clearance_level: 0 },   // at/below ceiling
+        ];
+        h.tables.alliance_peers = [{ id: 'peerA', status: 'Active', channels: { operations: true }, outbound_max_clearance: 0 }];
+        const m = await getOperationManifestForPeer('peerA'); // ceiling = min(5,0) = 0
+        expect(m.accepted).toEqual({ opOk: 1 });
+        expect(JSON.stringify(m)).not.toContain('opHigh');
+    });
+
+    it('includes an op at/below the peer ceiling', async () => {
+        h.globalMax = 5;
+        h.tables.operation_allied_orgs = [{ operation_id: 'opMid', peer_id: 'peerA', accepted: true }];
+        h.tables.operations = [{ id: 'opMid', joint_version: 4, clearance_level: 3 }];
+        h.tables.alliance_peers = [{ id: 'peerA', status: 'Active', channels: { operations: true }, outbound_max_clearance: 5 }];
+        const m = await getOperationManifestForPeer('peerA'); // ceiling = min(5,5) = 5, 3 <= 5
+        expect(m.accepted).toEqual({ opMid: 4 });
     });
 });
 
@@ -668,5 +693,27 @@ describe('directory cache never feeds an outbound projection (source pin)', () =
         );
         expect(outboundSection.length).toBeGreaterThan(0);
         expect(outboundSection.includes('alliance_peer_directory_cache')).toBe(false);
+    });
+});
+
+describe('getMirroredOperation pending visibility (F16)', () => {
+    beforeEach(() => {
+        h.tables['mirrored_operations'] = [
+            { id: 'm-pending', accepted: false, revoked_at: null, host_peer_id: 'p1', snapshot: { name: 'Secret Plan' }, version: 0, peer: { peer_org_name: 'Ally' } },
+            { id: 'm-accepted', accepted: true, revoked_at: null, host_peer_id: 'p1', snapshot: { name: 'Shared Op' }, version: 1, peer: { peer_org_name: 'Ally' } },
+        ];
+        h.tables['mirrored_operation_participation'] = [];
+    });
+
+    it('hides a pending (un-accepted) mirror from an operations:view caller (includePending=false)', async () => {
+        expect(await getMirroredOperation('m-pending', false)).toBeNull();
+    });
+
+    it('returns a pending mirror to an alliance:manage caller (includePending=true)', async () => {
+        expect(await getMirroredOperation('m-pending', true)).toBeTruthy();
+    });
+
+    it('returns an accepted mirror to any caller', async () => {
+        expect(await getMirroredOperation('m-accepted', false)).toBeTruthy();
     });
 });

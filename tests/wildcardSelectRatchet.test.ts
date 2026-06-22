@@ -10,38 +10,13 @@ import { join, resolve, sep } from 'node:path';
 // shipping them to the browser. New queries must enumerate exactly the columns the
 // caller needs.
 //
-// The baseline below pins the per-file count of legacy wildcard selects; each is
-// narrowed by an explicit allow-list mapper (toUser / toHydratedX / ...) before
-// anything reaches the wire. They are tolerated as legacy, not precedent.
-//
-// If a count INCREASED: rewrite your query with an explicit column list; do not
-// bump the baseline. If a count DECREASED: lower the baseline so the ratchet locks
-// in the improvement.
+// The legacy wildcard backlog has been fully cleared — every data-layer query now
+// enumerates its exact columns. The baseline is therefore EMPTY: no wildcard select,
+// `(*)` embed, or bare `select()` is permitted anywhere in lib/** or api/**. Any new
+// one fails the "no file gained a wildcard select" check below; the rule is now
+// absolute, not a ratchet down from a tolerated baseline.
 
-const BASELINE: Record<string, number> = {
-    'lib/db/alliances.ts': 4,
-    'lib/db/finances.ts': 4,
-    'lib/db/fleet.ts': 7,
-    'lib/db/government/elections.ts': 6,
-    'lib/db/government/legislation.ts': 5,
-    'lib/db/government/structure.ts': 7,
-    'lib/db/government/templates.ts': 1,
-    'lib/db/hr.ts': 14,
-    'lib/db/intel.ts': 12,
-    'lib/db/locations.ts': 3,
-    'lib/db/operations-federation.ts': 3,
-    'lib/db/ops.ts': 24,
-    'lib/db/quartermaster.ts': 15,
-    'lib/db/requests.ts': 3,
-    'lib/db/seeder.ts': 1,
-    'lib/db/system.ts': 19,
-    'lib/db/users.ts': 4,
-    'lib/db/warehouse.ts': 14,
-    'lib/db/wiki.ts': 3,
-    'lib/db.ts': 12,
-    'lib/firstBoot.ts': 1,
-    'api/query.ts': 1,
-};
+const BASELINE: Record<string, number> = {};
 
 const ROOT = resolve(__dirname, '..');
 

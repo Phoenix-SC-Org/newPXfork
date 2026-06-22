@@ -28,7 +28,7 @@ export async function applyGovernmentTemplate(templateType: string) {
             branch_type: branchDef.branchType,
             icon: branchDef.icon,
             sort_order: branchDef.sortOrder,
-        }).select().single();
+        }).select('id').single();
 
         if (branchError || !branch) {
             log.error('create branch failed', { branchName: branchDef.name, err: branchError });

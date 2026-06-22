@@ -6,6 +6,7 @@ import type { Tables } from './rows.js';
 import { toUser, toReputationHistoryEntry, toRatingHistoryEntry } from './mappers.js';
 import { getAllSettings } from './system.js';
 import { getDiscordMember, pushDiscordRolesForUser, getDiscordUserById, buildGlobalAvatarUrl } from '../discord.js';
+import { verifyRsiHandle, generateRsiVerificationCode } from '../rsi.js';
 import { isValidTimezone, isValidDateFormat } from '../time.js';
 import { isAllowedPushEndpoint, MAX_PUSH_SUBSCRIPTIONS_PER_USER } from '../push.js';
 import { canViewAllClassifications, type ClearanceUser } from '../clearance.js';
@@ -65,32 +66,32 @@ export async function logHrPositionChange(
 // modals filter members who already hold a cert/commendation by template id;
 // names/dates render in lazy-loaded detail views).
 export const USER_LIST_SELECT_QUERY = `
-    *,
+    id, discord_id, name, display_name, avatar_url, rsi_handle, role_id, reputation, is_duty, is_affiliate, is_vip, created_at, admin_notes, personnel_notes, rsi_handle_pending, rsi_verification_code, rsi_verified, job_title, voice_channel_name, timezone, date_format, probation_start, probation_end, tenure_start_date, tokens_valid_from, deleted_at,
     role:roles!inner(id, name, description, role_permissions(permission:permissions(name))),
-    rank:ranks(*),
-    unit:units!unit_id(*),
-    position:personnel_positions!position_id(*),
-    secondaryPosition:personnel_positions!secondary_position_id(*),
-    clearance_level:security_clearances(*),
-    specializations:user_specializations(specialization:specialization_tags(*)),
+    rank:ranks(id, name, icon_url, sort_order),
+    unit:units!unit_id(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted),
+    position:personnel_positions!position_id(id, name, description, icon, department),
+    secondaryPosition:personnel_positions!secondary_position_id(id, name, description, icon, department),
+    clearance_level:security_clearances(id, level, name, description),
+    specializations:user_specializations(specialization:specialization_tags(id, name, description, icon, image_url)),
     certifications:user_certifications!user_id(certification:certifications(id)),
     commendations:user_commendations!user_id(commendation:commendations(id))
 `;
 
 // Full query for detail views (includes all nested relations)
 export const USER_SELECT_QUERY = `
-    *,
+    id, discord_id, name, display_name, avatar_url, rsi_handle, role_id, reputation, is_duty, is_affiliate, is_vip, created_at, admin_notes, personnel_notes, rsi_handle_pending, rsi_verification_code, rsi_verified, job_title, voice_channel_name, timezone, date_format, probation_start, probation_end, tenure_start_date, tokens_valid_from, deleted_at,
     role:roles!inner(id, name, description, role_permissions(permission:permissions(name))),
-    rank:ranks(*),
-    unit:units!unit_id(*),
-    position:personnel_positions!position_id(*),
-    secondaryPosition:personnel_positions!secondary_position_id(*),
-    clearance_level:security_clearances(*),
+    rank:ranks(id, name, icon_url, sort_order),
+    unit:units!unit_id(id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted),
+    position:personnel_positions!position_id(id, name, description, icon, department),
+    secondaryPosition:personnel_positions!secondary_position_id(id, name, description, icon, department),
+    clearance_level:security_clearances(id, level, name, description),
     limiting_markers:user_limiting_markers(marker:security_limiting_markers(id, name, code, description)),
-    specializations:user_specializations(specialization:specialization_tags(*)),
-    certifications:user_certifications!user_id(awarded_at, awardedBy:users!awarded_by(id, name, avatar_url), certification:certifications(*)),
-    commendations:user_commendations!user_id(id, awarded_at, reason, awardedBy:users!awarded_by(id, name, avatar_url), commendation:commendations(*)),
-    conductRecord:conduct_records!user_id(*, enteredBy:users!entered_by_id(id, name, avatar_url))
+    specializations:user_specializations(specialization:specialization_tags(id, name, description, icon, image_url)),
+    certifications:user_certifications!user_id(awarded_at, awardedBy:users!awarded_by(id, name, avatar_url), certification:certifications(id, name, description, icon, image_url)),
+    commendations:user_commendations!user_id(id, awarded_at, reason, awardedBy:users!awarded_by(id, name, avatar_url), commendation:commendations(id, name, description, icon, image_url)),
+    conductRecord:conduct_records!user_id(id, type, reason, created_at, enteredBy:users!entered_by_id(id, name, avatar_url))
 `;
 
 export async function findUserByDiscordId(discordId: string, includeDeleted = false) {
@@ -106,7 +107,7 @@ export async function findUserByDiscordId(discordId: string, includeDeleted = fa
     // Data might be null
     if (!data) return null;
 
-    const user = toUser(data);
+    const user = toUser(data as unknown as Parameters<typeof toUser>[0]);
     if (user && data.deleted_at) {
         (user as User & { deletedAt?: string | null }).deletedAt = data.deleted_at;
     }
@@ -132,7 +133,7 @@ export async function getUsersByIdsLite(userIds: number[]): Promise<User[]> {
         .in('id', userIds)
         .is('deleted_at', null);
     handleSupabaseError({ error, message: 'Failed to get users slice' });
-    return (data || []).map(toUser).filter(Boolean) as User[];
+    return (data || []).map(d => toUser(d as unknown as Parameters<typeof toUser>[0])).filter(Boolean) as User[];
 }
 
 export async function getUserById(userId: number) {
@@ -143,12 +144,12 @@ export async function getUserById(userId: number) {
     // findUserByDiscordId(includeDeleted)/reactivateUser, not this resolver, so
     // they are unaffected.
     const { data, error } = await supabase.from('users').select(USER_SELECT_QUERY).eq('id', userId).is('deleted_at', null).single();
-    if (!error) return toUser(data);
+    if (!error) return toUser(data as unknown as Parameters<typeof toUser>[0]);
     // Full user query failed (possibly due to missing FK/table from a new migration).
     // Try with the lighter list query as a fallback to avoid breaking auth.
     log.warn('full user query failed, trying fallback', { userId, message: error.message });
     const { data: fallback, error: fbErr } = await supabase.from('users').select(USER_LIST_SELECT_QUERY).eq('id', userId).is('deleted_at', null).single();
-    if (!fbErr && fallback) return toUser(fallback);
+    if (!fbErr && fallback) return toUser(fallback as unknown as Parameters<typeof toUser>[0]);
     return null;
 }
 
@@ -157,11 +158,11 @@ export async function getUserByAuthId(authId: string) {
     // resolve to an authenticated session via this fallback resolver either.
     const query = supabase.from('users').select(USER_SELECT_QUERY).eq('auth_user_id', authId).is('deleted_at', null);
     const { data, error } = await query.maybeSingle();
-    if (!error) return toUser(data);
+    if (!error) return toUser(data as unknown as Parameters<typeof toUser>[0]);
     log.warn('full user query failed, trying fallback', { authId, message: error.message });
     const fallbackQuery = supabase.from('users').select(USER_LIST_SELECT_QUERY).eq('auth_user_id', authId).is('deleted_at', null);
     const { data: fallback, error: fbErr } = await fallbackQuery.maybeSingle();
-    if (!fbErr && fallback) return toUser(fallback);
+    if (!fbErr && fallback) return toUser(fallback as unknown as Parameters<typeof toUser>[0]);
     return null;
 }
 
@@ -180,7 +181,7 @@ export async function getAdmins() {
 
     const { data, error } = await query;
     handleSupabaseError({ error, message: 'Failed to find admins' });
-    return (data || []).map(toUser).filter(Boolean) as User[];
+    return (data || []).map(d => toUser(d as unknown as Parameters<typeof toUser>[0])).filter(Boolean) as User[];
 }
 
 export async function createUser(userData: { discordId: string, name: string, avatarUrl: string, rsiHandle: string, isAdmin: boolean, rsiVerified?: boolean }) {
@@ -260,7 +261,7 @@ export async function createUser(userData: { discordId: string, name: string, av
     }
 
     handleSupabaseError({ error, message: 'Failed to create user' });
-    return toUser(data);
+    return toUser(data as unknown as Parameters<typeof toUser>[0]);
 }
 
 // The un-delete-on-login write copies ONLY these display fields from the caller's
@@ -278,7 +279,7 @@ export async function reactivateUser(userId: number, updates: Partial<Tables<'us
     const { data, error } = await query.select(USER_SELECT_QUERY).single();
 
     handleSupabaseError({ error, message: 'Failed to reactivate user' });
-    return toUser(data);
+    return toUser(data as unknown as Parameters<typeof toUser>[0]);
 }
 
 /**
@@ -508,7 +509,7 @@ export async function updateUser(userId: number, updates: UpdateUserInput, actor
 export async function getUserPositionHistory(userId: number): Promise<PositionHistoryEntry[]> {
     const { data, error } = await supabase
         .from('user_position_history_unified')
-        .select('*')
+        .select('kind, id, user_id, position_id, position_name, position_description, position_icon, started_at, ended_at, end_reason')
         .eq('user_id', userId)
         .order('started_at', { ascending: false });
     if (error) {
@@ -1070,7 +1071,7 @@ export async function bulkAssignUsersPosition(targetUserIds: number[], positionI
 
 export async function getClearanceHistory(userId: number): Promise<ClearanceHistoryEntry[]> {
     const { data } = await supabase.from('clearance_history')
-        .select('*, admin:users!clearance_history_admin_id_fkey(name), oldLevel:security_clearances!clearance_history_old_level_id_fkey(name), newLevel:security_clearances!clearance_history_new_level_id_fkey(name)')
+        .select('id, user_id, admin_id, old_level_id, new_level_id, changes_description, created_at, admin:users!clearance_history_admin_id_fkey(name), oldLevel:security_clearances!clearance_history_old_level_id_fkey(name), newLevel:security_clearances!clearance_history_new_level_id_fkey(name)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -1390,10 +1391,10 @@ export async function cleanupInactiveDutyUsers() {
 }
 
 export async function initiateRsiHandleUpdate(userId: number, newHandle: string) {
-    const { brandingConfig } = await getAllSettings({ decryptSecrets: false });
-    // Whitelabel prefix based on org name
-    const prefix = brandingConfig.name ? brandingConfig.name.substring(0, 6).toUpperCase().replace(/[^A-Z]/g, '') : 'ORG';
-    const code = `${prefix}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    // High-entropy, server-issued code. It must be hard to guess and unlikely to
+    // already appear on a profile, so "the code is on the page" really proves the
+    // caller controls that bio. (Was a short Math.random string before.)
+    const code = generateRsiVerificationCode();
 
     const { error } = await supabase.from('users').update({
         rsi_handle_pending: newHandle,
@@ -1413,6 +1414,28 @@ export async function verifyRsiUpdate(userId: number) {
 
     if (!user || !user.rsi_handle_pending || !user.rsi_verification_code) {
         throw new Error("No pending verification found.");
+    }
+
+    // Prove the caller actually controls the RSI account before trusting the link.
+    // The server-issued code must appear on the public citizen page for the pending
+    // handle. Without this check anyone could mark any handle (including a victim's)
+    // as verified and absorb that handle's ad-hoc requests via the re-parent below.
+    const proven = await verifyRsiHandle(user.rsi_handle_pending, user.rsi_verification_code);
+    if (!proven) {
+        throw new Error('We could not find your verification code on that RSI profile. Add it to your bio, then try again.');
+    }
+
+    // One RSI handle maps to one account. Refuse a handle already linked to another
+    // live user (case-insensitive). The partial unique index in schema.sql is the
+    // race backstop; this is the friendly pre-check.
+    const { data: handleTaken } = await supabase.from('users')
+        .select('id')
+        .ilike('rsi_handle', escapeLikePattern(user.rsi_handle_pending))
+        .neq('id', userId)
+        .is('deleted_at', null)
+        .maybeSingle();
+    if (handleTaken) {
+        throw new Error('That RSI handle is already linked to another account.');
     }
 
     const { error: updateError } = await supabase.from('users').update({
@@ -1527,11 +1550,11 @@ export async function adminAdjustUserReputation(userId: number, newReputation: n
 
 export async function getReputationHistoryForUser(userId: number) {
     const { data, error } = await supabase.from('reputation_history')
-        .select('*, adminUser:users!reputation_history_admin_user_id_fkey(id, name, avatar_url)')
+        .select('id, user_id, admin_user_id, change_date, old_reputation, new_reputation, reason, adminUser:users!reputation_history_admin_user_id_fkey(id, name, avatar_url)')
         .eq('user_id', userId)
         .order('change_date', { ascending: false });
     handleSupabaseError({ error, message: 'Failed to get reputation history' });
-    return (data || []).map(toReputationHistoryEntry);
+    return (data || []).map(r => toReputationHistoryEntry(r as unknown as Parameters<typeof toReputationHistoryEntry>[0]));
 }
 
 export async function getRatingHistoryForUser(userId: number) {
@@ -1596,7 +1619,7 @@ export async function syncUserRoles(userId: number, options?: { bypassCooldown?:
     const discordMember = await getDiscordMember(user.discord_id);
     if (!discordMember) return "User not in Discord server";
 
-    const mappingQuery = supabase.from('rank_mappings').select('*');
+    const mappingQuery = supabase.from('rank_mappings').select('discord_role_id, rank_id, role_id');
     const { data: mappings, error: mappingError } = await mappingQuery;
     handleSupabaseError({ error: mappingError, message: 'Failed to fetch rank mappings' });
 

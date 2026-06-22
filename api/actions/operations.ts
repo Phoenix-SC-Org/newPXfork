@@ -631,6 +631,7 @@ export const operationActions = {
     'operation:add_board_element': async ({ operationId, data, clientNonce }: AddBoardElementPayload) => {
         await db.verifyOperationAccess(operationId);
         const row = await db.addBoardElement(operationId, data);
+        if (!row) throw new Error('Failed to add board element');
         const element = toOperationBoardElement(row);
         await db.broadcastBoardAdd(operationId, element, clientNonce);
         return element;

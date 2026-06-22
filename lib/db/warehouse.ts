@@ -159,8 +159,8 @@ export async function listWarehouseCatalog(
     const limit = Math.min(Math.max(opts.limit ?? 1000, 1), 1000);
     const offset = clampListOffset(opts.offset);
     const { data, error } = await supabase.from('warehouse_catalog')
-        .select('*')
-        
+        .select('id, name, category, quality_label, unit, description, archived_at, created_at, updated_at')
+
         .order('category', { ascending: true })
         .order('name', { ascending: true })
         .range(offset, offset + limit - 1);
@@ -171,7 +171,7 @@ export async function listWarehouseCatalog(
 
 export async function listWarehouseCatalogCount(): Promise<number> {
     const { count, error } = await supabase.from('warehouse_catalog')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         ;
     if (error && error.code === '42P01') return 0;
     handleSupabaseError({ error, message: 'Failed to count warehouse catalog' });
@@ -271,10 +271,11 @@ export async function createWarehouseCatalogItem(input: WarehouseCatalogInput): 
             unit: (input.unit || 'units').trim() || 'units',
             description: input.description?.trim() || null,
         })
-        .select()
+        .select('id, name, category, quality_label, unit, description, archived_at, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to create warehouse catalog item' });
-    broadcastToOrg('warehouse:catalog_update', { catalogId: data?.id });
+    if (!data) throw new Error('Failed to create warehouse catalog item');
+    broadcastToOrg('warehouse:catalog_update', { catalogId: data.id });
     return toCatalogItem(data);
 }
 
@@ -292,10 +293,11 @@ export async function updateWarehouseCatalogItem(input: WarehouseCatalogUpdateIn
     const { data, error } = await supabase.from('warehouse_catalog')
         .update(patch)
         .eq('id', input.id)
-        
-        .select()
+
+        .select('id, name, category, quality_label, unit, description, archived_at, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to update warehouse catalog item' });
+    if (!data) throw new Error('Failed to update warehouse catalog item');
     broadcastToOrg('warehouse:catalog_update', { catalogId: input.id });
     return toCatalogItem(data);
 }
@@ -728,7 +730,7 @@ export async function listWarehouseStock(
         .select(`
             id, catalog_id, location_id, notes, created_at, updated_at,
             quantity_on_hand, quantity_reserved,
-            catalog:warehouse_catalog(*),
+            catalog:warehouse_catalog(id, name, category, quality_label, unit, description, archived_at, created_at, updated_at),
             location:quartermaster_locations(id, name, type)
         `)
         ;
@@ -744,7 +746,7 @@ export async function listWarehouseStock(
 export async function listWarehouseStockCount(
     opts: ListWarehouseStockOptions = {},
 ): Promise<number> {
-    let q = supabase.from('warehouse_stock').select('*', { count: 'exact', head: true });
+    let q = supabase.from('warehouse_stock').select('id', { count: 'exact', head: true });
     if (opts.catalogId != null) q = q.eq('catalog_id', opts.catalogId);
     if (opts.locationId != null) q = q.eq('location_id', opts.locationId);
     const { count, error } = await q;
@@ -836,7 +838,7 @@ export async function createWarehouseStock(input: WarehouseStockInput): Promise<
         })
         .select(`
             id, catalog_id, location_id, notes, created_at, updated_at,
-            catalog:warehouse_catalog(*),
+            catalog:warehouse_catalog(id, name, category, quality_label, unit, description, archived_at, created_at, updated_at),
             location:quartermaster_locations(id, name, type)
         `)
         .single();
@@ -978,7 +980,7 @@ export async function listWarehouseMovements(filters: MovementFilters = {}): Pro
     // to resolve stockId → name/quality/location.
     let q = supabase.from('warehouse_movements')
         .select(`
-            *,
+            id, stock_id, delta, reason, actor_user_id, related_request_id, related_movement_id, notes, created_at,
             actor:users!warehouse_movements_actor_user_id_fkey(id, name, avatar_url),
             stock:warehouse_stock(
                 id, catalog_id, location_id,
@@ -1003,7 +1005,7 @@ export async function listWarehouseMovements(filters: MovementFilters = {}): Pro
     const { data, error } = await q;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load warehouse movements' });
-    return (data || []).map(toMovement);
+    return ((data || []) as unknown as MovementRow[]).map(toMovement);
 }
 
 // ---------------------------------------------------------------------------
@@ -1036,17 +1038,18 @@ export async function createWithdrawalRequest(
             reason_notes: input.reasonNotes?.trim() || null,
         })
         .select(`
-            *,
+            id, stock_id, requested_by_user_id, requested_quantity, reason_category, reason_notes, status, approved_by_user_id, approved_at, fulfilled_movement_id, fulfilled_at, denial_reason, created_at, updated_at,
             requested_by:users!warehouse_requests_requested_by_user_id_fkey(id, name, avatar_url)
         `)
         .single();
     handleSupabaseError({ error, message: 'Failed to submit withdrawal request' });
-    broadcastToOrg('warehouse:request_update', { requestId: data?.id });
+    if (!data) throw new Error('Failed to submit withdrawal request');
+    broadcastToOrg('warehouse:request_update', { requestId: data.id });
     // A new pending request raises the stock row's view-computed
     // quantity_reserved — emit the stock slice event so remote clients
     // (which refetch per-slice) see the new Reserved count.
     broadcastToOrg('warehouse:stock_update', {});
-    return toRequest(data);
+    return toRequest(data as unknown as RequestRow);
 }
 
 export interface RequestFilters {
@@ -1064,7 +1067,7 @@ export async function listWithdrawalRequests(filters: RequestFilters = {}): Prom
     // so we hydrate it in a follow-up bulk query against the qty view.
     let q = supabase.from('warehouse_requests')
         .select(`
-            *,
+            id, stock_id, requested_by_user_id, requested_quantity, reason_category, reason_notes, status, approved_by_user_id, approved_at, fulfilled_movement_id, fulfilled_at, denial_reason, created_at, updated_at,
             requested_by:users!warehouse_requests_requested_by_user_id_fkey(id, name, avatar_url),
             stock:warehouse_stock!warehouse_requests_stock_id_fkey(
                 id, catalog_id, location_id,
@@ -1089,7 +1092,7 @@ export async function listWithdrawalRequests(filters: RequestFilters = {}): Prom
     const { data, error } = await q;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load withdrawal requests' });
-    const rows = (data || []).map(toRequest);
+    const rows = ((data || []) as unknown as RequestRow[]).map(toRequest);
     if (rows.length === 0) return rows;
 
     // Hydrate quantity_on_hand for the unique stocks involved.
@@ -1258,7 +1261,7 @@ export async function exportWarehouseCsv(
 
 export async function listPlatformCommodityCategories(): Promise<WarehousePlatformCategory[]> {
     const { data, error } = await supabase.from('warehouse_platform_categories')
-        .select('*')
+        .select('id, slug, uex_kind, display_name, sort_order, is_hidden, created_at, updated_at')
         .order('sort_order', { ascending: true })
         .order('display_name', { ascending: true });
     if (error && error.code === '42P01') return [];
@@ -1277,7 +1280,7 @@ export async function updatePlatformCommodityCategory(id: number, patch: Partial
 
 export async function deletePlatformCommodityCategory(id: number) {
     const { count } = await supabase.from('warehouse_platform_commodities')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('platform_category_id', id);
     if (count && count > 0) {
         throw new Error(`Cannot delete: ${count} commodity row(s) reference this category. Reassign first.`);
@@ -1300,7 +1303,7 @@ export interface ListPlatformCommoditiesOptions {
 export async function getPlatformCommodityCatalog(opts: ListPlatformCommoditiesOptions = {}): Promise<WarehousePlatformCommodity[]> {
     const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
     const offset = clampListOffset(opts.offset);
-    let qb = supabase.from('warehouse_platform_commodities').select('*');
+    let qb = supabase.from('warehouse_platform_commodities').select('id, external_id, external_uuid, slug, name, code, kind, weight_scu, price_buy, price_sell, is_available, is_available_live, is_visible, is_extractable, is_mineral, is_raw, is_pure, is_refined, is_refinable, is_harvestable, is_buyable, is_sellable, is_temporary, is_illegal, is_volatile_qt, is_volatile_time, is_inert, is_explosive, is_buggy, is_fuel, wiki_url, platform_category_id, uex_date_added, uex_date_modified, last_synced_at, created_at, updated_at');
     if (opts.search && opts.search.trim()) {
         const safe = safeSearchTerm(opts.search); // allow-list before .or()
         if (safe) qb = qb.or(`name.ilike.%${safe}%,kind.ilike.%${safe}%,code.ilike.%${safe}%`);
@@ -1327,7 +1330,7 @@ export async function getPlatformCommodityCatalogWithUsage(opts: ListPlatformCom
 }
 
 export async function getPlatformCommodityCatalogCount(opts: ListPlatformCommoditiesOptions = {}): Promise<number> {
-    let qb = supabase.from('warehouse_platform_commodities').select('*', { count: 'exact', head: true });
+    let qb = supabase.from('warehouse_platform_commodities').select('id', { count: 'exact', head: true });
     if (opts.search && opts.search.trim()) {
         const safe = safeSearchTerm(opts.search); // allow-list before .or()
         if (safe) qb = qb.or(`name.ilike.%${safe}%,kind.ilike.%${safe}%,code.ilike.%${safe}%`);

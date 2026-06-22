@@ -39,9 +39,11 @@ export const PUBLIC_ACTIONS: readonly string[] = ['auth:begin_oauth', 'auth:disc
 
 // Action prefixes that require a permission entry in fullPermissionMap. Any
 // authenticated request to an action with one of these prefixes is gated by
-// the BOLA/permission check below. Actions outside this list (e.g. user:*) are
-// authenticated-but-not-permission-gated.
-export const PROTECTED_PREFIXES: readonly string[] = ['admin:', 'hr:', 'intel:', 'warrant:', 'unit:', 'operation:', 'request:', 'broadcast:', 'api:', 'wiki:', 'fleet:', 'gov:', 'radio:', 'warehouse:', 'finance:', 'qm:', 'system:', 'discord:', 'org:', 'catalog:', 'alliance:', 'mirror:', 'marketplace:'];
+// the BOLA/permission check below. 'user:' is included so the self-service user
+// actions are gated explicitly (each maps to the user:manage:self pseudo-permission,
+// i.e. any authenticated caller) rather than being implicitly open — that closes the
+// fail-open trap where a map entry on a user:* action would silently do nothing.
+export const PROTECTED_PREFIXES: readonly string[] = ['admin:', 'hr:', 'intel:', 'warrant:', 'unit:', 'operation:', 'request:', 'broadcast:', 'api:', 'wiki:', 'fleet:', 'gov:', 'radio:', 'warehouse:', 'finance:', 'qm:', 'system:', 'discord:', 'org:', 'catalog:', 'alliance:', 'mirror:', 'marketplace:', 'user:'];
 
 // The op-owner bypass (isOpOwner) lets an op's owner satisfy the operations:manage
 // gate for owner-appropriate edit/lifecycle actions on their own op. It must NOT
@@ -60,6 +62,12 @@ export const OWNER_BYPASS_EXCLUDED_OPERATION_ACTIONS: ReadonlySet<string> = new 
     'operation:update_participant',
     'operation:broadcast_alert',
     'operation:update_status',
+    // Federation diplomacy: inviting/revoking an allied peer shares the op (and its
+    // participants' identities) across an org boundary. That is alliance authority,
+    // not something an op's creator may do off the back of operations:create — it
+    // always needs the real operations:manage permission.
+    'operation:invite_ally',
+    'operation:revoke_ally',
 ]);
 
 export const fullPermissionMap: Record<string, string> = {
@@ -374,7 +382,11 @@ export const fullPermissionMap: Record<string, string> = {
 
     // HR Actions
     'hr:get_state': 'hr:view',
-    'hr:create_application': 'user:manage:self',
+    // Recruiter-only case-file creation (AddCaseFile / Transfer / Interview modals).
+    // Members file via the THROTTLED user:submit_application; this twin hits the same
+    // sink (createHRApplication + push fan-out), so it must require a real HR perm —
+    // not user:manage:self, which left it open to any member as an un-throttled DoS.
+    'hr:create_application': 'hr:recruiter',
     'hr:update_app_status': 'hr:recruiter',
     'hr:update_application_data': 'hr:recruiter',
     'hr:delete_application': 'hr:manager',
@@ -389,7 +401,9 @@ export const fullPermissionMap: Record<string, string> = {
     'hr:update_job': 'hr:manager',
     'hr:update_job_status': 'hr:manager',
     'hr:delete_job': 'hr:manager',
-    'hr:apply_job': 'user:manage:self',
+    // No member-facing caller (members use the throttled user:apply_job); gate to a
+    // real HR perm so this twin can't be used to bypass the submission throttle.
+    'hr:apply_job': 'hr:recruiter',
     'hr:request_transfer': 'user:manage:self',
     'hr:process_transfer': 'hr:manager',
     'hr:create_template': 'hr:admin',
@@ -411,7 +425,27 @@ export const fullPermissionMap: Record<string, string> = {
     'hr:get_application_data': 'hr:recruiter',
     'hr:process_job_approval': 'hr:recruiter',
 
-    // User Self-Service HR
+    // User self-service. All of these act on the caller's OWN record (the dispatcher
+    // forces userId to the authenticated user), so the gate is simply "any signed-in
+    // user" via the user:manage:self pseudo-permission. user:get_position_history
+    // does its own cross-user check inside the handler. Every user:* action must
+    // appear here now that 'user:' is a protected prefix (permissionMapCoverage pins it).
+    'user:logout': 'user:manage:self',
+    'user:toggle_duty': 'user:manage:self',
+    'user:heartbeat': 'user:manage:self',
+    'user:initiate_rsi_update': 'user:manage:self',
+    'user:verify_rsi_update': 'user:manage:self',
+    'user:cancel_rsi_update': 'user:manage:self',
+    'user:sync_roles': 'user:manage:self',
+    'user:update_specializations': 'user:manage:self',
+    'user:update_display_name': 'user:manage:self',
+    'user:update_preferences': 'user:manage:self',
+    'user:get_clearance_history': 'user:manage:self',
+    'user:get_position_history': 'user:manage:self',
+    'user:set_radio_channel': 'user:manage:self',
+    'user:delete_self': 'user:manage:self',
+    'user:subscribe_push': 'user:manage:self',
+    'user:test_push': 'user:manage:self',
     'user:apply_job': 'user:manage:self',
     'user:submit_application': 'user:manage:self',
 
@@ -937,7 +971,7 @@ export default async function handler(req: Request, res: Response) {
 
             if (requiredPerm) {
                 // 'user:manage:self' is a pseudo-permission meaning "any authenticated user".
-                // Actions using it (e.g. hr:request_transfer, hr:create_application) just need a valid session.
+                // Actions using it (e.g. hr:request_transfer, the user:* self-service set) just need a valid session.
                 if (requiredPerm === 'user:manage:self') {
                     // Allowed — skip further permission checks
                 } else {

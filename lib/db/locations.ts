@@ -65,7 +65,7 @@ export async function getPlatformLocations(opts: ListLocationsOptions = {}): Pro
     const limit = Math.min(Math.max(opts.limit ?? 200, 1), 2000);
     const offset = clampListOffset(opts.offset);
 
-    let qb = supabase.from('platform_locations').select('*');
+    let qb = supabase.from('platform_locations').select('id, kind, external_id, parent_id, star_system_id, name, nickname, code, path, is_available_live, is_visible, is_landable, is_armistice, is_decommissioned, is_internal, is_hidden, pad_types, amenities, faction_name, jurisdiction_name, wiki_url, uex_date_added, uex_date_modified, last_synced_at, created_at, updated_at');
     if (opts.kind) qb = qb.eq('kind', opts.kind);
     if (opts.starSystemId) qb = qb.eq('star_system_id', opts.starSystemId);
     if (!opts.includeInternal) qb = qb.eq('is_internal', false);
@@ -93,7 +93,7 @@ export async function getPlatformLocationCount(): Promise<{ total: number; perKi
     ];
     const results = await Promise.all(kinds.map(async (kind) => {
         const { count, error } = await supabase.from('platform_locations')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('kind', kind);
         if (error && error.code === '42P01') return [kind, 0] as const;
         if (error) return [kind, 0] as const;
@@ -124,7 +124,7 @@ export async function searchPlatformLocations(
     if (!safe) return [];
     const cap = Math.min(Math.max(limit, 1), 200);
 
-    let qb = supabase.from('platform_locations').select('*')
+    let qb = supabase.from('platform_locations').select('id, kind, external_id, parent_id, star_system_id, name, nickname, code, path, is_available_live, is_visible, is_landable, is_armistice, is_decommissioned, is_internal, is_hidden, pad_types, amenities, faction_name, jurisdiction_name, wiki_url, uex_date_added, uex_date_modified, last_synced_at, created_at, updated_at')
         .eq('is_internal', false)
         .eq('is_hidden', false)
         .or(`name.ilike.%${safe}%,path.ilike.%${safe}%,nickname.ilike.%${safe}%`);

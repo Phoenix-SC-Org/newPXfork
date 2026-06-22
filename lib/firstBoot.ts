@@ -23,7 +23,7 @@ export async function adminExists(): Promise<boolean> {
     if (!roles.admin) return false; // roles not seeded yet → definitely no admin
     const { count, error } = await supabase
         .from('users')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('role_id', roles.admin.id)
         .is('deleted_at', null);
     if (error) {

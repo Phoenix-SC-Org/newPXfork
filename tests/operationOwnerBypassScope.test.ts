@@ -136,6 +136,8 @@ describe('Finding 1 — owner bypass excludes finance/payout/alert/participant/s
         'operation:add_uec',
         'operation:broadcast_alert',
         'operation:update_status',
+        'operation:invite_ally',
+        'operation:revoke_ally',
     ])('op OWNER lacking operations:manage is DENIED %s (excluded from bypass)', async (action) => {
         h.decoded = { userId: OWNER_ID };
         h.user = ownerNoManage;
@@ -221,6 +223,8 @@ describe('OWNER_BYPASS_EXCLUDED_OPERATION_ACTIONS — exported allow-list contra
             'operation:update_participant',
             'operation:broadcast_alert',
             'operation:update_status',
+            'operation:invite_ally',
+            'operation:revoke_ally',
         ]) {
             expect(OWNER_BYPASS_EXCLUDED_OPERATION_ACTIONS.has(a)).toBe(true);
         }

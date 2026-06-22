@@ -45,14 +45,14 @@ export async function getMainState() {
     // Explicit cap (PostgREST silently truncates at 1000 anyway) — the
     // truncation warning below surfaces when an org outgrows it.
     const userQuery = supabase.from('users').select(users.USER_LIST_SELECT_QUERY).is('deleted_at', null).limit(1000);
-    const rankQuery = supabase.from('ranks').select('*').order('sort_order').order('name');
-    const unitQuery = supabase.from('units').select('*').order('sort_order').order('name');
-    const roleQuery = supabase.from('roles').select('*').order('name');
-    const locQuery = supabase.from('locations').select('*');
-    const specQuery = supabase.from('specialization_tags').select('*');
-    const certQuery = supabase.from('certifications').select('*');
-    const commQuery = supabase.from('commendations').select('*');
-    const radioQuery = supabase.from('radio_channels').select('*');
+    const rankQuery = supabase.from('ranks').select('id, name, icon_url, sort_order').order('sort_order').order('name');
+    const unitQuery = supabase.from('units').select('id, name, parent_unit_id, sort_order, leader_id, logo_url, banner_url, motto, description, has_radio_channel, linked_channel_id, is_restricted').order('sort_order').order('name');
+    const roleQuery = supabase.from('roles').select('id, name, description, is_system').order('name');
+    const locQuery = supabase.from('locations').select('id, name, parent_id, type');
+    const specQuery = supabase.from('specialization_tags').select('id, name, description, icon, image_url');
+    const certQuery = supabase.from('certifications').select('id, name, description, icon, image_url');
+    const commQuery = supabase.from('commendations').select('id, name, description, icon, image_url');
+    const radioQuery = supabase.from('radio_channels').select('id, name, color, sort_order, type');
 
     const [
         usersList,
@@ -96,7 +96,7 @@ export async function getMainState() {
         log.warn('getMainState roster hit the 1000-row cap — rows beyond it are not shipped; the roster needs pagination at this org size');
     }
     return {
-        users: (usersList.data || []).map(toUser).filter(Boolean),
+        users: (usersList.data || []).map(d => toUser(d as unknown as Parameters<typeof toUser>[0])).filter(Boolean),
         ranks: (ranks.data || []).map(toRank).filter(Boolean),
         units: (units.data || []).map(toUnit).filter(Boolean),
         roles: roles.data || [],
@@ -113,13 +113,13 @@ export async function getMainState() {
 }
 
 const REQUEST_SELECT = `
-    *,
+    id, client_id, unregistered_client_rsi_handle, service_type, location, description, status, urgency, threat_level, lead_responder_id, created_at, updated_at, uec_earned, medigel_consumed, client_rating, client_feedback, rated, party_info, secondary_client_handles,
     client:users!service_requests_client_id_fkey(id, name, avatar_url, rsi_handle, role_id, rank_id, reputation),
     request_responders(
         user:users!request_responders_user_id_fkey(id, name, avatar_url, rsi_handle, role_id, rank_id)
     ),
     statusHistory:status_history(
-        *,
+        id, request_id, status, updated_at, note,
         updated_by:users!status_history_updated_by_fkey(id, name, avatar_url)
     )
 `;
@@ -147,7 +147,7 @@ export async function getRequestsState(currentUser?: { id: number; role?: string
     const { data, error } = await query;
 
     handleSupabaseError({ error, message: 'Failed to get requests' });
-    return { requests: (data || []).map(toServiceRequest) };
+    return { requests: (data || []).map(r => toServiceRequest(r as unknown as Parameters<typeof toServiceRequest>[0])) };
 }
 
 export async function getRequestDetail(requestId: string, currentUser?: { id: number; role?: string; permissions?: string[] } | null) {
@@ -160,7 +160,7 @@ export async function getRequestDetail(requestId: string, currentUser?: { id: nu
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    const request = toServiceRequest(data);
+    const request = toServiceRequest(data as unknown as Parameters<typeof toServiceRequest>[0]);
     // Same predicate as the list — non-duty callers may only fetch their own
     // request (or one they responded to). null → 404 upstream, indistinguishable
     // from a missing row.
@@ -173,7 +173,7 @@ export async function getRequestDetail(requestId: string, currentUser?: { id: nu
 }
 
 export async function getAnnouncementsState(currentUser?: { role?: string; permissions?: string[] } | null) {
-    const { data, error } = await supabase.from('announcements').select('*')
+    const { data, error } = await supabase.from('announcements').select('id, title, body, author, type, audience, publish_date, expiry_date')
         .order('publish_date', { ascending: false }).limit(100);
     handleSupabaseError({ error, message: 'Failed to get announcements' });
     let announcements = (data || []).map(toAnnouncement);
@@ -197,8 +197,8 @@ export async function getAnnouncementsState(currentUser?: { role?: string; permi
 
 export async function getDiscordState() {
     const settingsQuery = supabase.from('settings').select('value').eq('key', 'discordConfig');
-    const rolesQuery = supabase.from('synced_discord_roles').select('*');
-    const mappingsQuery = supabase.from('rank_mappings').select('*');
+    const rolesQuery = supabase.from('synced_discord_roles').select('id, name, color');
+    const mappingsQuery = supabase.from('rank_mappings').select('discord_role_id, rank_id, role_id');
 
     const [config, roles, mappings] = await Promise.all([
         settingsQuery.maybeSingle(),
@@ -252,11 +252,11 @@ export async function getWarrantsState() {
         .order('created_at', { ascending: false })
         .limit(200);
     handleSupabaseError({ error, message: 'Failed to get warrants' });
-    return { warrants: (data || []).map(intel.toHydratedWarrant) };
+    return { warrants: (data || []).map(w => intel.toHydratedWarrant(w as unknown as Parameters<typeof intel.toHydratedWarrant>[0])) };
 }
 
 export async function getExternalToolsState(currentUser?: { role?: string; permissions?: string[] } | null) {
-    const { data, error } = await supabase.from('external_tools').select('*');
+    const { data, error } = await supabase.from('external_tools').select('id, title, description, url, icon, audience, category, sort_order');
     handleSupabaseError({ error, message: 'Failed to get tools' });
     let rows = (data || []).map((r: any) => ({
         id: r.id,

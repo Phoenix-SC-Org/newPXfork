@@ -362,14 +362,23 @@ export async function getOperationManifestForPeer(peerId: string): Promise<Opera
     // false-revoke.
     if (!(await peerOperationsChannelEnabled(peerId))) return { v: 1, fetchedAt, accepted: {}, invited: [] };
     const { data } = await supabase.from('operation_allied_orgs')
-        .select('operation_id, accepted, operation:operations!inner(joint_version)')
+        .select('operation_id, accepted, operation:operations!inner(joint_version, clearance_level)')
         .eq('peer_id', peerId);
-    type ManifestRow = { operation_id: string; accepted: boolean; operation: { joint_version: number | null } | { joint_version: number | null }[] | null };
+    // Apply the same clearance ceiling the snapshot path uses, so the manifest doesn't
+    // disclose the id/version of an op that is now above this peer's ceiling (for example
+    // its clearance was raised after the invite). Leaving it out makes the guest drop the
+    // mirror, which is the right outcome for an op the peer is no longer cleared for.
+    const globalMax = await getMaxShareableClearance();
+    const { data: peer } = await supabase.from('alliance_peers')
+        .select('outbound_max_clearance').eq('id', peerId).maybeSingle();
+    const ceiling = Math.min(globalMax, peer?.outbound_max_clearance ?? 0);
+    type ManifestRow = { operation_id: string; accepted: boolean; operation: { joint_version: number | null; clearance_level: number | null } | { joint_version: number | null; clearance_level: number | null }[] | null };
     const accepted: Record<string, number> = {};
     const invited: string[] = [];
     for (const row of (data ?? []) as ManifestRow[]) {
         const op = Array.isArray(row.operation) ? row.operation[0] : row.operation;
         if (!op) continue; // op deleted mid-query — absent, like its cascade-deleted invite row
+        if ((op.clearance_level ?? 0) > ceiling) continue; // above this peer's ceiling — withhold
         if (row.accepted) accepted[row.operation_id] = op.joint_version ?? 0;
         else invited.push(row.operation_id);
     }
@@ -526,21 +535,32 @@ export async function receiveMirrorRevoke(peer: { id: string }, opId: string): P
 /** Guest: list mirrored ops. Pending (unaccepted) only surface to admins. */
 export async function listMirroredOperations(includePending: boolean): Promise<MirroredOperation[]> {
     let query = supabase.from('mirrored_operations')
-        .select('*, peer:alliance_peers(peer_org_name, peer_icon_url, label)')
+        .select('id, host_peer_id, snapshot, version, snapshot_updated_at, accepted, invited_at, accepted_at, last_polled_at, peer:alliance_peers(peer_org_name, peer_icon_url, label)')
         .is('revoked_at', null).order('invited_at', { ascending: false });
     if (!includePending) query = query.eq('accepted', true);
-    const rows = await safeFetch<Parameters<typeof toMirroredOperation>[0][]>(query, [], 'Failed to list mirrored operations');
+    // Explicit-column selects make PostgREST infer the to-one `peer` embed as an array,
+    // which no longer matches the mapper's row type — cast the query to the safeFetch
+    // shape (the mapper still controls the wire output).
+    const rows = await safeFetch<Parameters<typeof toMirroredOperation>[0][]>(
+        query as unknown as PromiseLike<{ data: Parameters<typeof toMirroredOperation>[0][] | null; error: { code?: string; message?: string; hint?: string; details?: string } | null }>,
+        [], 'Failed to list mirrored operations');
     return rows.map(toMirroredOperation);
 }
 
-export async function getMirroredOperation(id: string): Promise<MirroredOperation | null> {
-    const { data } = await supabase.from('mirrored_operations')
-        .select('*, peer:alliance_peers(peer_org_name, peer_icon_url, label)').eq('id', id).is('revoked_at', null).maybeSingle();
+export async function getMirroredOperation(id: string, includePending = false): Promise<MirroredOperation | null> {
+    // An un-accepted (pending) mirror carries the allied host's full op plan, so it must
+    // only surface to the diplomacy admins who manage invites. Everyone else
+    // (operations:view) sees accepted mirrors only, matching listMirroredOperations and
+    // pollMirroredOperation, which both filter accepted=true.
+    let query = supabase.from('mirrored_operations')
+        .select('id, host_peer_id, snapshot, version, snapshot_updated_at, accepted, invited_at, accepted_at, last_polled_at, peer:alliance_peers(peer_org_name, peer_icon_url, label)').eq('id', id).is('revoked_at', null);
+    if (!includePending) query = query.eq('accepted', true);
+    const { data } = await query.maybeSingle();
     if (!data) return null;
     const mirror = toMirroredOperation(data as Parameters<typeof toMirroredOperation>[0]);
     const { data: parts } = await supabase.from('mirrored_operation_participation')
-        .select('*, user:users!mirrored_operation_participation_user_id_fkey(id, name, avatar_url, role_id)').eq('mirror_op_id', id);
-    mirror.myParticipation = (parts || []).map((r: { mirror_op_id: string; user_id: number; rsvp_status: string; ship_text: string | null; is_ready: boolean; updated_at: string; user?: { id: number; name: string; avatar_url?: string } | null }) => ({
+        .select('mirror_op_id, user_id, rsvp_status, ship_text, is_ready, updated_at, user:users!mirrored_operation_participation_user_id_fkey(id, name, avatar_url, role_id)').eq('mirror_op_id', id);
+    mirror.myParticipation = ((parts || []) as unknown as Array<{ mirror_op_id: string; user_id: number; rsvp_status: string; ship_text: string | null; is_ready: boolean; updated_at: string; user?: { id: number; name: string; avatar_url?: string } | null }>).map((r) => ({
         mirrorOpId: r.mirror_op_id, userId: r.user_id, rsvpStatus: r.rsvp_status,
         shipText: r.ship_text, isReady: r.is_ready, updatedAt: r.updated_at,
         user: r.user ? ({ id: r.user.id, name: r.user.name, avatarUrl: r.user.avatar_url } as User) : undefined,

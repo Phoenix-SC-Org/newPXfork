@@ -128,14 +128,16 @@ export function verifyToken(token: string | undefined): AuthToken | null {
 // role_permissions + clearance). Without SUPABASE_JWT_SECRET no token is minted
 // and clients cannot subscribe to any channel: fail-closed with a loud log.
 
-// 8h, not the 7-day session lifetime: force_logout_all does not revoke an
-// already-minted realtime token (§6b RLS checks live perms/deleted_at but not
-// force_logout_timestamp), so a force-logged-out (not deleted) session keeps
-// receiving id-only pings until the token expires. The session JWT is re-checked
-// on every /api/services + /api/query call, so such a session can fetch no
-// content; the residual is signal/timing only. 8h bounds that window while
-// keeping realtime alive across a normal work session (re-minted on
-// boot/login/permission-change/reconnect — there is no periodic re-mint).
+// 8h, not the 24h session lifetime. The §6b realtime RLS now checks deleted_at AND
+// the token's iat vs the user's tokens_valid_from, so a deleted/banned account or an
+// admin-revoked session (revokeUserSessions) loses even id-only pings right away. The
+// remaining gap is a PLATFORM-wide force_logout_all, which is not folded into the RLS
+// (it would add a settings subquery to every realtime row check): such a session keeps
+// receiving id-only pings until this token expires. The session JWT is re-checked on
+// every /api/services + /api/query call, so it can still fetch no content; the residual
+// is signal/timing only. 8h bounds that window while keeping realtime alive across a
+// normal work session (re-minted on boot/login/permission-change/reconnect — there is
+// no periodic re-mint).
 const REALTIME_TOKEN_LIFETIME_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 const b64url = (input: Buffer | string): string =>

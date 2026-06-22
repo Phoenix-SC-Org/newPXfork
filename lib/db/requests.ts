@@ -37,7 +37,7 @@ const generateRequestId = () => `SR-${Math.random().toString(36).substring(2, 8)
 export async function createServiceRequest(req: Partial<ServiceRequest>, userId: number): Promise<HydratedServiceRequest> {
     // Check for existing active requests
     const { count } = await supabase.from('service_requests')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('client_id', userId)
         .in('status', [ServiceRequestStatus.Submitted, ServiceRequestStatus.Triaged, ServiceRequestStatus.Accepted, ServiceRequestStatus.InProgress]);
 
@@ -59,7 +59,13 @@ export async function createServiceRequest(req: Partial<ServiceRequest>, userId:
         party_info: req.partyInfo,
         secondary_client_handles: req.secondaryClientHandles,
         status: ServiceRequestStatus.Submitted
-    }).select().single();
+    }).select('id, client_id, unregistered_client_rsi_handle, service_type, location, description, status, urgency, threat_level, lead_responder_id, created_at, updated_at, uec_earned, medigel_consumed, client_rating, client_feedback, rated, party_info, secondary_client_handles').single();
+
+    // Race backstop for the count check above: the partial unique index
+    // (uq_one_active_self_request) rejects a second concurrent active self request.
+    if (error && (error as { code?: string }).code === '23505') {
+        throw new Error('Action Blocked: You already have an active service request in progress.');
+    }
 
     if (!error) {
         await supabase.from('status_history').insert({
@@ -77,6 +83,7 @@ export async function createServiceRequest(req: Partial<ServiceRequest>, userId:
     }
 
     handleSupabaseError({ error, message: 'Failed to create request' });
+    if (!data) throw new Error('Failed to create request');
     return toServiceRequest(data);
 }
 
@@ -101,7 +108,7 @@ export async function createAdHocServiceRequest(req: Partial<ServiceRequest>, us
         party_info: req.partyInfo,
         secondary_client_handles: req.secondaryClientHandles,
         status: ServiceRequestStatus.Submitted
-    }).select().single();
+    }).select('id, client_id, unregistered_client_rsi_handle, service_type, location, description, status, urgency, threat_level, lead_responder_id, created_at, updated_at, uec_earned, medigel_consumed, client_rating, client_feedback, rated, party_info, secondary_client_handles').single();
 
     if (!error) {
         await supabase.from('status_history').insert({
@@ -117,6 +124,7 @@ export async function createAdHocServiceRequest(req: Partial<ServiceRequest>, us
         });
     }
     handleSupabaseError({ error, message: 'Failed to create ad-hoc request' });
+    if (!data) throw new Error('Failed to create ad-hoc request');
     return toServiceRequest(data);
 }
 
@@ -343,10 +351,22 @@ export async function assertRequestOwnerOrDuty(requestId: string, user: { id: nu
 }
 
 export async function rateRequest(requestId: string, rating: number, feedback: string) {
+    // Validate like the marketplace rating path: a finite 1..5 integer. An out-of-range
+    // or non-finite value would otherwise be written straight into the public org
+    // rating average (public_stats_for_org), letting any account deface the score.
+    const stars = Math.round(Number(rating));
+    if (!Number.isFinite(stars) || stars < 1 || stars > 5) throw new Error('Rating must be 1–5 stars.');
 
-    const { error } = await supabase.from('service_requests').update({ rated: true, client_rating: rating, client_feedback: feedback })
-        .eq('id', requestId)
-        ;
+    // Only a completed (Success) request is rateable. That matches what the public
+    // stats count and stops a fresh account from rating a request it created itself
+    // just to move the public average.
+    const { data: req } = await supabase.from('service_requests').select('status').eq('id', requestId).maybeSingle();
+    if (!req) throw new Error('Request not found.');
+    if (req.status !== ServiceRequestStatus.Success) throw new Error('Only a completed request can be rated.');
+
+    const { error } = await supabase.from('service_requests')
+        .update({ rated: true, client_rating: stars, client_feedback: stripHtml(feedback, 1000) || null })
+        .eq('id', requestId);
     handleSupabaseError({ error, message: 'Failed to rate request' });
 }
 

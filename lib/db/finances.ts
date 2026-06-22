@@ -14,7 +14,10 @@ import type {
 // approver user rows inline so the UI can render names/avatars without a
 // follow-up lookup.
 const LEDGER_SELECT = `
-    *,
+    id, account_id, entry_type, amount, status, memo, counterparty_user_id,
+    counterparty_text, operation_id, related_inventory_id, related_entry_id,
+    transfer_group_id, created_by_user_id, approved_by_user_id, approved_at,
+    notes, created_at, updated_at,
     counterparty:users!treasury_ledger_entries_counterparty_user_id_fkey(id, name, avatar_url, rsi_handle),
     created_by:users!treasury_ledger_entries_created_by_user_id_fkey(id, name, avatar_url, rsi_handle),
     approved_by:users!treasury_ledger_entries_approved_by_user_id_fkey(id, name, avatar_url, rsi_handle)
@@ -26,8 +29,8 @@ const LEDGER_SELECT = `
 
 export async function listTreasuryAccounts(): Promise<TreasuryAccount[]> {
     const { data, error } = await supabase.from('treasury_accounts')
-        .select('*')
-        
+        .select('id, name, type, description, balance_cached, is_active, created_at, updated_at')
+
         .order('is_active', { ascending: false })
         .order('created_at', { ascending: true });
     if (error && error.code === '42P01') return []; // Migration not yet run
@@ -53,10 +56,11 @@ export async function createTreasuryAccount(
             type: input.type || 'general',
             description: input.description ?? null,
         })
-        .select()
+        .select('id, name, type, description, balance_cached, is_active, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to create account' });
-    broadcastToOrg('finances:account_update', { accountId: data?.id });
+    if (!data) throw new Error('Account insert returned no row.');
+    broadcastToOrg('finances:account_update', { accountId: data.id });
     return toTreasuryAccount(data);
 }
 
@@ -81,9 +85,10 @@ export async function updateTreasuryAccount(
         .update(patch)
         .eq('id', input.id)
 
-        .select()
+        .select('id, name, type, description, balance_cached, is_active, created_at, updated_at')
         .single();
     handleSupabaseError({ error, message: 'Failed to update account' });
+    if (!data) throw new Error('Account update returned no row.');
     broadcastToOrg('finances:account_update', { accountId: input.id });
     return toTreasuryAccount(data);
 }
@@ -97,7 +102,7 @@ export async function updateTreasuryAccount(
  */
 export async function getTreasuryAccount(accountId: number): Promise<TreasuryAccount | null> {
     const { data, error } = await supabase.from('treasury_accounts')
-        .select('*')
+        .select('id, name, type, description, balance_cached, is_active, created_at, updated_at')
         .eq('id', accountId)
         .maybeSingle();
     handleSupabaseError({ error, message: 'Failed to get account slice' });
@@ -142,7 +147,7 @@ export async function listLedgerEntries(
     const { data, error } = await q;
     if (error && error.code === '42P01') return [];
     handleSupabaseError({ error, message: 'Failed to load ledger' });
-    return (data || []).map(toLedgerEntry);
+    return (data || []).map(r => toLedgerEntry(r as unknown as Parameters<typeof toLedgerEntry>[0]));
 }
 
 export async function getLedgerEntry(
@@ -155,7 +160,7 @@ export async function getLedgerEntry(
         .maybeSingle();
     if (error && error.code === '42P01') return null;
     handleSupabaseError({ error, message: 'Failed to load ledger entry' });
-    return data ? toLedgerEntry(data) : null;
+    return data ? toLedgerEntry(data as unknown as Parameters<typeof toLedgerEntry>[0]) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -209,8 +214,9 @@ export async function submitDeposit(
         throw new Error('You already have a pending deposit with this memo and amount. Wait for it to be reviewed or use a different reference.');
     }
     handleSupabaseError({ error, message: 'Failed to submit deposit' });
-    broadcastToOrg('finances:ledger_update', { entryId: data?.id });
-    return toLedgerEntry(data);
+    if (!data) throw new Error('Deposit insert returned no row.');
+    broadcastToOrg('finances:ledger_update', { entryId: data.id });
+    return toLedgerEntry(data as unknown as Parameters<typeof toLedgerEntry>[0]);
 }
 
 export interface SubmitWithdrawalInput {
@@ -254,8 +260,9 @@ export async function submitWithdrawal(
         .select(LEDGER_SELECT)
         .single();
     handleSupabaseError({ error, message: 'Failed to submit withdrawal request' });
-    broadcastToOrg('finances:ledger_update', { entryId: data?.id });
-    return toLedgerEntry(data);
+    if (!data) throw new Error('Withdrawal insert returned no row.');
+    broadcastToOrg('finances:ledger_update', { entryId: data.id });
+    return toLedgerEntry(data as unknown as Parameters<typeof toLedgerEntry>[0]);
 }
 
 /**
