@@ -7,10 +7,12 @@ import { useFormatDate } from '../../../contexts/AuthContext';
 
 import { ApplicationStatus, formatReferralSource } from '../../../types';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const SecurityManagementTab: React.FC = () => {
     const { hrApplicants } = useHR();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { openSecurityVettingModal } = useModalRegistry();
     const [filter, setFilter] = useState<'Pending' | 'History'>('Pending');
 
@@ -35,25 +37,25 @@ const SecurityManagementTab: React.FC = () => {
         <div className="space-y-6 animate-fade-in">
              <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">Security Vetting</h2>
-                    <p className="text-slate-400 text-sm">Clearance upgrade requests and background checks.</p>
+                    <h2 className="text-2xl font-bold text-white">{t('Security Vetting')}</h2>
+                    <p className="text-slate-400 text-sm">{t('Clearance upgrade requests and background checks.')}</p>
                 </div>
             </div>
 
             <div className="flex gap-2">
-                <button onClick={() => setFilter('Pending')} className={`px-4 py-2 rounded-sm text-xs font-bold uppercase transition-colors ${filter === 'Pending' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>Active Requests</button>
-                <button onClick={() => setFilter('History')} className={`px-4 py-2 rounded-sm text-xs font-bold uppercase transition-colors ${filter === 'History' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>Archived History</button>
+                <button onClick={() => setFilter('Pending')} className={`px-4 py-2 rounded-sm text-xs font-bold uppercase transition-colors ${filter === 'Pending' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>{t('Active Requests')}</button>
+                <button onClick={() => setFilter('History')} className={`px-4 py-2 rounded-sm text-xs font-bold uppercase transition-colors ${filter === 'History' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>{t('Archived History')}</button>
             </div>
 
             <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
                 <table className="w-full text-left">
                     <thead>
                         <tr className="bg-slate-900/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                            <th className="p-4 font-bold">Subject</th>
-                            <th className="p-4 font-bold">Request Type</th>
-                            <th className="p-4 font-bold">Details</th>
-                            <th className="p-4 font-bold">Date Filed</th>
-                            <th className="p-4 font-bold text-right">Status</th>
+                            <th className="p-4 font-bold">{t('Subject')}</th>
+                            <th className="p-4 font-bold">{t('Request Type')}</th>
+                            <th className="p-4 font-bold">{t('Details')}</th>
+                            <th className="p-4 font-bold">{t('Date Filed')}</th>
+                            <th className="p-4 font-bold text-right">{t('Status')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50">
@@ -76,13 +78,13 @@ const SecurityManagementTab: React.FC = () => {
                                         app.status === ApplicationStatus.Rejected ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                         'bg-sky-500/10 text-sky-400 border-sky-500/20'
                                     }`}>
-                                        {app.status}
+                                        {t(app.status, { context: 'application status' })}
                                     </span>
                                 </td>
                             </tr>
                         ))}
                         {displayApps.length === 0 && (
-                            <tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">No vetting requests found.</td></tr>
+                            <tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">{t('No vetting requests found.')}</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -90,7 +92,7 @@ const SecurityManagementTab: React.FC = () => {
             
             <div className="bg-slate-900/30 p-4 rounded-sm border border-slate-700/50 text-xs text-slate-400 flex items-center gap-3">
                 <i className="fa-solid fa-circle-info text-sky-500"></i>
-                <p>Select a request to open the Security Vetting Console. Here you can schedule interviews, review the applicant's current clearance, and finalize the determination.</p>
+                <p>{t("Select a request to open the Security Vetting Console. Here you can schedule interviews, review the applicant's current clearance, and finalize the determination.")}</p>
             </div>
         </div>
     );

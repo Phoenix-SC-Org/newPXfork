@@ -12,13 +12,15 @@ import { getSupabase } from '../../../lib/supabaseClient';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Helper for feed media embedding
 const MediaEmbed: React.FC<{ url: string }> = ({ url }) => {
+    const { t } = useI18n();
     const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(url);
     const isVideo = /\.(mp4|webm)$/i.test(url) || url.includes('youtube.com') || url.includes('youtu.be');
 
-    if (isImage) return <img src={url} alt="Attachment" className="max-h-60 rounded-lg border border-slate-700 mt-2" loading="lazy" />;
+    if (isImage) return <img src={url} alt={t('Attachment')} className="max-h-60 rounded-lg border border-slate-700 mt-2" loading="lazy" />;
     if (isVideo) {
         if (url.includes('youtube') || url.includes('youtu.be')) {
             const videoId = url.split('v=')[1] || url.split('/').pop();
@@ -37,6 +39,7 @@ const MediaEmbed: React.FC<{ url: string }> = ({ url }) => {
 };
 
 const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
@@ -84,16 +87,16 @@ const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
             await rpcAction('unit:create_post', { unitId, userId: currentUser?.id, content });
             setContent('');
             fetchFeed();
-        } catch { addToast("Post Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to publish your post." }); } finally { setIsPosting(false); }
+        } catch { addToast(t('Post Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to publish your post.') }); } finally { setIsPosting(false); }
     };
 
     const handleDelete = async (postId: string) => {
-        const confirmed = await confirmDialog({ title: 'Delete Post', message: 'Delete post?', confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirmDialog({ title: t('Delete Post'), message: t('Delete post?'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         try {
             await rpcAction('unit:delete_post', { postId });
             fetchFeed();
-        } catch { addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to delete the post." }); }
+        } catch { addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to delete the post.') }); }
     };
 
     return (
@@ -102,15 +105,15 @@ const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                     <i className="fa-solid fa-comments text-sm"></i>
                 </div>
-                <h3 className="font-bold text-white text-sm uppercase tracking-wider">Unit Comms</h3>
+                <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Unit Comms')}</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {isLoading ? (
-                    <div className="text-center text-slate-500 italic py-10">Loading feed...</div>
+                    <div className="text-center text-slate-500 italic py-10">{t('Loading feed...')}</div>
                 ) : posts.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                        <EmptyState icon="fa-comment-slash" accent="emerald" heading="No messages yet" description="Be the first to post." compact />
+                        <EmptyState icon="fa-comment-slash" accent="emerald" heading={t('No messages yet')} description={t('Be the first to post.')} compact />
                     </div>
                 ) : (
                     posts.map(post => {
@@ -142,7 +145,7 @@ const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
                                             onClick={() => handleDelete(post.id)}
                                             className="opacity-0 group-hover:opacity-100 text-[10px] text-red-300 hover:text-red-200 mt-2 transition-opacity block ml-auto"
                                         >
-                                            Delete
+                                            {t('Delete')}
                                         </button>
                                     )}
                                 </div>
@@ -157,7 +160,7 @@ const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
                     type="text"
                     value={content}
                     onChange={e => setContent(e.target.value)}
-                    placeholder="Message unit..."
+                    placeholder={t('Message unit...')}
                     className="flex-1 bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/30 outline-hidden transition-all placeholder:text-slate-500"
                     disabled={isPosting}
                 />
@@ -174,6 +177,7 @@ const UnitFeed: React.FC<{ unitId: number }> = ({ unitId }) => {
 };
 
 const UnitRoster: React.FC<{ unitId: number }> = ({ unitId }) => {
+    const { t } = useI18n();
     const { allUsers } = useMembers();
     const members = useMemo(() => allUsers.filter(u => u.unit?.id === unitId).sort((a, b) => (a.rank?.sortOrder || 999) - (b.rank?.sortOrder || 999)), [allUsers, unitId]);
 
@@ -184,9 +188,9 @@ const UnitRoster: React.FC<{ unitId: number }> = ({ unitId }) => {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                         <i className="fa-solid fa-users-viewfinder text-sm"></i>
                     </div>
-                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">Active Roster</h3>
+                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Active Roster')}</h3>
                 </div>
-                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{members.length} PAX</span>
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">{t('{count} PAX', { count: members.length })}</span>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
                 {members.map(m => (
@@ -199,7 +203,7 @@ const UnitRoster: React.FC<{ unitId: number }> = ({ unitId }) => {
                             <p className="text-sm font-bold text-slate-200 truncate group-hover:text-white transition-colors">{m.name}</p>
                             <p className="text-[10px] text-slate-500 uppercase truncate tracking-widest">{m.rank?.name}</p>
                         </div>
-                        {m.unit?.leaderId === m.id && <i className="fa-solid fa-crown text-amber-400 text-xs" title="Unit Leader"></i>}
+                        {m.unit?.leaderId === m.id && <i className="fa-solid fa-crown text-amber-400 text-xs" title={t('Unit Leader')}></i>}
                     </div>
                 ))}
             </div>
@@ -208,6 +212,7 @@ const UnitRoster: React.FC<{ unitId: number }> = ({ unitId }) => {
 };
 
 const UnitCalendar: React.FC<{ unitId: number }> = ({ unitId }) => {
+    const { t } = useI18n();
     const { operations } = useOperations();
     const fmt = useFormatDate();
     const unitOps = useMemo(() =>
@@ -224,7 +229,7 @@ const UnitCalendar: React.FC<{ unitId: number }> = ({ unitId }) => {
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                     <i className="fa-solid fa-calendar-days text-sm"></i>
                 </div>
-                <h3 className="font-bold text-white text-sm uppercase tracking-wider">Deployment Schedule</h3>
+                <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Deployment Schedule')}</h3>
             </div>
             <div className="p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                 {upcoming.length > 0 ? upcoming.map(op => (
@@ -236,17 +241,17 @@ const UnitCalendar: React.FC<{ unitId: number }> = ({ unitId }) => {
                             <div>
                                 <h4 className="font-bold text-white text-sm group-hover:text-purple-300 transition-colors">{op.name}</h4>
                                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                                    {op.activeStartTime ? fmt(op.activeStartTime) : 'TBD'}
+                                    {op.activeStartTime ? fmt(op.activeStartTime) : t('TBD')}
                                 </p>
                             </div>
                         </div>
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${op.status === 'Active' ? 'bg-green-500/10 text-green-300 border-green-500/30 animate-pulse' : 'bg-slate-500/10 text-slate-400 border-slate-500/30'}`}>
-                            {op.status}
+                            {t(op.status, { context: 'operation status' })}
                         </span>
                     </div>
                 )) : (
                     <div className="flex items-center justify-center h-full">
-                        <EmptyState icon="fa-calendar-xmark" accent="emerald" heading="No upcoming operations" compact />
+                        <EmptyState icon="fa-calendar-xmark" accent="emerald" heading={t('No upcoming operations')} compact />
                     </div>
                 )}
             </div>
@@ -262,6 +267,7 @@ interface MyUnitViewProps {
 }
 
 const MyUnitView: React.FC<MyUnitViewProps> = ({ unit: extUnit }) => {
+    const { t } = useI18n();
     const { currentUser } = useAuth();
     const { openUnitModal } = useModalRegistry();
 
@@ -273,8 +279,8 @@ const MyUnitView: React.FC<MyUnitViewProps> = ({ unit: extUnit }) => {
                     <EmptyState
                         icon="fa-users-slash"
                         accent="emerald"
-                        heading="No Unit Assignment"
-                        description="You are currently in the General Pool. Contact HR or Command to be assigned to a specific operational unit."
+                        heading={t('No Unit Assignment')}
+                        description={t('You are currently in the General Pool. Contact HR or Command to be assigned to a specific operational unit.')}
                     />
                 </div>
             </div>
@@ -289,7 +295,7 @@ const MyUnitView: React.FC<MyUnitViewProps> = ({ unit: extUnit }) => {
             <div className="relative rounded-xl overflow-hidden border border-slate-700/50 shadow-lg bg-slate-900 group">
                 <div className="absolute inset-0">
                     {unit.bannerUrl ? (
-                        <img src={unit.bannerUrl} className="w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-700" alt="Banner" />
+                        <img src={unit.bannerUrl} className="w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-700" alt={t('Banner')} />
                     ) : (
                         <div className="w-full h-full bg-linear-to-r from-slate-900 via-emerald-900/20 to-slate-900"></div>
                     )}
@@ -299,14 +305,14 @@ const MyUnitView: React.FC<MyUnitViewProps> = ({ unit: extUnit }) => {
                 <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
                     <div className="w-24 h-24 md:w-28 md:h-28 rounded-xl bg-slate-800 border-2 border-emerald-500/30 flex items-center justify-center shadow-xl overflow-hidden shrink-0">
                         {unit.logoUrl ? (
-                            <img src={unit.logoUrl} className="w-full h-full object-cover" alt="Logo" />
+                            <img src={unit.logoUrl} className="w-full h-full object-cover" alt={t('Logo')} />
                         ) : (
                             <i className="fa-solid fa-shield-halved text-4xl text-emerald-300"></i>
                         )}
                     </div>
                     <div className="flex-1 pb-2 min-w-0">
                         <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase drop-shadow-lg">{unit.name}</h1>
-                        <p className="text-emerald-300 font-serif italic text-base md:text-lg mt-1">"{unit.motto || 'Strength in Unity'}"</p>
+                        <p className="text-emerald-300 font-serif italic text-base md:text-lg mt-1">"{unit.motto || t('Strength in Unity')}"</p>
                         <p className="text-slate-300 text-sm mt-3 max-w-2xl leading-relaxed hidden md:block">{unit.description}</p>
                     </div>
                     {isLeader && (
@@ -314,7 +320,7 @@ const MyUnitView: React.FC<MyUnitViewProps> = ({ unit: extUnit }) => {
                             onClick={() => openUnitModal(unit)}
                             className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-emerald-300 bg-slate-900/60 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/10 backdrop-blur-xs transition"
                         >
-                            <i className="fa-solid fa-pen-to-square"></i> Edit Profile
+                            <i className="fa-solid fa-pen-to-square"></i> {t('Edit Profile')}
                         </button>
                     )}
                 </div>

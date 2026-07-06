@@ -8,12 +8,14 @@ import { VirtualizedList } from '../../ui/VirtualizedList';
 import { HydratedHRInterview } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const ManageInterviewsTab: React.FC = () => {
     const { rpcAction, refreshHR } = useData();
     const { hrInterviews } = useHR();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { addToast, confirm } = useNotification();
     const { openConductInterviewModal, openEditInterviewModal } = useModalRegistry();
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,14 +45,14 @@ const ManageInterviewsTab: React.FC = () => {
     }, [hrInterviews, searchTerm]);
 
     const handleDelete = async (interviewId: string) => {
-        const confirmed = await confirm({ title: 'Delete Interview', message: 'Are you sure you want to delete this interview record? This action cannot be undone.', confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Delete Interview'), message: t('Are you sure you want to delete this interview record? This action cannot be undone.'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         try {
             await rpcAction('hr:delete_interview', { interviewId, userId: currentUser?.id });
             await refreshHR();
         } catch (e) {
             console.error(e);
-            addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to delete the interview." });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to delete the interview.') });
         }
     };
 
@@ -60,15 +62,15 @@ const ManageInterviewsTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-calendar-check text-emerald-300"></i>
-                        Manage Interviews
+                        {t('Manage Interviews')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Overview of all scheduled and completed interview protocols.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Overview of all scheduled and completed interview protocols.')}</p>
                 </div>
                 <div className="relative w-full sm:w-64">
                     <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs" />
                     <input
                         type="search"
-                        placeholder="Search interviews..."
+                        placeholder={t('Search interviews...')}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 font-mono text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 outline-hidden transition-all"
@@ -78,12 +80,12 @@ const ManageInterviewsTab: React.FC = () => {
 
             <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-slate-700/50 overflow-hidden flex flex-col h-[600px]">
                 <div className="hidden md:flex bg-white/5 border-b border-white/5 text-slate-500 text-[10px] uppercase tracking-widest font-black">
-                    <div className="p-4 w-32">Status</div>
-                    <div className="p-4 flex-1">Subject</div>
-                    <div className="p-4 flex-1">Protocol</div>
-                    <div className="p-4 flex-1">Interviewer</div>
-                    <div className="p-4 w-40">Date</div>
-                    <div className="p-4 w-36 text-right">Actions</div>
+                    <div className="p-4 w-32">{t('Status')}</div>
+                    <div className="p-4 flex-1">{t('Subject')}</div>
+                    <div className="p-4 flex-1">{t('Protocol')}</div>
+                    <div className="p-4 flex-1">{t('Interviewer')}</div>
+                    <div className="p-4 w-40">{t('Date')}</div>
+                    <div className="p-4 w-36 text-right">{t('Actions')}</div>
                 </div>
 
                 <div className="flex-1 relative">
@@ -97,18 +99,18 @@ const ManageInterviewsTab: React.FC = () => {
                                     <div className="md:hidden w-full space-y-2">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <div className="font-bold text-white text-lg">{int.applicantName || 'Unknown Applicant'}</div>
+                                                <div className="font-bold text-white text-lg">{int.applicantName || t('Unknown Applicant')}</div>
                                                 <div className="text-xs text-emerald-300 font-semibold">{int.template.name}</div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {int.status === 'Completed' && int.isRecommended !== undefined && (
                                                     <span className={`px-2 py-1 rounded-sm text-[10px] font-black uppercase tracking-wider border ${int.isRecommended ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                                         <i className={`fa-solid ${int.isRecommended ? 'fa-thumbs-up' : 'fa-thumbs-down'} mr-1`}></i>
-                                                        {int.isRecommended ? 'Recommended' : 'Not Recommended'}
+                                                        {int.isRecommended ? t('Recommended') : t('Not Recommended')}
                                                     </span>
                                                 )}
                                                 <span className={`px-2 py-1 rounded-sm text-[10px] font-black uppercase tracking-wider border ${int.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                                    {int.status}
+                                                    {t(int.status, { context: 'interview status' })}
                                                 </span>
                                             </div>
                                         </div>
@@ -117,7 +119,7 @@ const ManageInterviewsTab: React.FC = () => {
                                                 <i className="fa-solid fa-user-secret text-xs"></i>
                                                 <span>{int.interviewer.name}</span>
                                                 {int.panelMembers?.length > 0 && (
-                                                    <span className="text-[10px] text-indigo-400 font-semibold">+{int.panelMembers.length} panel</span>
+                                                    <span className="text-[10px] text-indigo-400 font-semibold">{t('+{count} panel', { count: int.panelMembers.length })}</span>
                                                 )}
                                             </div>
                                             <div className="font-mono text-xs">{fmt(int.scheduledAt)}</div>
@@ -128,20 +130,20 @@ const ManageInterviewsTab: React.FC = () => {
                                                     onClick={() => openEditInterviewModal(int)}
                                                     className="text-amber-300 font-black text-[10px] uppercase tracking-widest"
                                                 >
-                                                    <i className="fa-solid fa-pen-to-square mr-1"></i>Edit
+                                                    <i className="fa-solid fa-pen-to-square mr-1"></i>{t('Edit')}
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => openConductInterviewModal(int)}
                                                 className="text-sky-400 font-bold text-xs uppercase"
                                             >
-                                                View
+                                                {t('View')}
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(int.id)}
                                                 className="text-red-400 font-bold text-xs uppercase"
                                             >
-                                                Delete
+                                                {t('Delete')}
                                             </button>
                                         </div>
                                     </div>
@@ -150,7 +152,7 @@ const ManageInterviewsTab: React.FC = () => {
                                     <div className="hidden md:contents">
                                         <div className="p-4 w-32">
                                             <span className={`px-2 py-1 rounded-sm text-[10px] font-black uppercase tracking-wider border ${int.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                                {int.status}
+                                                {t(int.status, { context: 'interview status' })}
                                             </span>
                                             {int.status === 'Completed' && int.isRecommended !== undefined && (
                                                 <span className={`ml-1 inline-flex items-center px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase border ${int.isRecommended ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
@@ -158,7 +160,7 @@ const ManageInterviewsTab: React.FC = () => {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="p-4 flex-1 font-bold text-white truncate">{int.applicantName || 'Unknown Applicant'}</div>
+                                        <div className="p-4 flex-1 font-bold text-white truncate">{int.applicantName || t('Unknown Applicant')}</div>
                                         <div className="p-4 flex-1 text-sm text-emerald-300 font-semibold truncate">{int.template.name}</div>
                                         <div className="p-4 flex-1 text-sm text-slate-300">
                                             <div className="flex items-center gap-2">
@@ -172,7 +174,7 @@ const ManageInterviewsTab: React.FC = () => {
                                                             <img key={pm.id} src={pm.avatarUrl} className="h-4 w-4 rounded-full border border-slate-800 object-cover shrink-0" alt={pm.name} title={pm.name} />
                                                         ))}
                                                     </div>
-                                                    <span className="text-[10px] text-indigo-400 font-semibold ml-1">+{int.panelMembers.length} panel</span>
+                                                    <span className="text-[10px] text-indigo-400 font-semibold ml-1">{t('+{count} panel', { count: int.panelMembers.length })}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -183,7 +185,7 @@ const ManageInterviewsTab: React.FC = () => {
                                                     <button
                                                         onClick={() => openEditInterviewModal(int)}
                                                         className="p-1.5 text-amber-400 hover:bg-amber-500/10 rounded-sm transition-colors"
-                                                        title="Edit / Reschedule"
+                                                        title={t('Edit / Reschedule')}
                                                     >
                                                         <i className="fa-solid fa-pen-to-square"></i>
                                                     </button>
@@ -191,14 +193,14 @@ const ManageInterviewsTab: React.FC = () => {
                                                 <button
                                                     onClick={() => openConductInterviewModal(int)}
                                                     className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors"
-                                                    title="View Details"
+                                                    title={t('View Details')}
                                                 >
                                                     <i className="fa-solid fa-eye"></i>
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(int.id)}
                                                     className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm transition-colors"
-                                                    title="Delete Interview"
+                                                    title={t('Delete Interview')}
                                                 >
                                                     <i className="fa-solid fa-trash-can"></i>
                                                 </button>
@@ -209,7 +211,7 @@ const ManageInterviewsTab: React.FC = () => {
                             )}
                         />
                     ) : (
-                        <div className="flex items-center justify-center h-full text-slate-500 italic">No interviews found.</div>
+                        <div className="flex items-center justify-center h-full text-slate-500 italic">{t('No interviews found.')}</div>
                     )}
                 </div>
             </div>

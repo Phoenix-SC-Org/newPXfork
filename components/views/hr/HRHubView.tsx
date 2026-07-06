@@ -5,6 +5,7 @@ import { useMembers } from '../../../contexts/MembersContext';
 import { useHR } from '../../../contexts/HRContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNow } from '../../../hooks/useNow';
+import { useI18n } from '../../../i18n/I18nContext';
 import { ApplicationStatus, JobPostingStatus } from '../../../types';
 import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
@@ -62,6 +63,7 @@ const NavigationItem: React.FC<{ id: HRTab; label: string; icon: string; isActiv
 );
 
 const HRHubView: React.FC = () => {
+    const { t } = useI18n();
     const { hasPermission } = useAuth();
     const { refreshHR, isFetching } = useData();
     const { members } = useMembers();
@@ -206,17 +208,17 @@ const HRHubView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · HR HUB"
+                chipLabel={t('MODULE · HR HUB')}
                 chipIcon="fa-id-badge"
                 chipAccent="emerald"
-                title="HR Hub"
-                subtitle="Personnel records, recruitment, interviews, transfers, and clearance management."
+                title={t('HR Hub')}
+                subtitle={t('Personnel records, recruitment, interviews, transfers, and clearance management.')}
                 syncing={isFetching['hr']}
                 stats={<>
-                    <HeroStat icon="fa-folder-tree" label="Open Cases" value={heroStats.openCases} accent="emerald" emphasize={heroStats.openCases > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('case-management') : undefined} />
-                    <HeroStat icon="fa-calendar-check" label="Pending Interviews" value={heroStats.pendingInterviews} accent="amber" emphasize={heroStats.pendingInterviews > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('manage-interviews') : undefined} />
-                    <HeroStat icon="fa-newspaper" label="Open Vacancies" value={heroStats.openVacancies} accent="sky" emphasize={heroStats.openVacancies > 0} onClick={() => setActiveTab('gazette')} />
-                    <HeroStat icon="fa-hourglass-half" label="Probation" value={heroStats.probationTracked} accent="purple" emphasize={heroStats.probationTracked > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('probation') : undefined} />
+                    <HeroStat icon="fa-folder-tree" label={t('Open Cases')} value={heroStats.openCases} accent="emerald" emphasize={heroStats.openCases > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('case-management') : undefined} />
+                    <HeroStat icon="fa-calendar-check" label={t('Pending Interviews')} value={heroStats.pendingInterviews} accent="amber" emphasize={heroStats.pendingInterviews > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('manage-interviews') : undefined} />
+                    <HeroStat icon="fa-newspaper" label={t('Open Vacancies')} value={heroStats.openVacancies} accent="sky" emphasize={heroStats.openVacancies > 0} onClick={() => setActiveTab('gazette')} />
+                    <HeroStat icon="fa-hourglass-half" label={t('Probation')} value={heroStats.probationTracked} accent="purple" emphasize={heroStats.probationTracked > 0} onClick={(canRecruit || canAdminHR) ? () => setActiveTab('probation') : undefined} />
                 </>}
             />
 
@@ -231,9 +233,9 @@ const HRHubView: React.FC = () => {
                             className="w-full bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 outline-hidden appearance-none transition-all"
                         >
                             {navGroups.map((group) => (
-                                <optgroup key={group.title} label={group.title} className="bg-slate-900 text-slate-400">
+                                <optgroup key={group.title} label={t(group.title)} className="bg-slate-900 text-slate-400">
                                     {group.items.map(item => (
-                                        <option key={item.id} value={item.id} className="text-white">{item.label}</option>
+                                        <option key={item.id} value={item.id} className="text-white">{t(item.label)}</option>
                                     ))}
                                 </optgroup>
                             ))}
@@ -248,12 +250,12 @@ const HRHubView: React.FC = () => {
                 <div className="hidden lg:flex flex-col shrink-0 w-60 border-r border-slate-800/60 bg-slate-900/40 overflow-y-auto custom-scrollbar py-5 px-3 gap-5">
                     {navGroups.map((group) => (
                         <div key={group.title} className="space-y-0.5">
-                            <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{group.title}</p>
+                            <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{t(group.title)}</p>
                             {group.items.map(item => (
                                 <NavigationItem
                                     key={item.id}
                                     id={item.id}
-                                    label={item.label}
+                                    label={t(item.label)}
                                     icon={item.icon}
                                     isActive={activeTab === item.id}
                                     onClick={() => handleNavTo(item.id)}

@@ -6,12 +6,14 @@ import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 
 import { TransferRequestStatus } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const ManageTransfersTab: React.FC = () => {
     const { rpcAction, refreshHR } = useData();
     const { hrTransfers } = useHR();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { addToast } = useNotification();
     const [processingState, setProcessingState] = useState<Record<string, 'approve' | 'deny'>>({});
 
@@ -31,7 +33,7 @@ const ManageTransfersTab: React.FC = () => {
             await refreshHR();
         } catch (error) {
             console.error("Transfer processing failed:", error);
-            addToast("Transfer Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to process the transfer request." });
+            addToast(t('Transfer Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to process the transfer request.') });
         } finally {
             setProcessingState(prev => {
                 const next = { ...prev };
@@ -46,19 +48,19 @@ const ManageTransfersTab: React.FC = () => {
              <div className="space-y-4">
                  <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
                     <div>
-                        <h2 className="text-2xl font-bold text-white">Pending Requests</h2>
-                        <p className="text-slate-400 text-sm">Action required for unit transfer applications.</p>
+                        <h2 className="text-2xl font-bold text-white">{t('Pending Requests')}</h2>
+                        <p className="text-slate-400 text-sm">{t('Action required for unit transfer applications.')}</p>
                     </div>
                 </div>
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-900/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
-                                <th className="p-4 font-bold">Member</th>
-                                <th className="p-4 font-bold">Current Unit</th>
-                                <th className="p-4 font-bold">Requested Unit</th>
-                                <th className="p-4 font-bold">Reason</th>
-                                <th className="p-4 font-bold text-right">Actions</th>
+                                <th className="p-4 font-bold">{t('Member')}</th>
+                                <th className="p-4 font-bold">{t('Current Unit')}</th>
+                                <th className="p-4 font-bold">{t('Requested Unit')}</th>
+                                <th className="p-4 font-bold">{t('Reason')}</th>
+                                <th className="p-4 font-bold text-right">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-700/50">
@@ -69,7 +71,7 @@ const ManageTransfersTab: React.FC = () => {
                                 return (
                                 <tr key={tr.id} className="hover:bg-slate-700/20 transition-colors">
                                     <td className="p-4 font-bold text-white">{(tr as any).user.name}</td>
-                                    <td className="p-4 text-sm text-slate-400">{(tr as any).user?.unit?.name || 'Unassigned'}</td>
+                                    <td className="p-4 text-sm text-slate-400">{(tr as any).user?.unit?.name || t('Unassigned')}</td>
                                     <td className="p-4 text-sm text-sky-400 font-bold">{(tr as any).targetUnit.name}</td>
                                     <td className="p-4 text-sm text-slate-300 italic max-w-xs truncate">{tr.reason}</td>
                                     <td className="p-4 text-right">
@@ -77,7 +79,7 @@ const ManageTransfersTab: React.FC = () => {
                                             <button 
                                                 onClick={() => processTransfer(tr.id, TransferRequestStatus.Approved, `Approved by ${currentUser?.name}`)}
                                                 className="bg-green-600 hover:bg-green-500 text-white p-2 rounded-sm shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed w-8 h-8 flex items-center justify-center transition-all" 
-                                                title="Approve"
+                                                title={t('Approve')}
                                                 disabled={isProcessing}
                                             >
                                                 {currentAction === 'approve' ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>}
@@ -85,7 +87,7 @@ const ManageTransfersTab: React.FC = () => {
                                             <button 
                                                 onClick={() => processTransfer(tr.id, TransferRequestStatus.Denied, `Denied by ${currentUser?.name}`)}
                                                 className="bg-red-600 hover:bg-red-500 text-white p-2 rounded-sm shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed w-8 h-8 flex items-center justify-center transition-all" 
-                                                title="Deny"
+                                                title={t('Deny')}
                                                 disabled={isProcessing}
                                             >
                                                 {currentAction === 'deny' ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-xmark"></i>}
@@ -95,7 +97,7 @@ const ManageTransfersTab: React.FC = () => {
                                 </tr>
                             )})}
                              {pending.length === 0 && (
-                                <tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">No pending transfer requests.</td></tr>
+                                <tr><td colSpan={5} className="p-10 text-center text-slate-500 italic">{t('No pending transfer requests.')}</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -105,19 +107,19 @@ const ManageTransfersTab: React.FC = () => {
             <div className="space-y-4">
                  <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
                     <div>
-                        <h2 className="text-xl font-bold text-white text-opacity-80">Transfer History</h2>
-                        <p className="text-slate-500 text-sm">Previously approved or denied requests.</p>
+                        <h2 className="text-xl font-bold text-white text-opacity-80">{t('Transfer History')}</h2>
+                        <p className="text-slate-500 text-sm">{t('Previously approved or denied requests.')}</p>
                     </div>
                 </div>
                 <div className="bg-slate-900/30 rounded-xl border border-slate-700/50 overflow-hidden">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-900/50 border-b border-slate-700 text-slate-500 text-xs uppercase tracking-wider">
-                                <th className="p-4 font-bold">Member</th>
-                                <th className="p-4 font-bold">Target Unit</th>
-                                <th className="p-4 font-bold">Status</th>
-                                <th className="p-4 font-bold">Notes / Approver</th>
-                                <th className="p-4 font-bold text-right">Decision Date</th>
+                                <th className="p-4 font-bold">{t('Member')}</th>
+                                <th className="p-4 font-bold">{t('Target Unit')}</th>
+                                <th className="p-4 font-bold">{t('Status')}</th>
+                                <th className="p-4 font-bold">{t('Notes / Approver')}</th>
+                                <th className="p-4 font-bold text-right">{t('Decision Date')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/50">
@@ -131,7 +133,7 @@ const ManageTransfersTab: React.FC = () => {
                                             tr.status === TransferRequestStatus.Denied ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
                                             'bg-slate-500/10 text-slate-400'
                                         }`}>
-                                            {tr.status}
+                                            {t(tr.status, { context: 'transfer status' })}
                                         </span>
                                     </td>
                                     <td className="p-4 text-xs text-slate-500 italic max-w-xs truncate">{tr.adminNotes || '-'}</td>
@@ -139,7 +141,7 @@ const ManageTransfersTab: React.FC = () => {
                                 </tr>
                             ))}
                              {history.length === 0 && (
-                                <tr><td colSpan={5} className="p-8 text-center text-slate-600 italic">No transfer history found.</td></tr>
+                                <tr><td colSpan={5} className="p-8 text-center text-slate-600 italic">{t('No transfer history found.')}</td></tr>
                             )}
                         </tbody>
                     </table>

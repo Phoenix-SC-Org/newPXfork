@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import CallsignChip from '../../shared/ui/CallsignChip';
 
 interface FirstTimeSetupViewProps {
@@ -17,6 +18,7 @@ const formatUTC = (d: Date) => {
 const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdminSetup }) => {
     const { currentUser, claimAdminAccount } = useAuth();
     const { brandingConfig } = useConfig();
+    const { t } = useI18n();
     const [code, setCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +37,7 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
             await claimAdminAccount(code);
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'Invalid Claim Code');
+            setError(err.message || t('Invalid Claim Code'));
             setIsSubmitting(false);
         }
     };
@@ -51,7 +53,7 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
             </div>
 
             <div className="relative z-10 px-5 pt-6 sm:px-8 sm:pt-8 flex justify-center">
-                <CallsignChip label="ADMIN CLAIM PROTOCOL" icon="fa-key" accent="amber" pulse />
+                <CallsignChip label={t('ADMIN CLAIM PROTOCOL')} icon="fa-key" accent="amber" pulse />
             </div>
 
             <div className="relative z-10 flex-1 flex items-center justify-center px-5 sm:px-8 py-6">
@@ -66,13 +68,13 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
                     <h1 className="text-3xl sm:text-4xl font-black text-white tracking-[0.15em] uppercase mb-1 leading-tight">
                         {brandingConfig.name}
                     </h1>
-                    <p className="text-[11px] text-amber-300/70 font-mono uppercase tracking-[0.3em] mb-5">System Initialization</p>
+                    <p className="text-[11px] text-amber-300/70 font-mono uppercase tracking-[0.3em] mb-5">{t('System Initialization')}</p>
                     <div className="h-px w-20 bg-linear-to-r from-transparent via-amber-500 to-transparent opacity-60 mb-6" />
 
                     <p className="text-sm text-slate-400 leading-relaxed mb-6 max-w-sm">
                         {isAuthenticated
-                            ? <>Identity verified. Enter your <span className="text-slate-200 font-bold">Setup Code</span> to complete administrator setup.</>
-                            : <>No administrator accounts detected. Authenticate with Discord to begin the claim process.</>
+                            ? <>{t('Identity verified. Enter your')} <span className="text-slate-200 font-bold">{t('Setup Code')}</span> {t('to complete administrator setup.')}</>
+                            : <>{t('No administrator accounts detected. Authenticate with Discord to begin the claim process.')}</>
                         }
                     </p>
 
@@ -84,13 +86,13 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
                             >
                                 <span className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
                                 <i className="fa-brands fa-discord mr-3" aria-hidden />
-                                <span className="relative z-10 uppercase tracking-wider">Authenticate &amp; Claim</span>
+                                <span className="relative z-10 uppercase tracking-wider">{t('Authenticate & Claim')}</span>
                             </button>
 
                             <div className="p-3 bg-black/30 rounded-lg border border-slate-700/50 text-[11px] text-slate-500 font-mono text-left">
-                                <p className="font-bold text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Configuration Debug</p>
-                                <p className="break-all">Redirect URI: <span className="text-amber-300 select-all">{window.location.origin}</span></p>
-                                <p className="mt-1 opacity-75 leading-relaxed">Ensure exactly this URI is added to your Discord Application&rsquo;s Redirects.</p>
+                                <p className="font-bold text-slate-400 mb-1 uppercase tracking-wider text-[10px]">{t('Configuration Debug')}</p>
+                                <p className="break-all">{t('Redirect URI:')} <span className="text-amber-300 select-all">{window.location.origin}</span></p>
+                                <p className="mt-1 opacity-75 leading-relaxed">{t('Ensure exactly this URI is added to your Discord Application’s Redirects.')}</p>
                             </div>
                         </div>
                     ) : (
@@ -117,12 +119,12 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
                                 className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-[0.2em] py-3.5 px-6 rounded-xl text-xs transition-all shadow-lg shadow-amber-900/25 active:scale-[0.98]"
                             >
                                 {isSubmitting
-                                    ? <><i className="fa-solid fa-circle-notch animate-spin mr-2" aria-hidden />Verifying...</>
-                                    : 'Finalize Setup'
+                                    ? <><i className="fa-solid fa-circle-notch animate-spin mr-2" aria-hidden />{t('Verifying...')}</>
+                                    : t('Finalize Setup')
                                 }
                             </button>
                             <p className="text-[10px] text-slate-500 leading-relaxed pt-2">
-                                Codes are case-insensitive. After 10 failed attempts the code regenerates.
+                                {t('Codes are case-insensitive. After 10 failed attempts the code regenerates.')}
                             </p>
                         </form>
                     )}
@@ -132,7 +134,7 @@ const FirstTimeSetupView: React.FC<FirstTimeSetupViewProps> = ({ onFinalizeAdmin
             <div className="relative z-10 px-5 sm:px-8 pb-5 sm:pb-6 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500">
                 <span className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {isAuthenticated ? `Signed in as ${currentUser?.name}` : 'Awaiting Authentication'}
+                    {isAuthenticated ? t('Signed in as {name}', { name: currentUser?.name ?? '' }) : t('Awaiting Authentication')}
                 </span>
                 <span className="text-slate-400">UTC {formatUTC(now)}</span>
             </div>

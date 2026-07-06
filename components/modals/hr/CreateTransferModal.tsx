@@ -6,6 +6,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface CreateTransferModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ isOpen, onClo
     const { units } = useMembers();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [targetUnitId, setTargetUnitId] = useState('');
     const [reason, setReason] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -48,14 +50,14 @@ const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ isOpen, onClo
 
             // UX Optimization: Close immediately, refresh in background
             onClose();
-            addToast("Transfer Submitted", <i className="fa-solid fa-right-left"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "Your transfer request has been submitted for review." });
+            addToast(t('Transfer Submitted'), <i className="fa-solid fa-right-left"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('Your transfer request has been submitted for review.') });
             refreshHR();
         } catch (err) {
             console.error("Failed to submit transfer request:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred. Please try again.') });
             setIsLoading(false);
         }
-    }, [targetUnitId, reason, currentUser, rpcAction, refreshHR, onClose, units, addToast]);
+    }, [targetUnitId, reason, currentUser, rpcAction, refreshHR, onClose, units, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -64,8 +66,8 @@ const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ isOpen, onClo
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Internal Transfer Request"
-            subtitle="Personnel Movement"
+            title={t('Internal Transfer Request')}
+            subtitle={t('Personnel Movement')}
             icon="fa-solid fa-right-left"
             color="amber"
             width="max-w-lg"
@@ -73,12 +75,12 @@ const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ isOpen, onClo
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-6">
                     <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Current Assignment</p>
-                        <p className="text-xl font-bold text-white">{currentUser?.unit?.name || 'Unassigned'}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">{t('Current Assignment')}</p>
+                        <p className="text-xl font-bold text-white">{currentUser?.unit?.name || t('Unassigned')}</p>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Target Unit</label>
+                        <label className={labelClass}>{t('Target Unit')}</label>
                         <select
                             value={targetUnitId}
                             onChange={(e) => setTargetUnitId(e.target.value)}
@@ -86,39 +88,39 @@ const CreateTransferModal: React.FC<CreateTransferModalProps> = ({ isOpen, onClo
                             required
                             disabled={isLoading}
                         >
-                            <option value="">- Select Unit -</option>
+                            <option value="">{t('- Select Unit -')}</option>
                             {[...units].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)).filter(u => u.id !== currentUser?.unit?.id).map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className={labelClass}>Reason for Transfer</label>
+                        <label className={labelClass}>{t('Reason for Transfer')}</label>
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={4}
                             className={`${inputClass} resize-none`}
-                            placeholder="State your reasons for requesting this transfer..."
+                            placeholder={t('State your reasons for requesting this transfer...')}
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <p className="text-[10px] text-amber-500/60 italic mt-2 bg-amber-900/10 p-3 rounded-sm border border-amber-500/20">
                         <i className="fa-solid fa-circle-info mr-2"></i>
-                        Submitting this request will automatically open a personnel case file to facilitate the review process.
+                        {t('Submitting this request will automatically open a personnel case file to facilitate the review process.')}
                     </p>
                 </div>
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/50 hover:bg-amber-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit Request'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit Request')}
                     </button>
                 </div>
             </form>

@@ -4,10 +4,12 @@ import { useHR } from '../../../contexts/HRContext';
 import { JobPostingStatus } from '../../../types';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const GazetteTab: React.FC = () => {
     const { hrJobs } = useHR();
     const { openApplyJobModal } = useModalRegistry();
+    const { t } = useI18n();
 
     const openJobs = hrJobs.filter(j => j.status === JobPostingStatus.Open);
 
@@ -17,9 +19,9 @@ const GazetteTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-newspaper text-emerald-300"></i>
-                        Job Gazette
+                        {t('Job Gazette')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Internal opportunities and vacancies. {openJobs.length > 0 && <span className="text-emerald-300 font-mono">{openJobs.length} open</span>}</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Internal opportunities and vacancies.')} {openJobs.length > 0 && <span className="text-emerald-300 font-mono">{t('{count} open', { count: openJobs.length })}</span>}</p>
                 </div>
             </div>
             {openJobs.length > 0 ? (
@@ -36,7 +38,7 @@ const GazetteTab: React.FC = () => {
                                     onClick={() => openApplyJobModal(job)}
                                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                                 >
-                                    <i className="fa-solid fa-pen-to-square"></i> Apply Now
+                                    <i className="fa-solid fa-pen-to-square"></i> {t('Apply Now')}
                                 </button>
                             </div>
                             <p className="text-sm text-slate-300 leading-relaxed mb-4 bg-slate-950/40 p-4 rounded-lg border border-slate-700/50">{job.description}</p>
@@ -55,8 +57,8 @@ const GazetteTab: React.FC = () => {
                     <EmptyState
                         icon="fa-newspaper"
                         accent="emerald"
-                        heading="No open positions"
-                        description="Check back later — new opportunities are posted as command needs emerge."
+                        heading={t('No open positions')}
+                        description={t('Check back later — new opportunities are posted as command needs emerge.')}
                     />
                 </div>
             )}

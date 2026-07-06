@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrandingConfig } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface NewUserSetupViewProps {
     pendingUser: { name: string; avatarUrl: string; isAdminSetup?: boolean; verificationCode?: string };
@@ -14,6 +15,7 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const { t } = useI18n();
 
     // Server-issued in auth:discord_callback. The user pastes THIS into their RSI
     // bio; the server checks the profile for the same code it signed into the grant,
@@ -36,7 +38,7 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
             try {
                 await onSetupComplete(rsiHandle.trim(), verificationCode);
             } catch (err: any) {
-                setError(err.message || "Verification failed. Ensure the code is correctly saved in your RSI bio.");
+                setError(err.message || t('Verification failed. Ensure the code is correctly saved in your RSI bio.'));
             } finally {
                 setIsLoading(false);
             }
@@ -61,17 +63,17 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
 
                     <div className="p-8 md:p-10 text-center">
                         <div className="w-16 h-16 bg-sky-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-sky-500/20 shadow-[0_0_30px_rgba(14,165,233,0.2)]">
-                            <img src={brandingConfig.iconUrl} alt="Logo" className="w-10 h-10 drop-shadow-md" />
+                            <img src={brandingConfig.iconUrl} alt={t('Logo')} className="w-10 h-10 drop-shadow-md" />
                         </div>
 
                         <h1 className="text-2xl font-black text-white tracking-tight mb-1 uppercase">{brandingConfig.name}</h1>
-                        <p className="text-sky-200/60 font-mono text-[10px] uppercase tracking-[0.3em] mb-8">Identity_Provisioning_Protocol</p>
+                        <p className="text-sky-200/60 font-mono text-[10px] uppercase tracking-[0.3em] mb-8">{t('Identity_Provisioning_Protocol')}</p>
 
                         <div className="mb-10">
-                            <h2 className="text-xl font-bold text-white mb-4">Welcome, {pendingUser.name}!</h2>
+                            <h2 className="text-xl font-bold text-white mb-4">{t('Welcome, {name}!', { name: pendingUser.name })}</h2>
                             <div className="relative inline-block group">
                                 <div className="absolute -inset-1 bg-linear-to-r from-sky-500 to-indigo-500 rounded-full blur-sm opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                                <img src={pendingUser.avatarUrl} alt="Avatar" className="relative h-20 w-20 rounded-full mx-auto border-2 border-slate-700 shadow-xl object-cover" />
+                                <img src={pendingUser.avatarUrl} alt={t('Avatar')} className="relative h-20 w-20 rounded-full mx-auto border-2 border-slate-700 shadow-xl object-cover" />
                             </div>
                         </div>
 
@@ -79,12 +81,12 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
                             <form onSubmit={handleNext} className="space-y-6 text-left animate-fade-in">
                                 <p className="text-sm text-slate-400 text-center leading-relaxed">
                                     {isAdminSetup
-                                        ? "Initiating Administrative Access. Provide your RSI Handle for identity anchoring."
-                                        : "One last step! Provide your unique RSI Handle for terminal verification."}
+                                        ? t('Initiating Administrative Access. Provide your RSI Handle for identity anchoring.')
+                                        : t('One last step! Provide your unique RSI Handle for terminal verification.')}
                                 </p>
 
                                 <div className="space-y-2">
-                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">RSI Handle</label>
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('RSI Handle')}</label>
                                     <input
                                         type="text"
                                         value={rsiHandle}
@@ -97,38 +99,38 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
                                 </div>
 
                                 <button type="submit" className="w-full py-4 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-sky-900/20 transition-all active:scale-95 text-xs">
-                                    Next Step <i className="fa-solid fa-arrow-right ml-2"></i>
+                                    {t('Next Step')} <i className="fa-solid fa-arrow-right ml-2"></i>
                                 </button>
                             </form>
                         ) : (
                             <div className="space-y-6 text-left animate-fade-in">
                                 <div className="bg-black/40 border border-slate-800 rounded-xl p-5">
-                                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Target Identity</p>
+                                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Target Identity')}</p>
                                     <p className="text-lg font-bold text-white font-mono">{rsiHandle}</p>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Verification Sequence</p>
+                                    <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest">{t('Verification Sequence')}</p>
                                     <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 space-y-4 text-xs leading-relaxed">
                                         <div className="flex gap-3">
                                             <span className="text-sky-500 font-mono">01</span>
-                                            <p className="text-slate-300">Visit <a href="https://robertsspaceindustries.com/account/profile" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">rsi.com/account/profile</a></p>
+                                            <p className="text-slate-300">{t('Visit')} <a href="https://robertsspaceindustries.com/account/profile" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">rsi.com/account/profile</a></p>
                                         </div>
                                         <div className="flex gap-3">
                                             <span className="text-sky-500 font-mono">02</span>
                                             <div className="flex-1 space-y-2">
-                                                <p className="text-slate-300">Copy this whitelabel verification code:</p>
+                                                <p className="text-slate-300">{t('Copy this whitelabel verification code:')}</p>
                                                 <div className="flex items-center bg-black/60 rounded-lg border border-sky-500/30 overflow-hidden group hover:border-sky-500/60 transition-colors">
                                                     <span className="flex-1 font-mono text-sky-400 px-3 py-2 select-all">{verificationCode}</span>
                                                     <button type="button" onClick={copyToClipboard} className={`px-3 py-2 text-[10px] font-black uppercase transition-all ${copied ? 'bg-green-600 text-white' : 'bg-sky-900/40 text-sky-400 hover:bg-sky-600 hover:text-white'}`}>
-                                                        {copied ? 'Copied' : 'Copy'}
+                                                        {copied ? t('Copied') : t('Copy')}
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex gap-3">
                                             <span className="text-sky-500 font-mono">03</span>
-                                            <p className="text-slate-300">Paste the code into your <strong>"Bio"</strong> section and save.</p>
+                                            <p className="text-slate-300">{t('Paste the code into your')} <strong>"Bio"</strong> {t('section and save.')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -142,10 +144,10 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
 
                                 <div className="flex gap-3 pt-2">
                                     <button onClick={() => setStep('INPUT')} className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold uppercase tracking-widest rounded-xl text-xs transition-all">
-                                        Back
+                                        {t('Back')}
                                     </button>
                                     <button onClick={handleSubmit} disabled={isLoading} className="flex-2 py-4 bg-sky-600 hover:bg-sky-500 text-white font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-sky-900/20 transition-all active:scale-95 text-xs disabled:opacity-50">
-                                        {isLoading ? <><i className="fa-solid fa-circle-notch animate-spin mr-2" /> Syncing...</> : "Verify & Link"}
+                                        {isLoading ? <><i className="fa-solid fa-circle-notch animate-spin mr-2" /> {t('Syncing...')}</> : t('Verify & Link')}
                                     </button>
                                 </div>
                             </div>
@@ -153,14 +155,14 @@ const NewUserSetupView: React.FC<NewUserSetupViewProps> = ({ pendingUser, onSetu
                     </div>
 
                     <div className="bg-black/20 p-4 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-600 font-mono uppercase tracking-wider">
-                        <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></div> Secure Enrollment</span>
+                        <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></div> {t('Secure Enrollment')}</span>
                         <span>NODE_VERIFY_v2.1</span>
                     </div>
                 </div>
 
                 <div className="text-center">
                     <p className="text-[10px] text-slate-700 uppercase tracking-widest">
-                        Unauthorized access is monitored. Log: {new Date().toISOString().substring(0, 10)}
+                        {t('Unauthorized access is monitored. Log: {date}', { date: new Date().toISOString().substring(0, 10) })}
                     </p>
                 </div>
             </div>

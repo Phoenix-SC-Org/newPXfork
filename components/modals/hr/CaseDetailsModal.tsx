@@ -5,6 +5,7 @@ import { HydratedHRApplication, ApplicationStatus } from '../../../types';
 import WindowFrame from '../../layout/WindowFrame';
 import { useData } from '../../../contexts/DataContext';
 import { useFormatDate } from '../../../contexts/AuthContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface CaseDetailsModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ const getStatusColor = (status: ApplicationStatus) => {
 const CaseDetailsModal: React.FC<CaseDetailsModalProps> = ({ isOpen, onClose, caseFile }) => {
     const { rpcAction } = useData();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const [localLogs, setLocalLogs] = useState<any[]>([]);
 
     useEffect(() => {
@@ -43,8 +45,8 @@ const CaseDetailsModal: React.FC<CaseDetailsModalProps> = ({ isOpen, onClose, ca
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Internal Investigation"
-            subtitle={`CASE: ${caseFile.id.split('-')[0]}`}
+            title={t('Internal Investigation')}
+            subtitle={t('CASE: {id}', { id: caseFile.id.split('-')[0] })}
             icon="fa-solid fa-folder-closed"
             color="amber"
             width="max-w-2xl"
@@ -53,31 +55,31 @@ const CaseDetailsModal: React.FC<CaseDetailsModalProps> = ({ isOpen, onClose, ca
                 <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1">
                     <div className="flex justify-between items-center">
                         <div>
-                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Subject</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{t('Subject')}</p>
                             <p className="text-white font-bold text-lg">{caseFile.applicantName}</p>
                             <p className="text-xs text-slate-500 font-mono">{caseFile.rsiHandle}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Status</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{t('Status')}</p>
                             <span className={`px-2 py-1 rounded-sm border text-xs font-black uppercase tracking-wider ${getStatusColor(caseFile.status)}`}>
-                                {caseFile.status}
+                                {t(caseFile.status, { context: 'application-status' })}
                             </span>
                         </div>
                     </div>
 
                     <div className="bg-slate-950/50 p-4 rounded-sm border border-slate-800">
-                        <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">Initial Report</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">{t('Initial Report')}</p>
                         <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{caseFile.notes}</p>
                     </div>
 
                     {notesList.length > 0 && (
                         <div>
-                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">Investigative Notes</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">{t('Investigative Notes')}</p>
                             <div className="space-y-3">
                                 {notesList.map(note => (
                                     <div key={note.id} className="bg-slate-800/30 p-3 rounded-sm border border-slate-700/30 text-sm">
                                         <div className="flex justify-between mb-1">
-                                            <span className="font-bold text-slate-300 text-xs">{note.user?.name || 'Officer'}</span>
+                                            <span className="font-bold text-slate-300 text-xs">{note.user?.name || t('Officer')}</span>
                                             <span className="font-mono text-[10px] text-slate-500">{fmt(note.createdAt)}</span>
                                         </div>
                                         <p className="text-slate-400 leading-snug">{note.message}</p>
@@ -89,19 +91,19 @@ const CaseDetailsModal: React.FC<CaseDetailsModalProps> = ({ isOpen, onClose, ca
 
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                         <div>
-                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Opened</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{t('Opened')}</p>
                             <p className="text-sm text-slate-300 font-mono">{fmt(caseFile.createdAt)}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Assigned Officer</p>
-                            <p className="text-sm text-slate-300">{caseFile.assignedRecruiter?.name || 'Unassigned'}</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">{t('Assigned Officer')}</p>
+                            <p className="text-sm text-slate-300">{caseFile.assignedRecruiter?.name || t('Unassigned')}</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end rounded-b-xl">
                     <button onClick={onClose} className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-amber-600 hover:bg-amber-500 border border-amber-500/40 rounded-lg shadow-lg shadow-amber-900/30 transition">
-                        <i className="fa-solid fa-xmark"></i> Close File
+                        <i className="fa-solid fa-xmark"></i> {t('Close File')}
                     </button>
                 </div>
             </div>

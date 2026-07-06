@@ -5,6 +5,7 @@ import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { ServiceRequestStatus } from '../../../types';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusChipClass = (status: ServiceRequestStatus) => {
     switch (status) {
@@ -23,6 +24,7 @@ const MyServiceHistoryTab: React.FC = () => {
     const { hydratedServiceRequests } = useData();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { viewRequestDetails } = useNavigation();
 
     const myReqs = hydratedServiceRequests.filter(req =>
@@ -35,9 +37,9 @@ const MyServiceHistoryTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-truck-medical text-emerald-300"></i>
-                        Responder Log
+                        {t('Responder Log')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Service requests and missions you have responded to.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Service requests and missions you have responded to.')}</p>
                 </div>
             </div>
             <div className="bg-slate-900/60 backdrop-blur-md rounded-xl border border-slate-700/50 overflow-hidden">
@@ -46,10 +48,10 @@ const MyServiceHistoryTab: React.FC = () => {
                         <table className="w-full text-left hidden md:table">
                             <thead>
                                 <tr className="bg-white/5 border-b border-white/5 text-slate-500 text-[10px] uppercase tracking-widest font-black">
-                                    <th className="px-5 py-3">Request ID</th>
-                                    <th className="px-5 py-3">Type</th>
-                                    <th className="px-5 py-3">Last Update</th>
-                                    <th className="px-5 py-3 text-right">Status</th>
+                                    <th className="px-5 py-3">{t('Request ID')}</th>
+                                    <th className="px-5 py-3">{t('Type')}</th>
+                                    <th className="px-5 py-3">{t('Last Update')}</th>
+                                    <th className="px-5 py-3 text-right">{t('Status')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -60,7 +62,7 @@ const MyServiceHistoryTab: React.FC = () => {
                                         <td className="px-5 py-3 text-xs text-slate-400 font-mono">{fmt(req.updatedAt)}</td>
                                         <td className="px-5 py-3 text-right">
                                             <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border ${getStatusChipClass(req.status)}`}>
-                                                {req.status}
+                                                {t(req.status, { context: 'service request status' })}
                                             </span>
                                         </td>
                                     </tr>
@@ -76,7 +78,7 @@ const MyServiceHistoryTab: React.FC = () => {
                                             <span className="text-sm text-white font-bold">{req.serviceType}</span>
                                         </div>
                                         <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border shrink-0 ${getStatusChipClass(req.status)}`}>
-                                            {req.status}
+                                            {t(req.status, { context: 'service request status' })}
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-slate-500 font-mono text-right">{fmt(req.updatedAt)}</p>
@@ -88,8 +90,8 @@ const MyServiceHistoryTab: React.FC = () => {
                     <EmptyState
                         icon="fa-truck-medical"
                         accent="emerald"
-                        heading="No service history"
-                        description="Requests you respond to will appear here."
+                        heading={t('No service history')}
+                        description={t('Requests you respond to will appear here.')}
                         compact
                     />
                 )}

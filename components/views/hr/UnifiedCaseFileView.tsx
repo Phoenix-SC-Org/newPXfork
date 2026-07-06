@@ -11,6 +11,7 @@ import { HydratedHRApplication, ApplicationStatus, VettingChecklist, DossierData
 import IntelligenceReportCard from '../intel/IntelligenceReportCard';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface UnifiedCaseFileViewProps {
     applicationId: string;
@@ -50,6 +51,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
     const { currentUser, hasPermission } = useAuth();
     const fmt = useFormatDate();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const { openScheduleInterviewModal, openEditInterviewModal, openConductInterviewModal, openWindow, openCaseDetailsModal } = useModalRegistry();
 
     // Core State
@@ -395,12 +397,13 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
     const handleDecision = async (decision: 'Approve' | 'Deny') => {
         if (!caseFile) return;
 
-        let confirmMsg = `Are you sure you want to ${decision.toUpperCase()} this case?`;
-        if (caseConfig.type === 'TRANSFER') confirmMsg = `Are you sure you want to ${decision.toUpperCase()} this transfer request? This will move the member to the new unit.`;
-        if (caseConfig.type === 'VETTING') confirmMsg = `Are you sure you want to ${decision.toUpperCase()} this clearance request? This will update the member's security profile.`;
-        if (caseConfig.type === 'JOB') confirmMsg = `Are you sure you want to ${decision.toUpperCase()} this job application? This will mark the candidate as hired/promoted.`;
+        const decisionLabel = t(decision, { context: 'case-decision' }).toUpperCase();
+        let confirmMsg = t('Are you sure you want to {decision} this case?', { decision: decisionLabel });
+        if (caseConfig.type === 'TRANSFER') confirmMsg = t('Are you sure you want to {decision} this transfer request? This will move the member to the new unit.', { decision: decisionLabel });
+        if (caseConfig.type === 'VETTING') confirmMsg = t("Are you sure you want to {decision} this clearance request? This will update the member's security profile.", { decision: decisionLabel });
+        if (caseConfig.type === 'JOB') confirmMsg = t('Are you sure you want to {decision} this job application? This will mark the candidate as hired/promoted.', { decision: decisionLabel });
 
-        const confirmDecision = await confirm({ title: 'Confirm Decision', message: confirmMsg, confirmText: decision, variant: 'danger' });
+        const confirmDecision = await confirm({ title: t('Confirm Decision'), message: confirmMsg, confirmText: t(decision, { context: 'case-decision' }), variant: 'danger' });
         if (!confirmDecision) return;
 
         setIsSaving(true);
@@ -412,7 +415,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                     await promoteUserToMember(promoteTargetId);
                 } catch (err: any) {
                     console.error(err);
-                    addToast("Promotion Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || "Failed to promote the user to Member." });
+                    addToast(t('Promotion Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || t('Failed to promote the user to Member.') });
                     setIsSaving(false);
                     return; // Abort — do not change case status
                 }
@@ -479,7 +482,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
             onBack();
         } catch (err) {
             console.error(err);
-            addToast("Decision Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to process the decision." });
+            addToast(t('Decision Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to process the decision.') });
         } finally {
             setIsSaving(false);
         }
@@ -487,7 +490,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
 
     const handleDelete = async () => {
         if (!caseFile) return;
-        const confirmedDelete = await confirm({ title: 'Delete Case File', message: 'Permanently delete this case file? This cannot be undone.', confirmText: 'Delete', variant: 'danger' });
+        const confirmedDelete = await confirm({ title: t('Delete Case File'), message: t('Permanently delete this case file? This cannot be undone.'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmedDelete) return;
         setIsDeleting(true);
         try {
@@ -503,7 +506,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
 
     const handleResetStatus = async () => {
         if (!caseFile || !resetStatus) return;
-        const confirmReset = await confirm({ title: 'Status Override', message: `Force reset case status to ${resetStatus}?`, confirmText: 'Update Status', variant: 'danger' });
+        const confirmReset = await confirm({ title: t('Status Override'), message: t('Force reset case status to {status}?', { status: t(resetStatus, { context: 'application-status' }) }), confirmText: t('Update Status'), variant: 'danger' });
         if (!confirmReset) return;
         setIsSaving(true);
         try {
@@ -518,7 +521,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
             setResetStatus('');
         } catch (e) {
             console.error(e);
-            addToast("Reset Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to reset the case status." });
+            addToast(t('Reset Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to reset the case status.') });
         } finally {
             setIsSaving(false);
         }
@@ -539,14 +542,14 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
             fetchLogs();
         } catch (e) {
             console.error("Failed to reassign interview", e);
-            addToast("Reassign Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to reassign the interview." });
+            addToast(t('Reassign Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to reassign the interview.') });
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleReopenInterview = async (interviewId: string) => {
-        const confirmedReopen = await confirm({ title: 'Reopen Interview', message: 'Are you sure you want to reopen this interview? Status will be reset to Scheduled.', confirmText: 'Reopen', variant: 'danger' });
+        const confirmedReopen = await confirm({ title: t('Reopen Interview'), message: t('Are you sure you want to reopen this interview? Status will be reset to Scheduled.'), confirmText: t('Reopen'), variant: 'danger' });
         if (!confirmedReopen) return;
         setIsLoading(true);
         try {
@@ -561,7 +564,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
     }
 
     const handleDeleteInterview = async (interviewId: string) => {
-        const confirmedDelete2 = await confirm({ title: 'Delete Interview', message: 'Are you sure you want to delete this interview record?', confirmText: 'Delete', variant: 'danger' });
+        const confirmedDelete2 = await confirm({ title: t('Delete Interview'), message: t('Are you sure you want to delete this interview record?'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmedDelete2) return;
         setIsLoading(true);
         try {
@@ -571,7 +574,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
             fetchLogs();
         } catch (e) {
             console.error("Failed to delete interview", e);
-            addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to delete the interview." });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to delete the interview.') });
         } finally {
             setIsLoading(false);
         }
@@ -597,7 +600,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
 
     // --- RENDER HELPERS ---
 
-    if (!caseFile) return <div className="p-12 text-center text-slate-500 italic">Case file not found or access denied.</div>;
+    if (!caseFile) return <div className="p-12 text-center text-slate-500 italic">{t('Case file not found or access denied.')}</div>;
 
     const notesList = localLogs.filter(l => l.actionType === 'NOTE');
     const getThemeColor = (opacity = '100') => {
@@ -631,12 +634,12 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                         <div className="min-w-0">
                             <h2 className="text-lg md:text-2xl font-black text-white tracking-tight truncate">{caseFile.applicantName}</h2>
                             <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 mt-0.5">
-                                <span className="text-slate-400 text-[10px] md:text-xs font-mono uppercase tracking-widest">CASE · {caseFile.id.split('-')[0].toUpperCase()}</span>
+                                <span className="text-slate-400 text-[10px] md:text-xs font-mono uppercase tracking-widest">{t('CASE')} · {caseFile.id.split('-')[0].toUpperCase()}</span>
                                 <span className="text-slate-600 text-[10px] md:text-xs hidden md:inline">·</span>
-                                <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${getThemeColor('100').split(' ')[0]}`}>{caseConfig.label}</span>
+                                <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${getThemeColor('100').split(' ')[0]}`}>{t(caseConfig.label, { context: 'case-type' })}</span>
                                 {isFetching['hr'] && (
                                     <span className="ml-2 text-emerald-300 animate-pulse text-[10px] font-bold flex items-center gap-1">
-                                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...
+                                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing...')}
                                     </span>
                                 )}
                             </div>
@@ -650,14 +653,14 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             disabled={isSaving || vettingLoading}
                             className="hidden md:flex text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold uppercase transition-colors shadow-xs active:scale-95 whitespace-nowrap items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {(isSaving || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk"></i> Save Progress</>}
+                            {(isSaving || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk"></i> {t('Save Progress')}</>}
                         </button>
                     )}
                     <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${caseFile.status === ApplicationStatus.Hired || caseFile.status === ApplicationStatus.Accepted ? 'bg-green-500/10 text-green-400 border-green-500/30' :
                         caseFile.status === ApplicationStatus.Rejected ? 'bg-red-500/10 text-red-400 border-red-500/30' :
                             'bg-slate-500/10 text-slate-400 border-slate-500/30'
                         }`}>
-                        {caseFile.status}
+                        {t(caseFile.status, { context: 'application-status' })}
                     </span>
                 </div>
                 </div>
@@ -668,7 +671,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                 {/* Sidebar Nav */}
                 <div className="hidden md:flex w-60 bg-slate-900/40 border-r border-slate-800/60 flex-col shrink-0">
                     <div className="p-3 space-y-0.5">
-                        <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Case Sections</p>
+                        <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">{t('Case Sections')}</p>
                         {[
                             { id: 'overview', label: 'Overview', icon: 'fa-file-contract' },
                             { id: 'background', label: 'Background', icon: 'fa-magnifying-glass' },
@@ -685,7 +688,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     }`}
                             >
                                 <i className={`fa-solid ${tab.icon} w-4 text-center text-[10px]`}></i>
-                                <span className="truncate">{tab.label}</span>
+                                <span className="truncate">{t(tab.label, { context: 'case-section' })}</span>
                             </button>
                         ))}
                         {canManage && (
@@ -697,7 +700,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     }`}
                             >
                                 <i className="fa-solid fa-screwdriver-wrench w-4 text-center text-[10px]"></i>
-                                <span className="truncate">Admin Actions</span>
+                                <span className="truncate">{t('Admin Actions')}</span>
                             </button>
                         )}
                     </div>
@@ -714,7 +717,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                 disabled={isSaving || vettingLoading}
                                 className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase px-4 py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {(isSaving || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk"></i> Save Progress</>}
+                                {(isSaving || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk"></i> {t('Save Progress')}</>}
                             </button>
                         )}
                         <div className="relative">
@@ -723,12 +726,12 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                 onChange={(e) => setActiveTab(e.target.value as any)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white font-bold focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 outline-hidden appearance-none transition-all"
                             >
-                                <option value="overview">Case Overview</option>
-                                <option value="background">Background Check</option>
-                                <option value="interviews">Interviews</option>
-                                <option value="log">Audit Log</option>
-                                <option value="adjudication">Adjudication</option>
-                                {canManage && <option value="admin">Admin Actions</option>}
+                                <option value="overview">{t('Case Overview')}</option>
+                                <option value="background">{t('Background Check')}</option>
+                                <option value="interviews">{t('Interviews')}</option>
+                                <option value="log">{t('Audit Log')}</option>
+                                <option value="adjudication">{t('Adjudication')}</option>
+                                {canManage && <option value="admin">{t('Admin Actions')}</option>}
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
                                 <i className="fa-solid fa-chevron-down"></i>
@@ -740,23 +743,23 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                         <div className="max-w-4xl space-y-6">
                             {/* Data Card */}
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Case Details</h3>
+                                <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">{t('Case Details')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">RSI Handle</p>
+                                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('RSI Handle')}</p>
                                         <p className="text-white font-mono text-lg">{caseFile.rsiHandle}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">Case Officer</p>
+                                        <p className="text-xs text-slate-500 uppercase font-bold mb-1">{t('Case Officer')}</p>
                                         <div className="flex gap-2 items-center">
-                                            {caseFile.assignedRecruiter && <img src={caseFile.assignedRecruiter.avatarUrl} className="h-6 w-6 rounded-full object-cover shrink-0" alt="Recruiter" />}
+                                            {caseFile.assignedRecruiter && <img src={caseFile.assignedRecruiter.avatarUrl} className="h-6 w-6 rounded-full object-cover shrink-0" alt={t('Recruiter')} />}
                                             <select
                                                 value={caseFile.assignedRecruiterId || ''}
                                                 onChange={(e) => handleAssignOfficer(e.target.value)}
                                                 className={`bg-slate-900/50 border border-slate-600 text-white text-xs rounded-sm p-2 flex-1 outline-hidden transition-opacity ${isAssigning ? 'opacity-50 cursor-wait' : ''}`}
                                                 disabled={isCompleted || (!canManage && !canRecruit) || isAssigning}
                                             >
-                                                <option value="">{isAssigning ? 'Assigning...' : 'Unassigned'}</option>
+                                                <option value="">{isAssigning ? t('Assigning...') : t('Unassigned')}</option>
                                                 {availableOfficers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                             </select>
                                         </div>
@@ -766,9 +769,9 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     {caseConfig.type === 'TRANSFER' && transferRequest && (
                                         <div className="col-span-1 md:col-span-2 bg-amber-900/10 p-4 rounded-sm border border-amber-500/20">
                                             <div className="flex justify-between items-center text-sm">
-                                                <span>From: <strong>{linkedMember?.unit?.name || 'Unassigned'}</strong></span>
+                                                <span>{t('From:')} <strong>{linkedMember?.unit?.name || t('Unassigned')}</strong></span>
                                                 <i className="fa-solid fa-arrow-right text-amber-500"></i>
-                                                <span>To: <strong>{(transferRequest as any).targetUnit?.name}</strong></span>
+                                                <span>{t('To:')} <strong>{(transferRequest as any).targetUnit?.name}</strong></span>
                                             </div>
                                             <p className="text-xs text-slate-400 mt-2 italic">"{transferRequest.reason}"</p>
                                         </div>
@@ -777,17 +780,17 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     {caseConfig.type === 'VETTING' && (
                                         <div className="col-span-1 md:col-span-2 bg-indigo-900/10 p-4 rounded-sm border border-indigo-500/20">
                                             <div className="flex justify-between items-center text-sm">
-                                                <span>Current: <strong>{linkedMember?.clearanceLevel?.name || 'None'}</strong></span>
+                                                <span>{t('Current:')} <strong>{linkedMember?.clearanceLevel?.name || t('None')}</strong></span>
                                                 <i className="fa-solid fa-arrow-right text-indigo-500"></i>
-                                                <span>Requested: <strong>{requestedLevel?.name || 'Review'}</strong></span>
+                                                <span>{t('Requested:')} <strong>{requestedLevel?.name || t('Review')}</strong></span>
                                             </div>
                                         </div>
                                     )}
 
                                     <div className="col-span-1 md:col-span-2">
-                                        <p className="text-xs text-slate-500 uppercase font-bold mb-2">Initial Statement / Report</p>
+                                        <p className="text-xs text-slate-500 uppercase font-bold mb-2">{t('Initial Statement / Report')}</p>
                                         <div className="bg-slate-900/50 p-4 rounded-sm border border-slate-700 text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed">
-                                            {caseFile.notes || "No initial report provided."}
+                                            {caseFile.notes || t('No initial report provided.')}
                                         </div>
                                     </div>
                                 </div>
@@ -795,11 +798,11 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
 
                             {/* Officer Notes */}
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6 flex flex-col h-[400px]">
-                                <h3 className="text-lg font-bold text-white mb-4">Investigative Notes</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('Investigative Notes')}</h3>
                                 <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar mb-4">
                                     {notesList.map(note => (
                                         <div key={note.id} className="flex gap-3">
-                                            <img src={note.user?.avatarUrl} className="w-8 h-8 rounded-full shrink-0 object-cover" alt="User" />
+                                            <img src={note.user?.avatarUrl} className="w-8 h-8 rounded-full shrink-0 object-cover" alt={t('User')} />
                                             <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-3 text-sm text-slate-200 flex-1">
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="font-bold text-xs text-slate-400">{note.user?.name}</span>
@@ -809,7 +812,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                             </div>
                                         </div>
                                     ))}
-                                    {notesList.length === 0 && <p className="text-slate-500 italic text-sm text-center mt-10">No additional notes recorded.</p>}
+                                    {notesList.length === 0 && <p className="text-slate-500 italic text-sm text-center mt-10">{t('No additional notes recorded.')}</p>}
                                 </div>
                                 {!isCompleted && (
                                     <div className="border-t border-slate-700 pt-3">
@@ -817,12 +820,12 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                             value={newNote}
                                             onChange={(e) => setNewNote(e.target.value)}
                                             className="w-full h-20 bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/30 outline-hidden resize-none mb-2 transition-all"
-                                            placeholder="Add a case note..."
+                                            placeholder={t('Add a case note...')}
                                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote(); } }}
                                         />
                                         <div className="flex justify-end">
                                             <button onClick={handleAddNote} disabled={isSaving || !newNote.trim()} className="text-xs bg-amber-600 text-white font-bold px-4 py-2 rounded-sm hover:bg-amber-500 transition-colors disabled:bg-slate-700 disabled:text-slate-500">
-                                                {isSaving ? 'Sending...' : 'Add Note'}
+                                                {isSaving ? t('Sending...') : t('Add Note')}
                                             </button>
                                         </div>
                                     </div>
@@ -838,17 +841,17 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {userRecord && (
                                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
                                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-id-card-clip text-emerald-300"></i> Member Standing
+                                        <i className="fa-solid fa-id-card-clip text-emerald-300"></i> {t('Member Standing')}
                                     </h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700 text-center">
-                                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Reputation Score</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Reputation Score')}</p>
                                             <p className={`text-2xl font-black ${userRecord.reputation >= 50 ? 'text-green-400' : 'text-amber-400'}`}>{userRecord.reputation}</p>
                                         </div>
                                         <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700 text-center">
-                                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Client Satisfaction</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Client Satisfaction')}</p>
                                             <div className="flex items-center justify-center gap-1">
-                                                <p className="text-2xl font-black text-emerald-300">{userRecord.averageRating?.toFixed(1) || 'N/A'}</p>
+                                                <p className="text-2xl font-black text-emerald-300">{userRecord.averageRating?.toFixed(1) || t('N/A')}</p>
                                                 <i className="fa-solid fa-star text-amber-400 text-xs mb-1"></i>
                                             </div>
                                         </div>
@@ -859,7 +862,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {/* Vetting Checklist if Vetting Mode */}
                             {caseConfig.type === 'VETTING' && (
                                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                    <h3 className="text-lg font-bold text-white mb-4">Vetting Checks</h3>
+                                    <h3 className="text-lg font-bold text-white mb-4">{t('Vetting Checks')}</h3>
                                     <div className="space-y-4">
                                         {[
                                             { key: 'rsiProfile', label: 'RSI Profile Validation' },
@@ -869,7 +872,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                         ].map((item) => (
                                             <div key={item.key} className="bg-slate-900/30 border border-slate-700/50 rounded-lg p-4 flex flex-col">
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <h3 className="text-xs font-bold text-slate-300 uppercase">{item.label}</h3>
+                                                    <h3 className="text-xs font-bold text-slate-300 uppercase">{t(item.label, { context: 'vetting-check' })}</h3>
                                                     <div className="flex gap-1">
                                                         {['clear', 'flagged', 'pending'].map(status => (
                                                             <button
@@ -879,7 +882,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                                     setVettingData(prev => ({ ...prev, checks: newChecks }));
                                                                 }}
                                                                 className={`w-3 h-3 rounded-full transition-all ${vettingData.checks[item.key as keyof VettingChecklist] === status ? (status === 'clear' ? 'bg-green-500 ring-2 ring-green-500/30' : status === 'flagged' ? 'bg-red-500 ring-2 ring-red-500/30' : 'bg-slate-500') : 'bg-slate-800'}`}
-                                                                title={status}
+                                                                title={t(status, { context: 'vetting-check-status' })}
                                                                 disabled={isCompleted}
                                                             />
                                                         ))}
@@ -889,7 +892,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                     value={vettingData.comments[item.key] || ''}
                                                     onChange={(e) => updateComment(item.key, e.target.value)}
                                                     className={`${inputClass} flex-1 text-xs h-16`}
-                                                    placeholder="Notes..."
+                                                    placeholder={t('Notes...')}
                                                     disabled={isCompleted}
                                                 />
                                             </div>
@@ -899,14 +902,14 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             )}
 
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-4">Internal Affairs Check</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('Internal Affairs Check')}</h3>
                                 {activeInvestigations.length > 0 ? (
                                     <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-lg">
                                         <div className="flex items-center gap-3 text-red-400 font-bold mb-2">
                                             <i className="fa-solid fa-triangle-exclamation text-xl"></i>
-                                            <span>Active Investigations Found</span>
+                                            <span>{t('Active Investigations Found')}</span>
                                         </div>
-                                        <p className="text-sm text-red-200/70 mb-4">This candidate is currently subject to internal review. Proceed with caution.</p>
+                                        <p className="text-sm text-red-200/70 mb-4">{t('This candidate is currently subject to internal review. Proceed with caution.')}</p>
                                         <div className="space-y-2">
                                             {activeInvestigations.map(inv => (
                                                 <div
@@ -916,9 +919,9 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                 >
                                                     <div>
                                                         <span className="text-white font-bold block">{inv.applicantName}</span>
-                                                        <span className="text-xs text-slate-500">Case ID: {inv.id.split('-')[0]}</span>
+                                                        <span className="text-xs text-slate-500">{t('Case ID: {id}', { id: inv.id.split('-')[0] })}</span>
                                                     </div>
-                                                    <span className="text-amber-400 font-bold uppercase text-xs">View Details <i className="fa-solid fa-arrow-right ml-1"></i></span>
+                                                    <span className="text-amber-400 font-bold uppercase text-xs">{t('View Details')} <i className="fa-solid fa-arrow-right ml-1"></i></span>
                                                 </div>
                                             ))}
                                         </div>
@@ -926,21 +929,21 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                 ) : (
                                     <div className="bg-green-900/10 border border-green-500/20 p-4 rounded-lg text-center">
                                         <i className="fa-solid fa-check-circle text-green-500 text-2xl mb-2"></i>
-                                        <p className="text-green-300 font-bold">No Active Investigations</p>
-                                        <p className="text-green-200/60 text-xs">Candidate has no open internal case files.</p>
+                                        <p className="text-green-300 font-bold">{t('No Active Investigations')}</p>
+                                        <p className="text-green-200/60 text-xs">{t('Candidate has no open internal case files.')}</p>
                                     </div>
                                 )}
                             </div>
 
                             {/* Internal Conduct */}
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-4">Conduct Record</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('Conduct Record')}</h3>
                                 {userRecord && userRecord.conductRecord && userRecord.conductRecord.length > 0 ? (
                                     <div className="space-y-3">
                                         {userRecord.conductRecord.map(rec => (
                                             <div key={rec.id} className="bg-slate-900/50 p-3 rounded-sm border border-slate-700 flex justify-between items-start">
                                                 <div>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase ${rec.type === ConductRecordType.Infraction || rec.type === ConductRecordType.Warning ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>{rec.type}</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase ${rec.type === ConductRecordType.Infraction || rec.type === ConductRecordType.Warning ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>{t(rec.type, { context: 'conduct-record-type' })}</span>
                                                     <p className="text-sm text-slate-300 mt-1">{rec.reason}</p>
                                                 </div>
                                                 <span className="text-[10px] text-slate-500 font-mono">{fmt(rec.createdAt)}</span>
@@ -949,8 +952,8 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     </div>
                                 ) : (
                                     <div className="p-4 bg-green-900/10 border border-green-500/20 rounded-lg text-center">
-                                        <p className="text-green-400 font-bold text-sm">Clean Record</p>
-                                        <p className="text-green-300/70 text-xs">No internal conduct entries found on file.</p>
+                                        <p className="text-green-400 font-bold text-sm">{t('Clean Record')}</p>
+                                        <p className="text-green-300/70 text-xs">{t('No internal conduct entries found on file.')}</p>
                                     </div>
                                 )}
                             </div>
@@ -958,7 +961,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {/* Certifications & Commendations */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                    <h3 className="text-lg font-bold text-white mb-4">Certifications</h3>
+                                    <h3 className="text-lg font-bold text-white mb-4">{t('Certifications')}</h3>
                                     {userRecord?.certifications && userRecord.certifications.length > 0 ? (
                                         <ul className="space-y-2">
                                             {userRecord.certifications.map(c => (
@@ -967,10 +970,10 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                 </li>
                                             ))}
                                         </ul>
-                                    ) : <p className="text-sm text-slate-500 italic">None.</p>}
+                                    ) : <p className="text-sm text-slate-500 italic">{t('None.')}</p>}
                                 </div>
                                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                    <h3 className="text-lg font-bold text-white mb-4">Commendations</h3>
+                                    <h3 className="text-lg font-bold text-white mb-4">{t('Commendations')}</h3>
                                     {userRecord?.commendations && userRecord.commendations.length > 0 ? (
                                         <ul className="space-y-2">
                                             {userRecord.commendations.map(c => (
@@ -979,28 +982,28 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                 </li>
                                             ))}
                                         </ul>
-                                    ) : <p className="text-sm text-slate-500 italic">None.</p>}
+                                    ) : <p className="text-sm text-slate-500 italic">{t('None.')}</p>}
                                 </div>
                             </div>
 
                             {/* External Intel / Warrants */}
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-4">Intelligence & Cautions</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('Intelligence & Cautions')}</h3>
                                 {dossier ? (
                                     <div className="space-y-4">
                                         {dossier.warrants.filter(w => w.status === WarrantStatus.Active || w.status === WarrantStatus.Standing).length > 0 ? (
                                             <div className="bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r">
                                                 <div className="flex items-center gap-2 text-red-400 font-bold mb-1">
                                                     <i className="fa-solid fa-triangle-exclamation"></i>
-                                                    <span>Active Caution Found</span>
+                                                    <span>{t('Active Caution Found')}</span>
                                                 </div>
-                                                <p className="text-sm text-red-200/80">Target has active cautions in the system.</p>
+                                                <p className="text-sm text-red-200/80">{t('Target has active cautions in the system.')}</p>
                                             </div>
                                         ) : (
                                             <div className="bg-green-900/10 border-l-4 border-green-500 p-4 rounded-r">
                                                 <div className="flex items-center gap-2 text-green-400 font-bold mb-1">
                                                     <i className="fa-solid fa-check-circle"></i>
-                                                    <span>No Active Cautions</span>
+                                                    <span>{t('No Active Cautions')}</span>
                                                 </div>
                                             </div>
                                         )}
@@ -1014,11 +1017,11 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-slate-500 italic text-center">No intelligence reports filed.</p>
+                                            <p className="text-sm text-slate-500 italic text-center">{t('No intelligence reports filed.')}</p>
                                         )}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-slate-500">Loading dossier...</p>
+                                    <p className="text-sm text-slate-500">{t('Loading dossier...')}</p>
                                 )}
                             </div>
                         </div>
@@ -1028,13 +1031,13 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                         <div className="max-w-4xl space-y-6">
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-white">Interview Records</h3>
+                                    <h3 className="text-lg font-bold text-white">{t('Interview Records')}</h3>
                                     {!isCompleted && (
                                         <button
                                             onClick={() => openScheduleInterviewModal(caseFile)}
                                             className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition"
                                         >
-                                            <i className="fa-solid fa-plus mr-2"></i> Schedule
+                                            <i className="fa-solid fa-plus mr-2"></i> {t('Schedule')}
                                         </button>
                                     )}
                                 </div>
@@ -1045,9 +1048,9 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                 <div>
                                                     <p className="text-white font-bold text-sm">{int.template.name}</p>
                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                        <p className="text-xs text-slate-500">Lead: {int.interviewer.name}</p>
+                                                        <p className="text-xs text-slate-500">{t('Lead: {name}', { name: int.interviewer.name })}</p>
                                                         {int.panelMembers?.length > 0 && (
-                                                            <span className="text-[10px] text-indigo-400 font-semibold">+{int.panelMembers.length} panel</span>
+                                                            <span className="text-[10px] text-indigo-400 font-semibold">{t('+{count} panel', { count: int.panelMembers.length })}</span>
                                                         )}
                                                     </div>
                                                     <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{fmt(int.scheduledAt)}</p>
@@ -1058,21 +1061,21 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                                             onClick={() => openEditInterviewModal(int)}
                                                             className="text-xs px-3 py-1.5 rounded-sm border transition-colors uppercase font-bold bg-amber-600/20 text-amber-400 border-amber-600/30 hover:bg-amber-600 hover:text-white"
                                                         >
-                                                            Edit
+                                                            {t('Edit')}
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => openConductInterviewModal(int)}
                                                         className={`text-[10px] px-3 py-1.5 rounded-lg border transition-colors uppercase font-black tracking-widest ${int.status === 'Completed' ? 'bg-green-500/10 text-green-300 border-green-500/30 hover:bg-green-500/20' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'}`}
                                                     >
-                                                        {int.status === 'Completed' ? 'View Report' : 'Conduct Interview'}
+                                                        {int.status === 'Completed' ? t('View Report') : t('Conduct Interview')}
                                                     </button>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-slate-500 italic text-center py-6">No interviews scheduled.</p>
+                                    <p className="text-sm text-slate-500 italic text-center py-6">{t('No interviews scheduled.')}</p>
                                 )}
                             </div>
                         </div>
@@ -1080,7 +1083,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
 
                     {activeTab === 'log' && (
                         <div className="max-w-4xl space-y-4">
-                            <h3 className="text-xl font-bold text-white mb-4">Activity Log</h3>
+                            <h3 className="text-xl font-bold text-white mb-4">{t('Activity Log')}</h3>
                             {localLogs.map(log => (
                                 <div key={log.id} className="flex gap-3 text-sm relative group">
                                     <div className="shrink-0 w-32 md:w-36 text-right text-slate-500 font-mono text-[10px] md:text-xs pt-1">
@@ -1091,11 +1094,11 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     </div>
                                     <div className="flex-1 pb-4 min-w-0">
                                         <p className="text-slate-300 wrap-break-word">{log.message}</p>
-                                        <p className="text-xs text-slate-500 mt-1">by {log.user?.name || 'System'}</p>
+                                        <p className="text-xs text-slate-500 mt-1">{t('by {name}', { name: log.user?.name || t('System') })}</p>
                                     </div>
                                 </div>
                             ))}
-                            {localLogs.length === 0 && <p className="text-slate-500 italic text-sm">No activity logged.</p>}
+                            {localLogs.length === 0 && <p className="text-slate-500 italic text-sm">{t('No activity logged.')}</p>}
                         </div>
                     )}
 
@@ -1106,12 +1109,12 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {caseConfig.type === 'VETTING' && linkedMember && (
                                 <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-xl p-6">
                                     <h4 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-shield-halved"></i> Clearance Assignment
+                                        <i className="fa-solid fa-shield-halved"></i> {t('Clearance Assignment')}
                                     </h4>
                                     <div className="flex items-center gap-4 mb-5 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
                                         <div className="text-center flex-1">
-                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Current</p>
-                                            <p className="text-white font-bold">{linkedMember.clearanceLevel?.name || 'None'}</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('Current')}</p>
+                                            <p className="text-white font-bold">{linkedMember.clearanceLevel?.name || t('None')}</p>
                                             {linkedMember.limitingMarkers && linkedMember.limitingMarkers.length > 0 && (
                                                 <div className="flex flex-wrap justify-center gap-1 mt-1.5">
                                                     {linkedMember.limitingMarkers.map(m => (
@@ -1122,8 +1125,8 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                         </div>
                                         <i className="fa-solid fa-arrow-right text-indigo-500"></i>
                                         <div className="text-center flex-1">
-                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Applying</p>
-                                            <p className="text-indigo-400 font-bold">{securityClearances.find(c => c.id.toString() === selectedLevelId)?.name || 'None'}</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('Applying')}</p>
+                                            <p className="text-indigo-400 font-bold">{securityClearances.find(c => c.id.toString() === selectedLevelId)?.name || t('None')}</p>
                                             {selectedMarkers.size > 0 && (
                                                 <div className="flex flex-wrap justify-center gap-1 mt-1.5">
                                                     {Array.from(selectedMarkers).map(id => {
@@ -1137,15 +1140,15 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     {!isCompleted && (
                                         <>
                                             <div className="mb-4">
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Clearance Level</label>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Clearance Level')}</label>
                                                 <select value={selectedLevelId} onChange={(e) => setSelectedLevelId(e.target.value)} className={inputClass}>
-                                                    <option value="">No Clearance</option>
-                                                    {securityClearances.map(c => <option key={c.id} value={c.id}>{c.name} (Level {c.level})</option>)}
+                                                    <option value="">{t('No Clearance')}</option>
+                                                    {securityClearances.map(c => <option key={c.id} value={c.id}>{c.name} ({t('Level {level}', { level: c.level })})</option>)}
                                                 </select>
                                             </div>
                                             {limitingMarkers.length > 0 && (
                                                 <div>
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Limiting Markers</label>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('Limiting Markers')}</label>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                         {limitingMarkers.map(m => (
                                                             <label key={m.id} className={`flex items-center gap-2 text-sm bg-slate-900/50 p-2.5 rounded-sm border cursor-pointer transition-colors ${selectedMarkers.has(m.id) ? 'border-amber-500/50 bg-amber-900/10' : 'border-slate-700/50 hover:bg-slate-800'}`}>
@@ -1160,7 +1163,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                         </>
                                     )}
                                     <p className="text-[10px] text-indigo-400/60 mt-3">
-                                        <i className="fa-solid fa-circle-info mr-1"></i> Approving will update this member's security clearance and limiting markers.
+                                        <i className="fa-solid fa-circle-info mr-1"></i> {t("Approving will update this member's security clearance and limiting markers.")}
                                     </p>
                                 </div>
                             )}
@@ -1169,19 +1172,19 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {caseConfig.type === 'TRANSFER' && (
                                 <div className="bg-amber-900/10 border border-amber-500/20 rounded-xl p-6">
                                     <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-right-left"></i> Transfer Action
+                                        <i className="fa-solid fa-right-left"></i> {t('Transfer Action')}
                                     </h4>
                                     {transferRequest ? (
                                         <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
                                             <div className="flex items-center gap-4 text-sm">
                                                 <div className="text-center flex-1">
-                                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">From</p>
-                                                    <p className="text-white font-bold">{linkedMember?.unit?.name || 'Unassigned'}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('From')}</p>
+                                                    <p className="text-white font-bold">{linkedMember?.unit?.name || t('Unassigned')}</p>
                                                 </div>
                                                 <i className="fa-solid fa-arrow-right text-amber-500"></i>
                                                 <div className="text-center flex-1">
-                                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">To</p>
-                                                    <p className="text-amber-400 font-bold">{(transferRequest as any).targetUnit?.name || 'Unknown'}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('To')}</p>
+                                                    <p className="text-amber-400 font-bold">{(transferRequest as any).targetUnit?.name || t('Unknown')}</p>
                                                 </div>
                                             </div>
                                             {transferRequest.reason && (
@@ -1189,10 +1192,10 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                             )}
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-slate-500 italic">No linked transfer request found. The member's unit will not be changed.</p>
+                                        <p className="text-sm text-slate-500 italic">{t("No linked transfer request found. The member's unit will not be changed.")}</p>
                                     )}
                                     <p className="text-[10px] text-amber-400/60 mt-3">
-                                        <i className="fa-solid fa-circle-info mr-1"></i> Approving will move this member to the target unit.
+                                        <i className="fa-solid fa-circle-info mr-1"></i> {t('Approving will move this member to the target unit.')}
                                     </p>
                                 </div>
                             )}
@@ -1201,26 +1204,26 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {caseConfig.type === 'JOB' && (
                                 <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-6">
                                     <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-briefcase"></i> Position Assignment
+                                        <i className="fa-solid fa-briefcase"></i> {t('Position Assignment')}
                                     </h4>
                                     <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
                                         <div className="flex items-center gap-4 text-sm">
                                             <div className="text-center flex-1">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Current Position</p>
-                                                <p className="text-white font-bold" title={linkedMember?.position?.description || undefined}>{linkedMember?.position?.name || 'None'}</p>
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('Current Position')}</p>
+                                                <p className="text-white font-bold" title={linkedMember?.position?.description || undefined}>{linkedMember?.position?.name || t('None')}</p>
                                                 {linkedMember?.position?.description && (
                                                     <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{linkedMember.position.description}</p>
                                                 )}
                                             </div>
                                             <i className="fa-solid fa-arrow-right text-blue-500"></i>
                                             <div className="text-center flex-1">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">New Position</p>
-                                                <p className="text-blue-400 font-bold">{linkedJob?.job?.position?.name || linkedJob?.title || 'Pending'}</p>
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('New Position')}</p>
+                                                <p className="text-blue-400 font-bold">{linkedJob?.job?.position?.name || linkedJob?.title || t('Pending')}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <p className="text-[10px] text-blue-400/60 mt-3">
-                                        <i className="fa-solid fa-circle-info mr-1"></i> Approving will assign this member to the linked personnel position.
+                                        <i className="fa-solid fa-circle-info mr-1"></i> {t('Approving will assign this member to the linked personnel position.')}
                                     </p>
                                 </div>
                             )}
@@ -1229,30 +1232,30 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {caseConfig.type === 'RECRUITMENT' && caseFile.referralSource === 'WEBSITE_APPLICATION' && (
                                 <div className="bg-emerald-500/5 border border-emerald-500/30 rounded-xl p-6">
                                     <h4 className="text-sm font-bold text-emerald-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-user-plus"></i> Membership Promotion
+                                        <i className="fa-solid fa-user-plus"></i> {t('Membership Promotion')}
                                     </h4>
                                     <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
                                         <div className="flex items-center gap-4 text-sm">
                                             <div className="text-center flex-1">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Current Role</p>
-                                                <p className="text-white font-bold">{linkedMember?.role || 'Client'}</p>
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('Current Role')}</p>
+                                                <p className="text-white font-bold">{linkedMember?.role ? t(linkedMember.role, { context: 'user-role' }) : t('Client')}</p>
                                             </div>
                                             <i className="fa-solid fa-arrow-right text-emerald-300"></i>
                                             <div className="text-center flex-1">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">New Role</p>
-                                                <p className="text-emerald-300 font-bold">Member</p>
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">{t('New Role')}</p>
+                                                <p className="text-emerald-300 font-bold">{t('Member')}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <p className="text-[10px] text-emerald-300/70 mt-3">
-                                        <i className="fa-solid fa-circle-info mr-1"></i> Approving will promote this applicant to full Member status (subject to member cap).
+                                        <i className="fa-solid fa-circle-info mr-1"></i> {t('Approving will promote this applicant to full Member status (subject to member cap).')}
                                     </p>
                                     {hrConfig.probationDays && hrConfig.probationDays > 0 && (
                                         <div className="mt-4 bg-amber-900/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2.5">
                                             <i className="fa-solid fa-hourglass-half text-amber-400 mt-0.5"></i>
                                             <div>
-                                                <p className="text-xs font-bold text-amber-400">Probation Period: {hrConfig.probationDays} days</p>
-                                                <p className="text-[10px] text-amber-400/60 mt-0.5">This member will be placed on probation automatically upon hiring.</p>
+                                                <p className="text-xs font-bold text-amber-400">{t('Probation Period: {days} days', { days: hrConfig.probationDays })}</p>
+                                                <p className="text-[10px] text-amber-400/60 mt-0.5">{t('This member will be placed on probation automatically upon hiring.')}</p>
                                             </div>
                                         </div>
                                     )}
@@ -1263,34 +1266,34 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                             {caseConfig.type === 'RECRUITMENT' && !isCompleted && (
                                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
                                     <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                        <i className="fa-solid fa-user-gear text-slate-500"></i> New Hire Assignment
-                                        <span className="text-[10px] font-normal normal-case text-slate-500 ml-1">(Optional)</span>
+                                        <i className="fa-solid fa-user-gear text-slate-500"></i> {t('New Hire Assignment')}
+                                        <span className="text-[10px] font-normal normal-case text-slate-500 ml-1">{t('(Optional)')}</span>
                                     </h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Unit</label>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Unit')}</label>
                                             <select value={hireUnitId} onChange={(e) => setHireUnitId(e.target.value)} className={inputClass}>
-                                                <option value="">No Assignment</option>
+                                                <option value="">{t('No Assignment')}</option>
                                                 {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rank</label>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Rank')}</label>
                                             <select value={hireRankId} onChange={(e) => setHireRankId(e.target.value)} className={inputClass}>
-                                                <option value="">No Assignment</option>
+                                                <option value="">{t('No Assignment')}</option>
                                                 {ranks.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Clearance Level</label>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Clearance Level')}</label>
                                             <select value={hireClearanceLevelId} onChange={(e) => setHireClearanceLevelId(e.target.value)} className={inputClass}>
-                                                <option value="">No Clearance</option>
-                                                {securityClearances.map(c => <option key={c.id} value={c.id}>{c.name} (Level {c.level})</option>)}
+                                                <option value="">{t('No Clearance')}</option>
+                                                {securityClearances.map(c => <option key={c.id} value={c.id}>{c.name} ({t('Level {level}', { level: c.level })})</option>)}
                                             </select>
                                         </div>
                                         {limitingMarkers.length > 0 && (
                                             <div>
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Limiting Markers</label>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Limiting Markers')}</label>
                                                 <div className="space-y-1.5">
                                                     {limitingMarkers.map(m => (
                                                         <label key={m.id} className={`flex items-center gap-2 text-sm bg-slate-900/50 p-2 rounded-sm border cursor-pointer transition-colors ${hireClearanceMarkers.has(m.id) ? 'border-amber-500/50 bg-amber-900/10' : 'border-slate-700/50 hover:bg-slate-800'}`}>
@@ -1304,7 +1307,7 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                         )}
                                     </div>
                                     <p className="text-[10px] text-slate-500 mt-3">
-                                        <i className="fa-solid fa-circle-info mr-1"></i> These assignments will be applied when the hire is approved. Leave blank to skip.
+                                        <i className="fa-solid fa-circle-info mr-1"></i> {t('These assignments will be applied when the hire is approved. Leave blank to skip.')}
                                     </p>
                                 </div>
                             )}
@@ -1315,32 +1318,32 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                     <div className="bg-amber-900/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-2.5">
                                         <i className="fa-solid fa-hourglass-half text-amber-400 mt-0.5"></i>
                                         <div>
-                                            <p className="text-xs font-bold text-amber-400">Probation Period: {hrConfig.probationDays} days</p>
-                                            <p className="text-[10px] text-amber-400/60 mt-0.5">This member will be placed on probation automatically upon hiring.</p>
+                                            <p className="text-xs font-bold text-amber-400">{t('Probation Period: {days} days', { days: hrConfig.probationDays })}</p>
+                                            <p className="text-[10px] text-amber-400/60 mt-0.5">{t('This member will be placed on probation automatically upon hiring.')}</p>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="bg-slate-800/50 border border-slate-600/40 rounded-xl p-4 flex items-start gap-2.5">
                                         <i className="fa-solid fa-circle-info text-slate-400 mt-0.5"></i>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-300">Probation cannot be applied automatically</p>
-                                            <p className="text-[10px] text-slate-400 mt-0.5">This candidate has no linked account yet — they need to log in via Discord first. After hiring, set probation manually from their profile once they appear in the roster.</p>
+                                            <p className="text-xs font-bold text-slate-300">{t('Probation cannot be applied automatically')}</p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">{t('This candidate has no linked account yet — they need to log in via Discord first. After hiring, set probation manually from their profile once they appear in the roster.')}</p>
                                         </div>
                                     </div>
                                 )
                             )}
 
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-4">Final Determination</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">{t('Final Determination')}</h3>
 
                                 <div className="mb-6">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Decision Rationale / Closing Note</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">{t('Decision Rationale / Closing Note')}</label>
                                     <textarea
                                         value={finalNotes}
                                         onChange={(e) => setFinalNotes(e.target.value)}
                                         rows={4}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-lg p-4 text-white text-sm focus:border-amber-500 outline-hidden resize-none"
-                                        placeholder="Provide justification for the final decision..."
+                                        placeholder={t('Provide justification for the final decision...')}
                                         disabled={isCompleted}
                                     />
                                 </div>
@@ -1352,14 +1355,14 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                                             disabled={isSaving || caseFile.status === ApplicationStatus.Hired}
                                             className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
                                         >
-                                            {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>} {caseConfig.type === 'RECRUITMENT' || caseConfig.type === 'JOB' ? 'Hire Candidate' : 'Approve Request'}
+                                            {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-check"></i>} {caseConfig.type === 'RECRUITMENT' || caseConfig.type === 'JOB' ? t('Hire Candidate') : t('Approve Request')}
                                         </button>
                                         <button
                                             onClick={() => handleDecision('Deny')}
                                             disabled={isSaving || caseFile.status === ApplicationStatus.Rejected}
                                             className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
                                         >
-                                            {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-xmark"></i>} {caseConfig.type === 'RECRUITMENT' || caseConfig.type === 'JOB' ? 'Reject Candidate' : 'Deny Request'}
+                                            {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-xmark"></i>} {caseConfig.type === 'RECRUITMENT' || caseConfig.type === 'JOB' ? t('Reject Candidate') : t('Deny Request')}
                                         </button>
                                     </div>
                                 )}
@@ -1371,36 +1374,36 @@ const UnifiedCaseFileView: React.FC<UnifiedCaseFileViewProps> = ({ applicationId
                         <div className="max-w-xl space-y-6">
                             {/* Reset Status Section */}
                             <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-white mb-2">Case Status Override</h3>
-                                <p className="text-sm text-slate-400 mb-4">Manually change the status of this case file. Use this to reopen closed cases.</p>
+                                <h3 className="text-lg font-bold text-white mb-2">{t('Case Status Override')}</h3>
+                                <p className="text-sm text-slate-400 mb-4">{t('Manually change the status of this case file. Use this to reopen closed cases.')}</p>
                                 <div className="flex gap-2">
                                     <select
                                         value={resetStatus}
                                         onChange={(e) => setResetStatus(e.target.value as ApplicationStatus)}
                                         className="flex-1 bg-slate-900 border border-slate-700 rounded-sm p-2 text-white text-sm"
                                     >
-                                        <option value="">- Select Target Status -</option>
-                                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                        <option value="">{t('- Select Target Status -')}</option>
+                                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{t(s, { context: 'application-status' })}</option>)}
                                     </select>
                                     <button
                                         onClick={handleResetStatus}
                                         disabled={isSaving || !resetStatus}
                                         className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition disabled:opacity-50"
                                     >
-                                        Update Status
+                                        {t('Update Status')}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="bg-red-900/10 border border-red-500/30 rounded-xl p-6">
-                                <h3 className="text-lg font-bold text-red-400 mb-2">Danger Zone</h3>
-                                <p className="text-sm text-slate-400 mb-6">Permanently remove this case file and all associated records from the database.</p>
+                                <h3 className="text-lg font-bold text-red-400 mb-2">{t('Danger Zone')}</h3>
+                                <p className="text-sm text-slate-400 mb-6">{t('Permanently remove this case file and all associated records from the database.')}</p>
                                 <button
                                     onClick={handleDelete}
                                     className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-sm shadow-lg shadow-red-900/20 transition-colors uppercase text-sm disabled:opacity-50 disabled:cursor-wait"
                                     disabled={isSaving || isDeleting}
                                 >
-                                    {isDeleting ? <><i className="fa-solid fa-spinner animate-spin mr-2"></i>Deleting...</> : 'Delete Case File'}
+                                    {isDeleting ? <><i className="fa-solid fa-spinner animate-spin mr-2"></i>{t('Deleting...')}</> : t('Delete Case File')}
                                 </button>
                             </div>
                         </div>

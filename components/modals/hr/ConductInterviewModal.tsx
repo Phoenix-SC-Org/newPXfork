@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { HydratedHRInterview, HRInterviewQuestion } from '../../../types';
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ConductInterviewModalProps {
     isOpen: boolean;
@@ -19,6 +20,7 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
     const { hrApplicants } = useHR();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [responses, setResponses] = useState<{ [key: number]: { text: string; score: number } }>({});
     const [overallNotes, setOverallNotes] = useState(interview.overallNotes || '');
     const [isRecommended, setIsRecommended] = useState<boolean>(interview.isRecommended || false);
@@ -34,8 +36,8 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
 
     const applicantName = useMemo(() => {
         const applicant = hrApplicants.find(a => a.id === interview.applicationId);
-        return applicant ? applicant.applicantName : 'Unknown Applicant';
-    }, [hrApplicants, interview.applicationId]);
+        return applicant ? applicant.applicantName : t('Unknown Applicant');
+    }, [hrApplicants, interview.applicationId, t]);
 
     // Reset the submit-loading flag on the same trigger that (re)loads the template:
     // when the modal opens or the interview / isCompleted / rpcAction inputs change.
@@ -112,7 +114,7 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
             });
             await refreshHR();
             onClose();
-        } catch (err) { console.error(err); addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save interview evaluation." }); } finally { setIsLoading(false); }
+        } catch (err) { console.error(err); addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save interview evaluation.') }); } finally { setIsLoading(false); }
     };
 
     useEffect(() => {
@@ -138,21 +140,21 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
             <div className="bg-slate-900 border-b border-slate-700/50 p-4 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-3">
                     <span className={`text-xs px-2 py-0.5 rounded-sm border uppercase font-bold tracking-wider ${isCompleted ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-sky-500/10 border-sky-500/50 text-sky-400'}`}>
-                        {isCompleted ? 'Completed Review' : 'Live Interview'}
+                        {isCompleted ? t('Completed Review') : t('Live Interview')}
                     </span>
                     {/* Interview panel display */}
                     <div className="flex items-center gap-1.5">
-                        <img src={interview.interviewer.avatarUrl} className="h-6 w-6 rounded-full border-2 border-emerald-500/50" alt="" title={`Lead: ${interview.interviewer.name}`} />
+                        <img src={interview.interviewer.avatarUrl} className="h-6 w-6 rounded-full border-2 border-emerald-500/50" alt="" title={t('Lead: {name}', { name: interview.interviewer.name })} />
                         {interview.panelMembers?.map(pm => (
                             <img key={pm.id} src={pm.avatarUrl} className="h-5 w-5 rounded-full border border-slate-600 -ml-1" alt="" title={pm.name} />
                         ))}
                         {interview.panelMembers?.length > 0 && (
-                            <span className="text-[10px] text-slate-500 font-semibold ml-0.5">{1 + interview.panelMembers.length} panel</span>
+                            <span className="text-[10px] text-slate-500 font-semibold ml-0.5">{t('{count} panel', { count: 1 + interview.panelMembers.length })}</span>
                         )}
                     </div>
                 </div>
                 <div className="flex items-baseline gap-2">
-                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider">Score</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-wider">{t('Score')}</p>
                     <span className={`text-2xl font-black ${calculateFinalScore >= 4 ? 'text-green-400' : calculateFinalScore <= 2 ? 'text-red-400' : 'text-amber-400'}`}>
                         {calculateFinalScore}
                     </span>
@@ -196,7 +198,7 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
                         <div className="p-3 border-t border-slate-700/50 mt-auto">
                             <button onClick={() => setActiveQuestionId(-1)} className={`w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 ${activeQuestionId === -1 ? 'bg-emerald-500/15 border-emerald-500/40 shadow-xs shadow-emerald-900/20' : 'bg-slate-800/20 border-transparent hover:bg-slate-800'}`}>
                                 <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${activeQuestionId === -1 ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-500'}`}><i className="fa-solid fa-star"></i></div>
-                                <span className={`text-sm font-bold ${activeQuestionId === -1 ? 'text-white' : 'text-slate-400'}`}>Assessment</span>
+                                <span className={`text-sm font-bold ${activeQuestionId === -1 ? 'text-white' : 'text-slate-400'}`}>{t('Assessment')}</span>
                             </button>
                         </div>
                     </div>
@@ -206,44 +208,44 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
                         {activeQuestionId === -1 ? (
                             <div className="max-w-3xl mx-auto space-y-6">
                                 <div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Final Assessment</h3>
+                                    <h3 className="text-xl font-bold text-white mb-2">{t('Final Assessment')}</h3>
                                     <textarea
                                         value={overallNotes}
                                         onChange={(e) => setOverallNotes(e.target.value)}
                                         className="w-full h-48 bg-slate-950/50 border border-slate-700 rounded-lg p-4 text-white focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/30 outline-hidden resize-none"
-                                        placeholder="Final recommendation..."
+                                        placeholder={t('Final recommendation...')}
                                         disabled={isCompleted}
                                     />
                                 </div>
                                 <div className="flex gap-4">
                                     <button onClick={() => !isCompleted && setIsRecommended(true)} disabled={isCompleted} className={`flex-1 p-4 rounded-lg border transition-all flex flex-col items-center gap-2 ${isRecommended ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
                                         <i className="fa-solid fa-thumbs-up text-2xl"></i>
-                                        <span className="font-bold uppercase text-xs">Recommend</span>
+                                        <span className="font-bold uppercase text-xs">{t('Recommend')}</span>
                                     </button>
                                     <button onClick={() => !isCompleted && setIsRecommended(false)} disabled={isCompleted} className={`flex-1 p-4 rounded-lg border transition-all flex flex-col items-center gap-2 ${!isRecommended ? 'bg-red-500/10 border-red-500 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
                                         <i className="fa-solid fa-thumbs-down text-2xl"></i>
-                                        <span className="font-bold uppercase text-xs">Reject</span>
+                                        <span className="font-bold uppercase text-xs">{t('Reject')}</span>
                                     </button>
                                 </div>
                                 {!isCompleted && (
                                     <button onClick={handleSubmit} disabled={isLoading} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-emerald-900/30 border border-emerald-500/40 transition-all uppercase tracking-widest text-xs">
-                                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit Evaluation'}
+                                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit Evaluation')}
                                     </button>
                                 )}
                             </div>
                         ) : activeQuestion && activeResponse ? (
                             <div className="max-w-3xl mx-auto flex flex-col h-full">
                                 <div className="mb-6 shrink-0">
-                                    <span className="text-sky-500 font-bold text-xs uppercase tracking-widest mb-2 block">Question {questions.findIndex(q => q.id === activeQuestion.id) + 1}</span>
+                                    <span className="text-sky-500 font-bold text-xs uppercase tracking-widest mb-2 block">{t('Question {n}', { n: questions.findIndex(q => q.id === activeQuestion.id) + 1 })}</span>
                                     <h3 className="text-xl md:text-2xl font-bold text-white leading-tight">{activeQuestion.questionText}</h3>
                                 </div>
                                 <div className="flex-1 mb-6 min-h-[150px]">
                                     <textarea
                                         ref={noteAreaRef}
-                                        value={activeResponse.text}
+                                        value={activeResponse.text === '(No response)' ? t('(No response)') : activeResponse.text}
                                         onChange={(e) => handleResponseChange(activeQuestion.id, 'text', e.target.value)}
                                         className="w-full h-full bg-slate-950/50 border border-slate-700 rounded-lg p-4 text-white text-base focus:border-sky-500 outline-hidden resize-none"
-                                        placeholder="Record response..."
+                                        placeholder={t('Record response...')}
                                         disabled={isCompleted}
                                     />
                                 </div>
@@ -274,13 +276,13 @@ const ConductInterviewModal: React.FC<ConductInterviewModalProps> = ({ isOpen, o
                                         disabled={questions.findIndex(q => q.id === activeQuestionId) === 0}
                                         className="text-slate-400 hover:text-white font-bold text-xs uppercase disabled:opacity-0"
                                     >
-                                        <i className="fa-solid fa-arrow-left mr-2"></i> Previous
+                                        <i className="fa-solid fa-arrow-left mr-2"></i> {t('Previous')}
                                     </button>
                                     <button
                                         onClick={() => { const idx = questions.findIndex(q => q.id === activeQuestionId); if (idx < questions.length - 1) setActiveQuestionId(questions[idx + 1].id); else setActiveQuestionId(-1); }}
                                         className="bg-sky-600 hover:bg-sky-500 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase shadow-lg shadow-sky-900/20"
                                     >
-                                        {questions.findIndex(q => q.id === activeQuestionId) === questions.length - 1 ? 'Finish' : 'Next'} <i className="fa-solid fa-arrow-right ml-2"></i>
+                                        {questions.findIndex(q => q.id === activeQuestionId) === questions.length - 1 ? t('Finish') : t('Next')} <i className="fa-solid fa-arrow-right ml-2"></i>
                                     </button>
                                 </div>
                             </div>

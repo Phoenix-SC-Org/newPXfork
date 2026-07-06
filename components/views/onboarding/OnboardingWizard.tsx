@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from '../../../contexts/SessionContext';
 import apiService from '../../../services/apiService';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // First-run setup wizard for a fresh self-hosted instance. Rendered by
 // DashboardApp whenever `setupCompleted` is false. It orchestrates the existing
@@ -37,6 +38,7 @@ const CHECKS: { key: keyof PreflightStatus; label: string; critical: boolean; re
 
 export default function OnboardingWizard() {
     const { pendingUser, currentUser, handleLogin, redeemAdminSetupCode, handleNewUserSetup } = useSession();
+    const { t } = useI18n();
 
     const deriveStep = useCallback((): Step => {
         if (currentUser) return 'import';
@@ -73,7 +75,7 @@ export default function OnboardingWizard() {
                     <img src={LOGO} alt="Open MyRSI.org" className="w-10 h-10 object-contain" />
                     <div>
                         <div className="text-sm font-black tracking-tight text-white leading-tight">Open MyRSI.org</div>
-                        <div className="text-[11px] text-slate-500">First-run setup</div>
+                        <div className="text-[11px] text-slate-500">{t('First-run setup')}</div>
                     </div>
                 </div>
                 <ol className="space-y-1">
@@ -85,12 +87,12 @@ export default function OnboardingWizard() {
                                 <span className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold ${active ? 'bg-sky-500 text-white' : done ? 'bg-emerald-500/80 text-white' : 'bg-white/5 text-slate-500'}`}>
                                     {done ? <i className="fa-solid fa-check text-[9px]" /> : i + 1}
                                 </span>
-                                {STEP_LABELS[s]}
+                                {t(STEP_LABELS[s])}
                             </li>
                         );
                     })}
                 </ol>
-                <div className="mt-auto pt-8 text-[11px] text-slate-600">Self-hosted Star Citizen org operations.</div>
+                <div className="mt-auto pt-8 text-[11px] text-slate-600">{t('Self-hosted Star Citizen org operations.')}</div>
             </aside>
 
             {/* Right pane — active step */}
@@ -140,32 +142,34 @@ function PrimaryBtn({ onClick, disabled, children }: { onClick: () => void; disa
 
 // Welcome step
 function WelcomeStep({ onNext }: { onNext: () => void }) {
+    const { t } = useI18n();
     return (
-        <Shell icon="fa-rocket" title="Welcome to Open MyRSI.org">
+        <Shell icon="fa-rocket" title={t('Welcome to Open MyRSI.org')}>
             <p className="text-slate-400 leading-relaxed mb-4">
-                This is your own self-hosted operations platform for a single Star Citizen
-                organisation. Manage personnel & HR, requests & dispatch, operations, intel, fleet,
-                warehouse, quartermaster, government/finance, a wiki, and in-app voice. One
-                deployment, one org, your data.
+                {t("This is your own self-hosted operations platform for a single Star Citizen organisation. Manage personnel & HR, requests & dispatch, operations, intel, fleet, warehouse, quartermaster, government/finance, a wiki, and in-app voice. One deployment, one org, your data.")}
             </p>
             <div className="rounded-xl border border-white/5 bg-slate-900/50 p-4 mb-8">
                 <p className="text-slate-300 leading-relaxed text-sm">
-                    Thanks for giving Open MyRSI.org a spin. It means a lot that you'd self-host
-                    something I built. Let's get you set up; it only takes a minute. o7
+                    {t("Thanks for giving Open MyRSI.org a spin. It means a lot that you'd self-host something I built. Let's get you set up; it only takes a minute. o7")}
                 </p>
                 <p className="text-slate-500 text-xs mt-2">— Jenk0</p>
             </div>
-            <PrimaryBtn onClick={onNext}>Let's go <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
+            <PrimaryBtn onClick={onNext}>{t("Let's go")} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
         </Shell>
     );
 }
 
 // Preflight step
 function PreflightStep({ onNext }: { onNext: () => void }) {
+    const { t } = useI18n();
     const [status, setStatus] = useState<PreflightStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    // Error state stores the UNTRANSLATED message ('Preflight failed' sentinel
+    // or a server-provided text); translation happens at the render site so the
+    // fetch effects don't need `t` in their deps (a language switch must not
+    // refire the preflight request).
     const check = useCallback(async () => {
         setLoading(true); setError('');
         try { setStatus((await apiService.preflight()) || null); }
@@ -199,10 +203,10 @@ function PreflightStep({ onNext }: { onNext: () => void }) {
     const anyRestartNeeded = !!status && CHECKS.some(c => !status[c.key] && c.requiresRestart);
 
     return (
-        <Shell icon="fa-clipboard-check" title="Preflight check" subtitle="A quick look at your environment. We never expose any values — just whether each piece is configured.">
+        <Shell icon="fa-clipboard-check" title={t('Preflight check')} subtitle={t('A quick look at your environment. We never expose any values — just whether each piece is configured.')}>
             <div className="space-y-2 mb-6">
-                {loading && <p className="text-slate-500 text-sm"><i className="fa-solid fa-spinner fa-spin mr-2" />Checking…</p>}
-                {error && <p className="text-rose-400 text-sm">{error}</p>}
+                {loading && <p className="text-slate-500 text-sm"><i className="fa-solid fa-spinner fa-spin mr-2" />{t('Checking…')}</p>}
+                {error && <p className="text-rose-400 text-sm">{error === 'Preflight failed' ? t('Preflight failed') : error}</p>}
                 {!loading && status && CHECKS.map((c) => {
                     const ok = status[c.key];
                     const tone = ok ? 'text-emerald-400' : c.critical ? 'text-rose-400' : 'text-amber-400';
@@ -211,28 +215,28 @@ function PreflightStep({ onNext }: { onNext: () => void }) {
                         <div key={c.key} className="rounded-lg border border-white/5 bg-slate-900/50 px-4 py-3">
                             <div className="flex items-center gap-3">
                                 <i className={`fa-solid ${ico} ${tone}`} />
-                                <span className="text-slate-200 text-sm font-medium">{c.label}</span>
+                                <span className="text-slate-200 text-sm font-medium">{t(c.label)}</span>
                                 <span className="ml-auto flex items-center gap-2">
                                     {!ok && c.requiresRestart && (
-                                        <span className="text-[10px] uppercase tracking-widest text-amber-500/80"><i className="fa-solid fa-rotate-right mr-1" />Restart required</span>
+                                        <span className="text-[10px] uppercase tracking-widest text-amber-500/80"><i className="fa-solid fa-rotate-right mr-1" />{t('Restart required')}</span>
                                     )}
-                                    {!c.critical && <span className="text-[10px] uppercase tracking-widest text-slate-600">Optional</span>}
+                                    {!c.critical && <span className="text-[10px] uppercase tracking-widest text-slate-600">{t('Optional')}</span>}
                                 </span>
                             </div>
-                            {!ok && <p className="text-xs text-slate-500 mt-2 pl-7">{c.tip}</p>}
+                            {!ok && <p className="text-xs text-slate-500 mt-2 pl-7">{t(c.tip)}</p>}
                         </div>
                     );
                 })}
             </div>
             {!loading && status && !criticalOk && (
-                <p className="text-rose-400/90 text-sm mb-4"><i className="fa-solid fa-circle-exclamation mr-2" />Resolve the required items above to continue.</p>
+                <p className="text-rose-400/90 text-sm mb-4"><i className="fa-solid fa-circle-exclamation mr-2" />{t('Resolve the required items above to continue.')}</p>
             )}
             {!loading && status && anyRestartNeeded && (
-                <p className="text-amber-400/80 text-xs mb-4"><i className="fa-solid fa-circle-info mr-2" />Items marked “Restart required” read environment variables, which are only loaded at startup. Set them, then restart the app/container — re-checking without a restart won't detect the change.</p>
+                <p className="text-amber-400/80 text-xs mb-4"><i className="fa-solid fa-circle-info mr-2" />{t("Items marked “Restart required” read environment variables, which are only loaded at startup. Set them, then restart the app/container — re-checking without a restart won't detect the change.")}</p>
             )}
             <div className="flex items-center gap-3">
-                <PrimaryBtn onClick={onNext} disabled={!criticalOk}>Continue <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
-                <button onClick={check} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium"><i className="fa-solid fa-rotate mr-2" />Re-check</button>
+                <PrimaryBtn onClick={onNext} disabled={!criticalOk}>{t('Continue')} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
+                <button onClick={check} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium"><i className="fa-solid fa-rotate mr-2" />{t('Re-check')}</button>
             </div>
         </Shell>
     );
@@ -240,19 +244,21 @@ function PreflightStep({ onNext }: { onNext: () => void }) {
 
 // Create account (Discord) step
 function DiscordStep({ onSignIn }: { onSignIn: () => void }) {
+    const { t } = useI18n();
     return (
-        <Shell icon="fa-discord" title="Create your account" subtitle="Open MyRSI.org uses Discord to sign in. You'll be the organization's first member and Admin.">
+        <Shell icon="fa-discord" title={t('Create your account')} subtitle={t("Open MyRSI.org uses Discord to sign in. You'll be the organization's first member and Admin.")}>
             <button onClick={onSignIn}
                 className="w-full px-6 py-4 bg-[#5865F2] hover:bg-[#4752c4] text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-3">
-                <i className="fa-brands fa-discord text-xl" /> Sign in with Discord
+                <i className="fa-brands fa-discord text-xl" /> {t('Sign in with Discord')}
             </button>
-            <p className="text-xs text-slate-500 mt-4">You'll be redirected to Discord and brought right back here to continue setup.</p>
+            <p className="text-xs text-slate-500 mt-4">{t("You'll be redirected to Discord and brought right back here to continue setup.")}</p>
         </Shell>
     );
 }
 
 // Admin claim code step
 function ClaimStep({ redeem, pendingName }: { redeem: (code: string) => Promise<string>; pendingName?: string }) {
+    const { t } = useI18n();
     const [code, setCode] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -262,21 +268,21 @@ function ClaimStep({ redeem, pendingName }: { redeem: (code: string) => Promise<
         if (!c) return;
         setBusy(true); setError('');
         try { await redeem(c); /* pendingUser gains adminSetupToken → wizard advances to RSI */ }
-        catch (e) { setError(e instanceof Error ? e.message : 'Invalid setup code'); setBusy(false); }
+        catch (e) { setError(e instanceof Error ? e.message : t('Invalid setup code')); setBusy(false); }
     };
 
     return (
-        <Shell icon="fa-key" title={pendingName ? `Welcome, ${pendingName}` : 'Claim the Admin seat'}
-            subtitle="Your account is created. Now claim the Admin seat with the one-time code printed to your server console on first boot.">
+        <Shell icon="fa-key" title={pendingName ? t('Welcome, {name}', { name: pendingName }) : t('Claim the Admin seat')}
+            subtitle={t('Your account is created. Now claim the Admin seat with the one-time code printed to your server console on first boot.')}>
             <div className="rounded-lg border border-white/5 bg-slate-900/50 p-4 mb-5 text-xs text-slate-400">
                 <i className="fa-solid fa-terminal mr-2 text-slate-500" />
-                Look for the <span className="text-sky-300 font-mono">OPEN MYRSI.ORG</span> banner in your server logs — your code looks like <span className="font-mono text-slate-300">SETUP-XXXXXXXX</span>.
+                {t('Look for the')} <span className="text-sky-300 font-mono">OPEN MYRSI.ORG</span> {t('banner in your server logs — your code looks like')} <span className="font-mono text-slate-300">SETUP-XXXXXXXX</span>.
             </div>
             <input value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()}
                 placeholder="SETUP-XXXXXXXX" autoFocus
                 className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-lg text-white font-mono tracking-wider placeholder-slate-600 focus:border-sky-500 focus:outline-none mb-3" />
             {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
-            <PrimaryBtn onClick={submit} disabled={busy || !code.trim()}>{busy ? 'Verifying…' : 'Claim Admin'}</PrimaryBtn>
+            <PrimaryBtn onClick={submit} disabled={busy || !code.trim()}>{busy ? t('Verifying…') : t('Claim Admin')}</PrimaryBtn>
         </Shell>
     );
 }
@@ -285,6 +291,7 @@ function ClaimStep({ redeem, pendingName }: { redeem: (code: string) => Promise<
 function genCode() { return `MYRSI-${Math.random().toString(36).substring(2, 8).toUpperCase()}`; }
 
 function RsiStep({ finalize }: { finalize: (rsiHandle: string, verificationCode?: string, skipVerification?: boolean) => Promise<void> }) {
+    const { t } = useI18n();
     const [phase, setPhase] = useState<'input' | 'verify'>('input');
     const [handle, setHandle] = useState('');
     const [code] = useState(genCode);
@@ -294,41 +301,41 @@ function RsiStep({ finalize }: { finalize: (rsiHandle: string, verificationCode?
     const doFinalize = async (skip: boolean) => {
         setBusy(true); setError('');
         try { await finalize(handle.trim(), skip ? undefined : code, skip); /* currentUser set → wizard advances to import */ }
-        catch (e) { setError(e instanceof Error ? e.message : 'Verification failed'); setBusy(false); }
+        catch (e) { setError(e instanceof Error ? e.message : t('Verification failed')); setBusy(false); }
     };
 
     if (phase === 'input') {
         return (
-            <Shell icon="fa-id-badge" title="Link your RSI handle" subtitle="Tell us your Star Citizen (RSI) handle so the org can recognise you.">
+            <Shell icon="fa-id-badge" title={t('Link your RSI handle')} subtitle={t('Tell us your Star Citizen (RSI) handle so the org can recognise you.')}>
                 <input value={handle} onChange={(e) => setHandle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handle.trim() && setPhase('verify')}
-                    placeholder="Your RSI handle" autoFocus
+                    placeholder={t('Your RSI handle')} autoFocus
                     className="w-full px-4 py-3 bg-slate-900 border border-white/10 rounded-lg text-white placeholder-slate-600 focus:border-sky-500 focus:outline-none mb-4" />
-                <PrimaryBtn onClick={() => setPhase('verify')} disabled={!handle.trim()}>Next <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
+                <PrimaryBtn onClick={() => setPhase('verify')} disabled={!handle.trim()}>{t('Next')} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
             </Shell>
         );
     }
 
     return (
-        <Shell icon="fa-id-badge" title="Verify your handle" subtitle={`Confirm you own "${handle.trim()}" by adding this code to your RSI bio.`}>
+        <Shell icon="fa-id-badge" title={t('Verify your handle')} subtitle={t('Confirm you own "{handle}" by adding this code to your RSI bio.', { handle: handle.trim() })}>
             <ol className="space-y-3 mb-5 text-sm text-slate-300">
-                <li><span className="text-slate-500 mr-2 font-mono">01</span>Open your RSI profile → <span className="text-slate-400">Edit Profile → Short Bio</span>.</li>
-                <li><span className="text-slate-500 mr-2 font-mono">02</span>Paste this code anywhere in your bio and save:
+                <li><span className="text-slate-500 mr-2 font-mono">01</span>{t('Open your RSI profile →')} <span className="text-slate-400">Edit Profile → Short Bio</span>.</li>
+                <li><span className="text-slate-500 mr-2 font-mono">02</span>{t('Paste this code anywhere in your bio and save:')}
                     <div className="mt-2 flex items-center gap-2">
                         <code className="px-3 py-2 bg-slate-900 border border-sky-500/30 rounded text-sky-300 font-mono">{code}</code>
-                        <button onClick={() => navigator.clipboard?.writeText(code)} className="text-slate-400 hover:text-white text-xs"><i className="fa-solid fa-copy mr-1" />Copy</button>
+                        <button onClick={() => navigator.clipboard?.writeText(code)} className="text-slate-400 hover:text-white text-xs"><i className="fa-solid fa-copy mr-1" />{t('Copy')}</button>
                     </div>
                 </li>
-                <li><span className="text-slate-500 mr-2 font-mono">03</span>Come back and verify.</li>
+                <li><span className="text-slate-500 mr-2 font-mono">03</span>{t('Come back and verify.')}</li>
             </ol>
             {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
             <div className="flex flex-wrap items-center gap-3">
-                <PrimaryBtn onClick={() => doFinalize(false)} disabled={busy}>{busy ? 'Verifying…' : 'Verify & finish'}</PrimaryBtn>
+                <PrimaryBtn onClick={() => doFinalize(false)} disabled={busy}>{busy ? t('Verifying…') : t('Verify & finish')}</PrimaryBtn>
                 <button onClick={() => doFinalize(true)} disabled={busy}
                     className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium">
-                    Verify later — I'm offline
+                    {t("Verify later — I'm offline")}
                 </button>
             </div>
-            <p className="text-xs text-slate-600 mt-3">"Verify later" saves your handle as unverified; you can verify any time from your profile.</p>
+            <p className="text-xs text-slate-600 mt-3">{t('"Verify later" saves your handle as unverified; you can verify any time from your profile.')}</p>
         </Shell>
     );
 }
@@ -357,6 +364,7 @@ function parseImportUsers(ndjson: string): ImportUserOption[] {
 }
 
 function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; selfDiscordId?: string }) {
+    const { t } = useI18n();
     const [ndjson, setNdjson] = useState('');
     const [filename, setFilename] = useState('');
     const [manifest, setManifest] = useState<{ rows: number; tables: number; org?: string } | null>(null);
@@ -386,7 +394,7 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
             try {
                 const firstLine = text.split('\n').find((l) => l.trim());
                 const header = firstLine ? JSON.parse(firstLine) : null;
-                if (!header || header.kind !== 'header' || !header.manifest) { setParseError('This does not look like a myRSI export (.ndjson).'); return; }
+                if (!header || header.kind !== 'header' || !header.manifest) { setParseError(t('This does not look like a myRSI export (.ndjson).')); return; }
                 const rows = Object.values(header.manifest as Record<string, number>).reduce((a, b) => a + (b || 0), 0);
                 const tables = Object.values(header.manifest as Record<string, number>).filter((n) => (n || 0) > 0).length;
                 setManifest({ rows, tables, org: header.sourceOrg?.name });
@@ -394,7 +402,7 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
                 setUsers(us);
                 const mine = us.find((u) => u.discordId && u.discordId === selfDiscordId);
                 setMergeUserId(mine ? mine.id : null);
-            } catch { setParseError('Could not read the export header.'); }
+            } catch { setParseError(t('Could not read the export header.')); }
         };
         reader.readAsText(file);
     };
@@ -403,7 +411,7 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
         setRunning(true); setError(''); setDone(false); setPct(0); setLogLines([]);
         try {
             await apiService.importOrgStream(ndjson, (evt: any) => {
-                if (evt.type === 'start') pushLog(`Importing ${evt.totalRows.toLocaleString()} rows across ${evt.totalTables} tables…`);
+                if (evt.type === 'start') pushLog(t('Importing {rows} rows across {tables} tables…', { rows: evt.totalRows.toLocaleString(), tables: evt.totalTables }));
                 else if (evt.type === 'phase') pushLog(`• ${evt.phase}…`);
                 else if (evt.type === 'table') {
                     pushLog(`✓ ${evt.table} (${evt.inserted.toLocaleString()})`);
@@ -412,54 +420,54 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
                 else if (evt.type === 'warning') pushLog(`⚠ ${evt.message}`);
                 else if (evt.type === 'done') {
                     setPct(100); setDone(true);
-                    pushLog(`Done — ${evt.result.rowsInserted.toLocaleString()} rows, ${evt.result.tablesProcessed} tables.`);
+                    pushLog(t('Done — {rows} rows, {tables} tables.', { rows: evt.result.rowsInserted.toLocaleString(), tables: evt.result.tablesProcessed }));
                 }
                 else if (evt.type === 'error') { setError(evt.message); pushLog(`✗ ${evt.message}`); }
             }, mergeUserId ?? undefined);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Import failed');
+            setError(e instanceof Error ? e.message : t('Import failed'));
         } finally {
             setRunning(false);
         }
     };
 
     return (
-        <Shell icon="fa-file-import" title="Import from MyRSI.org (optional)"
-            subtitle="Migrating from the hosted platform? Import your org export now, or skip and do it later from Admin → Import.">
+        <Shell icon="fa-file-import" title={t('Import from MyRSI.org (optional)')}
+            subtitle={t('Migrating from the hosted platform? Import your org export now, or skip and do it later from Admin → Import.')}>
             {!running && !done && (
                 <div className="rounded-lg border border-dashed border-white/15 bg-slate-900/40 p-5 mb-4 text-center">
                     <input id="import-file" type="file" accept=".ndjson,.jsonl,.json,text/plain" className="hidden"
                         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
                     <label htmlFor="import-file" className="cursor-pointer inline-flex flex-col items-center gap-2 text-slate-400 hover:text-white">
                         <i className="fa-solid fa-cloud-arrow-up text-3xl text-slate-500" />
-                        <span className="text-sm">{filename || 'Choose your export file (.ndjson)'}</span>
+                        <span className="text-sm">{filename || t('Choose your export file (.ndjson)')}</span>
                     </label>
-                    <p className="text-[11px] text-slate-600 mt-3">Export from <span className="text-slate-400">manage.myrsi.org → Manage org → Export</span>.</p>
+                    <p className="text-[11px] text-slate-600 mt-3">{t('Export from')} <span className="text-slate-400">manage.myrsi.org → Manage org → Export</span>.</p>
                 </div>
             )}
             {parseError && <p className="text-rose-400 text-sm mb-3">{parseError}</p>}
             {manifest && !running && !done && (
                 <div className="rounded-lg border border-white/5 bg-slate-900/50 px-4 py-3 mb-4 text-xs text-slate-300">
-                    <div>Source org: <span className="text-white">{manifest.org || '—'}</span></div>
-                    <div>{manifest.rows.toLocaleString()} rows across {manifest.tables} tables</div>
-                    <p className="text-slate-500 mt-1">Only standalone-safe data is imported; billing/cross-org/secret tables are excluded automatically.</p>
+                    <div>{t('Source org:')} <span className="text-white">{manifest.org || '—'}</span></div>
+                    <div>{t('{rows} rows across {tables} tables', { rows: manifest.rows.toLocaleString(), tables: manifest.tables })}</div>
+                    <p className="text-slate-500 mt-1">{t('Only standalone-safe data is imported; billing/cross-org/secret tables are excluded automatically.')}</p>
                 </div>
             )}
             {manifest && users.length > 0 && !running && !done && (
                 <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-3 mb-4">
-                    <label className="block text-xs font-semibold text-sky-300 mb-1">Which of these is you?</label>
-                    <p className="text-[11px] text-slate-500 mb-2">Your admin account was just created, so we merge it with your existing member record — you keep your Discord login and stay Admin, and you're not duplicated.</p>
+                    <label className="block text-xs font-semibold text-sky-300 mb-1">{t('Which of these is you?')}</label>
+                    <p className="text-[11px] text-slate-500 mb-2">{t("Your admin account was just created, so we merge it with your existing member record — you keep your Discord login and stay Admin, and you're not duplicated.")}</p>
                     <select
                         value={mergeUserId ?? ''}
                         onChange={(e) => setMergeUserId(e.target.value ? Number(e.target.value) : null)}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200"
                     >
-                        <option value="">— Select your member —</option>
+                        <option value="">{t('— Select your member —')}</option>
                         {users.map((u) => (
                             <option key={u.id} value={u.id}>{u.label}{u.sub ? ` · ${u.sub}` : ''}</option>
                         ))}
                     </select>
-                    {mergeUserId == null && <p className="text-[11px] text-amber-400/80 mt-2">Pick your member to continue — the import needs to know which account is yours.</p>}
+                    {mergeUserId == null && <p className="text-[11px] text-amber-400/80 mt-2">{t('Pick your member to continue — the import needs to know which account is yours.')}</p>}
                 </div>
             )}
             {(running || done || logLines.length > 0) && (
@@ -474,13 +482,11 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
             )}
             {error && (
                 <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 mb-4">
-                    <p className="text-rose-300 font-semibold text-sm mb-1"><i className="fa-solid fa-circle-exclamation mr-2" />Import failed</p>
+                    <p className="text-rose-300 font-semibold text-sm mb-1"><i className="fa-solid fa-circle-exclamation mr-2" />{t('Import failed')}</p>
                     <p className="text-rose-200/90 text-xs break-words">{error}</p>
                     <p className="text-slate-400 text-xs mt-2 leading-relaxed">
-                        The import did not finish, so this instance may now hold partial data — it is not safe to continue or skip.
-                        Reset the database (run <span className="font-mono text-slate-300">reset_db.sql</span> then{' '}
-                        <span className="font-mono text-slate-300">schema.sql</span> in Supabase, or recreate the project), restart the app,
-                        and run setup again for a clean import.
+                        {t('The import did not finish, so this instance may now hold partial data — it is not safe to continue or skip. Reset the database (run')} <span className="font-mono text-slate-300">reset_db.sql</span> {t('then', { context: 'import reset instructions' })}{' '}
+                        <span className="font-mono text-slate-300">schema.sql</span> {t('in Supabase, or recreate the project), restart the app, and run setup again for a clean import.')}
                     </p>
                 </div>
             )}
@@ -488,10 +494,10 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
                 {/* A failed import leaves the instance in an incomplete state (seeded defaults
                     were cleared before the failed insert), so we must NOT let the user continue
                     or skip past it — only reset + restart is safe. */}
-                {!done && !error && <PrimaryBtn onClick={runImport} disabled={running || !ndjson || !!parseError || (users.length > 0 && mergeUserId == null)}>{running ? 'Importing…' : 'Import data'}</PrimaryBtn>}
-                {done && <PrimaryBtn onClick={onContinue}>Continue <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>}
-                {!running && !done && !error && <button onClick={onContinue} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium">Skip — I'll do this later</button>}
-                {error && <button onClick={() => window.location.assign('/')} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium"><i className="fa-solid fa-rotate-left mr-2" />Reload</button>}
+                {!done && !error && <PrimaryBtn onClick={runImport} disabled={running || !ndjson || !!parseError || (users.length > 0 && mergeUserId == null)}>{running ? t('Importing…') : t('Import data')}</PrimaryBtn>}
+                {done && <PrimaryBtn onClick={onContinue}>{t('Continue')} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>}
+                {!running && !done && !error && <button onClick={onContinue} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium">{t("Skip — I'll do this later")}</button>}
+                {error && <button onClick={() => window.location.assign('/')} className="px-4 py-3 text-slate-400 hover:text-white text-sm font-medium"><i className="fa-solid fa-rotate-left mr-2" />{t('Reload')}</button>}
             </div>
         </Shell>
     );
@@ -499,6 +505,7 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
 
 // Congrats step
 function CongratsStep({ name }: { name?: string }) {
+    const { t } = useI18n();
     const [busy, setBusy] = useState(false);
     const finish = async () => {
         setBusy(true);
@@ -511,13 +518,12 @@ function CongratsStep({ name }: { name?: string }) {
         } catch { setBusy(false); }
     };
     return (
-        <Shell icon="fa-circle-check" title={name ? `You're all set, ${name}!` : "You're all set!"}
-            subtitle="Your organization is ready. Welcome aboard — and thanks again for self-hosting Open MyRSI.org.">
+        <Shell icon="fa-circle-check" title={name ? t("You're all set, {name}!", { name }) : t("You're all set!")}
+            subtitle={t('Your organization is ready. Welcome aboard — and thanks again for self-hosting Open MyRSI.org.')}>
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 mb-8 text-sm text-slate-300">
-                Everything else — branding, Discord integration, roles, units, ranks and more — is
-                configurable from the <span className="text-emerald-300 font-medium">Admin console</span> inside your dashboard.
+                {t('Everything else — branding, Discord integration, roles, units, ranks and more — is configurable from the')} <span className="text-emerald-300 font-medium">{t('Admin console')}</span> {t('inside your dashboard.')}
             </div>
-            <PrimaryBtn onClick={finish} disabled={busy}>{busy ? 'Finishing…' : 'Enter your dashboard'} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
+            <PrimaryBtn onClick={finish} disabled={busy}>{busy ? t('Finishing…') : t('Enter your dashboard')} <i className="fa-solid fa-arrow-right ml-1" /></PrimaryBtn>
         </Shell>
     );
 }

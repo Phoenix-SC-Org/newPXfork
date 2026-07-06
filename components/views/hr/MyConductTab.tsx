@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { ConductRecordType } from '../../../types';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getConductStyle = (type: ConductRecordType) => {
     switch (type) {
@@ -24,6 +25,7 @@ const getConductStyle = (type: ConductRecordType) => {
 const MyConductTab: React.FC = () => {
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
 
     const records = useMemo(() => {
         return (currentUser?.conductRecord || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -35,9 +37,9 @@ const MyConductTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-gavel text-emerald-300"></i>
-                        Conduct Record
+                        {t('Conduct Record')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Official observations and disciplinary actions.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Official observations and disciplinary actions.')}</p>
                 </div>
             </div>
             {records.length > 0 ? (
@@ -48,10 +50,10 @@ const MyConductTab: React.FC = () => {
                             <div key={record.id} className="relative bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 pl-5 overflow-hidden">
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${styles.stripe}`}></div>
                                 <div className="flex justify-between items-start mb-2 gap-3">
-                                    <span className={`px-2.5 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-wider ${styles.chip}`}>{record.type}</span>
+                                    <span className={`px-2.5 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-wider ${styles.chip}`}>{t(record.type, { context: 'conduct record type' })}</span>
                                     <div className="text-right shrink-0">
                                         <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">{fmt(record.createdAt)}</p>
-                                        <p className="text-[10px] text-slate-500">by {record.enteredBy?.name || 'Unknown'}</p>
+                                        <p className="text-[10px] text-slate-500">{t('by {name}', { name: record.enteredBy?.name || t('Unknown') })}</p>
                                     </div>
                                 </div>
                                 <p className="text-sm text-slate-300 leading-relaxed">{record.reason}</p>
@@ -64,8 +66,8 @@ const MyConductTab: React.FC = () => {
                     <EmptyState
                         icon="fa-gavel"
                         accent="emerald"
-                        heading="No conduct records"
-                        description="A clean record — no observations or actions on file."
+                        heading={t('No conduct records')}
+                        description={t('A clean record — no observations or actions on file.')}
                     />
                 </div>
             )}

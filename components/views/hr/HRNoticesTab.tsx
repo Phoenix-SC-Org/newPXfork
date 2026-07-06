@@ -4,10 +4,12 @@ import { useData } from '../../../contexts/DataContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import Notice from '../../ui/Notice';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const HRNoticesTab: React.FC = () => {
     const { announcements } = useData();
     const { currentUser } = useAuth();
+    const { t } = useI18n();
 
     const visibleNotices = useMemo(() => {
         if (!currentUser) return [];
@@ -26,9 +28,9 @@ const HRNoticesTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-bullhorn text-emerald-300"></i>
-                        Notices &amp; Bulletins
+                        {t('Notices & Bulletins')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Official communications and department updates.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Official communications and department updates.')}</p>
                 </div>
             </div>
 
@@ -44,8 +46,8 @@ const HRNoticesTab: React.FC = () => {
                         <EmptyState
                             icon="fa-inbox"
                             accent="emerald"
-                            heading="No active notices"
-                            description="Official communications will appear here when HR or command posts them."
+                            heading={t('No active notices')}
+                            description={t('Official communications will appear here when HR or command posts them.')}
                         />
                     </div>
                 )}

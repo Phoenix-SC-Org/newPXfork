@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface CreateJobModalProps {
     isOpen: boolean;
@@ -30,6 +31,7 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
     const { hrPositions, setHrJobs } = useHR();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     // Stable per-mount prefix for requirement keys (pure to read during render).
     const reqKeyBaseId = useId();
@@ -135,11 +137,11 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
             onClose();
         } catch (err) {
             console.error("Failed to save job:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred. Please try again.') });
         } finally {
             setIsLoading(false);
         }
-    }, [title, department, description, requirements, positionId, isEditing, job, currentUser, rpcAction, onClose, setHrJobs, addToast]);
+    }, [title, department, description, requirements, positionId, isEditing, job, currentUser, rpcAction, onClose, setHrJobs, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -148,8 +150,8 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Vacancy' : 'Post New Vacancy'}
-            subtitle="Recruitment Control"
+            title={isEditing ? t('Edit Vacancy') : t('Post New Vacancy')}
+            subtitle={t('Recruitment Control')}
             icon="fa-solid fa-briefcase"
             color="emerald"
             width="max-w-xl"
@@ -157,22 +159,22 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-5">
                     <div>
-                        <label className="block text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1.5">Linked Role (Optional)</label>
+                        <label className="block text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1.5">{t('Linked Role (Optional)')}</label>
                         <select
                             value={positionId}
                             onChange={handlePositionChange}
                             className={inputClass}
                             disabled={isLoading}
                         >
-                            <option value="">- Select Standard Role -</option>
-                            {hrPositions.map(p => <option key={p.id} value={p.id}>{p.name} ({p.department || 'General'})</option>)}
+                            <option value="">{t('- Select Standard Role -')}</option>
+                            {hrPositions.map(p => <option key={p.id} value={p.id}>{p.name} ({p.department || t('General')})</option>)}
                         </select>
-                        <p className="text-[9px] text-slate-500 mt-1 italic">Selecting a role auto-fills details and enables automated assignment upon hiring.</p>
+                        <p className="text-[9px] text-slate-500 mt-1 italic">{t('Selecting a role auto-fills details and enables automated assignment upon hiring.')}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-5">
                         <div>
-                            <label className={labelClass}>Job Title</label>
+                            <label className={labelClass}>{t('Job Title')}</label>
                             <input
                                 type="text"
                                 value={title}
@@ -183,7 +185,7 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
                             />
                         </div>
                         <div>
-                            <label className={labelClass}>Unit / Department</label>
+                            <label className={labelClass}>{t('Unit / Department')}</label>
                             <select
                                 value={department}
                                 onChange={(e) => setDepartment(e.target.value)}
@@ -191,9 +193,9 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
                                 required
                                 disabled={isLoading}
                             >
-                                <option value="">- Select Unit -</option>
+                                <option value="">{t('- Select Unit -')}</option>
                                 {[...units].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)).map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                                <option value="General Pool">General Pool</option>
+                                <option value="General Pool">{t('General Pool')}</option>
                                 {positionId && !units.some(u => u.name === department) && department !== 'General Pool' && (
                                     <option value={department}>{department}</option>
                                 )}
@@ -201,7 +203,7 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
                         </div>
                     </div>
                     <div>
-                        <label className={labelClass}>Description</label>
+                        <label className={labelClass}>{t('Description')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -212,14 +214,14 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Requirements</label>
+                        <label className={labelClass}>{t('Requirements')}</label>
                         <div className="flex gap-2 mb-3">
                             <input
                                 type="text"
                                 value={reqInput}
                                 onChange={(e) => setReqInput(e.target.value)}
                                 onKeyDown={handleAddReq}
-                                placeholder="Type and press Enter to add..."
+                                placeholder={t('Type and press Enter to add...')}
                                 className={inputClass}
                                 disabled={isLoading}
                             />
@@ -238,13 +240,13 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose, job })
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className={`fa-solid ${isEditing ? 'fa-check' : 'fa-plus'}`}></i> {isEditing ? 'Save Changes' : 'Post Vacancy'}</>}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className={`fa-solid ${isEditing ? 'fa-check' : 'fa-plus'}`}></i> {isEditing ? t('Save Changes') : t('Post Vacancy')}</>}
                     </button>
                 </div>
             </form>

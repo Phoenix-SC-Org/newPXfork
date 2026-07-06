@@ -4,6 +4,7 @@ import { useHR } from '../../../contexts/HRContext';
 import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { ApplicationStatus, formatReferralSource } from '../../../types';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusChip = (status: ApplicationStatus) => {
     if (status === ApplicationStatus.Hired || status === ApplicationStatus.Accepted) return 'bg-green-500/10 text-green-400 border-green-500/30';
@@ -21,6 +22,7 @@ const MyApplicationsTab: React.FC = () => {
     const { hrApplicants, hrInterviews } = useHR();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
 
     const myApplications = useMemo(() => {
         if (!currentUser) return [];
@@ -46,19 +48,18 @@ const MyApplicationsTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-file-signature text-emerald-300"></i>
-                        My Applications
+                        {t('My Applications')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Status of your open case files, vetting requests, and job applications.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Status of your open case files, vetting requests, and job applications.')}</p>
                 </div>
             </div>
 
             <div className="bg-sky-500/5 border border-sky-500/20 p-4 rounded-xl flex items-start gap-3">
                 <i className="fa-solid fa-circle-info text-sky-300 mt-0.5"></i>
                 <div>
-                    <p className="text-sm text-sky-200 font-bold mb-1">Status Tracking Only</p>
+                    <p className="text-sm text-sky-200 font-bold mb-1">{t('Status Tracking Only')}</p>
                     <p className="text-xs text-sky-200/70 leading-relaxed">
-                        This view is read-only. You cannot edit applications once submitted.
-                        If you need to provide additional information, please contact your assigned Case Officer via Discord.
+                        {t('This view is read-only. You cannot edit applications once submitted. If you need to provide additional information, please contact your assigned Case Officer via Discord.')}
                     </p>
                 </div>
             </div>
@@ -69,7 +70,7 @@ const MyApplicationsTab: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                         <i className="fa-solid fa-folder-open text-sm"></i>
                     </div>
-                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">Active Files</h3>
+                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Active Files')}</h3>
                 </div>
 
                 {myApplications.length > 0 ? (
@@ -77,10 +78,10 @@ const MyApplicationsTab: React.FC = () => {
                         <table className="w-full text-left hidden md:table">
                             <thead>
                                 <tr className="bg-slate-950/40 border-b border-slate-800 text-slate-500 text-[10px] uppercase tracking-widest font-black">
-                                    <th className="px-5 py-3">File / Context</th>
-                                    <th className="px-5 py-3">Date Opened</th>
-                                    <th className="px-5 py-3">Assigned Officer</th>
-                                    <th className="px-5 py-3 text-right">Status</th>
+                                    <th className="px-5 py-3">{t('File / Context')}</th>
+                                    <th className="px-5 py-3">{t('Date Opened')}</th>
+                                    <th className="px-5 py-3">{t('Assigned Officer')}</th>
+                                    <th className="px-5 py-3 text-right">{t('Status')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -97,11 +98,11 @@ const MyApplicationsTab: React.FC = () => {
                                                     <img src={app.assignedRecruiter.avatarUrl} className="h-5 w-5 rounded-full border border-slate-700 object-cover shrink-0" alt="" />
                                                     <span>{app.assignedRecruiter.name}</span>
                                                 </div>
-                                            ) : <span className="italic text-slate-500">Pending Assignment</span>}
+                                            ) : <span className="italic text-slate-500">{t('Pending Assignment')}</span>}
                                         </td>
                                         <td className="px-5 py-3 text-right">
                                             <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border ${getStatusChip(app.status as ApplicationStatus)}`}>
-                                                {app.status}
+                                                {t(app.status, { context: 'application status' })}
                                             </span>
                                         </td>
                                     </tr>
@@ -118,7 +119,7 @@ const MyApplicationsTab: React.FC = () => {
                                             <p className="text-[10px] text-slate-500 font-mono mt-0.5 uppercase tracking-widest">REF: {app.id.substring(0, 8).toUpperCase()}</p>
                                         </div>
                                         <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border shrink-0 ${getStatusChip(app.status as ApplicationStatus)}`}>
-                                            {app.status}
+                                            {t(app.status, { context: 'application status' })}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-xs gap-3">
@@ -128,7 +129,7 @@ const MyApplicationsTab: React.FC = () => {
                                                     <img src={app.assignedRecruiter.avatarUrl} className="h-4 w-4 rounded-full border border-slate-700 object-cover shrink-0" alt="" />
                                                     <span className="truncate">{app.assignedRecruiter.name}</span>
                                                 </div>
-                                            ) : <span className="italic text-slate-500">Pending</span>}
+                                            ) : <span className="italic text-slate-500">{t('Pending')}</span>}
                                         </div>
                                         <span className="text-slate-500 font-mono text-[10px] shrink-0">{fmt(app.createdAt)}</span>
                                     </div>
@@ -140,8 +141,8 @@ const MyApplicationsTab: React.FC = () => {
                     <EmptyState
                         icon="fa-folder-open"
                         accent="emerald"
-                        heading="No applications yet"
-                        description="Your case files will appear here once you apply for a position or vetting begins."
+                        heading={t('No applications yet')}
+                        description={t('Your case files will appear here once you apply for a position or vetting begins.')}
                         compact
                     />
                 )}
@@ -153,7 +154,7 @@ const MyApplicationsTab: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                         <i className="fa-solid fa-calendar-check text-sm"></i>
                     </div>
-                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">My Interviews</h3>
+                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('My Interviews')}</h3>
                 </div>
 
                 {myInterviews.length > 0 ? (
@@ -161,9 +162,9 @@ const MyApplicationsTab: React.FC = () => {
                         <table className="w-full text-left hidden md:table">
                             <thead>
                                 <tr className="bg-slate-950/40 border-b border-slate-800 text-slate-500 text-[10px] uppercase tracking-widest font-black">
-                                    <th className="px-5 py-3">Related Application</th>
-                                    <th className="px-5 py-3">Scheduled Time</th>
-                                    <th className="px-5 py-3">Interviewer</th>
+                                    <th className="px-5 py-3">{t('Related Application')}</th>
+                                    <th className="px-5 py-3">{t('Scheduled Time')}</th>
+                                    <th className="px-5 py-3">{t('Interviewer')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -209,8 +210,8 @@ const MyApplicationsTab: React.FC = () => {
                     <EmptyState
                         icon="fa-calendar-xmark"
                         accent="emerald"
-                        heading="No interviews scheduled"
-                        description="Interview invitations will appear here once a recruiter schedules you."
+                        heading={t('No interviews scheduled')}
+                        description={t('Interview invitations will appear here once a recruiter schedules you.')}
                         compact
                     />
                 )}

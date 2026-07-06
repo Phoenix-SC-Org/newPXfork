@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { HydratedHRApplication, HydratedHRInterview } from '../../../types';
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ScheduleInterviewModalProps {
     isOpen: boolean;
@@ -22,6 +23,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
     const { hrTemplates, hrApplicants } = useHR();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const isEditMode = !!editingInterview;
 
@@ -123,7 +125,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
         try {
             if (isEditMode) {
                 if (!templateId || !interviewerId || !scheduledAt) {
-                    addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "All fields are required." });
+                    addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('All fields are required.') });
                     setIsLoading(false);
                     return;
                 }
@@ -138,7 +140,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                     }
                 });
                 await refreshHR();
-                addToast("Interview Updated", <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "Interview details saved successfully." });
+                addToast(t('Interview Updated'), <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t('Interview details saved successfully.') });
                 onClose();
                 return;
             }
@@ -148,7 +150,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
 
             if (!applicant && mode === 'adhoc') {
                 if (!adHocHandle.trim()) {
-                    addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "RSI Handle is required for ad-hoc interviews." });
+                    addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('RSI Handle is required for ad-hoc interviews.') });
                     setIsLoading(false);
                     return;
                 }
@@ -165,7 +167,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
             }
 
             if (!templateId || !interviewerId || !scheduledAt || !targetAppId) {
-                addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "All fields are required." });
+                addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('All fields are required.') });
                 setIsLoading(false);
                 return;
             }
@@ -181,7 +183,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
             onClose();
         } catch (err) {
             console.error("Failed to schedule interview:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred. Please try again.') });
         } finally {
             setIsLoading(false);
         }
@@ -194,8 +196,8 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditMode ? "Edit Interview" : "Schedule Interview"}
-            subtitle={isEditMode ? "Reschedule / Reassign" : "Protocol Assignment"}
+            title={isEditMode ? t('Edit Interview') : t('Schedule Interview')}
+            subtitle={isEditMode ? t('Reschedule / Reassign') : t('Protocol Assignment')}
             icon={isEditMode ? "fa-solid fa-pen-to-square" : "fa-solid fa-calendar-plus"}
             color="emerald"
             width="max-w-md"
@@ -207,8 +209,8 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                     {/* Edit mode: show subject as read-only info */}
                     {isEditMode && editingInterview && (
                         <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
-                            <label className={labelClass}>Subject</label>
-                            <p className="text-white font-bold text-sm">{editingInterview.applicantName || 'Unknown Applicant'}</p>
+                            <label className={labelClass}>{t('Subject')}</label>
+                            <p className="text-white font-bold text-sm">{editingInterview.applicantName || t('Unknown Applicant')}</p>
                         </div>
                     )}
 
@@ -220,14 +222,14 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                                 onClick={() => setMode('existing')}
                                 className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-sm transition-colors ${mode === 'existing' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30' : 'text-slate-500 hover:text-white'}`}
                             >
-                                Existing File
+                                {t('Existing File')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setMode('adhoc')}
                                 className={`flex-1 py-1.5 text-xs font-bold uppercase rounded-sm transition-colors ${mode === 'adhoc' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/30' : 'text-slate-500 hover:text-white'}`}
                             >
-                                Ad-hoc Entry
+                                {t('Ad-hoc Entry')}
                             </button>
                         </div>
                     )}
@@ -235,7 +237,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                     {/* Applicant Selection Logic (create mode only) */}
                     {!applicant && !isEditMode && mode === 'existing' && (
                         <div>
-                            <label className={labelClass}>Subject / Candidate</label>
+                            <label className={labelClass}>{t('Subject / Candidate')}</label>
                             <select
                                 value={selectedApplicantId}
                                 onChange={(e) => setSelectedApplicantId(e.target.value)}
@@ -243,7 +245,7 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                                 required={mode === 'existing'}
                                 disabled={isLoading}
                             >
-                                <option value="">- Select Subject -</option>
+                                <option value="">{t('- Select Subject -')}</option>
                                 {hrApplicants.filter(a => a.status !== 'Hired' && a.status !== 'Rejected').map(a => (
                                     <option key={a.id} value={a.id}>{a.applicantName} ({a.rsiHandle})</option>
                                 ))}
@@ -254,47 +256,47 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                     {!applicant && !isEditMode && mode === 'adhoc' && (
                         <div className="space-y-4 bg-emerald-500/5 p-4 rounded-lg border border-emerald-500/30">
                             <div>
-                                <label className={labelClass}>RSI Handle <span className="text-red-400">*</span></label>
+                                <label className={labelClass}>{t('RSI Handle')} <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     value={adHocHandle}
                                     onChange={(e) => setAdHocHandle(e.target.value)}
-                                    placeholder="e.g. StarCitizen123"
+                                    placeholder={t('e.g. StarCitizen123')}
                                     className={inputClass}
                                     required={mode === 'adhoc'}
                                     disabled={isLoading}
                                 />
                             </div>
                             <div>
-                                <label className={labelClass}>Subject Name (Optional)</label>
+                                <label className={labelClass}>{t('Subject Name (Optional)')}</label>
                                 <input
                                     type="text"
                                     value={adHocName}
                                     onChange={(e) => setAdHocName(e.target.value)}
-                                    placeholder="Discord Name or Alias"
+                                    placeholder={t('Discord Name or Alias')}
                                     className={inputClass}
                                     disabled={isLoading}
                                 />
                             </div>
                             <div>
-                                <label className={labelClass}>Context / File Type</label>
+                                <label className={labelClass}>{t('Context / File Type')}</label>
                                 <input
                                     type="text"
                                     value={adHocContext}
                                     onChange={(e) => setAdHocContext(e.target.value)}
-                                    placeholder="e.g. Recruitment, Investigation"
+                                    placeholder={t('e.g. Recruitment, Investigation')}
                                     className={inputClass}
                                     disabled={isLoading}
                                 />
                             </div>
                             <p className="text-[10px] text-emerald-300/80 italic">
-                                <i className="fa-solid fa-circle-info mr-1"></i> A case file will be auto-generated.
+                                <i className="fa-solid fa-circle-info mr-1"></i> {t('A case file will be auto-generated.')}
                             </p>
                         </div>
                     )}
 
                     <div>
-                        <label className={labelClass}>Protocol Template</label>
+                        <label className={labelClass}>{t('Protocol Template')}</label>
                         <select
                             value={templateId}
                             onChange={(e) => setTemplateId(e.target.value)}
@@ -302,13 +304,13 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                             required
                             disabled={isLoading}
                         >
-                            <option value="">- Select Protocol -</option>
+                            <option value="">{t('- Select Protocol -')}</option>
                             {hrTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Lead Interviewer</label>
+                        <label className={labelClass}>{t('Lead Interviewer')}</label>
                         <select
                             value={interviewerId}
                             onChange={(e) => handleInterviewerChange(e.target.value)}
@@ -316,14 +318,14 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                             required
                             disabled={isLoading}
                         >
-                            <option value="">- Select Lead -</option>
+                            <option value="">{t('- Select Lead -')}</option>
                             {availableInterviewers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     </div>
 
                     {/* Panel Members */}
                     <div>
-                        <label className={labelClass}>Panel Members <span className="text-slate-600">(Optional)</span></label>
+                        <label className={labelClass}>{t('Panel Members')} <span className="text-slate-600">{t('(Optional)')}</span></label>
 
                         {/* Selected panel members as chips */}
                         {panelMemberIds.length > 0 && (
@@ -362,19 +364,19 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
                             className={inputClass}
                             disabled={isLoading || availablePanelMembers.filter(m => !panelMemberIds.includes(m.id)).length === 0}
                         >
-                            <option value="">- Add Panel Member -</option>
+                            <option value="">{t('- Add Panel Member -')}</option>
                             {availablePanelMembers
                                 .filter(m => !panelMemberIds.includes(m.id))
                                 .map(m => <option key={m.id} value={m.id}>{m.name}</option>)
                             }
                         </select>
                         <p className="text-[10px] text-slate-500 mt-1.5">
-                            Panel members can view and participate in this interview.
+                            {t('Panel members can view and participate in this interview.')}
                         </p>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Date & Time</label>
+                        <label className={labelClass}>{t('Date & Time')}</label>
                         <input
                             type="datetime-local"
                             value={scheduledAt}
@@ -388,13 +390,13 @@ const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ isOpen,
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : isEditMode ? 'Save Changes' : 'Confirm Schedule'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : isEditMode ? t('Save Changes') : t('Confirm Schedule')}
                     </button>
                 </div>
             </form>

@@ -6,6 +6,7 @@ import { ApplicationStatus, HydratedHRApplication, formatReferralSource } from '
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getDisplayStatus = (app: HydratedHRApplication) => {
     const isSecurity = app.referralSource === 'SECURITY_VETTING' ||
@@ -47,6 +48,7 @@ const getStatusChip = (status: ApplicationStatus) => {
 };
 
 const ATSTab: React.FC = () => {
+    const { t } = useI18n();
     const { refreshHR, isFetching } = useData();
     const { hrApplicants } = useHR();
     const { hasPermission } = useAuth();
@@ -119,8 +121,8 @@ const ATSTab: React.FC = () => {
                     <EmptyState
                         icon="fa-lock"
                         accent="red"
-                        heading="Access Denied"
-                        description="You do not have the required permissions (Recruiter or Admin) to access the Case Management System."
+                        heading={t('Access Denied')}
+                        description={t('You do not have the required permissions (Recruiter or Admin) to access the Case Management System.')}
                     />
                 </div>
             </div>
@@ -143,13 +145,13 @@ const ATSTab: React.FC = () => {
                 <div className="flex-1">
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-folder-tree text-emerald-300"></i>
-                        Case Management
+                        {t('Case Management')}
                     </h2>
                     <p className="text-slate-400 text-sm mt-1 flex items-center gap-2">
-                        Centralized pipeline for recruitment, vetting, transfers, and internal affairs.
+                        {t('Centralized pipeline for recruitment, vetting, transfers, and internal affairs.')}
                         {isFetching['hr'] && (
                             <span className="text-emerald-300 animate-pulse text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                                <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing
+                                <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing')}
                             </span>
                         )}
                     </p>
@@ -159,7 +161,7 @@ const ATSTab: React.FC = () => {
                         <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs" />
                         <input
                             type="search"
-                            placeholder="Search cases..."
+                            placeholder={t('Search cases...')}
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 font-mono text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 outline-hidden transition-all"
@@ -168,7 +170,7 @@ const ATSTab: React.FC = () => {
                     <button
                         onClick={handleRefresh}
                         className={`flex items-center justify-center w-10 h-10 rounded-lg bg-slate-900/60 border border-slate-700 text-slate-300 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-300 transition-colors ${isRefreshing ? 'opacity-75 cursor-wait' : ''}`}
-                        title="Refresh"
+                        title={t('Refresh')}
                     >
                         <i className={`fa-solid fa-rotate ${isRefreshing ? 'animate-spin' : ''}`}></i>
                     </button>
@@ -187,7 +189,7 @@ const ATSTab: React.FC = () => {
                             }`}
                     >
                         <i className={`fa-solid ${tab.icon}`}></i>
-                        {tab.label}
+                        {t(tab.label)}
                     </button>
                 ))}
             </div>
@@ -199,8 +201,8 @@ const ATSTab: React.FC = () => {
                     onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
                     className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
                 >
-                    <option value="All">All Statuses</option>
-                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="All">{t('All Statuses')}</option>
+                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                 </select>
 
                 <div className="flex gap-2">
@@ -208,13 +210,13 @@ const ATSTab: React.FC = () => {
                         onClick={openAddCaseFileModal}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-colors shadow-lg shadow-amber-900/20"
                     >
-                        <i className="fa-solid fa-file-circle-plus"></i> <span className="hidden sm:inline">New Case</span>
+                        <i className="fa-solid fa-file-circle-plus"></i> <span className="hidden sm:inline">{t('New Case')}</span>
                     </button>
                     <button
                         onClick={openAddProspectModal}
                         className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                     >
-                        <i className="fa-solid fa-user-plus"></i> <span className="hidden sm:inline">New Applicant</span>
+                        <i className="fa-solid fa-user-plus"></i> <span className="hidden sm:inline">{t('New Applicant')}</span>
                     </button>
                 </div>
             </div>
@@ -227,12 +229,12 @@ const ATSTab: React.FC = () => {
                             <table className="w-full text-left hidden md:table">
                                 <thead className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-xs border-b border-white/5 text-slate-500 text-[10px] uppercase tracking-widest font-black">
                                     <tr>
-                                        <th className="px-5 py-3 w-16 text-center">Type</th>
-                                        <th className="px-5 py-3">Subject / Handle</th>
-                                        <th className="px-5 py-3 max-w-[150px]">Context</th>
-                                        <th className="px-5 py-3">Case Officer</th>
-                                        <th className="px-5 py-3">Opened</th>
-                                        <th className="px-5 py-3 text-right">Status</th>
+                                        <th className="px-5 py-3 w-16 text-center">{t('Type')}</th>
+                                        <th className="px-5 py-3">{t('Subject / Handle')}</th>
+                                        <th className="px-5 py-3 max-w-[150px]">{t('Context')}</th>
+                                        <th className="px-5 py-3">{t('Case Officer')}</th>
+                                        <th className="px-5 py-3">{t('Opened')}</th>
+                                        <th className="px-5 py-3 text-right">{t('Status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
@@ -266,12 +268,12 @@ const ATSTab: React.FC = () => {
                                                             <img src={app.assignedRecruiter.avatarUrl} className="h-5 w-5 rounded-full border border-slate-700 object-cover shrink-0" />
                                                             <span className="text-xs font-semibold">{app.assignedRecruiter.name}</span>
                                                         </div>
-                                                    ) : <span className="italic text-slate-500 text-xs">Unassigned</span>}
+                                                    ) : <span className="italic text-slate-500 text-xs">{t('Unassigned')}</span>}
                                                 </td>
                                                 <td className="px-5 py-3 text-[10px] text-slate-500 font-mono">{fmt(app.createdAt)}</td>
                                                 <td className="px-5 py-3 text-right">
                                                     <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border ${getStatusChip(app.status as ApplicationStatus)}`}>
-                                                        {getDisplayStatus(app)}
+                                                        {t(getDisplayStatus(app), { context: 'case status' })}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -306,11 +308,11 @@ const ATSTab: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border shrink-0 ${getStatusChip(app.status as ApplicationStatus)}`}>
-                                                    {getDisplayStatus(app)}
+                                                    {t(getDisplayStatus(app), { context: 'case status' })}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center text-[10px] text-slate-500 mt-2 pl-11 uppercase tracking-widest">
-                                                <span>{isVetting ? 'Security' : isInternal ? 'Internal' : isTransfer ? 'Transfer' : isJob ? 'Job App' : 'Recruit'}</span>
+                                                <span>{isVetting ? t('Security') : isInternal ? t('Internal') : isTransfer ? t('Transfer') : isJob ? t('Job App') : t('Recruit')}</span>
                                                 <span className="font-mono">{fmt.date(app.createdAt)}</span>
                                             </div>
                                         </div>
@@ -322,8 +324,8 @@ const ATSTab: React.FC = () => {
                         <EmptyState
                             icon="fa-folder-open"
                             accent="emerald"
-                            heading="No case files found"
-                            description={searchTerm ? 'Try a different search term or clear filters.' : 'Cases will appear here as prospects apply, transfers are requested, or vetting is initiated.'}
+                            heading={t('No case files found')}
+                            description={searchTerm ? t('Try a different search term or clear filters.') : t('Cases will appear here as prospects apply, transfers are requested, or vetting is initiated.')}
                         />
                     )}
                 </div>

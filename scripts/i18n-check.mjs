@@ -50,8 +50,16 @@ for (const f of SCAN_FILES) files.push(path.join(root, f));
 const T_CALL_RE = /(?<![\w.$])t\(\s*(['"])((?:\\.|(?!\1).)*?)\1/g;
 const T_TEMPLATE_RE = /(?<![\w.$])t\(\s*`/;
 
+// Keys the suspicion heuristics would flag, but which ARE intentional display
+// text (stylized terminal-look headings with underscores). Review before adding.
+const SUSPICIOUS_ALLOW = new Set([
+    'Identity_Provisioning_Protocol', // NewUserSetupView heading
+    'Security_Protocol',              // RsiVerificationRequiredView heading
+]);
+
 /** Heuristics for keys that look like technical identifiers, not UI text. */
 function suspicionReason(key) {
+    if (SUSPICIOUS_ALLOW.has(key)) return null;
     const hasSpace = key.includes(' ');
     if (!hasSpace) {
         if (/^[a-z0-9-]+:[a-z0-9_:*.-]+$/i.test(key)) return 'looks like a service action / permission key';
@@ -70,6 +78,35 @@ function suspicionReason(key) {
 const DYNAMIC_KEYS = new Set([
     // components/ui/Notice.tsx: t(announcement.type, { context: 'announcement' })
     'Information', 'Warning', 'Danger',
+    // components/views/operations/DashboardView.tsx: Enum-Anzeigen
+    // t(urgency/threatLevel/step/status, { context: '…' })
+    'Low', 'Medium', 'High', 'Critical', 'None', 'PVP',
+    'Submitted', 'Accepted', 'Assigned', 'En Route',
+    'Applied', 'Screening', 'Interviewing', 'On Hold', 'Offered', 'Rejected', 'Hired', 'Withdrawn',
+    // components/views/onboarding/OnboardingWizard.tsx: t(STEP_LABELS[s]) / t(c.label) / t(c.tip)
+    'Welcome', 'Preflight', 'Create account', 'Admin claim', 'RSI handle', 'Import data', 'All set',
+    'Database connection', 'Discord sign-in', 'Session token signing key',
+    'Secrets encryption at rest', 'Live realtime updates',
+    'Could not reach the database. Check your network and Supabase project status, then re-check. (The server will not start at all if it cannot reach Supabase, so this normally only fails on a transient blip.)',
+    'Set DISCORD_CLIENT_ID in your environment, then restart the app/container and re-check — you sign in with Discord in the next step. Environment variables are only read at startup, so a re-check alone will not pick up a new value.',
+    'Set JWT_SECRET to a high-entropy random value of at least 32 characters (e.g. `openssl rand -hex 32`), then restart the app/container and re-check (env vars are only read at startup). A short/weak key makes session tokens forgeable.',
+    'Set SECRETS_ENCRYPTION_KEY to a random value of at least 32 characters (e.g. `openssl rand -hex 32`) so admin-entered API keys are encrypted at rest, then restart the app/container and re-check (env vars are only read at startup). A short/weak key weakens the encryption. (In production the server refuses to start until this is at least 32 chars.)',
+    'Set SUPABASE_JWT_SECRET (your Supabase project JWT secret, ≥32 chars) to enable live updates, then restart the app/container and re-check (env vars are only read at startup). Otherwise the app refreshes manually.',
+    // HR: Nav-Labels (HRHubView t(item.label)/t(group.title)) + Tab-Arrays
+    'Self Service', 'My Organisation', 'Service History', 'HR Management',
+    'My Career', 'My Unit', 'My Specialisations', 'Manage Members', 'Client Register',
+    'Manage Vacancy', 'Manage Roles / Positions', 'Interview Templates',
+    'All', 'Recruitment', 'Vetting', 'Jobs',
+    'Overview', 'Background', 'Investigation', 'RSI Profile', 'Conduct',
+    'RSI Profile Validation', 'Organization History Check', 'Internal Conduct Record', 'Interview Assessment',
+    // HR: Status-/Typ-Enums (t(x.status, { context }) u. ä.)
+    'Completed', 'GRANTED', 'DENIED', 'APPROVED', 'PENDING SIGN-OFF', 'REQUESTED',
+    'RESOLVED', 'DISMISSED', 'FINDING ISSUED', 'OPEN', 'TRANSFERRED', 'PENDING', 'PROMOTED',
+    'Dispatcher', 'Admin', 'Internal Promotion', 'Security Clearance', 'Unit Transfer',
+    'clear', 'flagged', 'pending',
+    'Commendation', 'Observation', 'Counseling', 'Infraction',
+    'Approved', 'Denied', 'Cancelled', 'Triaged', 'In-Progress', 'Refused', 'Aborted', 'GameError',
+    'Planning', 'Concluded', 'PvP', 'PvE', 'Mixed', 'Non-Combat', 'Training', 'Social',
 ]);
 
 const usedKeys = new Map(); // key -> first "file:line"

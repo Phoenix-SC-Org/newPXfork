@@ -4,10 +4,12 @@ import { useAuth } from '../../../contexts/AuthContext';
 import EmptyState from '../../shared/ui/EmptyState';
 import AwardIcon from '../../common/AwardIcon';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const MySpecializationsTab: React.FC = () => {
     const { currentUser } = useAuth();
     const { setIsManageSpecializationsModalOpen } = useModalRegistry();
+    const { t } = useI18n();
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -15,15 +17,15 @@ const MySpecializationsTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-tags text-emerald-300"></i>
-                        My Specializations
+                        {t('My Specializations')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Manage your active skill tags and operational capabilities.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Manage your active skill tags and operational capabilities.')}</p>
                 </div>
                 <button
                     onClick={() => setIsManageSpecializationsModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                 >
-                    <i className="fa-solid fa-pen-to-square"></i> Manage Skills
+                    <i className="fa-solid fa-pen-to-square"></i> {t('Manage Skills')}
                 </button>
             </div>
 
@@ -37,7 +39,7 @@ const MySpecializationsTab: React.FC = () => {
                                 </div>
                                 <h3 className="font-bold text-white text-base truncate">{spec.name}</h3>
                             </div>
-                            <p className="text-sm text-slate-400 leading-relaxed">{spec.description || "No description provided."}</p>
+                            <p className="text-sm text-slate-400 leading-relaxed">{spec.description || t('No description provided.')}</p>
                         </div>
                     ))}
                 </div>
@@ -46,14 +48,14 @@ const MySpecializationsTab: React.FC = () => {
                     <EmptyState
                         icon="fa-tags"
                         accent="emerald"
-                        heading="No specializations selected"
-                        description="Add skill tags so operations leads can match you to the right task."
+                        heading={t('No specializations selected')}
+                        description={t('Add skill tags so operations leads can match you to the right task.')}
                         action={
                             <button
                                 onClick={() => setIsManageSpecializationsModalOpen(true)}
                                 className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition"
                             >
-                                <i className="fa-solid fa-plus"></i> Select Specializations
+                                <i className="fa-solid fa-plus"></i> {t('Select Specializations')}
                             </button>
                         }
                     />

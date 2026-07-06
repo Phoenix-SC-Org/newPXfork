@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import parse from 'html-react-parser';
 import { Announcement } from '../../types';
 import Notice from '../ui/Notice';
+import { useI18n } from '../../i18n/I18nContext';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 // OrgPublicPage is rendered BEFORE the user is authenticated and BEFORE
 // DataContext is populated. It must not use useAuth/useData. All data comes
@@ -70,13 +72,16 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 // --- Small reusable pieces ---
 
-const Stars: React.FC<{ n: number }> = ({ n }) => (
-    <span className="text-amber-400" aria-label={`${n} out of 5 stars`}>
-        {Array.from({ length: 5 }, (_, i) => (
-            <i key={i} className={`fa-solid fa-star ${i < n ? '' : 'opacity-25'} mr-0.5 text-xs`} aria-hidden />
-        ))}
-    </span>
-);
+const Stars: React.FC<{ n: number }> = ({ n }) => {
+    const { t } = useI18n();
+    return (
+        <span className="text-amber-400" aria-label={t('{n} out of 5 stars', { n })}>
+            {Array.from({ length: 5 }, (_, i) => (
+                <i key={i} className={`fa-solid fa-star ${i < n ? '' : 'opacity-25'} mr-0.5 text-xs`} aria-hidden />
+            ))}
+        </span>
+    );
+};
 
 const CardPanel: React.FC<{ children: React.ReactNode; className?: string; id?: string; 'aria-labelledby'?: string; as?: 'section' | 'aside' | 'div' }> = ({
     children, className = '', id, as = 'section', ...rest
@@ -149,11 +154,13 @@ const ProfileHeaderCard: React.FC<{ payload: PublicPagePayload }> = ({ payload }
 
 // --- Notices card (login-screen audience, surfaced on the public page) ---
 
-const NoticesCard: React.FC<{ announcements: Announcement[] }> = ({ announcements }) => (
+const NoticesCard: React.FC<{ announcements: Announcement[] }> = ({ announcements }) => {
+    const { t } = useI18n();
+    return (
     <CardPanel as="section" aria-labelledby="notices-heading">
-        <CardHeader icon="fa-solid fa-bullhorn" title="Notices" id="notices-heading">
+        <CardHeader icon="fa-solid fa-bullhorn" title={t('Notices')} id="notices-heading">
             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                {announcements.length} active
+                {t('{count} active', { count: announcements.length })}
             </span>
         </CardHeader>
         <div className="px-6 py-5 space-y-3">
@@ -162,7 +169,8 @@ const NoticesCard: React.FC<{ announcements: Announcement[] }> = ({ announcement
             ))}
         </div>
     </CardPanel>
-);
+    );
+};
 
 // --- Blurb card ---
 
@@ -173,9 +181,11 @@ const NoticesCard: React.FC<{ announcements: Announcement[] }> = ({ announcement
 // lib/tiptapValidate.ts, which only emits an allowlisted set of tags and
 // HTML-escapes every text node — so dangerouslySetInnerHTML here is XSS-safe by
 // construction. Do NOT swap to a different source without re-evaluating.
-const BlurbCard: React.FC<{ text: string; html?: string }> = ({ text, html }) => (
+const BlurbCard: React.FC<{ text: string; html?: string }> = ({ text, html }) => {
+    const { t } = useI18n();
+    return (
     <CardPanel as="section" aria-labelledby="about-heading">
-        <CardHeader icon="fa-solid fa-circle-info" title="About" id="about-heading" />
+        <CardHeader icon="fa-solid fa-circle-info" title={t('About')} id="about-heading" />
         <div className="px-6 py-5">
             {html ? (
                 // Project doesn't ship @tailwindcss/typography, so `prose*`
@@ -196,11 +206,13 @@ const BlurbCard: React.FC<{ text: string; html?: string }> = ({ text, html }) =>
             )}
         </div>
     </CardPanel>
-);
+    );
+};
 
 // --- Testimonials card (carousel lives inside) ---
 
 const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
+    const { t } = useI18n();
     const [items, setItems] = useState<Testimonial[] | null>(null);
     const [index, setIndex] = useState(0);
     const [paused, setPaused] = useState(false);
@@ -232,15 +244,15 @@ const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
 
     return (
         <CardPanel as="section" aria-labelledby="testimonials-heading">
-            <CardHeader icon="fa-solid fa-comment-dots" title="What Clients Say" id="testimonials-heading">
+            <CardHeader icon="fa-solid fa-comment-dots" title={t('What Clients Say')} id="testimonials-heading">
                 {items.length > 1 && (
                     <div className="flex items-center gap-1.5">
-                        {items.map((t, i) => (
+                        {items.map((tm, i) => (
                             <button
-                                key={t.id}
+                                key={tm.id}
                                 type="button"
                                 onClick={() => setIndex(i)}
-                                aria-label={`Show testimonial ${i + 1}`}
+                                aria-label={t('Show testimonial {n}', { n: i + 1 })}
                                 aria-current={i === index}
                                 className={`w-2 h-2 rounded-full transition-colors ${i === index ? 'bg-sky-400' : 'bg-slate-600 hover:bg-slate-500'}`}
                             />
@@ -251,7 +263,7 @@ const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
             <div
                 role="region"
                 aria-roledescription="carousel"
-                aria-label="Client testimonials"
+                aria-label={t('Client testimonials')}
                 tabIndex={0}
                 onKeyDown={onKeyDown}
                 onMouseEnter={() => setPaused(true)}
@@ -260,7 +272,7 @@ const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
                 onBlur={() => setPaused(false)}
                 className="px-6 py-6 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400 rounded-b-2xl"
             >
-                <div role="group" aria-roledescription="slide" aria-label={`Testimonial ${index + 1} of ${items.length}`}>
+                <div role="group" aria-roledescription="slide" aria-label={t('Testimonial {n} of {m}', { n: index + 1, m: items.length })}>
                     <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
                         <Stars n={current.rating} />
                         <span aria-hidden>·</span>
@@ -269,13 +281,13 @@ const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
                     <blockquote className="text-slate-200 text-base leading-relaxed" aria-live="polite">
                         &ldquo;{current.quote}&rdquo;
                     </blockquote>
-                    <p className="mt-4 text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">— Verified Client · {current.ratedAt}</p>
+                    <p className="mt-4 text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">— {t('Verified Client')} · {current.ratedAt}</p>
                 </div>
                 {items.length > 1 && (
                     <div className="mt-5 flex items-center justify-between">
-                        <button type="button" onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)} className="px-3 py-1 text-xs text-slate-400 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400 rounded-sm" aria-label="Previous testimonial"><i className="fa-solid fa-chevron-left mr-1" aria-hidden />Prev</button>
+                        <button type="button" onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)} className="px-3 py-1 text-xs text-slate-400 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400 rounded-sm" aria-label={t('Previous testimonial')}><i className="fa-solid fa-chevron-left mr-1" aria-hidden />{t('Prev')}</button>
                         <span className="text-[10px] text-slate-500 font-mono">{index + 1} / {items.length}</span>
-                        <button type="button" onClick={() => setIndex((i) => (i + 1) % items.length)} className="px-3 py-1 text-xs text-slate-400 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400 rounded-sm" aria-label="Next testimonial">Next<i className="fa-solid fa-chevron-right ml-1" aria-hidden /></button>
+                        <button type="button" onClick={() => setIndex((i) => (i + 1) % items.length)} className="px-3 py-1 text-xs text-slate-400 hover:text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400 rounded-sm" aria-label={t('Next testimonial')}>{t('Next')}<i className="fa-solid fa-chevron-right ml-1" aria-hidden /></button>
                     </div>
                 )}
             </div>
@@ -286,6 +298,7 @@ const TestimonialsCard: React.FC<{ slug: string }> = ({ slug }) => {
 // --- Services grid card ---
 
 const ServicesCard: React.FC<{ slug: string; onLogin: () => void }> = ({ slug, onLogin }) => {
+    const { t } = useI18n();
     const [items, setItems] = useState<ServiceItem[] | null>(null);
 
     useEffect(() => {
@@ -300,9 +313,9 @@ const ServicesCard: React.FC<{ slug: string; onLogin: () => void }> = ({ slug, o
 
     return (
         <CardPanel as="section" aria-labelledby="services-heading">
-            <CardHeader icon="fa-solid fa-briefcase" title="Services Offered" id="services-heading">
+            <CardHeader icon="fa-solid fa-briefcase" title={t('Services Offered')} id="services-heading">
                 <button onClick={onLogin} className="text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-sm border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400">
-                    <i className="fa-solid fa-right-to-bracket mr-1.5" aria-hidden />Log in to Request
+                    <i className="fa-solid fa-right-to-bracket mr-1.5" aria-hidden />{t('Log in to Request')}
                 </button>
             </CardHeader>
             <ul className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-3 list-none">
@@ -322,12 +335,14 @@ const ServicesCard: React.FC<{ slug: string; onLogin: () => void }> = ({ slug, o
 
 // --- Sidebar: login CTA ---
 
-const LoginCard: React.FC<{ onLogin: () => void }> = ({ onLogin }) => (
+const LoginCard: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
+    const { t } = useI18n();
+    return (
     <CardPanel as="aside" aria-labelledby="cta-heading">
-        <CardHeader icon="fa-solid fa-shield-halved" title="Join The Network" id="cta-heading" />
+        <CardHeader icon="fa-solid fa-shield-halved" title={t('Join The Network')} id="cta-heading" />
         <div className="px-6 py-5">
             <p className="text-slate-400 text-xs mb-4 leading-relaxed">
-                Sign in with Discord to submit a service request, join the org, or access restricted areas.
+                {t('Sign in with Discord to submit a service request, join the org, or access restricted areas.')}
             </p>
             <button
                 id="cta-login"
@@ -335,18 +350,20 @@ const LoginCard: React.FC<{ onLogin: () => void }> = ({ onLogin }) => (
                 className="w-full flex items-center justify-center bg-[#5865F2] hover:bg-[#4752c4] text-white font-bold py-3 px-5 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-[#5865F2]/25 active:scale-[0.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400"
             >
                 <i className="fa-solid fa-right-to-bracket h-5 w-5 mr-2.5" aria-hidden />
-                <span className="uppercase tracking-wider">Sign In with Discord</span>
+                <span className="uppercase tracking-wider">{t('Sign In with Discord')}</span>
             </button>
             <p className="mt-3 text-[10px] text-slate-500 leading-relaxed text-center">
-                Uses Discord to authenticate. First time? You&rsquo;ll link your RSI handle next.
+                {t("Uses Discord to authenticate. First time? You'll link your RSI handle next.")}
             </p>
         </div>
     </CardPanel>
-);
+    );
+};
 
 // --- Sidebar: stats ---
 
 const StatsCard: React.FC<{ slug: string }> = ({ slug }) => {
+    const { t } = useI18n();
     const [stats, setStats] = useState<Stats | null>(null);
 
     useEffect(() => {
@@ -367,15 +384,15 @@ const StatsCard: React.FC<{ slug: string }> = ({ slug }) => {
         : '—';
 
     const rows: Array<{ label: string; value: string; icon: string }> = [
-        { label: 'Requests Completed', value: stats.totalCompleted.toLocaleString(), icon: 'fa-solid fa-check-double' },
-        { label: 'Avg Client Rating', value: avgRating, icon: 'fa-solid fa-star' },
-        { label: 'Avg Response Time', value: avgResp, icon: 'fa-solid fa-stopwatch' },
-        { label: 'Completed (30d)', value: stats.last30Completed.toLocaleString(), icon: 'fa-solid fa-calendar-check' },
+        { label: t('Requests Completed'), value: stats.totalCompleted.toLocaleString(), icon: 'fa-solid fa-check-double' },
+        { label: t('Avg Client Rating'), value: avgRating, icon: 'fa-solid fa-star' },
+        { label: t('Avg Response Time'), value: avgResp, icon: 'fa-solid fa-stopwatch' },
+        { label: t('Completed (30d)'), value: stats.last30Completed.toLocaleString(), icon: 'fa-solid fa-calendar-check' },
     ];
 
     return (
         <CardPanel as="aside" aria-labelledby="stats-heading">
-            <CardHeader icon="fa-solid fa-chart-simple" title="At A Glance" id="stats-heading" />
+            <CardHeader icon="fa-solid fa-chart-simple" title={t('At A Glance')} id="stats-heading" />
             <dl className="px-6 py-4 space-y-3">
                 {rows.map((row) => (
                     <div key={row.label} className="flex items-center justify-between gap-3 py-1.5">
@@ -394,10 +411,11 @@ const StatsCard: React.FC<{ slug: string }> = ({ slug }) => {
 // --- Sidebar: external links ---
 
 const LinksCard: React.FC<{ links: PublicPagePayload['links'] }> = ({ links }) => {
+    const { t } = useI18n();
     if (!links || links.length === 0) return null;
     return (
         <CardPanel as="aside" aria-labelledby="links-heading">
-            <CardHeader icon="fa-solid fa-link" title="Elsewhere" id="links-heading" />
+            <CardHeader icon="fa-solid fa-link" title={t('Elsewhere')} id="links-heading" />
             <ul className="px-4 py-3 space-y-1.5 list-none">
                 {links.map((link) => (
                     <li key={link.id}>
@@ -421,6 +439,7 @@ const LinksCard: React.FC<{ links: PublicPagePayload['links'] }> = ({ links }) =
 // --- Top-level page ---
 
 const OrgPublicPage: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick }) => {
+    const { t } = useI18n();
     const payload = getPayload();
     const slug = useMemo(() => getSlug(), []);
     const [livePayload, setLivePayload] = useState<PublicPagePayload | null>(payload);
@@ -440,7 +459,7 @@ const OrgPublicPage: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick })
 
     return (
         <div className="relative min-h-dvh bg-slate-950 text-slate-200 font-sans overflow-x-hidden animate-fade-in">
-            <a href="#cta-login" className="sr-only focus:not-sr-only fixed top-2 left-2 z-50 bg-slate-900 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-sm">Skip to sign in</a>
+            <a href="#cta-login" className="sr-only focus:not-sr-only fixed top-2 left-2 z-50 bg-slate-900 border border-slate-700 text-white text-xs px-3 py-1.5 rounded-sm">{t('Skip to sign in')}</a>
 
             {/* Ambient background */}
             <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none" aria-hidden />
@@ -474,8 +493,11 @@ const OrgPublicPage: React.FC<{ onLoginClick: () => void }> = ({ onLoginClick })
 
             <footer className="relative z-10 px-5 sm:px-8 py-6 border-t border-white/5 text-center">
                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.25em]">
-                    {livePayload.org.name} · Powered by My RSI Org
+                    {livePayload.org.name} · {t('Powered by My RSI Org')}
                 </p>
+                <div className="mt-3 flex justify-center">
+                    <LanguageSwitcher />
+                </div>
             </footer>
         </div>
     );

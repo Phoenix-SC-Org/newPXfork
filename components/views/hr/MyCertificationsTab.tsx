@@ -2,10 +2,12 @@
 import React from 'react';
 import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const MyCertificationsTab: React.FC = () => {
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
 
     const certifications = currentUser?.certifications || [];
 
@@ -15,9 +17,9 @@ const MyCertificationsTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-certificate text-emerald-300"></i>
-                        Certifications
+                        {t('Certifications')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Active training credentials.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Active training credentials.')}</p>
                 </div>
             </div>
             {certifications.length > 0 ? (
@@ -31,7 +33,7 @@ const MyCertificationsTab: React.FC = () => {
                                 <h3 className="font-black text-white uppercase tracking-tight">{c.name}</h3>
                                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mb-2">{fmt(c.awardedAt)}</p>
                                 <p className="text-sm text-slate-300 italic leading-relaxed">"{c.description}"</p>
-                                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">Instructor: {c.awardedBy?.name ?? 'Unknown'}</p>
+                                <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-widest">{t('Instructor: {name}', { name: c.awardedBy?.name ?? t('Unknown') })}</p>
                             </div>
                         </div>
                     ))}
@@ -41,8 +43,8 @@ const MyCertificationsTab: React.FC = () => {
                     <EmptyState
                         icon="fa-certificate"
                         accent="emerald"
-                        heading="No certifications on file"
-                        description="Training credentials will appear here once earned."
+                        heading={t('No certifications on file')}
+                        description={t('Training credentials will appear here once earned.')}
                     />
                 </div>
             )}

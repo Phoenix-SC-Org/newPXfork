@@ -6,10 +6,12 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { ClearanceHistoryEntry } from '../../../types';
 import { getClearanceColor } from '../../shared/ui';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const MyClearancesTab: React.FC = () => {
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { brandingConfig } = useConfig();
     const { openRequestClearanceModal } = useModalRegistry();
@@ -26,8 +28,8 @@ const MyClearancesTab: React.FC = () => {
     if (!currentUser) return null;
 
     const level = currentUser.clearanceLevel?.level || 0;
-    const levelName = currentUser.clearanceLevel?.name || 'No Clearance';
-    const description = currentUser.clearanceLevel?.description || 'You do not have a security clearance.';
+    const levelName = currentUser.clearanceLevel?.name || t('No Clearance');
+    const description = currentUser.clearanceLevel?.description || t('You do not have a security clearance.');
     const markers = currentUser.limitingMarkers || [];
 
     return (
@@ -36,15 +38,15 @@ const MyClearancesTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-user-shield text-emerald-300"></i>
-                        My Clearance
+                        {t('My Clearance')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Access levels and information control markers.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t('Access levels and information control markers.')}</p>
                 </div>
                 <button
                     onClick={openRequestClearanceModal}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                 >
-                    <i className="fa-solid fa-arrow-up-right-dots"></i> Request Change
+                    <i className="fa-solid fa-arrow-up-right-dots"></i> {t('Request Change')}
                 </button>
             </div>
 
@@ -55,7 +57,7 @@ const MyClearancesTab: React.FC = () => {
                 <div className="p-6 md:p-8">
                     <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
                         <div>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">Current Classification</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">{t('Current Classification')}</p>
                             <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">{levelName}</h1>
                         </div>
                         <div className={`w-12 h-12 md:w-16 md:h-16 rounded-lg flex items-center justify-center text-xl md:text-2xl font-black text-white shadow-lg border-2 border-slate-900 ${getClearanceColor(level)}`}>
@@ -68,7 +70,7 @@ const MyClearancesTab: React.FC = () => {
                     </div>
 
                     <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-3">Limiting Markers</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-3">{t('Limiting Markers')}</p>
                         {markers.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                                 {markers.map(m => (
@@ -79,14 +81,14 @@ const MyClearancesTab: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-500 italic">No limiting markers applied.</p>
+                            <p className="text-sm text-slate-500 italic">{t('No limiting markers applied.')}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="bg-slate-950/60 p-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-500 font-mono uppercase gap-2 tracking-widest">
                     <span>AUTH: {currentUser.id}</span>
-                    <span>{brandingConfig.name ? `${brandingConfig.name.toUpperCase()} SECURE DATABASE` : 'SECURE DATABASE'}</span>
+                    <span>{brandingConfig.name ? t('{name} SECURE DATABASE', { name: brandingConfig.name.toUpperCase() }) : t('SECURE DATABASE')}</span>
                 </div>
             </div>
 
@@ -96,7 +98,7 @@ const MyClearancesTab: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-300">
                         <i className="fa-solid fa-clock-rotate-left text-sm"></i>
                     </div>
-                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">Clearance History</h3>
+                    <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Clearance History')}</h3>
                 </div>
                 <div className="p-5">
                     {history.length > 0 ? (
@@ -106,9 +108,9 @@ const MyClearancesTab: React.FC = () => {
                                     <div className="absolute left-[-5px] top-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900"></div>
                                     <div className="text-[10px] text-slate-500 font-mono mb-1 uppercase tracking-widest">{fmt(entry.createdAt)}</div>
                                     <div className="text-sm text-white font-bold mb-1">
-                                        {entry.oldLevelId === entry.newLevelId ? 'Update' : (
+                                        {entry.oldLevelId === entry.newLevelId ? t('Update') : (
                                             <>
-                                                {entry.oldLevelName || 'None'} <i className="fa-solid fa-arrow-right text-xs text-slate-500 mx-1"></i> <span className="text-emerald-300">{entry.newLevelName}</span>
+                                                {entry.oldLevelName || t('None')} <i className="fa-solid fa-arrow-right text-xs text-slate-500 mx-1"></i> <span className="text-emerald-300">{entry.newLevelName}</span>
                                             </>
                                         )}
                                     </div>
@@ -118,7 +120,7 @@ const MyClearancesTab: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-slate-500 italic text-center py-6">No history records found.</p>
+                        <p className="text-sm text-slate-500 italic text-center py-6">{t('No history records found.')}</p>
                     )}
                 </div>
             </div>

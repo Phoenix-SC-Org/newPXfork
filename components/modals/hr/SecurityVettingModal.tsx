@@ -8,6 +8,7 @@ import { HydratedHRApplication, ApplicationStatus, VettingData, VettingChecklist
 import IntelligenceReportCard from '../../views/intel/IntelligenceReportCard';
 import WindowFrame from '../../layout/WindowFrame';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface SecurityVettingModalProps {
     isOpen: boolean;
@@ -45,6 +46,7 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
     const { securityClearances, limitingMarkers, allUsers, updateUserClearance } = useMembers();
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const { openScheduleInterviewModal, openEditInterviewModal, openConductInterviewModal, openWindow, openCaseDetailsModal } = useModalRegistry();
     const [activeTab, setActiveTab] = useState<'overview' | 'background' | 'interview' | 'adjudication'>('overview');
     const [isLoading, setIsLoading] = useState(false);
@@ -204,7 +206,7 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
     };
 
     const handleFinalize = async () => {
-        if (vettingLoading || !finalStatus || !confirm("Finalize determination? This will update clearance.")) return;
+        if (vettingLoading || !finalStatus || !confirm(t('Finalize determination? This will update clearance.'))) return;
         setIsLoading(true);
         try {
             let appStatus: ApplicationStatus = ApplicationStatus.Rejected;
@@ -228,7 +230,7 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Security Vetting Console"
+            title={t('Security Vetting Console')}
             subtitle={`${applicant.applicantName} // ${applicant.rsiHandle}`}
             icon="fa-solid fa-shield-halved"
             color="emerald"
@@ -249,15 +251,15 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center gap-3 transition-colors ${activeTab === tab.id ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent'}`}
                             >
-                                <i className={`fa-solid ${tab.icon} w-4 text-center`}></i> {tab.label}
+                                <i className={`fa-solid ${tab.icon} w-4 text-center`}></i> {t(tab.label)}
                             </button>
                         ))}
                     </div>
                     <div className="mt-auto p-4 border-t border-slate-800/50">
                         <div className="bg-slate-950/50 p-3 rounded-sm border border-slate-800 text-[10px] text-slate-400 space-y-2 uppercase font-bold tracking-wider">
-                            <div className="flex justify-between items-center"><span>RSI Check</span><StatusDot status={vettingData.checks.rsiProfile} /></div>
-                            <div className="flex justify-between items-center"><span>Org History</span><StatusDot status={vettingData.checks.orgHistory} /></div>
-                            <div className="flex justify-between items-center"><span>Interview</span><StatusDot status={vettingData.checks.interview} /></div>
+                            <div className="flex justify-between items-center"><span>{t('RSI Check')}</span><StatusDot status={vettingData.checks.rsiProfile} /></div>
+                            <div className="flex justify-between items-center"><span>{t('Org History')}</span><StatusDot status={vettingData.checks.orgHistory} /></div>
+                            <div className="flex justify-between items-center"><span>{t('Interview')}</span><StatusDot status={vettingData.checks.interview} /></div>
                         </div>
                     </div>
                 </div>
@@ -266,32 +268,32 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-900/30 relative">
                     <div className="absolute top-4 right-6 z-10">
                         <button onClick={handleSaveProgress} disabled={isLoading || vettingLoading} className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-sm border border-slate-700 font-bold uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            {(isLoading || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk mr-2"></i> Save Progress</>}
+                            {(isLoading || vettingLoading) ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-floppy-disk mr-2"></i> {t('Save Progress')}</>}
                         </button>
                     </div>
 
                     {activeTab === 'overview' && (
                         <div className="max-w-3xl space-y-6">
                             <div className="bg-slate-950/30 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Request Data</h3>
+                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">{t('Request Data')}</h3>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><span className="text-slate-500 block text-[10px] uppercase font-bold">Source</span><span className="text-white">{formatReferralSource(applicant.referralSource)}</span></div>
-                                    <div><span className="text-slate-500 block text-[10px] uppercase font-bold">Filed</span><span className="text-white font-mono">{fmt.date(applicant.createdAt)}</span></div>
+                                    <div><span className="text-slate-500 block text-[10px] uppercase font-bold">{t('Source')}</span><span className="text-white">{formatReferralSource(applicant.referralSource)}</span></div>
+                                    <div><span className="text-slate-500 block text-[10px] uppercase font-bold">{t('Filed')}</span><span className="text-white font-mono">{fmt.date(applicant.createdAt)}</span></div>
                                 </div>
-                                <div className="mt-4 bg-slate-900/50 p-4 rounded-sm border border-slate-800 text-slate-300 text-sm whitespace-pre-wrap font-mono">{applicant.notes || "No notes."}</div>
+                                <div className="mt-4 bg-slate-900/50 p-4 rounded-sm border border-slate-800 text-slate-300 text-sm whitespace-pre-wrap font-mono">{applicant.notes || t('No notes.')}</div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 {linkedMember && (
                                     <div className="bg-slate-950/30 border border-slate-700/50 rounded-xl p-4">
-                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Current</h3>
+                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('Current')}</h3>
                                         <div className={`inline-block px-3 py-1 rounded-sm border text-xs font-bold uppercase ${getClearanceColor(linkedMember.clearanceLevel?.level || 0)}`}>
-                                            {linkedMember.clearanceLevel?.name || 'None'}
+                                            {linkedMember.clearanceLevel?.name || t('None')}
                                         </div>
                                     </div>
                                 )}
                                 {requestedLevel && (
                                     <div className="bg-slate-950/30 border border-slate-700/50 rounded-xl p-4">
-                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Requested</h3>
+                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('Requested')}</h3>
                                         <div className={`inline-block px-3 py-1 rounded-sm border text-xs font-bold uppercase ${getClearanceColor(requestedLevel.level)}`}>
                                             {requestedLevel.name}
                                         </div>
@@ -311,10 +313,10 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                 ].map((item) => (
                                     <div key={item.key} className="bg-slate-950/30 border border-slate-700/50 rounded-lg p-4 flex flex-col">
                                         <div className="flex justify-between items-center mb-3">
-                                            <h3 className="text-xs font-bold text-slate-300 uppercase">{item.label}</h3>
+                                            <h3 className="text-xs font-bold text-slate-300 uppercase">{t(item.label)}</h3>
                                             <div className="flex gap-1">
                                                 {['clear', 'flagged', 'pending'].map(status => (
-                                                    <button key={status} onClick={() => updateCheck(item.key as any, status as any)} className={`w-2 h-2 rounded-full transition-all ${vettingData.checks[item.key as keyof VettingChecklist] === status ? (status === 'clear' ? 'bg-green-500 ring-2 ring-green-500/30' : status === 'flagged' ? 'bg-red-500 ring-2 ring-red-500/30' : 'bg-slate-500') : 'bg-slate-800'}`} title={status} />
+                                                    <button key={status} onClick={() => updateCheck(item.key as any, status as any)} className={`w-2 h-2 rounded-full transition-all ${vettingData.checks[item.key as keyof VettingChecklist] === status ? (status === 'clear' ? 'bg-green-500 ring-2 ring-green-500/30' : status === 'flagged' ? 'bg-red-500 ring-2 ring-red-500/30' : 'bg-slate-500') : 'bg-slate-800'}`} title={t(status, { context: 'vetting check status' })} />
                                                 ))}
                                             </div>
                                         </div>
@@ -322,7 +324,7 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                             value={vettingData.comments[item.key] || ''}
                                             onChange={(e) => updateComment(item.key, e.target.value)}
                                             className={`${inputClass} flex-1 text-xs h-24`}
-                                            placeholder="Notes..."
+                                            placeholder={t('Notes...')}
                                         />
                                     </div>
                                 ))}
@@ -330,12 +332,12 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
 
                             {/* Intel & Warrants */}
                             <div className="bg-slate-950/30 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Intel Database</h3>
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">{t('Intel Database')}</h3>
                                 {dossier ? (
                                     <div className="space-y-3">
                                         {dossier.warrants.some(w => w.status === 'Active') && (
                                             <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-sm text-xs font-bold uppercase tracking-wide flex items-center gap-2">
-                                                <i className="fa-solid fa-triangle-exclamation"></i> Active Caution Found
+                                                <i className="fa-solid fa-triangle-exclamation"></i> {t('Active Caution Found')}
                                             </div>
                                         )}
                                         {dossier.reports.length > 0 ? (
@@ -346,9 +348,9 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                                     </div>
                                                 ))}
                                             </div>
-                                        ) : <p className="text-xs text-slate-500 italic">No reports found.</p>}
+                                        ) : <p className="text-xs text-slate-500 italic">{t('No reports found.')}</p>}
                                     </div>
-                                ) : <p className="text-xs text-slate-500 animate-pulse">Scanning database...</p>}
+                                ) : <p className="text-xs text-slate-500 animate-pulse">{t('Scanning database...')}</p>}
                             </div>
                         </div>
                     )}
@@ -356,9 +358,9 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                     {activeTab === 'interview' && (
                         <div className="max-w-3xl space-y-4">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Interviews</h3>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('Interviews')}</h3>
                                 <button onClick={() => openScheduleInterviewModal(applicant)} className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase transition-colors">
-                                    <i className="fa-solid fa-plus mr-1"></i> Schedule
+                                    <i className="fa-solid fa-plus mr-1"></i> {t('Schedule')}
                                 </button>
                             </div>
                             {applicant.interviews.map(int => (
@@ -366,38 +368,38 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                     <div>
                                         <p className="text-slate-300 text-sm font-bold">{int.template.name}</p>
                                         <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                                            {int.status.toUpperCase()} • {int.interviewer.name}
+                                            {t(int.status, { context: 'interview status' }).toUpperCase()} • {int.interviewer.name}
                                             {int.panelMembers?.length > 0 && (
-                                                <span className="text-emerald-300 font-semibold"> +{int.panelMembers.length} panel</span>
+                                                <span className="text-emerald-300 font-semibold"> {t('+{count} panel', { count: int.panelMembers.length })}</span>
                                             )}
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
                                         {int.status !== 'Completed' && (
                                             <button onClick={() => openEditInterviewModal(int)} className="text-[10px] bg-amber-600/10 hover:bg-amber-600 text-amber-400 hover:text-white px-3 py-1.5 rounded-sm border border-amber-600/30 uppercase font-bold transition-colors">
-                                                Edit
+                                                {t('Edit')}
                                             </button>
                                         )}
                                         <button onClick={() => openConductInterviewModal(int)} className="text-[10px] bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-sm border border-slate-700 uppercase font-bold transition-colors">
-                                            {int.status === 'Completed' ? 'View' : 'Start'}
+                                            {int.status === 'Completed' ? t('View') : t('Start')}
                                         </button>
                                     </div>
                                 </div>
                             ))}
-                            {applicant.interviews.length === 0 && <p className="text-xs text-slate-500 italic border-2 border-dashed border-slate-800 rounded-sm p-4 text-center">No interviews scheduled.</p>}
+                            {applicant.interviews.length === 0 && <p className="text-xs text-slate-500 italic border-2 border-dashed border-slate-800 rounded-sm p-4 text-center">{t('No interviews scheduled.')}</p>}
 
                             <div className="mt-6 pt-6 border-t border-slate-800/50">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Interview Finding</h3>
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{t('Interview Finding')}</h3>
                                 <div className="flex gap-2 mb-2">
                                     {['clear', 'flagged', 'pending'].map(s => (
-                                        <button key={s} onClick={() => updateCheck('interview', s as any)} className={`flex-1 py-1 rounded-sm text-[10px] font-bold uppercase border transition-colors ${vettingData.checks.interview === s ? (s === 'clear' ? 'bg-green-500/20 text-green-400 border-green-500/40' : s === 'flagged' ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-slate-700 text-white border-slate-600') : 'bg-slate-900 border-slate-800 text-slate-500'}`}>{s}</button>
+                                        <button key={s} onClick={() => updateCheck('interview', s as any)} className={`flex-1 py-1 rounded-sm text-[10px] font-bold uppercase border transition-colors ${vettingData.checks.interview === s ? (s === 'clear' ? 'bg-green-500/20 text-green-400 border-green-500/40' : s === 'flagged' ? 'bg-red-500/20 text-red-400 border-red-500/40' : 'bg-slate-700 text-white border-slate-600') : 'bg-slate-900 border-slate-800 text-slate-500'}`}>{t(s, { context: 'vetting check status' })}</button>
                                     ))}
                                 </div>
                                 <textarea
                                     value={vettingData.comments['interview'] || ''}
                                     onChange={(e) => updateComment('interview', e.target.value)}
                                     className={`${inputClass} h-32`}
-                                    placeholder="Summary of findings..."
+                                    placeholder={t('Summary of findings...')}
                                 />
                             </div>
                         </div>
@@ -406,35 +408,35 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                     {activeTab === 'adjudication' && (
                         <div className="max-w-3xl space-y-6">
                             <div className="bg-slate-950/30 border border-slate-700/50 rounded-xl p-6">
-                                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Final Determination</h3>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">{t('Final Determination')}</h3>
                                 <div className="flex gap-3 mb-6">
                                     <button onClick={() => setFinalStatus('Hired')} className={`flex-1 py-4 rounded-lg border-2 flex flex-col items-center justify-center gap-2 transition-all ${finalStatus === 'Hired' ? 'bg-green-500/10 border-green-500 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700'}`}>
                                         <i className="fa-solid fa-check-circle text-2xl"></i>
-                                        <span className="text-xs font-black uppercase">Approve</span>
+                                        <span className="text-xs font-black uppercase">{t('Approve')}</span>
                                     </button>
                                     <button onClick={() => setFinalStatus('Rejected')} className={`flex-1 py-4 rounded-lg border-2 flex flex-col items-center justify-center gap-2 transition-all ${finalStatus === 'Rejected' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_20px_rgba(220,38,38,0.1)]' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700'}`}>
                                         <i className="fa-solid fa-ban text-2xl"></i>
-                                        <span className="text-xs font-black uppercase">Reject</span>
+                                        <span className="text-xs font-black uppercase">{t('Reject')}</span>
                                     </button>
                                 </div>
 
                                 {(finalStatus === 'Hired' || finalStatus === 'Revoked') && (
                                     <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 mb-6 animate-fade-in">
-                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Set Clearance Level</label>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">{t('Set Clearance Level')}</label>
                                         <select value={selectedLevelId} onChange={(e) => setSelectedLevelId(e.target.value)} className={inputClass}>
-                                            <option value="">No Clearance</option>
-                                            {securityClearances.map(c => <option key={c.id} value={c.id}>Level {c.level} - {c.name}</option>)}
+                                            <option value="">{t('No Clearance')}</option>
+                                            {securityClearances.map(c => <option key={c.id} value={c.id}>{t('Level {level}', { level: c.level })} - {c.name}</option>)}
                                         </select>
                                     </div>
                                 )}
 
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Decision Notes</label>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">{t('Decision Notes')}</label>
                                 <textarea
                                     value={finalNotes}
                                     onChange={(e) => setFinalNotes(e.target.value)}
                                     rows={4}
                                     className={inputClass}
-                                    placeholder="Justification..."
+                                    placeholder={t('Justification...')}
                                 />
 
                                 <div className="flex justify-end mt-6">
@@ -443,7 +445,7 @@ const SecurityVettingModal: React.FC<SecurityVettingModalProps> = ({ isOpen, onC
                                         disabled={isLoading || vettingLoading || !finalStatus}
                                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit & Close File'}
+                                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit & Close File')}
                                     </button>
                                 </div>
                             </div>

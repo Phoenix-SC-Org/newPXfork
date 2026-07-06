@@ -7,6 +7,7 @@ import { JobPostingStatus, ServiceRequestStatus, ApplicationStatus } from '../..
 import AwardIcon from '../../common/AwardIcon';
 import { MemberIdCard } from '../../shared/ui';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface OverviewTabProps {
     setActiveTab: (tab: string) => void;
@@ -21,6 +22,7 @@ const ProbationBanner: React.FC<{
     now: number;
     fmt: ReturnType<typeof useFormatDate>;
 }> = ({ probationEnd, probationStart, now, fmt }) => {
+    const { t } = useI18n();
     const end = new Date(probationEnd);
     const start = probationStart ? new Date(probationStart) : null;
     const daysLeft = Math.ceil((end.getTime() - now) / (1000 * 60 * 60 * 24));
@@ -35,12 +37,16 @@ const ProbationBanner: React.FC<{
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-red-300' : 'text-amber-300'}`}>
-                        {isOverdue ? 'Probation Review Pending' : 'Probation Period Active'}
+                        {isOverdue ? t('Probation Review Pending') : t('Probation Period Active')}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
                         {isOverdue
-                            ? `Your probation ended ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? 's' : ''} ago. A review is pending.`
-                            : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining — ends ${fmt.date(end.toISOString())}`
+                            ? (Math.abs(daysLeft) === 1
+                                ? t('Your probation ended {days} day ago. A review is pending.', { days: Math.abs(daysLeft) })
+                                : t('Your probation ended {days} days ago. A review is pending.', { days: Math.abs(daysLeft) }))
+                            : (daysLeft === 1
+                                ? t('{days} day remaining — ends {date}', { days: daysLeft, date: fmt.date(end.toISOString()) })
+                                : t('{days} days remaining — ends {date}', { days: daysLeft, date: fmt.date(end.toISOString()) }))
                         }
                     </p>
                     <div className="mt-2.5 h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -56,6 +62,7 @@ const ProbationBanner: React.FC<{
 };
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
+    const { t } = useI18n();
     const { currentUser, hasPermission } = useAuth();
     const fmt = useFormatDate();
     const { hydratedServiceRequests } = useData();
@@ -112,8 +119,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                 date: new Date(c.awardedAt),
                 icon: c.icon || 'fa-solid fa-medal',
                 tint: 'amber',
-                title: `Awarded "${c.name}"`,
-                subtitle: c.reason || (c.awardedBy ? `Issued by ${c.awardedBy.name}` : undefined),
+                title: t('Awarded "{name}"', { name: c.name }),
+                subtitle: c.reason || (c.awardedBy ? t('Issued by {name}', { name: c.awardedBy.name }) : undefined),
             });
         });
 
@@ -124,8 +131,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                 date: new Date(c.awardedAt),
                 icon: c.icon || 'fa-solid fa-certificate',
                 tint: 'sky',
-                title: `Certified in ${c.name}`,
-                subtitle: c.awardedBy ? `Issued by ${c.awardedBy.name}` : undefined,
+                title: t('Certified in {name}', { name: c.name }),
+                subtitle: c.awardedBy ? t('Issued by {name}', { name: c.awardedBy.name }) : undefined,
             });
         });
 
@@ -137,7 +144,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                     date: end,
                     icon: 'fa-solid fa-hourglass-end',
                     tint: 'emerald',
-                    title: 'Probation Completed',
+                    title: t('Probation Completed'),
                 });
             }
         }
@@ -148,13 +155,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                 date: memberSince,
                 icon: 'fa-solid fa-user-plus',
                 tint: 'slate',
-                title: 'Enlisted',
-                subtitle: currentUser?.rank?.name ? `as ${currentUser.rank.name}` : undefined,
+                title: t('Enlisted'),
+                subtitle: currentUser?.rank?.name ? t('as {rank}', { rank: currentUser.rank.name }) : undefined,
             });
         }
 
         return events.sort((a, b) => b.date.getTime() - a.date.getTime());
-    }, [currentUser, memberSince, now]);
+    }, [currentUser, memberSince, now, t]);
 
     const tintMap: Record<string, { border: string; bg: string; text: string }> = {
         amber:   { border: 'border-amber-500/30',   bg: 'bg-amber-500/10',   text: 'text-amber-300' },
@@ -180,7 +187,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                 {/* HR Command Center (Conditional) */}
                 {isHR && (
                     <div>
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">HR Command Center</h3>
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">{t('HR Command Center')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <button
                                 onClick={() => setActiveTab('case-management')}
@@ -190,9 +197,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                     <i className="fa-solid fa-folder-open text-lg"></i>
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Case Files</p>
+                                    <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">{t('Case Files')}</p>
                                     <p className="text-2xl font-black text-white tabular-nums mt-0.5">{stats.pendingCases}</p>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Pending Review</p>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Pending Review')}</p>
                                 </div>
                             </button>
 
@@ -204,9 +211,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                     <i className="fa-solid fa-calendar-check text-lg"></i>
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black text-sky-300 uppercase tracking-widest">Interviews</p>
+                                    <p className="text-[10px] font-black text-sky-300 uppercase tracking-widest">{t('Interviews')}</p>
                                     <p className="text-2xl font-black text-white tabular-nums mt-0.5">{stats.activeInterviews}</p>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Scheduled</p>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Scheduled')}</p>
                                 </div>
                             </button>
 
@@ -218,9 +225,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                     <i className="fa-solid fa-newspaper text-lg"></i>
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Vacancies</p>
+                                    <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">{t('Vacancies')}</p>
                                     <p className="text-2xl font-black text-white tabular-nums mt-0.5">{stats.openVacancies}</p>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Open Positions</p>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Open Positions')}</p>
                                 </div>
                             </button>
                         </div>
@@ -233,7 +240,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-star text-amber-300 text-sm"></i>
                             <span className="text-lg font-black text-white tabular-nums leading-none">{currentUser?.reputation}</span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Reputation</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">{t('Reputation')}</span>
                         </div>
                         <div className="h-5 w-px bg-slate-700/80 hidden sm:block"></div>
                         <div className="flex items-center gap-2.5">
@@ -247,20 +254,20 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-check-double text-emerald-300 text-sm"></i>
                             <span className="text-lg font-black text-white tabular-nums leading-none">{stats.completedCount}</span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Missions</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">{t('Missions')}</span>
                         </div>
                         <div className="h-5 w-px bg-slate-700/80 hidden sm:block"></div>
                         <div className="flex items-center gap-2.5">
                             <i className="fa-solid fa-thumbs-up text-sky-300 text-sm"></i>
                             <span className="text-lg font-black text-white tabular-nums leading-none">{stats.averageRating.toFixed(1)}</span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Avg Rating</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black">{t('Avg Rating')}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Career Timeline */}
                 <div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Career Timeline</h3>
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">{t('Career Timeline')}</h3>
                     <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
                         {careerEvents.length > 0 ? (
                             <ol className="relative border-l border-slate-800 ml-3 space-y-5">
@@ -287,7 +294,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 })}
                             </ol>
                         ) : (
-                            <p className="text-sm text-slate-500 italic text-center py-4">No career events on record yet.</p>
+                            <p className="text-sm text-slate-500 italic text-center py-4">{t('No career events on record yet.')}</p>
                         )}
                     </div>
                 </div>
@@ -300,12 +307,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                 {/* Specializations — pill strip */}
                 <div>
                     <div className="flex items-center justify-between mb-2 px-1">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Specializations</h3>
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('Specializations')}</h3>
                         <button
                             onClick={() => setIsManageSpecializationsModalOpen(true)}
                             className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 uppercase tracking-widest transition-colors"
                         >
-                            Manage
+                            {t('Manage')}
                         </button>
                     </div>
                     <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-xl p-3">
@@ -327,7 +334,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 onClick={() => setIsManageSpecializationsModalOpen(true)}
                                 className="w-full py-2 text-center text-xs text-slate-500 italic hover:text-emerald-400 transition-colors"
                             >
-                                <i className="fa-solid fa-tags mr-1.5"></i>None yet — click to choose
+                                <i className="fa-solid fa-tags mr-1.5"></i>{t('None yet — click to choose')}
                             </button>
                         )}
                     </div>
@@ -335,7 +342,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
 
                 {/* Quick Options */}
                 <div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Quick Options</h3>
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">{t('Quick Options')}</h3>
                     <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden divide-y divide-slate-800/80">
                         <button
                             onClick={() => setActiveTab('gazette')}
@@ -345,8 +352,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 <i className="fa-solid fa-briefcase text-sm"></i>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-white leading-tight">Job Gazette</p>
-                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">View &amp; apply</p>
+                                <p className="text-sm font-bold text-white leading-tight">{t('Job Gazette')}</p>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('View & apply')}</p>
                             </div>
                             <i className="fa-solid fa-chevron-right text-slate-600 group-hover:text-slate-400 text-xs"></i>
                         </button>
@@ -358,8 +365,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 <i className="fa-solid fa-right-left text-sm"></i>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-white leading-tight">Transfer Unit</p>
-                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Request change</p>
+                                <p className="text-sm font-bold text-white leading-tight">{t('Transfer Unit')}</p>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Request change')}</p>
                             </div>
                             <i className="fa-solid fa-chevron-right text-slate-600 group-hover:text-slate-400 text-xs"></i>
                         </button>
@@ -371,8 +378,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 <i className="fa-solid fa-user-shield text-sm"></i>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-white leading-tight">Clearance</p>
-                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Request access</p>
+                                <p className="text-sm font-bold text-white leading-tight">{t('Clearance')}</p>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Request access')}</p>
                             </div>
                             <i className="fa-solid fa-chevron-right text-slate-600 group-hover:text-slate-400 text-xs"></i>
                         </button>
@@ -384,8 +391,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ setActiveTab }) => {
                                 <i className="fa-solid fa-file-lines text-sm"></i>
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-white leading-tight">My Applications</p>
-                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Track status</p>
+                                <p className="text-sm font-bold text-white leading-tight">{t('My Applications')}</p>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{t('Track status')}</p>
                             </div>
                             <i className="fa-solid fa-chevron-right text-slate-600 group-hover:text-slate-400 text-xs"></i>
                         </button>
