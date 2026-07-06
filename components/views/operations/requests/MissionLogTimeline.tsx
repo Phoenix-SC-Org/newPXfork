@@ -3,6 +3,7 @@ import { ServiceRequestStatus, User } from '../../../../types';
 import { ACCENTS } from '../../../shared/ui/accents';
 import { useFormatDate } from '../../../../contexts/AuthContext';
 import { statusAccent, statusLabel, statusIcon, formatDateFull, timeAgo } from './requestStyles';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 export interface MissionLogEntry {
     status: ServiceRequestStatus;
@@ -24,10 +25,11 @@ interface Props {
  */
 export default function MissionLogTimeline({ entries, emptyMessage = 'No log entries found.' }: Props) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     if (!entries || entries.length === 0) {
         return (
             <div className="text-center py-8 text-slate-600 italic text-xs uppercase tracking-widest">
-                {emptyMessage}
+                {t(emptyMessage)}
             </div>
         );
     }
@@ -59,7 +61,7 @@ export default function MissionLogTimeline({ entries, emptyMessage = 'No log ent
                             </div>
                             <div
                                 className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${a.dot} flex items-center justify-center`}
-                                title={statusLabel(entry.status)}
+                                title={t(statusLabel(entry.status))}
                             >
                                 <i className={`fa-solid ${statusIcon(entry.status)} text-[8px] text-white`} aria-hidden />
                             </div>
@@ -68,11 +70,11 @@ export default function MissionLogTimeline({ entries, emptyMessage = 'No log ent
                         <div className="flex-1 min-w-0 pb-1">
                             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1.5">
                                 <span className="text-xs font-black text-white tracking-tight">
-                                    {entry.updatedBy?.name || 'System Terminal'}
+                                    {entry.updatedBy?.name || t('System Terminal')}
                                 </span>
                                 <span className="text-slate-600">→</span>
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${a.text}`}>
-                                    {statusLabel(entry.status)}
+                                    {t(statusLabel(entry.status))}
                                 </span>
                                 <span
                                     className="ml-auto text-[10px] text-slate-500 font-mono tracking-wider"

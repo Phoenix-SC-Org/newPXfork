@@ -19,6 +19,7 @@ import { StatusPill, UrgencyPill, ThreatPill } from './requests/pills';
 import SlaBadge from './requests/SlaBadge';
 import MissionLogTimeline, { MissionLogEntry } from './requests/MissionLogTimeline';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import {
     statusAccent,
     reputationAccent,
@@ -57,6 +58,7 @@ const StarRatingDisplay: React.FC<{ rating: number }> = ({ rating }) => (
 );
 
 const CopyChip: React.FC<{ value: string; label: string; accent?: 'sky' | 'slate' }> = ({ value, label, accent = 'sky' }) => {
+    const { t } = useI18n();
     const [copied, setCopied] = useState(false);
     const a = ACCENTS[accent];
     return (
@@ -68,7 +70,7 @@ const CopyChip: React.FC<{ value: string; label: string; accent?: 'sky' | 'slate
                 setTimeout(() => setCopied(false), 2000);
             }}
             className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-sm border font-mono text-[10px] uppercase tracking-widest transition-colors ${a.bg} ${a.border} ${a.text} hover:brightness-125`}
-            title="Copy ID"
+            title={t('Copy ID')}
         >
             <span>{label}</span>
             {copied
@@ -79,6 +81,7 @@ const CopyChip: React.FC<{ value: string; label: string; accent?: 'sky' | 'slate
 };
 
 const AddNoteCard: React.FC<{ requestId: string }> = ({ requestId }) => {
+    const { t } = useI18n();
     const { addRequestNote } = useRequests();
     const [note, setNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -108,7 +111,7 @@ const AddNoteCard: React.FC<{ requestId: string }> = ({ requestId }) => {
                 onChange={(e) => setNote(e.target.value)}
                 onKeyDown={handleKey}
                 rows={2}
-                placeholder="Add mission log entry…   ⌘/Ctrl+Enter to send"
+                placeholder={t('Add mission log entry…   ⌘/Ctrl+Enter to send')}
                 disabled={submitting}
                 className="w-full bg-slate-900/60 border border-white/10 rounded-md p-2 text-white text-xs focus:ring-1 focus:ring-sky-500/60 focus:border-sky-500/60 outline-hidden resize-none mb-2 placeholder:text-slate-600"
             />
@@ -117,7 +120,7 @@ const AddNoteCard: React.FC<{ requestId: string }> = ({ requestId }) => {
                 disabled={!note.trim() || submitting}
                 className="w-full py-1.5 text-xs font-black uppercase tracking-widest text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-                {submitting ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Log Entry'}
+                {submitting ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Log Entry')}
             </button>
         </div>
     );
@@ -126,12 +129,13 @@ const AddNoteCard: React.FC<{ requestId: string }> = ({ requestId }) => {
 // Reputation bar for the client identity card. Hoisted to module scope so the
 // JSX isn't an IIFE (which the React Compiler can't optimize).
 const ClientReputationBar: React.FC<{ client: User }> = ({ client }) => {
+    const { t } = useI18n();
     const repA = ACCENTS[reputationAccent(client.reputation)];
     const pct = Math.max(0, Math.min(100, client.reputation));
     return (
         <div className="mt-2">
             <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest mb-1">
-                <span className="text-slate-500">Reputation</span>
+                <span className="text-slate-500">{t('Reputation')}</span>
                 <span className={`font-bold ${repA.text}`}>{client.reputation}</span>
             </div>
             <div className="h-1.5 rounded-full bg-slate-900 border border-white/5 overflow-hidden">
@@ -144,10 +148,11 @@ const ClientReputationBar: React.FC<{ client: User }> = ({ client }) => {
 // Operational team roster (lead + responders). Hoisted to module scope so the
 // JSX isn't an IIFE (which the React Compiler can't optimize).
 const OperationalTeamRoster: React.FC<{ assignedMembers: User[]; leadResponderId?: number }> = ({ assignedMembers, leadResponderId }) => {
+    const { t } = useI18n();
     if (assignedMembers.length === 0) {
         return (
             <div className="text-center py-4 text-slate-500 italic text-xs uppercase tracking-widest bg-slate-950/30 rounded-lg border border-dashed border-white/5">
-                Unit unassigned
+                {t('Unit unassigned')}
             </div>
         );
     }
@@ -158,7 +163,7 @@ const OperationalTeamRoster: React.FC<{ assignedMembers: User[]; leadResponderId
             {lead && (
                 <div>
                     <p className="text-[9px] font-black text-amber-400/80 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                        <i className="fa-solid fa-crown text-[9px]" aria-hidden /> Lead Responder
+                        <i className="fa-solid fa-crown text-[9px]" aria-hidden /> {t('Lead Responder')}
                     </p>
                     <div className="flex items-center gap-3 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5">
                         <div className="relative shrink-0">
@@ -169,7 +174,7 @@ const OperationalTeamRoster: React.FC<{ assignedMembers: User[]; leadResponderId
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold truncate text-amber-100">{lead.name}</p>
-                            <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{lead.rank?.name || 'Operative'}</p>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{lead.rank?.name || t('Operative')}</p>
                         </div>
                     </div>
                 </div>
@@ -178,7 +183,7 @@ const OperationalTeamRoster: React.FC<{ assignedMembers: User[]; leadResponderId
             {others.length > 0 && (
                 <div>
                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">
-                        Responding Unit · {others.length}
+                        {t('Responding Unit · {count}', { count: others.length })}
                     </p>
                     <div className="space-y-1.5">
                         {others.map(member => (
@@ -189,7 +194,7 @@ const OperationalTeamRoster: React.FC<{ assignedMembers: User[]; leadResponderId
                                 <img src={member.avatarUrl} alt="" className="w-8 h-8 rounded-full border-2 border-slate-700 shrink-0 object-cover" />
                                 <div className="min-w-0 flex-1">
                                     <p className="text-xs font-bold truncate text-slate-200">{member.name}</p>
-                                    <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{member.rank?.name || 'Operative'}</p>
+                                    <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{member.rank?.name || t('Operative')}</p>
                                 </div>
                             </div>
                         ))}
@@ -263,6 +268,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
     const { serviceTypes } = useConfig();
     const { warrants } = useOperations();
     const { confirm, addToast } = useNotification();
+    const { t } = useI18n();
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
     // Always read latest from live data if present (so background refreshes flow in)
@@ -286,8 +292,8 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
     const showSla = SHOW_SLA_FOR.has(request.status);
 
     const clientRsiHandle = (request.client?.rsiHandle || request.unregisteredClientRsiHandle || '').trim();
-    const clientDisplayName = request.client?.name || request.unregisteredClientRsiHandle || 'Unknown Client';
-    const clientDisplayHandle = request.client?.rsiHandle || request.unregisteredClientRsiHandle || 'N/A';
+    const clientDisplayName = request.client?.name || request.unregisteredClientRsiHandle || t('Unknown Client');
+    const clientDisplayHandle = request.client?.rsiHandle || request.unregisteredClientRsiHandle || t('N/A');
     const reqShortId = request.id.split('-')[1]?.toUpperCase() ?? request.id.slice(0, 8).toUpperCase();
 
     const serviceConfig = useMemo(() => {
@@ -346,9 +352,9 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
 
     const handleDelete = async () => {
         const confirmed = await confirm({
-            title: 'Confirm Delete',
-            message: 'Are you sure you want to permanently delete this request?',
-            confirmText: 'Delete',
+            title: t('Confirm Delete'),
+            message: t('Are you sure you want to permanently delete this request?'),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -358,15 +364,15 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
             onBack();
         } catch (err) {
             console.error('Failed to delete request:', err);
-            addToast('Delete Failed', <i className="fa-solid fa-xmark" aria-hidden />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'Failed to delete the service request.' });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark" aria-hidden />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('Failed to delete the service request.') });
             setLoadingAction(null);
         }
     };
 
     const copyRef = useCallback(() => {
         navigator.clipboard.writeText(request.id);
-        addToast('Copied', <i className="fa-solid fa-check" aria-hidden />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40', { description: `REF-${reqShortId} copied to clipboard.` });
-    }, [request.id, reqShortId, addToast]);
+        addToast(t('Copied'), <i className="fa-solid fa-check" aria-hidden />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/40', { description: t('REF-{id} copied to clipboard.', { id: reqShortId }) });
+    }, [request.id, reqShortId, addToast, t]);
 
     const toggleSection = useCallback((id: string) => {
         setCollapsedIds(prev => {
@@ -441,7 +447,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                             onClick={onBack}
                             className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors mb-3"
                         >
-                            <i className="fa-solid fa-arrow-left" aria-hidden /> Return to feed
+                            <i className="fa-solid fa-arrow-left" aria-hidden /> {t('Return to feed')}
                         </button>
 
                         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 lg:gap-4">
@@ -455,18 +461,18 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                                 <div className="min-w-0">
                                     <div className="hidden sm:flex items-center gap-2 mb-2">
                                         <CallsignChip
-                                            label={`MISSION · REF-${reqShortId}`}
+                                            label={t('MISSION · REF-{id}', { id: reqShortId })}
                                             icon="fa-satellite-dish"
                                             accent={statusAccent(request.status)}
                                             pulse={isActiveMission}
                                         />
-                                        <CopyChip value={request.id} label="Copy" accent="slate" />
+                                        <CopyChip value={request.id} label={t('Copy')} accent="slate" />
                                     </div>
                                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight flex items-center gap-3 flex-wrap">
-                                        <span className="truncate">{request.serviceType} Request</span>
+                                        <span className="truncate">{t('{type} Request', { type: request.serviceType })}</span>
                                         {isFetching['service_requests'] && (
                                             <span className={`${statusA.text} text-xs font-mono uppercase tracking-widest animate-pulse inline-flex items-center gap-1`}>
-                                                <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> Syncing
+                                                <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> {t('Syncing')}
                                             </span>
                                         )}
                                     </h1>
@@ -488,42 +494,42 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                 <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
                     {canAssign && (
                         <button onClick={() => openTriageModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-filter" aria-hidden /> Assign
+                            <i className="fa-solid fa-filter" aria-hidden /> {t('Assign')}
                         </button>
                     )}
                     {canAcceptMission && (
                         <button onClick={() => handleAction(() => acceptRequest(request.id, currentUser.id), 'accept')} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 shadow-lg shadow-sky-900/30 transition disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-handshake" aria-hidden /> {loadingAction === 'accept' ? 'Syncing…' : 'Accept'}
+                            <i className="fa-solid fa-handshake" aria-hidden /> {loadingAction === 'accept' ? t('Syncing…') : t('Accept')}
                         </button>
                     )}
                     {canDispatchUnit && (
                         <button onClick={() => openDispatchModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest bg-teal-500/10 text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition-colors disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-tower-broadcast" aria-hidden /> Dispatch
+                            <i className="fa-solid fa-tower-broadcast" aria-hidden /> {t('Dispatch', { context: 'action' })}
                         </button>
                     )}
                     {canLaunch && (
                         <button onClick={() => handleAction(() => startMission(request.id), 'start')} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-jet-fighter-up" aria-hidden /> {loadingAction === 'start' ? 'Starting…' : 'Launch'}
+                            <i className="fa-solid fa-jet-fighter-up" aria-hidden /> {loadingAction === 'start' ? t('Starting…') : t('Launch')}
                         </button>
                     )}
                     {canManageResponders && (
                         <button onClick={() => openAddResponderModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest bg-teal-500/10 text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition-colors disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-users-gear" aria-hidden /> Responders
+                            <i className="fa-solid fa-users-gear" aria-hidden /> {t('Responders')}
                         </button>
                     )}
                     {canUpdate && (
                         <button onClick={() => openUpdateStatusModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest bg-slate-800/60 text-slate-200 border border-white/10 hover:bg-slate-700/80 transition-colors disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-pen-to-square" aria-hidden /> Update
+                            <i className="fa-solid fa-pen-to-square" aria-hidden /> {t('Update', { context: 'action' })}
                         </button>
                     )}
                     {canComplete && (
                         <button onClick={() => openCompleteModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-flag-checkered" aria-hidden /> Complete
+                            <i className="fa-solid fa-flag-checkered" aria-hidden /> {t('Complete')}
                         </button>
                     )}
                     {canRate && (
                         <button onClick={() => openRateRequestModal(request)} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest text-amber-200 bg-amber-500/20 border border-amber-500/40 hover:bg-amber-500/30 shadow-lg shadow-amber-900/20 transition animate-pulse disabled:opacity-50 flex items-center gap-2">
-                            <i className="fa-solid fa-star" aria-hidden /> Rate Service
+                            <i className="fa-solid fa-star" aria-hidden /> {t('Rate Service')}
                         </button>
                     )}
 
@@ -531,21 +537,21 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                     <div className="ml-auto flex items-center gap-2">
                         {canCancel && (
                             <button onClick={() => handleAction(() => cancelRequest(request.id), 'cancel')} disabled={!!loadingAction} className="px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20 transition-colors disabled:opacity-50 flex items-center gap-2">
-                                <i className="fa-solid fa-ban" aria-hidden /> Cancel
+                                <i className="fa-solid fa-ban" aria-hidden /> {t('Cancel')}
                             </button>
                         )}
                         {canDelete && (
-                            <button onClick={handleDelete} disabled={!!loadingAction} className="px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 flex items-center gap-2" title="Delete (permanent)">
+                            <button onClick={handleDelete} disabled={!!loadingAction} className="px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 flex items-center gap-2" title={t('Delete (permanent)')}>
                                 {loadingAction === 'delete' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : <i className="fa-solid fa-trash" aria-hidden />}
-                                <span className="hidden sm:inline">Delete</span>
+                                <span className="hidden sm:inline">{t('Delete')}</span>
                             </button>
                         )}
                         <button
                             onClick={() => setShowCheatsheet(s => !s)}
                             className="hidden lg:flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-mono uppercase tracking-widest text-slate-500 hover:text-slate-300 border border-transparent hover:border-white/10 hover:bg-slate-800/40 transition-colors"
-                            title="Keyboard shortcuts (?)"
+                            title={t('Keyboard shortcuts (?)')}
                         >
-                            <i className="fa-solid fa-keyboard" aria-hidden /> Keys
+                            <i className="fa-solid fa-keyboard" aria-hidden /> {t('Keys')}
                         </button>
                     </div>
                 </div>
@@ -554,7 +560,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                 <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
                     <div className="space-y-4 lg:space-y-6">
-                        <SectionCard id="client" icon="fa-user-circle" title="Client Identity" accent="sky" collapsedIds={collapsedIds} onToggle={toggleSection}>
+                        <SectionCard id="client" icon="fa-user-circle" title={t('Client Identity')} accent="sky" collapsedIds={collapsedIds} onToggle={toggleSection}>
                             <div className="flex items-start gap-3">
                                 {request.client?.avatarUrl ? (
                                     <img
@@ -580,7 +586,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                             <SectionCard
                                 id="risk"
                                 icon="fa-shield-halved"
-                                title="Risk Assessment"
+                                title={t('Risk Assessment')}
                                 accent={riskAlarm ? 'red' : 'emerald'}
                                 alarm={riskAlarm}
                                 collapsedIds={collapsedIds}
@@ -590,18 +596,18 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                                     <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${hasActiveWarrant ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'}`}>
                                         <div className="flex items-center gap-2 min-w-0">
                                             <i className={`fa-solid ${hasActiveWarrant ? 'fa-triangle-exclamation animate-pulse' : 'fa-circle-check'} text-sm shrink-0`} aria-hidden />
-                                            <span className="text-[10px] font-black uppercase tracking-widest truncate">{hasActiveWarrant ? 'Active cautions' : 'No active cautions'}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest truncate">{hasActiveWarrant ? t('Active cautions') : t('No active cautions')}</span>
                                         </div>
-                                        {hasActiveWarrant && <span className="text-[9px] font-mono opacity-70 shrink-0">CAUTION</span>}
+                                        {hasActiveWarrant && <span className="text-[9px] font-mono opacity-70 shrink-0">{t('CAUTION')}</span>}
                                     </div>
                                     <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${intelThreat ? `${ACCENTS[intelAlarm ? 'red' : intelThreat === IntelThreatLevel.None ? 'slate' : 'amber'].border} ${ACCENTS[intelAlarm ? 'red' : intelThreat === IntelThreatLevel.None ? 'slate' : 'amber'].bg} ${ACCENTS[intelAlarm ? 'red' : intelThreat === IntelThreatLevel.None ? 'slate' : 'amber'].text}` : 'border-white/10 bg-slate-950/30 text-slate-500'}`}>
                                         <div className="flex items-center gap-2 min-w-0">
                                             <i className="fa-solid fa-database text-sm shrink-0" aria-hidden />
-                                            <span className="text-[10px] font-black uppercase tracking-widest truncate">Intel Analysis</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest truncate">{t('Intel Analysis')}</span>
                                         </div>
                                         {intelLoading
                                             ? <i className="fa-solid fa-circle-notch animate-spin text-xs" aria-hidden />
-                                            : <span className="text-[10px] font-black uppercase tracking-widest shrink-0">{intelThreat || 'No data'}</span>}
+                                            : <span className="text-[10px] font-black uppercase tracking-widest shrink-0">{intelThreat ? t(intelThreat) : t('No data')}</span>}
                                     </div>
                                 </div>
                             </SectionCard>
@@ -610,7 +616,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                         <SectionCard
                             id="team"
                             icon="fa-people-group"
-                            title="Operational Team"
+                            title={t('Operational Team')}
                             accent="cyan"
                             collapsedIds={collapsedIds}
                             onToggle={toggleSection}
@@ -624,7 +630,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                         </SectionCard>
 
                         {((request.secondaryClientHandles && request.secondaryClientHandles.length > 0) || request.partyInfo) && (
-                            <SectionCard id="party" icon="fa-users" title="Party Manifest" accent="purple" collapsedIds={collapsedIds} onToggle={toggleSection}>
+                            <SectionCard id="party" icon="fa-users" title={t('Party Manifest')} accent="purple" collapsedIds={collapsedIds} onToggle={toggleSection}>
                                 {request.partyInfo && <p className="text-xs text-slate-400 mb-3 italic leading-relaxed">&ldquo;{request.partyInfo}&rdquo;</p>}
                                 {request.secondaryClientHandles && request.secondaryClientHandles.length > 0 && (
                                     <div className="flex flex-wrap gap-1.5">
@@ -639,18 +645,18 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                         )}
 
                         {[ServiceRequestStatus.Success, ServiceRequestStatus.Failed, ServiceRequestStatus.GameError, ServiceRequestStatus.Aborted].includes(request.status) && (
-                            <SectionCard id="outcome" icon="fa-flag-checkered" title="Mission Outcome" accent={request.status === ServiceRequestStatus.Success ? 'emerald' : 'red'} collapsedIds={collapsedIds} onToggle={toggleSection}>
+                            <SectionCard id="outcome" icon="fa-flag-checkered" title={t('Mission Outcome')} accent={request.status === ServiceRequestStatus.Success ? 'emerald' : 'red'} collapsedIds={collapsedIds} onToggle={toggleSection}>
                                 <div className="space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="p-3 rounded-lg border border-white/5 bg-slate-950/40">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">UEC Earned</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('UEC Earned')}</p>
                                             <div className="flex items-center gap-2">
                                                 <i className="fa-solid fa-coins text-amber-400" aria-hidden />
                                                 <span className="text-white font-black font-mono">{(request.uecEarned || 0).toLocaleString()}</span>
                                             </div>
                                         </div>
                                         <div className="p-3 rounded-lg border border-white/5 bg-slate-950/40">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Medigel</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Medigel')}</p>
                                             <div className="flex items-center gap-2">
                                                 <i className="fa-solid fa-syringe text-emerald-400" aria-hidden />
                                                 <span className="text-white font-black font-mono">{request.medigelConsumed || 0}</span>
@@ -658,19 +664,19 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                                         </div>
                                     </div>
                                     <div className="p-3 rounded-lg border border-white/5 bg-slate-950/40">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Client Rating</p>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Client Rating')}</p>
                                         {request.clientRating ? (
                                             <div className="flex items-center gap-2.5">
                                                 <StarRatingDisplay rating={request.clientRating} />
                                                 <span className="text-amber-300 font-black text-sm">{request.clientRating}/5</span>
                                             </div>
                                         ) : (
-                                            <p className="text-slate-500 text-xs italic">{request.rated ? 'N/A' : 'Awaiting client…'}</p>
+                                            <p className="text-slate-500 text-xs italic">{request.rated ? t('N/A') : t('Awaiting client…')}</p>
                                         )}
                                     </div>
                                     {request.clientFeedback && canViewFeedback && (
                                         <div className="p-3 rounded-lg border border-white/5 bg-slate-950/50">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Client Feedback</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Client Feedback')}</p>
                                             <p className="text-sm text-slate-300 leading-relaxed italic">&ldquo;{request.clientFeedback}&rdquo;</p>
                                         </div>
                                     )}
@@ -680,41 +686,41 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                     </div>
 
                     <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-                        <SectionCard id="parameters" icon="fa-map-location-dot" title="Mission Parameters" accent="sky" collapsedIds={collapsedIds} onToggle={toggleSection}>
+                        <SectionCard id="parameters" icon="fa-map-location-dot" title={t('Mission Parameters')} accent="sky" collapsedIds={collapsedIds} onToggle={toggleSection}>
                             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm mb-4">
                                 <dt className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 pt-0.5">
                                     <i className="fa-solid fa-map-pin text-sky-400" aria-hidden />
-                                    Location
+                                    {t('Location')}
                                 </dt>
                                 <dd className="text-white font-bold leading-snug wrap-break-word">{request.location}</dd>
 
                                 <dt className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 pt-0.5">
                                     <i className="fa-solid fa-skull-crossbones text-orange-400" aria-hidden />
-                                    Threat
+                                    {t('Threat')}
                                 </dt>
                                 <dd className="flex"><ThreatPill threat={request.threatLevel} /></dd>
 
                                 <dt className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 pt-0.5">
                                     <i className="fa-solid fa-bolt text-amber-400" aria-hidden />
-                                    Priority
+                                    {t('Priority')}
                                 </dt>
                                 <dd className="flex"><UrgencyPill urgency={request.urgency} /></dd>
 
                                 <dt className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 pt-0.5">
                                     <i className="fa-solid fa-stopwatch text-slate-400" aria-hidden />
-                                    Reported
+                                    {t('Reported')}
                                 </dt>
                                 <dd className="text-slate-300 font-mono text-xs">{formatDateFull(request.createdAt, fmt.prefs)} <span className="text-slate-600">· {timeAgo(request.createdAt)}</span></dd>
 
                                 <dt className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 pt-0.5">
                                     <i className="fa-solid fa-clock-rotate-left text-slate-400" aria-hidden />
-                                    Last update
+                                    {t('Last update')}
                                 </dt>
                                 <dd className="text-slate-300 font-mono text-xs">{formatDateFull(request.updatedAt, fmt.prefs)} <span className="text-slate-600">· {timeAgo(request.updatedAt)}</span></dd>
                             </dl>
 
                             <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Initial Briefing</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('Initial Briefing')}</p>
                                 <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4 text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-mono min-h-[80px]">
                                     {request.description}
                                 </div>
@@ -724,7 +730,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                         <SectionCard
                             id="log"
                             icon="fa-timeline"
-                            title="Mission Log"
+                            title={t('Mission Log')}
                             accent="cyan"
                             collapsedIds={collapsedIds}
                             onToggle={toggleSection}
@@ -747,7 +753,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                 <div className="fixed bottom-6 right-6 z-40 w-72 rounded-xl border border-white/10 bg-slate-950/95 backdrop-blur-md shadow-2xl p-4 animate-fade-in-up">
                     <div className="flex items-center justify-between mb-3">
                         <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                            <i className="fa-solid fa-keyboard text-sky-400" aria-hidden /> Keyboard
+                            <i className="fa-solid fa-keyboard text-sky-400" aria-hidden /> {t('Keyboard')}
                         </h4>
                         <button onClick={() => setShowCheatsheet(false)} className="text-slate-500 hover:text-white transition-colors">
                             <i className="fa-solid fa-xmark" aria-hidden />
@@ -763,7 +769,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                             ['Esc', 'Return to feed'],
                         ].map(([key, label]) => (
                             <div key={key} className="flex items-center justify-between">
-                                <dt className="text-slate-400">{label}</dt>
+                                <dt className="text-slate-400">{t(label)}</dt>
                                 <dd>
                                     <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-sm border border-white/10 bg-slate-900 text-[10px] font-mono font-bold text-slate-200">
                                         {key}

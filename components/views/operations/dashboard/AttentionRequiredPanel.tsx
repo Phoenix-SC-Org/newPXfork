@@ -5,6 +5,7 @@ import { useActionRequired, ActionItem, ActionItemAccent } from '../../../../hoo
 import { CallsignChip } from '../../../shared/ui';
 import { ACCENTS } from '../../../shared/ui/accents';
 import { useNavigation } from '../../../../contexts/NavigationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 const INITIAL_VISIBLE = 5;
 
@@ -27,6 +28,7 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
     const { setActiveView, viewRequestDetails, setSelectedBulletin } = useNavigation();
     const { hydratedServiceRequests } = useData();
     const { activeBulletins } = useIntel();
+    const { t } = useI18n();
     const [expanded, setExpanded] = useState(false);
 
     if (count === 0) {
@@ -37,8 +39,8 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
                     <i className="fa-solid fa-circle-check text-emerald-300" />
                 </div>
                 <div>
-                    <p className="text-sm font-bold text-emerald-200">All clear</p>
-                    <p className="text-[11px] text-slate-400">No actions pending on you.</p>
+                    <p className="text-sm font-bold text-emerald-200">{t('All clear')}</p>
+                    <p className="text-[11px] text-slate-400">{t('No actions pending on you.')}</p>
                 </div>
             </div>
         );
@@ -82,32 +84,32 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
     let headerIcon: string;
     let headerTitle: React.ReactNode;
     if (actionCount > 0 && advisoryCount > 0) {
-        headerEyebrow = 'Dashboard Notifications';
+        headerEyebrow = t('Dashboard Notifications');
         headerIcon = 'fa-triangle-exclamation';
         headerTitle = (
             <>
-                {actionCount} {actionCount === 1 ? 'action' : 'actions'}
+                {actionCount === 1 ? t('{count} action', { count: actionCount }) : t('{count} actions', { count: actionCount })}
                 <span className="text-slate-500"> · </span>
-                {advisoryCount} {advisoryCount === 1 ? 'advisory' : 'advisories'}
-                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {criticalCount} critical</span>}
+                {advisoryCount === 1 ? t('{count} advisory', { count: advisoryCount }) : t('{count} advisories', { count: advisoryCount })}
+                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
             </>
         );
     } else if (actionCount > 0) {
-        headerEyebrow = 'Attention Required';
+        headerEyebrow = t('Attention Required');
         headerIcon = 'fa-triangle-exclamation';
         headerTitle = (
             <>
-                {actionCount} {actionCount === 1 ? 'item' : 'items'} waiting on you
-                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {criticalCount} critical</span>}
+                {actionCount === 1 ? t('{count} item waiting on you', { count: actionCount }) : t('{count} items waiting on you', { count: actionCount })}
+                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
             </>
         );
     } else {
-        headerEyebrow = 'Advisories';
+        headerEyebrow = t('Advisories');
         headerIcon = 'fa-satellite-dish';
         headerTitle = (
             <>
-                {advisoryCount} active {advisoryCount === 1 ? 'bulletin' : 'bulletins'}
-                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {criticalCount} critical</span>}
+                {advisoryCount === 1 ? t('{count} active bulletin', { count: advisoryCount }) : t('{count} active bulletins', { count: advisoryCount })}
+                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
             </>
         );
     }
@@ -174,7 +176,7 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
                         <p className="text-sm font-bold text-white">{headerTitle}</p>
                     </div>
                 </div>
-                {criticalCount > 0 && <CallsignChip label={actionCount > 0 ? 'Action · Now' : 'Critical'} accent="rose" pulse />}
+                {criticalCount > 0 && <CallsignChip label={actionCount > 0 ? t('Action · Now') : t('Critical')} accent="rose" pulse />}
             </div>
 
             {visibleAction.length > 0 && (
@@ -182,7 +184,7 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
                     {showGroupHeaders && (
                         <div className="px-4 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest text-slate-500 flex items-center gap-2">
                             <i className="fa-solid fa-triangle-exclamation text-amber-400/70" />
-                            Action Required
+                            {t('Action Required')}
                         </div>
                     )}
                     <ul className="divide-y divide-white/5">
@@ -195,7 +197,7 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
                 <>
                     <div className="px-4 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest text-slate-500 flex items-center gap-2 border-t border-white/5">
                         <i className="fa-solid fa-satellite-dish text-sky-300/70" />
-                        Advisories <span className="text-slate-600 normal-case tracking-normal font-sans">· no action required</span>
+                        {t('Advisories')} <span className="text-slate-600 normal-case tracking-normal font-sans">· {t('no action required')}</span>
                     </div>
                     <ul className="divide-y divide-white/5">
                         {visibleAdvisory.map(renderItem)}
@@ -208,7 +210,7 @@ export default function AttentionRequiredPanel({ showWhenEmpty = false }: Props)
                     onClick={() => setExpanded((v) => !v)}
                     className="w-full py-2 text-[11px] font-mono uppercase tracking-widest text-slate-500 hover:text-slate-300 border-t border-white/5 transition-colors"
                 >
-                    {expanded ? 'Show fewer' : `Show all · ${items.length}`}
+                    {expanded ? t('Show fewer') : t('Show all · {count}', { count: items.length })}
                 </button>
             )}
         </div>

@@ -5,6 +5,7 @@ import { HydratedOperation, OperationStatus, OperationType } from '../../../type
 import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { useOperations } from '../../../contexts/OperationsContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getTypeColor = (type: OperationType) => {
     switch (type) {
@@ -29,6 +30,7 @@ interface OpBlockProps {
 }
 
 const OpBlock: React.FC<OpBlockProps> = ({ op, compact, viewOperationDetails, formatTime }) => {
+    const { t } = useI18n();
     const colors = getTypeColor(op.type);
     const activeParticipants = op.participants.filter(p => p.timeLeft === null).length;
     const accepted = op.participants.filter(p => p.rsvpStatus === 'Accepted').length;
@@ -49,9 +51,9 @@ const OpBlock: React.FC<OpBlockProps> = ({ op, compact, viewOperationDetails, fo
             {!compact && (
                 <div className="flex items-center gap-2 mt-0.5 ml-3">
                     <span className="text-[9px] text-slate-500">
-                        <i className="fa-solid fa-users mr-0.5"></i>{accepted > 0 ? `${accepted} RSVP` : `${activeParticipants} PAX`}
+                        <i className="fa-solid fa-users mr-0.5"></i>{accepted > 0 ? t('{count} RSVP', { count: accepted }) : t('{count} PAX', { count: activeParticipants })}
                     </span>
-                    {isConcluded && <span className="text-[9px] text-slate-600 italic">Concluded</span>}
+                    {isConcluded && <span className="text-[9px] text-slate-600 italic">{t('Concluded')}</span>}
                 </div>
             )}
         </div>
@@ -67,6 +69,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
     const { hasPermission } = useAuth();
     const { updateOperationStatus } = useOperations();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
     const [currentDate, setCurrentDate] = useState(() => new Date());
 
@@ -152,15 +155,15 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                         <i className="fa-solid fa-chevron-left text-xs"></i>
                     </button>
                     <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider min-w-[180px] sm:min-w-[220px] text-center px-2">
-                        {viewMode === 'month' && `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`}
-                        {viewMode === 'week' && weekDays[0] && `Week of ${fmt.date(weekDays[0].toISOString())}`}
+                        {viewMode === 'month' && `${t(MONTHS[currentDate.getMonth()])} ${currentDate.getFullYear()}`}
+                        {viewMode === 'week' && weekDays[0] && t('Week of {date}', { date: fmt.date(weekDays[0].toISOString()) })}
                         {viewMode === 'day' && fmt.date(currentDate.toISOString())}
                     </h2>
                     <button onClick={() => navigate(1)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-white hover:border-purple-500/40 hover:bg-purple-500/10 transition-colors">
                         <i className="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                     <button onClick={goToToday} className="ml-1 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700 text-slate-300 hover:text-white hover:border-purple-500/40 hover:bg-purple-500/10 transition-colors text-[10px] font-black uppercase tracking-wider">
-                        Today
+                        {t('Today')}
                     </button>
                 </div>
                 <div className="flex bg-slate-900/60 rounded-lg border border-slate-700 p-0.5">
@@ -172,7 +175,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                 viewMode === mode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                             }`}
                         >
-                            {mode}
+                            {t(mode)}
                         </button>
                     ))}
                 </div>
@@ -184,7 +187,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                     return (
                         <span key={type} className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border ${colors.bg} ${colors.border} ${colors.text}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`}></span>
-                            {type}
+                            {t(type)}
                         </span>
                     );
                 })}
@@ -195,7 +198,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                 <div className="flex-1 flex flex-col min-h-0">
                     <div className="grid grid-cols-7 border-b border-slate-700/50 mb-1">
                         {DAYS.map(day => (
-                            <div key={day} className="text-center py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">{day}</div>
+                            <div key={day} className="text-center py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t(day)}</div>
                         ))}
                     </div>
                     <div className="grid grid-cols-7 flex-1 auto-rows-fr gap-px bg-slate-800/30 rounded-lg overflow-hidden">
@@ -217,7 +220,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                             <OpBlock key={op.id} op={op} compact viewOperationDetails={viewOperationDetails} formatTime={formatTime} />
                                         ))}
                                         {dayOps.length > 3 && (
-                                            <span className="text-[9px] text-slate-500 font-bold">+{dayOps.length - 3} more</span>
+                                            <span className="text-[9px] text-slate-500 font-bold">{t('+{count} more', { count: dayOps.length - 3 })}</span>
                                         )}
                                     </div>
                                 </div>
@@ -235,7 +238,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                             return (
                                 <div key={date.toISOString()} className={`flex flex-col rounded-xl border ${isToday(date) ? 'border-purple-500/50 bg-purple-500/5 shadow-lg shadow-purple-900/20' : 'border-slate-700/50 bg-slate-900/60'}`}>
                                     <div className={`text-center py-2 border-b ${isToday(date) ? 'border-purple-500/30' : 'border-slate-700/50'}`}>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{DAYS[i]}</p>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t(DAYS[i])}</p>
                                         <p className={`text-lg font-black ${isToday(date) ? 'text-purple-300' : 'text-white'}`}>{date.getDate()}</p>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5">
@@ -243,7 +246,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                             <OpBlock key={op.id} op={op} viewOperationDetails={viewOperationDetails} formatTime={formatTime} />
                                         ))}
                                         {dayOps.length === 0 && (
-                                            <p className="text-[9px] text-slate-600 text-center italic mt-4">No ops</p>
+                                            <p className="text-[9px] text-slate-600 text-center italic mt-4">{t('No ops')}</p>
                                         )}
                                     </div>
                                 </div>
@@ -258,8 +261,8 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                     {dayOps.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/30 p-10 text-center">
                             <i className="fa-solid fa-calendar-xmark text-4xl text-purple-400 opacity-40 mb-3"></i>
-                            <h3 className="text-lg font-bold text-white mb-1">No operations scheduled</h3>
-                            <p className="text-sm text-slate-500">Try a different day or create a new operation.</p>
+                            <h3 className="text-lg font-bold text-white mb-1">{t('No operations scheduled')}</h3>
+                            <p className="text-sm text-slate-500">{t('Try a different day or create a new operation.')}</p>
                         </div>
                     ) : (
                             <div className="space-y-3 max-w-3xl">
@@ -293,11 +296,11 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                                             op.status === OperationStatus.Planning ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
                                                             op.status === OperationStatus.Scheduled ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
                                                             'bg-slate-700 text-slate-400 border-slate-600'
-                                                        }`}>{op.status}</span>
-                                                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${colors.bg} ${colors.border} ${colors.text}`}>{op.type}</span>
+                                                        }`}>{t(op.status)}</span>
+                                                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${colors.bg} ${colors.border} ${colors.text}`}>{t(op.type)}</span>
                                                         {isOverdue && (
                                                             <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
-                                                                OVERDUE
+                                                                {t('OVERDUE')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -306,7 +309,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                                 </div>
                                                 <div className="text-right shrink-0 ml-4 space-y-1">
                                                     <p className="text-xs text-slate-500">
-                                                        <i className="fa-solid fa-users mr-1"></i>{activeParticipants} PAX
+                                                        <i className="fa-solid fa-users mr-1"></i>{t('{count} PAX', { count: activeParticipants })}
                                                     </p>
                                                     {(accepted + tentative + declined) > 0 && (
                                                         <div className="flex items-center gap-1.5 text-[9px] font-mono justify-end">
@@ -320,7 +323,7 @@ const OperationsCalendarView: React.FC<OperationsCalendarViewProps> = ({ operati
                                                             onClick={(e) => { e.stopPropagation(); updateOperationStatus(op.id, OperationStatus.Active); }}
                                                             className="text-[10px] font-black bg-green-500/10 text-green-400 px-2 py-1 rounded-sm border border-green-500/30 hover:bg-green-500/20 transition-colors uppercase tracking-widest mt-1"
                                                         >
-                                                            <i className="fa-solid fa-rocket mr-1"></i>Launch
+                                                            <i className="fa-solid fa-rocket mr-1"></i>{t('Launch')}
                                                         </button>
                                                     )}
                                                 </div>

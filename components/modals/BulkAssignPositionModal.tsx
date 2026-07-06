@@ -6,6 +6,7 @@ import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
 import { User } from '../../types';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface Props {
     selectedUsers: User[];
@@ -17,6 +18,7 @@ interface Props {
  * Operates on `users.position_id` only — secondary position is left alone.
  */
 const BulkAssignPositionModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { hrPositions } = useHR();
     const [positionId, setPositionId] = useState<number | null>(null);
     const bulk = useBulkProgress<number>();
@@ -44,25 +46,25 @@ const BulkAssignPositionModal: React.FC<Props> = ({ selectedUsers, onClose }) =>
 
     return (
         <BulkActionShell
-            title="Assign Primary Position"
-            subtitle="All selected members will be set to the chosen job title."
+            title={t('Assign Primary Position')}
+            subtitle={t('All selected members will be set to the chosen job title.')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel="Assign"
+            confirmLabel={t('Assign')}
             confirmDisabled={positionId == null}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
         >
             {!isRunning && !isFinished && (
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">Position</label>
+                    <label className="text-sm font-bold text-white">{t('Position')}</label>
                     <select
                         value={positionId ?? ''}
                         onChange={(e) => setPositionId(e.target.value ? Number(e.target.value) : null)}
                         className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:border-sky-500/50"
                     >
-                        <option value="">— Select a position —</option>
+                        <option value="">{t('— Select a position —')}</option>
                         {(hrPositions || []).map((p) => (
                             <option key={p.id} value={p.id}>{p.name}</option>
                         ))}

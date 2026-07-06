@@ -6,6 +6,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface TriageRequestModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
     const { triageRequest, adminAcceptAndAssignRequest, refuseRequest } = useRequests();
     const { members } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [notes, setNotes] = useState('');
     const [leadResponderId, setLeadResponderId] = useState('');
     const [urgency, setUrgency] = useState<UrgencyLevel>(request.urgency);
@@ -31,7 +33,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
             onClose();
         } catch (err) {
             console.error(err);
-            addToast("Triage Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred during triage. Please try again." });
+            addToast(t('Triage Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred during triage. Please try again.') });
         } finally {
             setLoadingAction(null);
         }
@@ -45,7 +47,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
             onClose();
         } catch (err) {
             console.error(err);
-            addToast("Assignment Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while assigning the lead responder. Please try again." });
+            addToast(t('Assignment Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while assigning the lead responder. Please try again.') });
         } finally {
             setLoadingAction(null);
         }
@@ -59,7 +61,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
             onClose();
         } catch (err) {
             console.error(err);
-            addToast("Refusal Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while refusing the request. Please try again." });
+            addToast(t('Refusal Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while refusing the request. Please try again.') });
         } finally {
             setLoadingAction(null);
         }
@@ -72,8 +74,8 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Triage Console"
-            subtitle={`Review Request #${request.id.split('-')[1]}`}
+            title={t('Triage Console')}
+            subtitle={t('Review Request #{id}', { id: request.id.split('-')[1] })}
             icon="fa-solid fa-filter"
             color="amber"
             width="max-w-lg"
@@ -81,37 +83,37 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-5">
                     <div>
-                        <label className={labelClass}>Urgency Level</label>
+                        <label className={labelClass}>{t('Urgency Level')}</label>
                         <select
                             value={urgency}
                             onChange={(e) => setUrgency(e.target.value as UrgencyLevel)}
                             className={inputClass}
                             disabled={!!loadingAction}
                         >
-                            {Object.values(UrgencyLevel).map(level => <option key={level} value={level}>{level}</option>)}
+                            {Object.values(UrgencyLevel).map(level => <option key={level} value={level}>{t(level)}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className={labelClass}>Immediate Assignment (Optional)</label>
+                        <label className={labelClass}>{t('Immediate Assignment (Optional)')}</label>
                         <select
                             value={leadResponderId}
                             onChange={(e) => setLeadResponderId(e.target.value)}
                             className={inputClass}
                             disabled={!!loadingAction}
                         >
-                            <option value="">- Triage for General Pickup -</option>
+                            <option value="">{t('- Triage for General Pickup -')}</option>
                             {onDutyMembers.map(member => (
-                                <option key={member.id} value={member.id}>{member.name} ({member.role})</option>
+                                <option key={member.id} value={member.id}>{member.name} ({t(member.role)})</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className={labelClass}>Dispatcher Notes / Refusal Reason</label>
+                        <label className={labelClass}>{t('Dispatcher Notes / Refusal Reason')}</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
-                            placeholder="Required for refusal. Optional for acceptance."
+                            placeholder={t('Required for refusal. Optional for acceptance.')}
                             className={`${inputClass} resize-none`}
                             disabled={!!loadingAction}
                         />
@@ -124,7 +126,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
                         disabled={!notes.trim() || !!loadingAction}
                         className="px-4 py-2 text-xs font-bold uppercase text-red-400 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loadingAction === 'refuse' ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Refuse'}
+                        {loadingAction === 'refuse' ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Refuse')}
                     </button>
 
                     <div className="flex gap-2">
@@ -134,7 +136,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
                                 disabled={!!loadingAction}
                                 className="px-6 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/50 hover:bg-amber-500/20 rounded-sm text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             >
-                                {loadingAction === 'triage' ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Triage to Board'}
+                                {loadingAction === 'triage' ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Triage to Board')}
                             </button>
                         ) : (
                             <button
@@ -142,7 +144,7 @@ const TriageRequestModal: React.FC<TriageRequestModalProps> = ({ isOpen, onClose
                                 disabled={!!loadingAction}
                                 className="px-6 py-2 bg-green-500/10 text-green-400 border border-green-500/50 hover:bg-green-500/20 rounded-sm text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             >
-                                {loadingAction === 'accept' ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Assign Lead'}
+                                {loadingAction === 'accept' ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Assign Lead')}
                             </button>
                         )}
                     </div>

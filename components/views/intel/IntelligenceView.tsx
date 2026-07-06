@@ -13,10 +13,11 @@ import DossierView from './DossierView';
 import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import { ACCENTS } from '../../shared/ui/accents';
-import { threatAccent, threatIcon, threatLabel } from './intelStyles';
+import { threatAccent, threatIcon } from './intelStyles';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 /** String coercion — guarantees a primitive string for JSX rendering. */
 const s = (v: unknown, fallback = ''): string => {
@@ -157,6 +158,7 @@ const IntelligenceView: React.FC = () => {
     const { confirm } = useNotification();
     const { selectedDossierTarget, setSelectedDossierTarget, setSelectedBulletin } = useNavigation();
     const { openCreateIntelWindow, openIntelReportWindow, intelRefreshTrigger, setShowCreateBulletinModal } = useModalRegistry();
+    const { t } = useI18n();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSubject, setActiveSubject] = useState<string | null>(null);
@@ -445,10 +447,10 @@ const IntelligenceView: React.FC = () => {
         if (deletingId) return;
 
         const confirmed = await confirm({
-            title: 'Purge Intelligence Record',
-            message: 'Are you sure you want to permanently delete this intelligence record? This action cannot be reversed and will be logged.',
+            title: t('Purge Intelligence Record'),
+            message: t('Are you sure you want to permanently delete this intelligence record? This action cannot be reversed and will be logged.'),
             variant: 'danger',
-            confirmText: 'Purge Record'
+            confirmText: t('Purge Record')
         });
         if (!confirmed) return;
 
@@ -472,10 +474,10 @@ const IntelligenceView: React.FC = () => {
         if (deletingId) return;
 
         const confirmed = await confirm({
-            title: 'Delete Bulletin',
-            message: 'Are you sure you want to delete this bulletin? This action cannot be undone.',
+            title: t('Delete Bulletin'),
+            message: t('Are you sure you want to delete this bulletin? This action cannot be undone.'),
             variant: 'danger',
-            confirmText: 'Delete Bulletin'
+            confirmText: t('Delete Bulletin')
         });
         if (!confirmed) return;
 
@@ -506,27 +508,29 @@ const IntelligenceView: React.FC = () => {
     };
 
     const intelTableColumns: TableColumn<FeedItem>[] = useMemo(() => [
-        { key: 'targetId', label: 'Target', sortable: true, width: '140px', render: (item) => <span className="font-mono font-bold text-white text-xs truncate">{s(item.data.targetId)}</span> },
-        { key: 'subjectType', label: 'Type', sortable: true, width: '90px', render: (item) => <span className="text-[10px] uppercase tracking-wider text-slate-400">{s(item.data.subjectType)}</span> },
-        { key: 'threatLevel', label: 'Threat', sortable: true, width: '80px', render: (item) => <span className={`text-[10px] font-black uppercase ${threatColor(s(item.data.threatLevel))}`}>{s(item.data.threatLevel)}</span> },
-        { key: 'summary', label: 'Summary', render: (item) => <span className="text-xs text-slate-400 truncate block">{s(item.data.summary).substring(0, 80)}{s(item.data.summary).length > 80 ? '...' : ''}</span> },
-        { key: 'tags', label: 'Tags', width: '120px', render: (item) => (
+        { key: 'targetId', label: t('Target'), sortable: true, width: '140px', render: (item) => <span className="font-mono font-bold text-white text-xs truncate">{s(item.data.targetId)}</span> },
+        { key: 'subjectType', label: t('Type'), sortable: true, width: '90px', render: (item) => <span className="text-[10px] uppercase tracking-wider text-slate-400">{t(s(item.data.subjectType), { context: 'intel-subject' })}</span> },
+        { key: 'threatLevel', label: t('Threat'), sortable: true, width: '80px', render: (item) => <span className={`text-[10px] font-black uppercase ${threatColor(s(item.data.threatLevel))}`}>{t(s(item.data.threatLevel), { context: 'threat-level' })}</span> },
+        { key: 'summary', label: t('Summary'), render: (item) => <span className="text-xs text-slate-400 truncate block">{s(item.data.summary).substring(0, 80)}{s(item.data.summary).length > 80 ? '...' : ''}</span> },
+        { key: 'tags', label: t('Tags'), width: '120px', render: (item) => (
             <div className="flex gap-1 flex-wrap">
                 {(item.data.tags || []).slice(0, 2).map((t) => <span key={t} className="px-1.5 py-0.5 bg-slate-800 rounded-sm text-[9px] text-slate-400 border border-slate-700">{t}</span>)}
                 {(item.data.tags || []).length > 2 && <span className="text-[9px] text-slate-600">+{(item.data.tags || []).length - 2}</span>}
             </div>
         )},
-        { key: 'classificationLevel', label: 'Class', sortable: true, width: '50px', render: (item) => <span className="text-[10px] font-mono text-sky-400">{String(item.data.classificationLevel ?? 0)}</span> },
-        { key: 'createdAt', label: 'Date', sortable: true, width: '90px', render: (item) => <span className="text-[10px] text-slate-500 font-mono">{s(item.data.createdAt).substring(0, 10)}</span> },
-    ], []);
+        { key: 'classificationLevel', label: t('Class'), sortable: true, width: '50px', render: (item) => <span className="text-[10px] font-mono text-sky-400">{String(item.data.classificationLevel ?? 0)}</span> },
+        { key: 'createdAt', label: t('Date'), sortable: true, width: '90px', render: (item) => <span className="text-[10px] text-slate-500 font-mono">{s(item.data.createdAt).substring(0, 10)}</span> },
+    ], [t]);
 
     const handleBulkDelete = async () => {
         if (selectedIds.size === 0) return;
         const confirmed = await confirm({
-            title: 'Bulk Delete Intel Records',
-            message: `Permanently delete ${selectedIds.size} selected intelligence record${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`,
+            title: t('Bulk Delete Intel Records'),
+            message: selectedIds.size === 1
+                ? t('Permanently delete {count} selected intelligence record? This cannot be undone.', { count: selectedIds.size })
+                : t('Permanently delete {count} selected intelligence records? This cannot be undone.', { count: selectedIds.size }),
             variant: 'danger',
-            confirmText: `Delete ${selectedIds.size} Records`
+            confirmText: t('Delete {count} Records', { count: selectedIds.size })
         });
         if (!confirmed) return;
         try {
@@ -538,7 +542,7 @@ const IntelligenceView: React.FC = () => {
     };
 
     const handleBulkAddTags = async () => {
-        const input = prompt('Enter tags to add (comma-separated):');
+        const input = prompt(t('Enter tags to add (comma-separated):'));
         if (!input) return;
         const tags = input.split(',').map(t => t.trim()).filter(Boolean);
         if (tags.length === 0) return;
@@ -550,7 +554,7 @@ const IntelligenceView: React.FC = () => {
     };
 
     const handleBulkUpdateAffiliation = async () => {
-        const input = prompt('Enter affiliated organization name:');
+        const input = prompt(t('Enter affiliated organization name:'));
         if (!input) return;
         try {
             await rpcAction('intel:bulk_update_affiliation', { reportIds: Array.from(selectedIds), affiliatedOrg: input.trim() });
@@ -599,11 +603,11 @@ const IntelligenceView: React.FC = () => {
         <div id="intel-hub-scroller" className="flex flex-col h-full overflow-y-auto overflow-x-hidden bg-slate-950">
             {/* Classification banner (thematic flavor — kept for Intel identity) */}
             <div className="shrink-0 bg-slate-950 border-b border-rose-500/20 px-4 py-1.5 flex items-center justify-between">
-                <span className="text-[9px] font-black font-mono text-rose-300/70 uppercase tracking-[0.3em]">{'Clearance: ' + clearanceName}</span>
+                <span className="text-[9px] font-black font-mono text-rose-300/70 uppercase tracking-[0.3em]">{t('Clearance: {name}', { name: clearanceName })}</span>
                 <div className="flex items-center gap-4">
                     {isFetching['intel'] && (
                         <span className="text-[9px] text-rose-400 animate-pulse font-mono uppercase tracking-widest flex items-center gap-1.5">
-                            <i className="fa-solid fa-arrows-rotate fa-spin text-[8px]"></i> SYNCING
+                            <i className="fa-solid fa-arrows-rotate fa-spin text-[8px]"></i> {t('SYNCING')}
                         </span>
                     )}
                     <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
@@ -613,21 +617,21 @@ const IntelligenceView: React.FC = () => {
             </div>
 
             <HeroShell
-                chipLabel="MODULE · INTEL HUB"
+                chipLabel={t('MODULE · INTEL HUB')}
                 chipIcon="fa-satellite-dish"
                 chipAccent="rose"
-                title="Intelligence Hub"
-                subtitle="Field reports, target dossiers, and bulletins. Threat analysis and collection."
+                title={t('Intelligence Hub')}
+                subtitle={t('Field reports, target dossiers, and bulletins. Threat analysis and collection.')}
                 actions={<>
                     {hasPermission('intel:create') && (
                         <>
                             <button onClick={openCreateIntelWindow}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg hover:bg-rose-500/20 transition-colors">
-                                <i className="fa-solid fa-file-shield"></i> File Report
+                                <i className="fa-solid fa-file-shield"></i> {t('File Report')}
                             </button>
                             <button onClick={() => setShowCreateBulletinModal(true)}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-colors">
-                                <i className="fa-solid fa-tower-broadcast"></i> Bulletin
+                                <i className="fa-solid fa-tower-broadcast"></i> {t('Bulletin')}
                             </button>
                         </>
                     )}
@@ -643,10 +647,10 @@ const IntelligenceView: React.FC = () => {
                     </div>
                 </>}
                 stats={<>
-                    <HeroStat icon="fa-folder-open" label="Records" value={totalReports} accent="rose" />
-                    <HeroStat icon="fa-triangle-exclamation" label="Critical" value={criticalCount} accent="red" emphasize={criticalCount > 0} />
-                    <HeroStat icon="fa-tower-broadcast" label="Bulletins" value={filteredBulletins.length} accent="amber" emphasize={filteredBulletins.length > 0} />
-                    <HeroStat icon="fa-clock-rotate-left" label="Reports (7d)" value={reports7d} accent="slate" />
+                    <HeroStat icon="fa-folder-open" label={t('Records')} value={totalReports} accent="rose" />
+                    <HeroStat icon="fa-triangle-exclamation" label={t('Critical')} value={criticalCount} accent="red" emphasize={criticalCount > 0} />
+                    <HeroStat icon="fa-tower-broadcast" label={t('Bulletins')} value={filteredBulletins.length} accent="amber" emphasize={filteredBulletins.length > 0} />
+                    <HeroStat icon="fa-clock-rotate-left" label={t('Reports (7d)')} value={reports7d} accent="slate" />
                 </>}
             />
 
@@ -656,7 +660,7 @@ const IntelligenceView: React.FC = () => {
                         <i className={`fa-solid ${isLoadingPage && searchTerm.trim() ? 'fa-spinner animate-spin text-rose-400' : 'fa-search text-slate-600'} absolute left-4 top-1/2 -translate-y-1/2 transition-colors text-sm`}></i>
                         <input
                             type="text"
-                            placeholder="Search targets, organizations, or content…"
+                            placeholder={t('Search targets, organizations, or content…')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-slate-900/60 text-white pl-11 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-rose-500/40 focus:border-rose-500/40 transition-all"
@@ -664,14 +668,14 @@ const IntelligenceView: React.FC = () => {
                     </div>
                     {searchTerm.trim() && (
                         <button onClick={() => setSearchTerm('')} className="bg-slate-900 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase text-slate-400 hover:text-white transition-colors border border-slate-700 tracking-wider shrink-0 w-fit">
-                            Clear Search
+                            {t('Clear Search')}
                         </button>
                     )}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">Threat</span>
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">{t('Threat')}</span>
                         {(['all', IntelThreatLevel.Critical, IntelThreatLevel.High, IntelThreatLevel.Medium, IntelThreatLevel.Low] as const).map(level => {
                             const isActive = threatFilter === level;
                             const accentK = level === 'all' ? 'slate' : threatAccent(level);
@@ -687,7 +691,7 @@ const IntelligenceView: React.FC = () => {
                                     }`}
                                 >
                                     {level !== 'all' && <i className={`fa-solid ${threatIcon(level)}`} aria-hidden />}
-                                    {level === 'all' ? 'All' : threatLabel(level)}
+                                    {level === 'all' ? t('All') : t(level, { context: 'threat-level' })}
                                 </button>
                             );
                         })}
@@ -705,7 +709,7 @@ const IntelligenceView: React.FC = () => {
                                     }`}
                                 >
                                     <i className={`fa-solid ${subj === 'all' ? 'fa-list-ul' : subj === IntelSubjectType.Organization ? 'fa-building' : 'fa-user'}`} aria-hidden />
-                                    {subj === 'all' ? 'All' : subj === IntelSubjectType.Organization ? 'Org' : 'Person'}
+                                    {subj === 'all' ? t('All') : subj === IntelSubjectType.Organization ? t('Org') : t('Person', { context: 'intel-subject' })}
                                 </button>
                             );
                         })}
@@ -718,19 +722,19 @@ const IntelligenceView: React.FC = () => {
                                 ? 'bg-red-500/10 border-red-500/30 text-red-300'
                                 : 'bg-slate-900/40 border-white/10 text-slate-500 hover:text-slate-300'
                         }`}
-                        title="Show only targets with active cautions"
+                        title={t('Show only targets with active cautions')}
                     >
-                        <i className="fa-solid fa-bullseye" aria-hidden /> Cautions
+                        <i className="fa-solid fa-bullseye" aria-hidden /> {t('Cautions')}
                     </button>
 
                     {/* Active tag filter (single tag in v1 — clicking another tag swaps it). */}
                     {tagFilter && (
                         <div className="flex items-center gap-1.5 flex-wrap ml-auto">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tag</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('Tag')}</span>
                             <button
                                 onClick={() => setTagFilter(null)}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-sm border font-mono text-[10px] uppercase tracking-wider bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-300 transition-colors"
-                                title="Clear tag filter"
+                                title={t('Clear tag filter')}
                             >
                                 <span className="opacity-60">#</span>{tagFilter}
                                 <i className="fa-solid fa-xmark ml-0.5 text-[9px]" aria-hidden />
@@ -743,12 +747,12 @@ const IntelligenceView: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                            <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">{'Live Bulletin Board'}</h2>
+                            <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">{t('Live Bulletin Board')}</h2>
                         </div>
                         <span className="h-px bg-slate-800 grow"></span>
                         {filteredBulletins.length > 0 && (
                             <span className="px-2.5 py-0.5 rounded-sm text-[9px] font-black font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                {String(filteredBulletins.length) + ' ACTIVE'}
+                                {t('{count} ACTIVE', { count: filteredBulletins.length })}
                             </span>
                         )}
                     </div>
@@ -769,7 +773,7 @@ const IntelligenceView: React.FC = () => {
                         <div className="flex items-center justify-center py-8 rounded-lg border border-dashed border-slate-800 bg-black/20">
                             <div className="flex items-center gap-3 text-slate-700">
                                 <i className="fa-solid fa-satellite-dish text-sm"></i>
-                                <p className="text-[10px] font-mono uppercase tracking-[0.2em]">{'No active bulletins \u2014 all channels clear'}</p>
+                                <p className="text-[10px] font-mono uppercase tracking-[0.2em]">{t('No active bulletins — all channels clear')}</p>
                             </div>
                         </div>
                     )}
@@ -779,13 +783,13 @@ const IntelligenceView: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <i className="fa-solid fa-folder-tree text-sky-500/60 text-xs"></i>
-                            <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">{'Intelligence Archive'}</h2>
+                            <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">{t('Intelligence Archive')}</h2>
                         </div>
                         <span className="h-px bg-slate-800 grow"></span>
                         <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
                             {hasMore || displayItems.length < totalReports
-                                ? `Loaded ${displayItems.length} of ${totalReports} Records`
-                                : `${displayItems.length} Records`}
+                                ? t('Loaded {loaded} of {total} Records', { loaded: displayItems.length, total: totalReports })
+                                : t('{count} Records', { count: displayItems.length })}
                         </span>
                     </div>
 
@@ -798,25 +802,27 @@ const IntelligenceView: React.FC = () => {
                             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 transition-colors text-[11px] font-black uppercase tracking-widest"
                         >
                             <i className="fa-solid fa-arrows-rotate" aria-hidden />
-                            {`${pendingNewCount} new ${pendingNewCount === 1 ? 'report' : 'reports'} — refresh feed`}
+                            {pendingNewCount === 1
+                                ? t('{count} new report — refresh feed', { count: pendingNewCount })
+                                : t('{count} new reports — refresh feed', { count: pendingNewCount })}
                         </button>
                     )}
 
                     {viewMode === 'table' && selectedIds.size > 0 && hasPermission('intel:manage') && (
                         <div className="flex items-center gap-3 p-3 bg-sky-500/10 border border-sky-500/20 rounded-lg animate-fade-in">
-                            <span className="text-xs font-bold text-sky-400">{selectedIds.size} selected</span>
+                            <span className="text-xs font-bold text-sky-400">{t('{count} selected', { count: selectedIds.size })}</span>
                             <span className="h-4 w-px bg-sky-500/30"></span>
                             <button onClick={handleBulkDelete} className="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 px-3 py-1.5 rounded-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors">
-                                <i className="fa-solid fa-trash mr-1.5"></i>Delete
+                                <i className="fa-solid fa-trash mr-1.5"></i>{t('Delete')}
                             </button>
                             <button onClick={handleBulkUpdateAffiliation} className="text-[10px] font-bold uppercase tracking-wider text-amber-400 hover:text-amber-300 px-3 py-1.5 rounded-sm bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors">
-                                <i className="fa-solid fa-building mr-1.5"></i>Set Affiliation
+                                <i className="fa-solid fa-building mr-1.5"></i>{t('Set Affiliation')}
                             </button>
                             <button onClick={handleBulkAddTags} className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors">
-                                <i className="fa-solid fa-tags mr-1.5"></i>Add Tags
+                                <i className="fa-solid fa-tags mr-1.5"></i>{t('Add Tags')}
                             </button>
                             <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
-                                Clear Selection
+                                {t('Clear Selection')}
                             </button>
                         </div>
                     )}
@@ -825,7 +831,7 @@ const IntelligenceView: React.FC = () => {
                         {isLoadingPage && displayItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24">
                                 <div className="w-16 h-16 rounded-full border-2 border-sky-500/20 border-t-sky-500 animate-spin mb-6"></div>
-                                <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em]">{'Decrypting intelligence files...'}</p>
+                                <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em]">{t('Decrypting intelligence files...')}</p>
                             </div>
                         ) : displayItems.length > 0 ? (
                             <>
@@ -867,9 +873,9 @@ const IntelligenceView: React.FC = () => {
                                 {(isLoadingMore || hasMore) && (
                                     <div className="flex items-center justify-center py-6 text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em]">
                                         {isLoadingMore ? (
-                                            <><i className="fa-solid fa-spinner animate-spin mr-2" aria-hidden />Loading more</>
+                                            <><i className="fa-solid fa-spinner animate-spin mr-2" aria-hidden />{t('Loading more')}</>
                                         ) : (
-                                            <span className="opacity-60">Scroll for more records</span>
+                                            <span className="opacity-60">{t('Scroll for more records')}</span>
                                         )}
                                     </div>
                                 )}
@@ -879,8 +885,8 @@ const IntelligenceView: React.FC = () => {
                                 <div className="w-16 h-16 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-700 mb-5">
                                     <i className="fa-solid fa-vault text-2xl"></i>
                                 </div>
-                                <p className="text-slate-500 font-mono text-xs uppercase tracking-wider">{'No intelligence records match your criteria'}</p>
-                                <button onClick={() => { setSearchTerm(''); setThreatFilter('all'); setSubjectFilter('all'); setTagFilter(null); setWarrantsOnly(false); }} className="mt-4 text-sky-500/80 hover:text-sky-400 font-mono font-bold uppercase tracking-widest text-[10px] transition-colors">{'Clear Filters'}</button>
+                                <p className="text-slate-500 font-mono text-xs uppercase tracking-wider">{t('No intelligence records match your criteria')}</p>
+                                <button onClick={() => { setSearchTerm(''); setThreatFilter('all'); setSubjectFilter('all'); setTagFilter(null); setWarrantsOnly(false); }} className="mt-4 text-sky-500/80 hover:text-sky-400 font-mono font-bold uppercase tracking-widest text-[10px] transition-colors">{t('Clear Filters')}</button>
                             </div>
                         )}
                     </div>

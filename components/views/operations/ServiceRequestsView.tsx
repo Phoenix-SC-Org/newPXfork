@@ -10,6 +10,7 @@ import HeroActionButton from '../../shared/ui/HeroActionButton';
 import EmptyState from '../../shared/ui/EmptyState';
 import RequestCard from './requests/RequestCard';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ServiceRequestsViewProps {
     openCreateModal: () => void;
@@ -33,6 +34,7 @@ const ServiceRequestsView: React.FC<ServiceRequestsViewProps> = ({
     const { currentUser, hasPermission } = useAuth();
     const { hydratedServiceRequests, isFetching } = useData();
     const { viewRequestDetails } = useNavigation();
+    const { t } = useI18n();
     const [searchTerm, setSearchTerm] = useState('');
 
     const isStaff = currentUser?.role !== UserRole.Client;
@@ -117,29 +119,29 @@ const ServiceRequestsView: React.FC<ServiceRequestsViewProps> = ({
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · SERVICE REQUESTS"
+                chipLabel={t('MODULE · SERVICE REQUESTS')}
                 chipIcon="fa-file-invoice"
                 chipAccent="sky"
-                title="Service Requests"
-                subtitle="Mission control and dispatch. Live warrant and intel cross-reference on every request."
+                title={t('Service Requests')}
+                subtitle={t('Mission control and dispatch. Live warrant and intel cross-reference on every request.')}
                 syncing={isFetching['service_requests']}
                 actions={<>
                     {hasPermission('request:create_adhoc') && (
                         <HeroActionButton onClick={openAdHocModal} accent="amber" icon="fa-user-pen">
-                            Log Ad-hoc
+                            {t('Log Ad-hoc')}
                         </HeroActionButton>
                     )}
                     {hasPermission('request:create') && (
                         <HeroActionButton onClick={openCreateModal} accent="sky" icon="fa-plus">
-                            New Request
+                            {t('New Request')}
                         </HeroActionButton>
                     )}
                 </>}
                 stats={isStaff ? <>
-                    <HeroStat icon="fa-inbox" label="Pending" value={counts.submitted} accent="sky" emphasize={counts.submitted > 0} />
-                    <HeroStat icon="fa-bolt" label="In Progress" value={counts.inProgress} accent="emerald" />
-                    <HeroStat icon="fa-circle-check" label="Resolved (7d)" value={counts.resolved7d} accent="emerald" />
-                    <HeroStat icon="fa-briefcase" label="My Active" value={counts.mineActive} accent="amber" emphasize={counts.mineActive > 0} />
+                    <HeroStat icon="fa-inbox" label={t('Pending')} value={counts.submitted} accent="sky" emphasize={counts.submitted > 0} />
+                    <HeroStat icon="fa-bolt" label={t('In Progress')} value={counts.inProgress} accent="emerald" />
+                    <HeroStat icon="fa-circle-check" label={t('Resolved (7d)')} value={counts.resolved7d} accent="emerald" />
+                    <HeroStat icon="fa-briefcase" label={t('My Active')} value={counts.mineActive} accent="amber" emphasize={counts.mineActive > 0} />
                 </> : undefined}
                 tabs={tabs.map(tab => (
                     <button
@@ -152,7 +154,7 @@ const ServiceRequestsView: React.FC<ServiceRequestsViewProps> = ({
                         }`}
                     >
                         <i className={`fa-solid ${tab.icon}`}></i>
-                        {tab.label}
+                        {t(tab.label)}
                         {tab.badge != null && (
                             <span className={`ml-1 min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full flex items-center justify-center ${tab.urgent ? 'bg-red-500/20 text-red-300 animate-pulse' : 'bg-sky-500/20 text-sky-300'}`}>
                                 {tab.badge}
@@ -167,7 +169,7 @@ const ServiceRequestsView: React.FC<ServiceRequestsViewProps> = ({
                     <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                     <input
                         type="search"
-                        placeholder="Search requests, IDs, or responders…"
+                        placeholder={t('Search requests, IDs, or responders…')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-sky-500/50 focus:border-sky-500/40 transition-all"
@@ -197,8 +199,8 @@ const ServiceRequestsView: React.FC<ServiceRequestsViewProps> = ({
                         <EmptyState
                             icon="fa-folder-open"
                             accent="sky"
-                            heading="No matching requests"
-                            description={searchTerm ? 'Try a different search term or clear filters.' : 'New requests will appear here as clients submit them.'}
+                            heading={t('No matching requests')}
+                            description={searchTerm ? t('Try a different search term or clear filters.') : t('New requests will appear here as clients submit them.')}
                         />
                     </div>
                 )}

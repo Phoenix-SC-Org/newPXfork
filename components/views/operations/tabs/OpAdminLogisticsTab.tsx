@@ -3,6 +3,7 @@ import { HydratedOperation } from '../../../../types';
 import OpOrbatTab from './OpOrbatTab';
 import OpLogisticsTab from './OpLogisticsTab';
 import OpLedgerTab from './OpLedgerTab';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpAdminLogisticsTabProps {
     operation: HydratedOperation;
@@ -21,6 +22,7 @@ type SubTab = 'roster' | 'logistics' | 'ledger';
 const OpAdminLogisticsTab: React.FC<OpAdminLogisticsTabProps> = ({
     operation, canManage, isParticipant, onRefresh, onManageParticipant, onRemoveParticipant, onOpenAddUec, onOpenAddCost, onAddParticipant
 }) => {
+    const { t } = useI18n();
     const [subTab, setSubTab] = useState<SubTab>('roster');
 
     const subTabs: { key: SubTab; label: string; icon: string; hidden?: boolean }[] = [
@@ -34,7 +36,7 @@ const OpAdminLogisticsTab: React.FC<OpAdminLogisticsTabProps> = ({
             <div className="shrink-0 px-6 lg:px-8 pt-6 lg:pt-8 pb-4">
                 <div className="flex items-center justify-between gap-4">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest flex items-center gap-2">
-                        <i className="fa-solid fa-boxes-stacked text-purple-400/70"></i> Admin & Logistics
+                        <i className="fa-solid fa-boxes-stacked text-purple-400/70"></i> {t('Admin & Logistics')}
                     </p>
                     <div className="flex items-center gap-1 bg-slate-900/60 border border-slate-700 rounded-lg p-0.5">
                         {subTabs.filter(t => !t.hidden).map(tab => (
@@ -42,7 +44,7 @@ const OpAdminLogisticsTab: React.FC<OpAdminLogisticsTabProps> = ({
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
                                     subTab === tab.key ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                                 }`}>
-                                <i className={tab.icon}></i> {tab.label}
+                                <i className={tab.icon}></i> {t(tab.label)}
                             </button>
                         ))}
                     </div>

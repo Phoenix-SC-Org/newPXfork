@@ -1,6 +1,7 @@
 import React from 'react';
 import type { HydratedServiceRequest } from '../../../../types';
 import { useFormatDate } from '../../../../contexts/AuthContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     request: HydratedServiceRequest;
@@ -20,6 +21,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function MdtRequestRow({ request, onClick }: Props) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const statusClass = STATUS_STYLE[request.status] || 'bg-slate-500/10 text-slate-300 border-slate-500/30';
 
     return (
@@ -35,10 +37,10 @@ export default function MdtRequestRow({ request, onClick }: Props) {
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold text-white truncate">{request.serviceType}</span>
                     <span className={`text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border ${statusClass}`}>
-                        {request.status}
+                        {t(request.status)}
                     </span>
                     {request.urgency && (
-                        <span className="text-[10px] font-mono text-slate-500 uppercase">· {request.urgency}</span>
+                        <span className="text-[10px] font-mono text-slate-500 uppercase">· {t(request.urgency)}</span>
                     )}
                     {request.rated && request.clientRating && (
                         <span className="text-[10px] text-amber-300 flex items-center gap-0.5">

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useMembers } from '../../../contexts/MembersContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface RedactedReportCardProps {
     requiredLevel?: number;
@@ -8,8 +9,9 @@ interface RedactedReportCardProps {
 
 const RedactedReportCard: React.FC<RedactedReportCardProps> = ({ requiredLevel = 0 }) => {
     const { securityClearances } = useMembers();
+    const { t } = useI18n();
     const clearance = securityClearances.find(c => c.level === requiredLevel);
-    const clearanceName = clearance?.name || `LEVEL ${requiredLevel}`;
+    const clearanceName = clearance?.name || t('LEVEL {level}', { level: requiredLevel });
 
     return (
         <div className="relative bg-black border border-red-900/30 rounded-sm h-full flex flex-col overflow-hidden shadow-2xl group select-none transition-all duration-300 grayscale hover:grayscale-0">
@@ -56,13 +58,13 @@ const RedactedReportCard: React.FC<RedactedReportCardProps> = ({ requiredLevel =
                     </div>
                     
                     <div className="text-center space-y-1">
-                        <span className="block text-[10px] font-black text-red-500 uppercase tracking-[0.4em] animate-pulse">Classified Record</span>
-                        <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono">Authentication Failure // Access Restricted</span>
+                        <span className="block text-[10px] font-black text-red-500 uppercase tracking-[0.4em] animate-pulse">{t('Classified Record')}</span>
+                        <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono">{t('Authentication Failure // Access Restricted')}</span>
                     </div>
                     
                     {requiredLevel > 0 && (
                         <div className="mt-2 py-1 px-4 bg-red-600 text-white rounded-xs font-black tracking-[0.2em] text-[9px] border border-red-500 shadow-lg font-mono uppercase">
-                            REQUIRES: {clearanceName}
+                            {t('REQUIRES: {clearance}', { clearance: clearanceName })}
                         </div>
                     )}
                 </div>

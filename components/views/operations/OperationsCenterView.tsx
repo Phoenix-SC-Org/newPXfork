@@ -15,6 +15,7 @@ import { ACCENTS } from '../../shared/ui/accents';
 import OperationCard from './operations/OperationCard';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import {
     operationTypeAccent,
     operationTypeIcon,
@@ -30,6 +31,7 @@ const OperationsCenterView: React.FC = () => {
     const { isFetching, refreshOperations, rpcAction } = useData();
     const { operations } = useOperations();
     const { viewMirroredOperation } = useNavigation();
+    const { t } = useI18n();
 
     // Self-heal: if this view loads with an empty operations list and no fetch in flight,
     // kick off a refresh. Covers the case where initial-state missed the data but the
@@ -181,52 +183,52 @@ const OperationsCenterView: React.FC = () => {
     }, [otherOperations, currentUser?.id, isCurrentOp]);
 
     const filterTabs: Array<{ key: OperationStatus | 'All' | 'My Concluded' | 'Current' | 'Scheduled'; label: string; icon: string; count: number }> = [
-        { key: 'Current', label: 'Current', icon: 'fa-bolt', count: filterCounts.Current },
-        { key: OperationStatus.Active, label: 'Active', icon: 'fa-satellite-dish', count: filterCounts.Active },
-        { key: OperationStatus.Planning, label: 'Planning', icon: 'fa-drafting-compass', count: filterCounts.Planning },
-        { key: 'Scheduled', label: 'Scheduled', icon: 'fa-clock', count: filterCounts.Scheduled },
-        { key: 'My Concluded', label: 'History', icon: 'fa-flag-checkered', count: filterCounts.MyConcluded },
-        { key: 'All', label: 'All', icon: 'fa-list-ul', count: filterCounts.All },
+        { key: 'Current', label: t('Current'), icon: 'fa-bolt', count: filterCounts.Current },
+        { key: OperationStatus.Active, label: t('Active'), icon: 'fa-satellite-dish', count: filterCounts.Active },
+        { key: OperationStatus.Planning, label: t('Planning'), icon: 'fa-drafting-compass', count: filterCounts.Planning },
+        { key: 'Scheduled', label: t('Scheduled'), icon: 'fa-clock', count: filterCounts.Scheduled },
+        { key: 'My Concluded', label: t('History'), icon: 'fa-flag-checkered', count: filterCounts.MyConcluded },
+        { key: 'All', label: t('All'), icon: 'fa-list-ul', count: filterCounts.All },
     ];
 
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · OPERATIONS CENTRE"
+                chipLabel={t('MODULE · OPERATIONS CENTRE')}
                 chipIcon="fa-person-military-rifle"
                 chipAccent="purple"
-                title="Operations Centre"
-                subtitle="Mission planning and coordination. Plan, brief, and command joint operations end-to-end."
+                title={t('Operations Centre')}
+                subtitle={t('Mission planning and coordination. Plan, brief, and command joint operations end-to-end.')}
                 syncing={isFetching['operations']}
                 actions={<>
                     {hasPermission('operations:create') && (
                         <HeroActionButton onClick={openCreateOperationModal} accent="purple" icon="fa-plus">
-                            New Operation
+                            {t('New Operation')}
                         </HeroActionButton>
                     )}
                     <button
                         onClick={openOperationTemplatesModal}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-purple-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
-                        title="Browse and manage operation templates"
+                        title={t('Browse and manage operation templates')}
                     >
-                        <i className="fa-solid fa-clipboard-list"></i> Templates
+                        <i className="fa-solid fa-clipboard-list"></i> {t('Templates')}
                     </button>
                     <div className="flex bg-slate-900/60 rounded-lg border border-slate-700 p-0.5">
                         <button onClick={() => setViewMode('list')}
                             className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${viewMode === 'list' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
-                            <i className="fa-solid fa-list mr-1.5"></i>List
+                            <i className="fa-solid fa-list mr-1.5"></i>{t('List')}
                         </button>
                         <button onClick={() => setViewMode('calendar')}
                             className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${viewMode === 'calendar' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
-                            <i className="fa-solid fa-calendar-days mr-1.5"></i>Calendar
+                            <i className="fa-solid fa-calendar-days mr-1.5"></i>{t('Calendar')}
                         </button>
                     </div>
                 </>}
                 stats={<>
-                    <HeroStat icon="fa-bolt" label="Active" value={stats.active} accent="emerald" emphasize={stats.active > 0} onClick={() => setFilter(OperationStatus.Active)} />
-                    <HeroStat icon="fa-clock" label="Scheduled" value={stats.scheduled} accent="amber" emphasize={stats.scheduled > 0} onClick={() => setFilter('Scheduled')} />
-                    <HeroStat icon="fa-drafting-compass" label="Planning" value={stats.planning} accent="purple" emphasize={stats.planning > 0} onClick={() => setFilter(OperationStatus.Planning)} />
-                    <HeroStat icon="fa-person-military-rifle" label="Deployed" value={stats.deployed} accent="cyan" emphasize={stats.deployed > 0} />
+                    <HeroStat icon="fa-bolt" label={t('Active')} value={stats.active} accent="emerald" emphasize={stats.active > 0} onClick={() => setFilter(OperationStatus.Active)} />
+                    <HeroStat icon="fa-clock" label={t('Scheduled')} value={stats.scheduled} accent="amber" emphasize={stats.scheduled > 0} onClick={() => setFilter('Scheduled')} />
+                    <HeroStat icon="fa-drafting-compass" label={t('Planning')} value={stats.planning} accent="purple" emphasize={stats.planning > 0} onClick={() => setFilter(OperationStatus.Planning)} />
+                    <HeroStat icon="fa-person-military-rifle" label={t('Deployed')} value={stats.deployed} accent="cyan" emphasize={stats.deployed > 0} />
                 </>}
                 tabs={viewMode === 'list' ? filterTabs.map(tab => (
                     <button
@@ -261,7 +263,7 @@ const OperationsCenterView: React.FC = () => {
                     <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                     <input
                         type="search"
-                        placeholder="Search operations, commanders, or briefings…"
+                        placeholder={t('Search operations, commanders, or briefings…')}
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); if (e.target.value) setFilter('All'); }}
                         className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/40 transition-all"
@@ -273,7 +275,7 @@ const OperationsCenterView: React.FC = () => {
                     <section className="bg-cyan-950/10 rounded-xl border border-cyan-500/20 overflow-hidden animate-fade-in-up">
                         <div className="px-5 py-4 bg-cyan-950/20 border-b border-cyan-500/10 flex items-center gap-2">
                             <p className="text-[10px] text-cyan-300 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                <i className="fa-solid fa-handshake"></i> Allied Joint Operations
+                                <i className="fa-solid fa-handshake"></i> {t('Allied Joint Operations')}
                             </p>
                             <span className="ml-auto text-[10px] font-mono text-slate-500">{acceptedMirrors.length}</span>
                         </div>
@@ -284,18 +286,18 @@ const OperationsCenterView: React.FC = () => {
                                     <div className="flex items-center gap-3 min-w-0">
                                         {m.hostPeerIconUrl && <img src={m.hostPeerIconUrl} alt="" className="h-8 w-8 rounded-sm border border-slate-700" />}
                                         <div className="min-w-0">
-                                            <p className="text-sm font-bold text-white truncate">{m.snapshot?.name || 'Joint Operation'}</p>
-                                            <p className="text-[10px] text-slate-500 uppercase">Invite from {m.hostPeerName || 'an ally'}</p>
+                                            <p className="text-sm font-bold text-white truncate">{m.snapshot?.name || t('Joint Operation')}</p>
+                                            <p className="text-[10px] text-slate-500 uppercase">{t('Invite from {name}', { name: m.hostPeerName || t('an ally') })}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">
                                         <button onClick={() => handleMirrorAccept(m.id)} disabled={mirrorBusy === m.id}
                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/10 transition-all disabled:opacity-50">
-                                            {mirrorBusy === m.id ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-check"></i>} Accept
+                                            {mirrorBusy === m.id ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-check"></i>} {t('Accept')}
                                         </button>
                                         <button onClick={() => handleMirrorDecline(m.id)} disabled={mirrorBusy === m.id}
                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-500 border border-slate-700/50 hover:bg-slate-800/40 hover:text-slate-300 transition-all disabled:opacity-50">
-                                            <i className="fa-solid fa-xmark"></i> Decline
+                                            <i className="fa-solid fa-xmark"></i> {t('Decline')}
                                         </button>
                                     </div>
                                 </div>
@@ -307,11 +309,11 @@ const OperationsCenterView: React.FC = () => {
                                         <button key={m.id} onClick={() => viewMirroredOperation(m)}
                                             className="text-left bg-slate-900/80 border border-slate-700/50 rounded-xl p-4 hover:border-cyan-500/40 hover:-translate-y-0.5 transition-all group">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">Joint · Read-only</span>
-                                                {m.snapshot?.status && <span className="text-[9px] text-slate-500 uppercase">{m.snapshot.status}</span>}
+                                                <span className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">{t('Joint · Read-only')}</span>
+                                                {m.snapshot?.status && <span className="text-[9px] text-slate-500 uppercase">{t(m.snapshot.status)}</span>}
                                             </div>
-                                            <h3 className="text-sm font-bold text-white line-clamp-1 group-hover:text-cyan-200 transition-colors">{m.snapshot?.name || 'Joint Operation'}</h3>
-                                            <p className="text-[10px] text-slate-500 mt-1"><i className="fa-solid fa-tower-broadcast mr-1"></i>Hosted by {m.hostPeerName || 'an ally'}</p>
+                                            <h3 className="text-sm font-bold text-white line-clamp-1 group-hover:text-cyan-200 transition-colors">{m.snapshot?.name || t('Joint Operation')}</h3>
+                                            <p className="text-[10px] text-slate-500 mt-1"><i className="fa-solid fa-tower-broadcast mr-1"></i>{t('Hosted by {name}', { name: m.hostPeerName || t('an ally') })}</p>
                                             {m.snapshot?.scheduledStart && <p className="text-[10px] text-amber-400/80 mt-1"><i className="fa-regular fa-calendar mr-1"></i>{formatScheduledTime(m.snapshot.scheduledStart, fmt.prefs)}</p>}
                                         </button>
                                     ))}
@@ -327,7 +329,7 @@ const OperationsCenterView: React.FC = () => {
                             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
                                 <i className="fa-solid fa-clock text-sm"></i>
                             </div>
-                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">Upcoming Operations</h3>
+                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Upcoming Operations')}</h3>
                         </div>
                         <div className="p-5 flex gap-3 overflow-x-auto custom-scrollbar">
                             {upcomingScheduledOps.map(op => <UpcomingOpCard key={op.id} op={op} />)}
@@ -341,7 +343,7 @@ const OperationsCenterView: React.FC = () => {
                             <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
                                 <i className="fa-solid fa-person-military-rifle text-sm"></i>
                             </div>
-                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">My Active Deployments</h3>
+                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('My Active Deployments')}</h3>
                             <span className="ml-auto text-[10px] font-mono text-slate-500">{myActiveOperations.length}</span>
                         </div>
                         <div className="p-5 grid grid-cols-1 gap-4">
@@ -370,8 +372,8 @@ const OperationsCenterView: React.FC = () => {
                             <EmptyState
                                 icon="fa-satellite-dish"
                                 accent="purple"
-                                heading="No operations found"
-                                description={searchTerm ? 'Try a different search term or clear filters.' : 'Adjust filters or spin up a new operation.'}
+                                heading={t('No operations found')}
+                                description={searchTerm ? t('Try a different search term or clear filters.') : t('Adjust filters or spin up a new operation.')}
                             />
                         </div>
                     )}
@@ -385,6 +387,7 @@ const OperationsCenterView: React.FC = () => {
 const UpcomingOpCard: React.FC<{ op: HydratedOperation }> = React.memo(({ op }) => {
     const { viewOperationDetails } = useNavigation();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const accepted = op.participants.filter(p => p.rsvpStatus === 'Accepted' && p.timeLeft === null).length;
     const total = op.participants.filter(p => p.timeLeft === null).length;
 
@@ -415,7 +418,7 @@ const UpcomingOpCard: React.FC<{ op: HydratedOperation }> = React.memo(({ op }) 
                     {op.scheduledStart ? formatScheduledTime(op.scheduledStart, fmt.prefs) : ''}
                 </span>
                 <span className="text-[10px] text-slate-500">
-                    <i className="fa-solid fa-users mr-1" aria-hidden />{accepted > 0 ? `${accepted} RSVP` : `${total} PAX`}
+                    <i className="fa-solid fa-users mr-1" aria-hidden />{accepted > 0 ? t('{count} RSVP', { count: accepted }) : t('{count} PAX', { count: total })}
                 </span>
             </div>
         </div>

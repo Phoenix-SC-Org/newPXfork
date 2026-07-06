@@ -6,6 +6,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface RateRequestModalProps {
     isOpen: boolean;
@@ -41,6 +42,7 @@ const RateRequestModal: React.FC<RateRequestModalProps> = ({ isOpen, onClose, re
     const { rateRequest } = useRequests();
     const { brandingConfig } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [rating, setRating] = useState(0);
     const [feedback, setFeedback] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -66,11 +68,11 @@ const RateRequestModal: React.FC<RateRequestModalProps> = ({ isOpen, onClose, re
             onClose();
         } catch (err) {
             console.error("Failed to rate request:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while submitting your rating. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while submitting your rating. Please try again.') });
         } finally {
             setIsLoading(false);
         }
-    }, [request.id, rating, feedback, rateRequest, onClose, addToast]);
+    }, [request.id, rating, feedback, rateRequest, onClose, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -79,8 +81,8 @@ const RateRequestModal: React.FC<RateRequestModalProps> = ({ isOpen, onClose, re
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Rate Service"
-            subtitle="Client Feedback"
+            title={t('Rate Service')}
+            subtitle={t('Client Feedback')}
             icon="fa-solid fa-star"
             color="amber"
             width="max-w-lg"
@@ -91,7 +93,7 @@ const RateRequestModal: React.FC<RateRequestModalProps> = ({ isOpen, onClose, re
                         <i className="fa-solid fa-award text-3xl text-amber-500"></i>
                     </div>
 
-                    <h2 className="text-xl font-bold text-white mb-2">How was your experience?</h2>
+                    <h2 className="text-xl font-bold text-white mb-2">{t('How was your experience?')}</h2>
                     <div className="flex justify-center items-center gap-3 text-xs text-slate-400 mb-4 font-mono">
                         <span>REQ: {request.id}</span>
                         <span className="text-slate-600">|</span>
@@ -101,34 +103,34 @@ const RateRequestModal: React.FC<RateRequestModalProps> = ({ isOpen, onClose, re
                     <StarRatingInput rating={rating} onRate={setRating} />
 
                     <p className="text-xs text-amber-500 font-bold uppercase tracking-widest mt-2 mb-8 animate-pulse">
-                        {rating === 0 ? 'Select a Rating' : rating === 5 ? 'Excellent' : rating >= 4 ? 'Good' : rating === 3 ? 'Average' : 'Poor'}
+                        {rating === 0 ? t('Select a Rating') : rating === 5 ? t('Excellent') : rating >= 4 ? t('Good') : rating === 3 ? t('Average') : t('Poor')}
                     </p>
 
                     <div className="text-left">
-                        <label className={labelClass}>Additional Feedback</label>
+                        <label className={labelClass}>{t('Additional Feedback')}</label>
                         <textarea
                             value={feedback}
                             onChange={(e) => setFeedback(e.target.value)}
                             rows={3}
-                            placeholder="Optional comments for command review..."
+                            placeholder={t('Optional comments for command review...')}
                             className={`${inputClass} resize-none`}
                             disabled={isLoading}
                         />
                         <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
-                            Your feedback helps <strong className="text-slate-400">{brandingConfig.name}</strong> improve their service. If they have a public landing page enabled, admins may select anonymous excerpts of feedback to display &mdash; your name and identity will never be shown.
+                            {t('Your feedback helps')} <strong className="text-slate-400">{brandingConfig.name}</strong> {t('improve their service. If they have a public landing page enabled, admins may select anonymous excerpts of feedback to display — your name and identity will never be shown.')}
                         </p>
                     </div>
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Skip</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Skip')}</button>
                     <button
                         type="button"
                         onClick={handleSubmit}
                         className="px-8 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/50 hover:bg-amber-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading || rating === 0}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit Rating'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit Rating')}
                     </button>
                 </div>
             </div>

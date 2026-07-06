@@ -5,6 +5,7 @@ import { useData } from '../../contexts/DataContext';
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigation } from '../../contexts/NavigationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface IssueEamModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface IssueEamModalProps {
 }
 
 const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
+    const { t } = useI18n();
     const { broadcastEAM } = useData();
     const { addToast } = useNotification();
     const { setEamMessage } = useNavigation();
@@ -71,7 +73,7 @@ const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
             }, 1000);
         } catch (err) {
             console.error(err);
-            addToast("Transmission Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "EAM broadcast could not be transmitted. Please try again." });
+            addToast(t('Transmission Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('EAM broadcast could not be transmitted. Please try again.') });
             setIsTransmitting(false);
         }
     };
@@ -80,8 +82,8 @@ const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Issue EAM"
-            subtitle="Priority Interrupt Protocol"
+            title={t('Issue EAM')}
+            subtitle={t('Priority Interrupt Protocol')}
             icon="fa-solid fa-radiation"
             color="red"
             width="max-w-lg"
@@ -92,19 +94,19 @@ const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
                 <div className="p-8 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-red-600 shadow-[0_0_20px_rgba(220,38,38,0.8)] z-10 animate-pulse"></div>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
-                        <span className="text-9xl font-black text-red-600 uppercase -rotate-12">ALERT</span>
+                        <span className="text-9xl font-black text-red-600 uppercase -rotate-12">{t('ALERT')}</span>
                     </div>
 
                     <p className="text-xs text-red-300 mb-6 font-mono border-l-2 border-red-500 pl-3 relative z-10 bg-red-950/30 p-2 rounded-r">
-                        WARNING: Triggers full-screen override on all terminals. Use only for critical emergencies.
+                        {t('WARNING: Triggers full-screen override on all terminals. Use only for critical emergencies.')}
                     </p>
 
-                    <label className="block text-[10px] text-red-400 uppercase font-black mb-2 tracking-wider relative z-10">Message Content</label>
+                    <label className="block text-[10px] text-red-400 uppercase font-black mb-2 tracking-wider relative z-10">{t('Message Content')}</label>
                     <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         className="w-full bg-slate-900/90 border border-red-500/30 rounded-lg p-4 text-red-50 font-mono text-lg uppercase focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-hidden h-32 resize-none shadow-inner relative z-10 backdrop-blur-xs"
-                        placeholder="ENTER EAM CONTENT..."
+                        placeholder={t('ENTER EAM CONTENT...')}
                         disabled={isArming || isArmed || isTransmitting}
                     />
                 </div>
@@ -121,9 +123,9 @@ const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
                                 }`}
                         >
                             {isArming ? (
-                                <><i className="fa-solid fa-spinner animate-spin"></i> Arming... {armCountdown}</>
+                                <><i className="fa-solid fa-spinner animate-spin"></i> {t('Arming...')} {armCountdown}</>
                             ) : (
-                                <><i className="fa-solid fa-shield-halved"></i> Arm System</>
+                                <><i className="fa-solid fa-shield-halved"></i> {t('Arm System')}</>
                             )}
                         </button>
                     ) : (
@@ -133,9 +135,9 @@ const IssueEamModal: React.FC<IssueEamModalProps> = ({ isOpen, onClose }) => {
                             className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-[0.2em] rounded-lg shadow-[0_0_30px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-3 animate-pulse active:scale-95"
                         >
                             {isTransmitting ? (
-                                <><i className="fa-solid fa-spinner animate-spin"></i> TRANSMITTING</>
+                                <><i className="fa-solid fa-spinner animate-spin"></i> {t('TRANSMITTING')}</>
                             ) : (
-                                <><i className="fa-solid fa-key"></i> EXECUTE</>
+                                <><i className="fa-solid fa-key"></i> {t('EXECUTE')}</>
                             )}
                         </button>
                     )}

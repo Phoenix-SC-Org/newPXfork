@@ -19,6 +19,7 @@ import RapSheetAlerts from './RapSheetAlerts';
 import MdtRequestRow from './MdtRequestRow';
 import MdtWarrantRow from './MdtWarrantRow';
 import { useModalRegistry } from '../../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     target: string | null;
@@ -33,6 +34,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
     const { rpcAction } = useData();
     const { allUsers } = useMembers();
     const { openIntelReportWindow } = useModalRegistry();
+    const { t } = useI18n();
 
     const [dossier, setDossier] = useState<DossierData | null>(null);
     // Lazy-init to the mount-time fetch decision so a valid target shows the
@@ -108,8 +110,8 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                 <EmptyState
                     icon="fa-lock"
                     accent="cyan"
-                    heading="Intel access required"
-                    description="The MDT requires the intel:view permission. Ask an admin to grant it, or use CAD to manage the live queue."
+                    heading={t('Intel access required')}
+                    description={t('The MDT requires the intel:view permission. Ask an admin to grant it, or use CAD to manage the live queue.')}
                 />
             </div>
         );
@@ -120,9 +122,9 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
             <div className="px-4 sm:px-8 py-20">
                 <div className="max-w-xl mx-auto text-center">
                     <i className="fa-solid fa-magnifying-glass-plus text-5xl text-cyan-500/30 mb-5" />
-                    <h2 className="text-xl font-black text-white tracking-tight">Mobile Data Terminal</h2>
+                    <h2 className="text-xl font-black text-white tracking-tight">{t('Mobile Data Terminal')}</h2>
                     <p className="mt-2 text-sm text-slate-400">
-                        Search any RSI handle to pull a subject RAP sheet — warrants, intel reports, request history, and reputation in one view.
+                        {t('Search any RSI handle to pull a subject RAP sheet — warrants, intel reports, request history, and reputation in one view.')}
                     </p>
                     <form
                         onSubmit={(e) => { e.preventDefault(); if (formQuery.trim()) onChangeTarget(formQuery.trim()); }}
@@ -133,7 +135,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                             type="search"
                             value={formQuery}
                             onChange={(e) => setFormQuery(e.target.value)}
-                            placeholder="e.g. ShadowRunner_07"
+                            placeholder={t('e.g. ShadowRunner_07')}
                             className="flex-1 bg-slate-900/60 text-white px-4 py-3 rounded-lg border border-cyan-500/30 placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-hidden"
                         />
                         <button
@@ -141,7 +143,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                             disabled={!formQuery.trim()}
                             className="px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-widest text-white bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed transition whitespace-nowrap"
                         >
-                            Run MDT
+                            {t('Run MDT')}
                         </button>
                     </form>
                 </div>
@@ -172,14 +174,14 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                 />
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <HeroStat icon="fa-bullseye" label="Warrants" value={warrants.length} accent="red" emphasize={activeWarrants.length > 0} sub={activeWarrants.length > 0 ? `${activeWarrants.length} active` : 'None active'} />
-                    <HeroStat icon="fa-folder-open" label="Intel Reports" value={reports.length} accent="rose" emphasize={highestThreat === 'Critical' || highestThreat === 'High'} sub={highestThreat ? `${highestThreat} max` : 'No reports'} />
-                    <HeroStat icon="fa-file-invoice" label="Requests" value={requests.length} accent="sky" sub="As client" />
+                    <HeroStat icon="fa-bullseye" label={t('Warrants')} value={warrants.length} accent="red" emphasize={activeWarrants.length > 0} sub={activeWarrants.length > 0 ? t('{count} active', { count: activeWarrants.length }) : t('None active')} />
+                    <HeroStat icon="fa-folder-open" label={t('Intel Reports')} value={reports.length} accent="rose" emphasize={highestThreat === 'Critical' || highestThreat === 'High'} sub={highestThreat ? t('{level} max', { level: t(highestThreat) }) : t('No reports')} />
+                    <HeroStat icon="fa-file-invoice" label={t('Requests')} value={requests.length} accent="sky" sub={t('As client')} />
                     <HeroStat
                         icon="fa-scale-balanced"
-                        label="Reputation"
+                        label={t('Reputation')}
                         value={subject ? subject.reputation ?? '—' : '—'}
-                        sub={subject ? undefined : 'Unregistered'}
+                        sub={subject ? undefined : t('Unregistered')}
                         accent={!subject ? 'slate' : (subject.reputation ?? 50) <= 15 ? 'rose' : (subject.reputation ?? 50) >= 75 ? 'emerald' : 'slate'}
                         emphasize={!!subject && (subject.reputation ?? 100) <= 15}
                     />
@@ -187,20 +189,20 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
 
                 <div className="border-b border-white/5">
                     <div className="flex gap-0 -mb-px overflow-x-auto custom-scrollbar">
-                        {(['overview', 'warrants', 'intel', 'requests'] as RapTab[]).map(t => (
+                        {(['overview', 'warrants', 'intel', 'requests'] as RapTab[]).map(tab => (
                             <button
-                                key={t}
-                                onClick={() => setRapTab(t)}
+                                key={tab}
+                                onClick={() => setRapTab(tab)}
                                 className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${
-                                    rapTab === t
+                                    rapTab === tab
                                         ? 'text-cyan-300 border-cyan-400'
                                         : 'text-slate-500 border-transparent hover:text-slate-300'
                                 }`}
                             >
-                                {t === 'overview' && <><i className="fa-solid fa-gauge-high"></i>Overview</>}
-                                {t === 'warrants' && <><i className="fa-solid fa-bullseye"></i>Warrants {warrants.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-red-500/20 text-red-300 rounded-full flex items-center justify-center">{warrants.length}</span>}</>}
-                                {t === 'intel' && <><i className="fa-solid fa-satellite-dish"></i>Intel {reports.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-rose-500/20 text-rose-300 rounded-full flex items-center justify-center">{reports.length}</span>}</>}
-                                {t === 'requests' && <><i className="fa-solid fa-file-invoice"></i>Requests {requests.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-sky-500/20 text-sky-300 rounded-full flex items-center justify-center">{requests.length}</span>}</>}
+                                {tab === 'overview' && <><i className="fa-solid fa-gauge-high"></i>{t('Overview')}</>}
+                                {tab === 'warrants' && <><i className="fa-solid fa-bullseye"></i>{t('Warrants')} {warrants.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-red-500/20 text-red-300 rounded-full flex items-center justify-center">{warrants.length}</span>}</>}
+                                {tab === 'intel' && <><i className="fa-solid fa-satellite-dish"></i>{t('Intel')} {reports.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-rose-500/20 text-rose-300 rounded-full flex items-center justify-center">{reports.length}</span>}</>}
+                                {tab === 'requests' && <><i className="fa-solid fa-file-invoice"></i>{t('Requests')} {requests.length > 0 && <span className="min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-sky-500/20 text-sky-300 rounded-full flex items-center justify-center">{requests.length}</span>}</>}
                             </button>
                         ))}
                     </div>
@@ -215,7 +217,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                 {!loading && error && (
                     <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-300">
                         <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                        {error}
+                        {t(error)}
                     </div>
                 )}
 
@@ -224,8 +226,8 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                         <EmptyState
                             icon="fa-folder-open"
                             accent="cyan"
-                            heading="No records on file"
-                            description={`No intel, warrants, or request history on file for "${target}".`}
+                            heading={t('No records on file')}
+                            description={t('No intel, warrants, or request history on file for "{target}".', { target })}
                         />
                     </div>
                 )}
@@ -245,7 +247,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                         )}
                         {rapTab === 'warrants' && (
                             warrants.length === 0
-                                ? <EmptyStateInline icon="fa-bullseye" heading="No warrants on file" />
+                                ? <EmptyStateInline icon="fa-bullseye" heading={t('No warrants on file')} />
                                 : (
                                     <div className="space-y-2">
                                         {warrants.map(w => <MdtWarrantRow key={w.id} warrant={w} />)}
@@ -254,7 +256,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                         )}
                         {rapTab === 'intel' && (
                             reports.length === 0
-                                ? <EmptyStateInline icon="fa-satellite-dish" heading="No intel reports" />
+                                ? <EmptyStateInline icon="fa-satellite-dish" heading={t('No intel reports')} />
                                 : (
                                     <div className="space-y-3">
                                         {reports.map(r => (
@@ -270,7 +272,7 @@ export default function MDTPanel({ target, canViewIntel, onOpenRequest, onChange
                         )}
                         {rapTab === 'requests' && (
                             requests.length === 0
-                                ? <EmptyStateInline icon="fa-file-invoice" heading="No request history" />
+                                ? <EmptyStateInline icon="fa-file-invoice" heading={t('No request history')} />
                                 : (
                                     <div className="space-y-2">
                                         {requests.map(r => (
@@ -299,6 +301,7 @@ function OverviewTab({
     onOpenRequest: (r: HydratedServiceRequest) => void;
 }) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const recentWarrants = [...warrants].sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()).slice(0, 3);
     const recentReports = [...reports].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3);
     const recentRequests = [...requests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3);
@@ -309,7 +312,7 @@ function OverviewTab({
                 <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-5">
                     <div className="flex items-center gap-2 mb-2">
                         <i className="fa-solid fa-robot text-cyan-400"></i>
-                        <span className="text-[10px] font-black text-cyan-300 uppercase tracking-[0.2em]">Summary</span>
+                        <span className="text-[10px] font-black text-cyan-300 uppercase tracking-[0.2em]">{t('Summary')}</span>
                         {summaryDate && (
                             <span className="text-[10px] text-slate-500 font-mono ml-auto">
                                 {fmt.date(summaryDate)}
@@ -322,7 +325,7 @@ function OverviewTab({
 
             {recentWarrants.length > 0 && (
                 <div>
-                    <h3 className="text-[10px] font-black text-red-300 uppercase tracking-[0.25em] mb-2">Recent Cautions</h3>
+                    <h3 className="text-[10px] font-black text-red-300 uppercase tracking-[0.25em] mb-2">{t('Recent Cautions')}</h3>
                     <div className="space-y-2">
                         {recentWarrants.map(w => <MdtWarrantRow key={w.id} warrant={w} />)}
                     </div>
@@ -331,7 +334,7 @@ function OverviewTab({
 
             {recentReports.length > 0 && (
                 <div>
-                    <h3 className="text-[10px] font-black text-rose-300 uppercase tracking-[0.25em] mb-2">Recent Intel</h3>
+                    <h3 className="text-[10px] font-black text-rose-300 uppercase tracking-[0.25em] mb-2">{t('Recent Intel')}</h3>
                     <div className="space-y-3">
                         {recentReports.map(r => (
                             <IntelligenceReportCard
@@ -347,7 +350,7 @@ function OverviewTab({
 
             {recentRequests.length > 0 && (
                 <div>
-                    <h3 className="text-[10px] font-black text-sky-300 uppercase tracking-[0.25em] mb-2">Recent Requests</h3>
+                    <h3 className="text-[10px] font-black text-sky-300 uppercase tracking-[0.25em] mb-2">{t('Recent Requests')}</h3>
                     <div className="space-y-2">
                         {recentRequests.map(r => (
                             <MdtRequestRow key={r.id} request={r} onClick={() => onOpenRequest(r)} />

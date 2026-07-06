@@ -6,8 +6,10 @@ import { useAuth } from '../../../../../contexts/AuthContext';
 import { WarrantStatus } from '../../../../../types';
 import { EmptyState } from '../../../../shared/ui';
 import { useNavigation } from '../../../../../contexts/NavigationContext';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 export default function IntelPanel() {
+    const { t } = useI18n();
     const { warrants } = useOperations();
     const { activeBulletins } = useIntel();
     const { currentUser } = useAuth();
@@ -40,8 +42,8 @@ export default function IntelPanel() {
         return (
             <EmptyState
                 icon="fa-satellite-dish"
-                heading="Intel net quiet"
-                description="No live bulletins or active cautions."
+                heading={t('Intel net quiet')}
+                description={t('No live bulletins or active cautions.')}
                 accent="rose"
             />
         );
@@ -52,7 +54,7 @@ export default function IntelPanel() {
             {bulletins.length > 0 && (
                 <>
                     <div className="px-3 py-2 bg-slate-950/40 flex items-center justify-between">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Live Bulletins</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Live Bulletins')}</span>
                         <span className="text-[10px] font-mono text-slate-600">{bulletins.length}</span>
                     </div>
                     {bulletins.map((b) => (
@@ -76,7 +78,7 @@ export default function IntelPanel() {
             {activeWarrants.length > 0 && (
                 <>
                     <div className="px-3 py-2 bg-slate-950/40 flex items-center justify-between">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Active Cautions</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Active Cautions')}</span>
                         <span className="text-[10px] font-mono text-slate-600">{activeWarrants.length}</span>
                     </div>
                     {activeWarrants.map((w) => (
@@ -90,9 +92,9 @@ export default function IntelPanel() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-bold text-white truncate">{(w as any).targetRsiHandle || (w as any).target_rsi_handle || 'Warrant'}</span>
+                                    <span className="text-sm font-bold text-white truncate">{(w as any).targetRsiHandle || (w as any).target_rsi_handle || t('Warrant')}</span>
                                     <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-rose-500/15 text-rose-300 border-rose-500/30">
-                                        {w.status}
+                                        {t(w.status, { context: 'warrant' })}
                                     </span>
                                 </div>
                                 {(w as any).reason && (
@@ -109,7 +111,7 @@ export default function IntelPanel() {
                     onClick={() => setActiveView('intel')}
                     className="w-full text-center text-[11px] font-mono uppercase tracking-widest text-slate-500 hover:text-sky-300 transition-colors py-1"
                 >
-                    View intel net →
+                    {t('View intel net →')}
                 </button>
             </div>
         </div>

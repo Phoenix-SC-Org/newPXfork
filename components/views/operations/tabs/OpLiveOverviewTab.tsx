@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { HydratedOperation, OperationStatus, OperationLiveStatus, OperationCommandNode } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useData } from '../../../../contexts/DataContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 const STATUS_OPTIONS: { value: OperationLiveStatus; label: string }[] = [
     { value: OperationLiveStatus.Standby, label: 'Standby' },
@@ -34,6 +35,7 @@ const statusColor = (status?: string) => {
 const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canManage, onRefresh }) => {
     const { currentUser } = useAuth();
     const { rpcAction } = useData();
+    const { t } = useI18n();
     const [now, setNow] = useState(() => Date.now());
     const [updatingNodeId, setUpdatingNodeId] = useState<number | null>(null);
 
@@ -112,7 +114,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                         <div className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
                         <span className="text-[11px] font-bold text-white flex-1 min-w-0 truncate">{node.label}</span>
                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm shrink-0 border ${sc.bg} ${sc.text} ${sc.border}`}>
-                            {node.liveStatus || 'None'}
+                            {node.liveStatus ? t(node.liveStatus) : t('None')}
                         </span>
                     </div>
                     {canManage && (
@@ -126,7 +128,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                                             ? `${statusColor(opt.value).bg} ${statusColor(opt.value).text} ${statusColor(opt.value).border}`
                                             : 'bg-slate-900/60 text-slate-500 border-slate-700/50 hover:text-slate-300 hover:border-slate-600'
                                     } disabled:opacity-50`}>
-                                    {opt.label}
+                                    {t(opt.label)}
                                 </button>
                             ))}
                         </div>
@@ -152,7 +154,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                 {/* Participant Count */}
                 <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <i className="fa-solid fa-users text-[10px]" />
-                    <span className="font-bold text-white">{totalCount}</span> personnel
+                    <span className="font-bold text-white">{totalCount}</span> {t('personnel')}
                 </div>
 
                 {/* Readiness */}
@@ -161,13 +163,13 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                         <div className="h-full bg-green-500 rounded-full transition-all shadow-[0_0_6px_rgba(34,197,94,0.5)]" style={{ width: `${readyPct}%` }} />
                     </div>
                     <span className="text-green-400 font-bold">{readyPct}%</span>
-                    <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Ready</span>
+                    <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">{t('Ready')}</span>
                 </div>
 
                 {/* Operation Live Status */}
                 {operation.liveStatus && (
                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-sm border ${statusColor(operation.liveStatus).bg} ${statusColor(operation.liveStatus).text} ${statusColor(operation.liveStatus).border}`}>
-                        {operation.liveStatus}
+                        {t(operation.liveStatus)}
                     </span>
                 )}
 
@@ -177,7 +179,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                         const colors = statusColor(status === 'Unset' ? undefined : status);
                         return (
                             <span key={status} className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${colors.bg} ${colors.text} ${colors.border}`}>
-                                {count} {status}
+                                {count} {t(status)}
                             </span>
                         );
                     })}
@@ -189,7 +191,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                 <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-slate-500 font-black flex items-center gap-1.5">
                         <i className="fa-solid fa-users-viewfinder text-[9px]" />
-                        Formation Status
+                        {t('Formation Status')}
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                         {topLevelNodes.map(node => renderNode(node, false))}
@@ -224,7 +226,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                                     </div>
                                 )}
                                 <div className="min-w-0">
-                                    <div className="text-xs font-bold text-white truncate">{p.user?.name || 'Unknown'}</div>
+                                    <div className="text-xs font-bold text-white truncate">{p.user?.name || t('Unknown')}</div>
                                     {p.user?.rank && (
                                         <div className="flex items-center gap-1">
                                             {p.user.rank.iconUrl && <img src={p.user.rank.iconUrl} className="w-3 h-3" />}
@@ -238,7 +240,7 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
                             {p.liveStatus && (
                                 <div className={`text-[10px] font-black uppercase tracking-wider ${colors.text} flex items-center gap-1 mb-1.5`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-                                    {p.liveStatus}
+                                    {t(p.liveStatus)}
                                 </div>
                             )}
 
@@ -263,8 +265,8 @@ const OpLiveOverviewTab: React.FC<OpLiveOverviewTabProps> = ({ operation, canMan
             {activeParticipants.length === 0 && (
                 <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/30 p-10 text-center">
                     <i className="fa-solid fa-users-slash text-4xl text-purple-400 opacity-40 mb-3" />
-                    <h3 className="text-lg font-bold text-white mb-1">No active participants</h3>
-                    <p className="text-sm text-slate-500">Personnel will appear here once they join the operation.</p>
+                    <h3 className="text-lg font-bold text-white mb-1">{t('No active participants')}</h3>
+                    <p className="text-sm text-slate-500">{t('Personnel will appear here once they join the operation.')}</p>
                 </div>
             )}
         </div>

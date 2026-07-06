@@ -5,6 +5,7 @@ import { useFormatDate } from '../../../../contexts/AuthContext';
 import { ACCENTS } from '../../../shared/ui/accents';
 import ResponderStack from '../requests/ResponderStack';
 import { useNavigation } from '../../../../contexts/NavigationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 import {
     operationStatusAccent,
     operationStatusIcon,
@@ -24,6 +25,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
     const { viewOperationDetails } = useNavigation();
     const { securityClearances } = useMembers();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     // `tick` only exists to force a re-render; the timer below bumps it so the
     // scheduled-start countdown pill stays accurate.
     const [tick, setTick] = useState(0);
@@ -42,7 +44,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
 
     const opShortId = operation.id.split('-')[1]?.toUpperCase() ?? operation.id.slice(0, 8).toUpperCase();
     const clearance = securityClearances.find(c => c.level === operation.clearanceLevel);
-    const clearanceName = clearance?.name || (operation.clearanceLevel > 0 ? `LVL ${operation.clearanceLevel}` : '');
+    const clearanceName = clearance?.name || (operation.clearanceLevel > 0 ? t('LVL {level}', { level: operation.clearanceLevel }) : '');
     const clearanceA = operation.clearanceLevel > 0 ? ACCENTS[clearanceAccent(operation.clearanceLevel)] : null;
 
     const activeParticipants = useMemo(
@@ -58,7 +60,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
         ? operationCountdown(operation.scheduledStart)
         : null;
 
-    const ownerName = operation.owner?.name || 'Unknown Commander';
+    const ownerName = operation.owner?.name || t('Unknown Commander');
     const ownerRank = operation.owner?.rank?.name;
     const ownerAvatar = operation.owner?.avatarUrl;
 
@@ -78,9 +80,9 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                         <div className="flex flex-col gap-1.5">
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border font-mono text-[10px] uppercase tracking-widest bg-red-500/10 text-red-300 border-red-500/40 w-fit animate-pulse">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                Classified
+                                {t('Classified')}
                             </span>
-                            <span className="text-[9px] text-red-700/80 font-mono font-bold tracking-widest mt-0.5">AUTH CODE REQUIRED</span>
+                            <span className="text-[9px] text-red-700/80 font-mono font-bold tracking-widest mt-0.5">{t('AUTH CODE REQUIRED')}</span>
                         </div>
                         <div className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-900/50 bg-red-950/30 text-red-500 group-hover:text-red-300 group-hover:border-red-500/50 transition-colors">
                             <i className="fa-solid fa-user-secret text-sm" aria-hidden />
@@ -102,12 +104,12 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
 
                     <p className="text-[10px] text-red-700 italic border-l-2 border-red-900/50 pl-2 mt-auto">
                         <i className="fa-solid fa-lock mr-1.5" aria-hidden />
-                        Operational details encrypted.
+                        {t('Operational details encrypted.')}
                     </p>
                 </div>
 
                 <div className="relative pl-4 pr-3 py-2.5 bg-slate-950/60 border-t border-red-900/20 flex justify-between items-center text-[10px] font-mono text-slate-600 uppercase tracking-wider">
-                    <span>Origin: [REDACTED]</span>
+                    <span>{t('Origin: [REDACTED]')}</span>
                     <i className="fa-solid fa-key text-red-600/40 group-hover:text-red-400 transition-colors" aria-hidden />
                 </div>
             </div>
@@ -145,7 +147,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                             </span>
                             <span className="text-slate-700">·</span>
                             <span className={`text-[10px] font-black uppercase tracking-widest ${typeA.text}`}>
-                                {operation.type}
+                                {t(operation.type)}
                             </span>
                         </div>
                     </div>
@@ -153,7 +155,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                     {operation.isJoint && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
-                            <i className="fa-solid fa-handshake" aria-hidden /> Joint
+                            <i className="fa-solid fa-handshake" aria-hidden /> {t('Joint')}
                         </span>
                     )}
                     {countdown && (
@@ -169,7 +171,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                     )}
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border font-black text-[10px] uppercase tracking-wider ${statusA.bg} ${statusA.border} ${statusA.text} ${operation.status === OperationStatus.Active ? 'animate-pulse' : ''}`}>
                         <i className={`fa-solid ${statusIcon}`} aria-hidden />
-                        {operation.status}
+                        {t(operation.status)}
                     </span>
                 </div>
             </div>
@@ -189,7 +191,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                             </div>
                         )}
                         <div className="min-w-0 flex-1">
-                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Commander</p>
+                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">{t('Commander')}</p>
                             <p className="text-white font-bold text-sm truncate">{ownerName}</p>
                             {ownerRank && (
                                 <p className="text-[10px] font-mono text-slate-400 truncate">{ownerRank}</p>
@@ -219,7 +221,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
 
                 <div className="md:col-span-3 flex flex-col gap-3 min-w-0 md:border-l md:border-white/5 md:pl-4">
                     <div className="grow min-w-0">
-                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Mission Briefing</p>
+                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Mission Briefing')}</p>
                         <p className="text-slate-300 text-sm leading-relaxed italic line-clamp-3">
                             &ldquo;{operation.description}&rdquo;
                         </p>
@@ -228,7 +230,7 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                     {activeUsers.length > 0 && (
                         <div>
                             <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">
-                                Team · {activeUsers.length}{operation.maxParticipants ? ` / ${operation.maxParticipants}` : ''}
+                                {t('Team')} · {activeUsers.length}{operation.maxParticipants ? ` / ${operation.maxParticipants}` : ''}
                             </p>
                             <ResponderStack
                                 members={activeUsers}
@@ -250,12 +252,12 @@ const OperationCard: React.FC<Props> = ({ operation }) => {
                     {operation.liveStatus && operation.status === OperationStatus.Active && (
                         <span className="inline-flex items-center gap-1 text-emerald-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            {operation.liveStatus}
+                            {t(operation.liveStatus)}
                         </span>
                     )}
                     <span className="inline-flex items-center gap-1 text-slate-400">
                         <i className="fa-solid fa-users" aria-hidden />
-                        {activeParticipants.length} Active
+                        {t('{count} Active', { count: activeParticipants.length })}
                     </span>
                 </span>
             </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ServiceRequestStatus, UrgencyLevel, ThreatLevel, IntelThreatLevel } from '../../../../types';
 import { ACCENTS } from '../../../shared/ui/accents';
+import { useI18n } from '../../../../i18n/I18nContext';
 import {
     statusAccent, statusLabel, statusIcon,
     urgencyAccent, urgencyIcon,
@@ -57,39 +58,46 @@ export const StatusPill: React.FC<{
     showIcon?: boolean;
     onClick?: (e: React.MouseEvent) => void;
     className?: string;
-}> = ({ status, size = 'sm', showIcon = false, onClick, className = '' }) => (
-    <Pill
-        accentKey={statusAccent(status)}
-        icon={showIcon ? statusIcon(status) : undefined}
-        size={size}
-        onClick={onClick}
-        className={className}
-    >
-        {statusLabel(status)}
-    </Pill>
-);
+}> = ({ status, size = 'sm', showIcon = false, onClick, className = '' }) => {
+    const { t } = useI18n();
+    return (
+        <Pill
+            accentKey={statusAccent(status)}
+            icon={showIcon ? statusIcon(status) : undefined}
+            size={size}
+            onClick={onClick}
+            className={className}
+        >
+            {t(statusLabel(status))}
+        </Pill>
+    );
+};
 
 export const UrgencyPill: React.FC<{
     urgency: UrgencyLevel;
     size?: Size;
     className?: string;
-}> = ({ urgency, size = 'sm', className = '' }) => (
-    <Pill
-        accentKey={urgencyAccent(urgency)}
-        icon={urgencyIcon(urgency)}
-        size={size}
-        pulse={urgency === UrgencyLevel.Critical}
-        className={className}
-    >
-        {urgency}
-    </Pill>
-);
+}> = ({ urgency, size = 'sm', className = '' }) => {
+    const { t } = useI18n();
+    return (
+        <Pill
+            accentKey={urgencyAccent(urgency)}
+            icon={urgencyIcon(urgency)}
+            size={size}
+            pulse={urgency === UrgencyLevel.Critical}
+            className={className}
+        >
+            {t(urgency)}
+        </Pill>
+    );
+};
 
 export const ThreatPill: React.FC<{
     threat: ThreatLevel;
     size?: Size;
     className?: string;
 }> = ({ threat, size = 'sm', className = '' }) => {
+    const { t } = useI18n();
     if (threat === ThreatLevel.None) return null;
     return (
         <Pill
@@ -99,7 +107,7 @@ export const ThreatPill: React.FC<{
             pulse={threatIsAlarm(threat)}
             className={className}
         >
-            {threat}
+            {t(threat)}
         </Pill>
     );
 };
@@ -109,6 +117,7 @@ export const IntelPill: React.FC<{
     size?: Size;
     className?: string;
 }> = ({ level, size = 'sm', className = '' }) => {
+    const { t } = useI18n();
     if (level === IntelThreatLevel.None) return null;
     return (
         <Pill
@@ -118,20 +127,23 @@ export const IntelPill: React.FC<{
             pulse={threatIsAlarm(level)}
             className={className}
         >
-            Intel · {level}
+            {t('Intel · {level}', { level: t(level) })}
         </Pill>
     );
 };
 
 // Used when an active warrant is matched for a client.
-export const WarrantPill: React.FC<{ size?: Size; className?: string }> = ({ size = 'sm', className = '' }) => (
-    <Pill
-        accentKey="red"
-        icon="fa-triangle-exclamation"
-        size={size}
-        pulse
-        className={`shadow-[0_0_10px_rgba(220,38,38,0.3)] ${className}`}
-    >
-        Active Caution
-    </Pill>
-);
+export const WarrantPill: React.FC<{ size?: Size; className?: string }> = ({ size = 'sm', className = '' }) => {
+    const { t } = useI18n();
+    return (
+        <Pill
+            accentKey="red"
+            icon="fa-triangle-exclamation"
+            size={size}
+            pulse
+            className={`shadow-[0_0_10px_rgba(220,38,38,0.3)] ${className}`}
+        >
+            {t('Active Caution')}
+        </Pill>
+    );
+};

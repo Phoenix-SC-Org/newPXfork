@@ -1,6 +1,7 @@
 import React from 'react';
 import type { User } from '../../../../types';
 import { useFormatDate } from '../../../../contexts/AuthContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     handle: string;
@@ -15,6 +16,7 @@ interface Props {
  */
 export default function RapSheetHeader({ handle, subject, onChangeTarget }: Props) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const repTier = subject ? reputationTier(subject.reputation ?? 50) : null;
     const tenureStartIso = subject?.tenureStartDate || subject?.createdAt;
     const memberSince = tenureStartIso ? fmt.date(tenureStartIso) : null;
@@ -34,10 +36,10 @@ export default function RapSheetHeader({ handle, subject, onChangeTarget }: Prop
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-[10px] font-black text-cyan-300 uppercase tracking-[0.25em]">Subject</span>
+                        <span className="text-[10px] font-black text-cyan-300 uppercase tracking-[0.25em]">{t('Subject')}</span>
                         {!subject && (
                             <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded-sm">
-                                Unregistered
+                                {t('Unregistered')}
                             </span>
                         )}
                     </div>
@@ -54,7 +56,7 @@ export default function RapSheetHeader({ handle, subject, onChangeTarget }: Prop
                                 {repTier && (
                                     <span className={`flex items-center gap-1.5 ${repTier.className}`}>
                                         <i className="fa-solid fa-scale-balanced"></i>
-                                        {subject.reputation ?? 50} · {repTier.label}
+                                        {subject.reputation ?? 50} · {t(repTier.label)}
                                     </span>
                                 )}
                                 {subject.clearanceLevel && (
@@ -66,7 +68,7 @@ export default function RapSheetHeader({ handle, subject, onChangeTarget }: Prop
                                 {memberSince && (
                                     <span className="flex items-center gap-1.5 text-slate-500">
                                         <i className="fa-solid fa-calendar"></i>
-                                        since {memberSince}
+                                        {t('since {date}', { date: memberSince })}
                                     </span>
                                 )}
                             </>
@@ -76,11 +78,11 @@ export default function RapSheetHeader({ handle, subject, onChangeTarget }: Prop
 
                 <button
                     onClick={() => onChangeTarget('')}
-                    title="Clear and run another handle"
+                    title={t('Clear and run another handle')}
                     className="self-start sm:self-center text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 transition-colors"
                 >
                     <i className="fa-solid fa-rotate-left mr-1"></i>
-                    New Query
+                    {t('New Query')}
                 </button>
             </div>
         </div>

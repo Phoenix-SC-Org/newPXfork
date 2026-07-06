@@ -4,6 +4,8 @@ import { useOperations } from '../../../../contexts/OperationsContext';
 import { useData } from '../../../../contexts/DataContext';
 import { getSupabase } from '../../../../lib/supabaseClient';
 import { buildJoinLink } from '../../../../lib/commsPlanLinks';
+import { useI18n } from '../../../../i18n/I18nContext';
+import { TranslateParams } from '../../../../i18n';
 import OpCommsTab from './OpCommsTab';
 
 // Provider catalog — source-of-truth for icons, colors, and which fields each provider exposes.
@@ -59,11 +61,11 @@ function isLegacyRow(entry: CommsPlanEntry): boolean {
     return !entry.provider;
 }
 
-function deriveLegacyDisplay(entry: CommsPlanEntry) {
+function deriveLegacyDisplay(entry: CommsPlanEntry, t: (key: string, params?: TranslateParams) => string) {
     // For pre-v2 rows, fall back to the old fields when rendering.
     return {
-        title: entry.purpose || entry.channel || '(Untitled)',
-        subtitle: [entry.frequency ? `Freq ${entry.frequency}` : null, entry.callsign ? `Callsign ${entry.callsign}` : null].filter(Boolean).join(' · '),
+        title: entry.purpose || entry.channel || t('(Untitled)'),
+        subtitle: [entry.frequency ? t('Freq {frequency}', { frequency: entry.frequency }) : null, entry.callsign ? t('Callsign {callsign}', { callsign: entry.callsign }) : null].filter(Boolean).join(' · '),
         notes: entry.notes,
     };
 }
@@ -82,6 +84,7 @@ type SubTab = 'comms-plan' | 'tactical-board' | 'ops-log';
 // action buttons until a user edits them.
 const CommsPlanSection: React.FC<{ operation: HydratedOperation; canManage: boolean; onUpdate: (plan: CommsPlanEntry[]) => Promise<any> }> = ({ operation, canManage, onUpdate }) => {
     const { rpcAction } = useData();
+    const { t } = useI18n();
     // Memoise the `|| []` fallback so downstream memos (hasDiscordRow,
     // editEntries seed) get a stable reference when commsPlan is undefined.
     const entries = useMemo(() => operation.commsPlan || [], [operation.commsPlan]);
@@ -113,11 +116,11 @@ const CommsPlanSection: React.FC<{ operation: HydratedOperation; canManage: bool
         } catch (err: any) {
             console.error('[CommsPlan] Failed to load Discord channels:', err);
             setGuildChannels([]);
-            setGuildError(err?.message || 'Failed to load Discord channels.');
+            setGuildError(err?.message || t('Failed to load Discord channels.'));
         } finally {
             setGuildLoading(false);
         }
-    }, [rpcAction]);
+    }, [rpcAction, t]);
 
     // Read-view: fetch only if there's actually a Discord row to resolve. The
     // fetch runs inside an async IIFE so the loading flag is set as part of the
@@ -224,12 +227,12 @@ const CommsPlanSection: React.FC<{ operation: HydratedOperation; canManage: bool
         <div className="p-6 lg:p-8 space-y-4">
             <div className="flex items-center justify-between">
                 <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                    <i className="fa-solid fa-tower-broadcast text-purple-400/70"></i> Communications Plan
+                    <i className="fa-solid fa-tower-broadcast text-purple-400/70"></i> {t('Communications Plan')}
                 </p>
                 {canManage && !isEditing && (
                     <button onClick={openEditor}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500/20 transition-colors">
-                        <i className="fa-solid fa-pen-to-square"></i> Edit
+                        <i className="fa-solid fa-pen-to-square"></i> {t('Edit')}
                     </button>
                 )}
             </div>
@@ -263,7 +266,7 @@ const CommsPlanSection: React.FC<{ operation: HydratedOperation; canManage: bool
             ) : (
                 <div className="text-center py-12">
                     <i className="fa-solid fa-tower-broadcast text-3xl text-slate-700 mb-3"></i>
-                    <p className="text-slate-600 text-xs italic">No communications plan defined.</p>
+                    <p className="text-slate-600 text-xs italic">{t('No communications plan defined.')}</p>
                 </div>
             )}
         </div>
@@ -275,6 +278,7 @@ const CommsPlanRow: React.FC<{
     channelById: Map<string, DiscordChannelOption>;
     guildId: string | null;
 }> = ({ entry, channelById, guildId }) => {
+    const { t } = useI18n();
     const [copied, setCopied] = useState(false);
     const handleCopy = async (text: string) => {
         try {
@@ -285,7 +289,7 @@ const CommsPlanRow: React.FC<{
     };
 
     if (isLegacyRow(entry)) {
-        const { title, subtitle, notes } = deriveLegacyDisplay(entry);
+        const { title, subtitle, notes } = deriveLegacyDisplay(entry, t);
         return (
             <div className="rounded-lg border border-slate-700/40 bg-slate-800/20 px-4 py-3">
                 <div className="flex items-start gap-3">
@@ -294,7 +298,7 @@ const CommsPlanRow: React.FC<{
                         <div className="text-sm text-white font-bold truncate">{title}</div>
                         {subtitle && <div className="text-[11px] font-mono text-slate-400 mt-0.5">{subtitle}</div>}
                         {notes && <div className="text-xs text-slate-400 mt-1 leading-relaxed">{notes}</div>}
-                        <div className="text-[9px] text-slate-600 uppercase tracking-widest mt-1.5">Legacy entry — edit to convert</div>
+                        <div className="text-[9px] text-slate-600 uppercase tracking-widest mt-1.5">{t('Legacy entry — edit to convert')}</div>
                     </div>
                 </div>
             </div>
@@ -313,7 +317,7 @@ const CommsPlanRow: React.FC<{
 
     if (provider === 'discord_voice' || provider === 'discord_text') {
         const channel = entry.discordChannelId ? channelById.get(entry.discordChannelId) : null;
-        primaryReference = channel ? `#${channel.name}` : (entry.discordChannelId ? `(channel ${entry.discordChannelId})` : '(not selected)');
+        primaryReference = channel ? `#${channel.name}` : (entry.discordChannelId ? t('(channel {id})', { id: entry.discordChannelId }) : t('(not selected)'));
     } else if (provider === 'teamspeak' || provider === 'mumble') {
         primaryReference = entry.address ? `${entry.address}${entry.port ? `:${entry.port}` : ''}` : null;
         if (entry.label) secondaryReference = entry.label;
@@ -322,7 +326,7 @@ const CommsPlanRow: React.FC<{
     } else if (provider === 'external') {
         primaryReference = entry.url || null;
     } else if (provider === 'op_radio') {
-        primaryReference = 'In-platform LiveKit room';
+        primaryReference = t('In-platform LiveKit room');
     } else if (provider === 'other') {
         primaryReference = entry.label || null;
     }
@@ -354,22 +358,22 @@ const CommsPlanRow: React.FC<{
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm text-white font-bold truncate">{entry.purpose || meta.label}</span>
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">{meta.label}</span>
+                        <span className="text-sm text-white font-bold truncate">{entry.purpose || t(meta.label)}</span>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">{t(meta.label)}</span>
                     </div>
                     {primaryReference && (
                         <div className="text-[12px] font-mono text-slate-300 mt-0.5 break-all">{primaryReference}</div>
                     )}
                     {secondaryReference && (
-                        <div className="text-[11px] text-slate-500 mt-0.5">Channel: {secondaryReference}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">{t('Channel:')} {secondaryReference}</div>
                     )}
                     {showFreqCallsign && (
                         <div className="flex flex-wrap gap-2 mt-2">
                             {entry.frequency && (
-                                <span className="text-[10px] font-mono text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-sm px-2 py-0.5">FREQ {entry.frequency}</span>
+                                <span className="text-[10px] font-mono text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-sm px-2 py-0.5">{t('FREQ {frequency}', { frequency: entry.frequency })}</span>
                             )}
                             {entry.callsign && (
-                                <span className="text-[10px] font-mono text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-sm px-2 py-0.5">CALL {entry.callsign}</span>
+                                <span className="text-[10px] font-mono text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-sm px-2 py-0.5">{t('CALL {callsign}', { callsign: entry.callsign })}</span>
                             )}
                         </div>
                     )}
@@ -385,14 +389,14 @@ const CommsPlanRow: React.FC<{
                             title={link.primary}
                         >
                             <i className={`${provider === 'discord_voice' || provider === 'discord_text' ? 'fa-brands fa-discord' : 'fa-solid fa-arrow-up-right-from-square'} mr-1.5`}></i>
-                            {provider === 'discord_voice' || provider === 'discord_text' ? 'Open' : 'Connect'}
+                            {provider === 'discord_voice' || provider === 'discord_text' ? t('Open') : t('Connect')}
                         </button>
                     )}
                     {link.copyText && (
                         <button
                             onClick={() => handleCopy(link.copyText!)}
                             className="px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white border border-slate-700/40 text-[10px] font-bold uppercase tracking-wider transition-colors"
-                            title="Copy address"
+                            title={t('Copy address')}
                         >
                             <i className={copied ? 'fa-solid fa-check' : 'fa-solid fa-copy'}></i>
                         </button>
@@ -417,6 +421,7 @@ const CommsPlanEditor: React.FC<{
     onCancel: () => void;
     onSave: () => void;
 }> = ({ entries, saving, guildChannels, guildLoading, guildError, onRefreshGuild, onAddRow, onRemoveRow, onUpdateField, onUpdateProvider, onCancel, onSave }) => {
+    const { t } = useI18n();
     return (
         <div className="space-y-3">
             <div className="space-y-3">
@@ -432,7 +437,7 @@ const CommsPlanEditor: React.FC<{
                                 <input
                                     value={entry.purpose || ''}
                                     onChange={e => onUpdateField(i, 'purpose', e.target.value)}
-                                    placeholder="Purpose (e.g. Command Net, Alpha Squad)"
+                                    placeholder={t('Purpose (e.g. Command Net, Alpha Squad)')}
                                     className="flex-1 bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/30"
                                 />
                                 <select
@@ -441,10 +446,10 @@ const CommsPlanEditor: React.FC<{
                                     className="bg-slate-900 border border-slate-700/50 text-white text-xs rounded-lg px-2 py-2 outline-hidden focus:border-purple-500/40"
                                 >
                                     {PROVIDER_OPTIONS.map(opt => (
-                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
                                     ))}
                                 </select>
-                                <button onClick={() => onRemoveRow(i)} className="text-red-400 hover:text-red-300 w-7 h-7 flex items-center justify-center rounded-sm hover:bg-red-500/10" title="Remove row">
+                                <button onClick={() => onRemoveRow(i)} className="text-red-400 hover:text-red-300 w-7 h-7 flex items-center justify-center rounded-sm hover:bg-red-500/10" title={t('Remove row')}>
                                     <i className="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
@@ -470,7 +475,7 @@ const CommsPlanEditor: React.FC<{
                                     <input
                                         value={entry.address || ''}
                                         onChange={e => onUpdateField(i, 'address', e.target.value)}
-                                        placeholder="Server address (host or IP)"
+                                        placeholder={t('Server address (host or IP)')}
                                         className="bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                                     />
                                     {meta.fields.port && (
@@ -478,7 +483,7 @@ const CommsPlanEditor: React.FC<{
                                             type="number"
                                             value={entry.port ?? ''}
                                             onChange={e => onUpdateField(i, 'port', e.target.value ? Number(e.target.value) : undefined)}
-                                            placeholder="Port"
+                                            placeholder={t('Port')}
                                             className="bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                                         />
                                     )}
@@ -489,7 +494,7 @@ const CommsPlanEditor: React.FC<{
                                 <input
                                     value={entry.label || ''}
                                     onChange={e => onUpdateField(i, 'label', e.target.value)}
-                                    placeholder={provider === 'teamspeak' || provider === 'mumble' ? 'Channel name (optional)' : 'Display label (optional)'}
+                                    placeholder={provider === 'teamspeak' || provider === 'mumble' ? t('Channel name (optional)') : t('Display label (optional)')}
                                     className="w-full bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                                 />
                             )}
@@ -509,7 +514,7 @@ const CommsPlanEditor: React.FC<{
                                         <input
                                             value={entry.frequency || ''}
                                             onChange={e => onUpdateField(i, 'frequency', e.target.value)}
-                                            placeholder="Frequency (e.g. 251.0 MHz)"
+                                            placeholder={t('Frequency (e.g. 251.0 MHz)')}
                                             className="bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                                         />
                                     )}
@@ -517,7 +522,7 @@ const CommsPlanEditor: React.FC<{
                                         <input
                                             value={entry.callsign || ''}
                                             onChange={e => onUpdateField(i, 'callsign', e.target.value)}
-                                            placeholder="Callsign"
+                                            placeholder={t('Callsign')}
                                             className="bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                                         />
                                     )}
@@ -527,7 +532,7 @@ const CommsPlanEditor: React.FC<{
                             <input
                                 value={entry.notes || ''}
                                 onChange={e => onUpdateField(i, 'notes', e.target.value)}
-                                placeholder="Notes (optional)"
+                                placeholder={t('Notes (optional)')}
                                 className="w-full bg-black/20 border border-slate-700/50 text-slate-300 text-xs rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
                             />
                         </div>
@@ -535,12 +540,12 @@ const CommsPlanEditor: React.FC<{
                 })}
             </div>
             <button onClick={onAddRow} className="text-xs text-purple-300 hover:text-purple-200">
-                <i className="fa-solid fa-plus mr-1"></i>Add channel
+                <i className="fa-solid fa-plus mr-1"></i>{t('Add channel')}
             </button>
             <div className="flex gap-3 justify-end">
-                <button onClick={onCancel} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">Cancel</button>
+                <button onClick={onCancel} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">{t('Cancel')}</button>
                 <button onClick={onSave} disabled={saving} className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50">
-                    {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Plan'}
+                    {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Plan')}
                 </button>
             </div>
         </div>
@@ -556,6 +561,7 @@ const DiscordChannelPicker: React.FC<{
     error: string | null;
     onRefresh: () => void;
 }> = ({ expectedType, value, onChange, channels, loading, error, onRefresh }) => {
+    const { t } = useI18n();
     const filtered = useMemo(() => channels.filter(c => expectedType.includes(c.type)), [channels, expectedType]);
 
     if (error) {
@@ -563,22 +569,22 @@ const DiscordChannelPicker: React.FC<{
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200 leading-relaxed">
                 <i className="fa-solid fa-triangle-exclamation mr-2"></i>
                 {error}
-                <button onClick={onRefresh} className="ml-2 underline hover:text-amber-100">Retry</button>
+                <button onClick={onRefresh} className="ml-2 underline hover:text-amber-100">{t('Retry')}</button>
             </div>
         );
     }
 
     if (loading && channels.length === 0) {
         return (
-            <div className="text-[11px] text-slate-500"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i>Loading channels…</div>
+            <div className="text-[11px] text-slate-500"><i className="fa-solid fa-circle-notch fa-spin mr-2"></i>{t('Loading channels…')}</div>
         );
     }
 
     if (filtered.length === 0) {
         return (
             <div className="rounded-lg border border-slate-700/40 bg-slate-800/30 px-3 py-2 text-[11px] text-slate-400">
-                No matching channels found.
-                <button onClick={onRefresh} className="ml-2 underline text-purple-300 hover:text-purple-200">Refresh</button>
+                {t('No matching channels found.')}
+                <button onClick={onRefresh} className="ml-2 underline text-purple-300 hover:text-purple-200">{t('Refresh')}</button>
             </div>
         );
     }
@@ -594,7 +600,7 @@ const DiscordChannelPicker: React.FC<{
                 }}
                 className="flex-1 bg-slate-900 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2 outline-hidden focus:border-purple-500/40"
             >
-                <option value="">— select a channel —</option>
+                <option value="">{t('— select a channel —')}</option>
                 {filtered.map(c => (
                     <option key={c.id} value={c.id}>#{c.name}</option>
                 ))}
@@ -602,7 +608,7 @@ const DiscordChannelPicker: React.FC<{
             <button
                 onClick={onRefresh}
                 className="px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white border border-slate-700/40 text-[10px]"
-                title="Refresh channel list (60s server cache)"
+                title={t('Refresh channel list (60s server cache)')}
             >
                 <i className="fa-solid fa-rotate"></i>
             </button>
@@ -669,6 +675,7 @@ function simplifyPoints(points: number[], minDist: number = 4): number[] {
 
 const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean; onRefresh: () => void }> = ({ operation, canManage, onRefresh }) => {
     const { rpcAction } = useData();
+    const { t } = useI18n();
     // Memoise the `|| []` fallback so downstream effects/memos that watch
     // baseElements only re-fire when the underlying boardElements array
     // actually changes.
@@ -1548,7 +1555,7 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                     {/* Pan/Select tool */}
                     <button onClick={() => setActiveTool(null)}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${!activeTool ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent'}`}
-                        title="Pan & Select (Esc)">
+                        title={t('Pan & Select (Esc)')}>
                         <i className="fa-solid fa-hand text-xs"></i>
                     </button>
                     <div className="w-px h-6 bg-slate-700/60 mx-0.5"></div>
@@ -1556,7 +1563,7 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                     {ELEMENT_TOOLS.map(tool => (
                         <button key={tool.type} onClick={() => setActiveTool(activeTool === tool.type ? null : tool.type)}
                             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTool === tool.type ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-xs shadow-purple-900/20' : 'text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent'}`}
-                            title={`Place ${tool.label}`}>
+                            title={t('Place {label}', { label: t(tool.label) })}>
                             <i className={`${tool.icon} text-xs`}></i>
                         </button>
                     ))}
@@ -1564,12 +1571,12 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                     {/* Freehand Draw tool */}
                     <button onClick={() => setActiveTool(activeTool === 'draw' ? null : 'draw')}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTool === 'draw' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-xs shadow-purple-900/20' : 'text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent'}`}
-                        title="Freehand Draw">
+                        title={t('Freehand Draw')}>
                         <i className="fa-solid fa-pencil text-xs"></i>
                     </button>
                     <div className="w-px h-6 bg-slate-700/60 mx-0.5"></div>
                     {/* Color picker */}
-                    <div className="relative" title="Element color">
+                    <div className="relative" title={t('Element color')}>
                         <input type="color" value={toolColor} onChange={e => setToolColor(e.target.value)}
                             className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-slate-700/50 p-0.5" />
                     </div>
@@ -1577,22 +1584,22 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                     {/* Snap-to-grid toggle */}
                     <button onClick={() => setSnapEnabled(v => !v)}
                         className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${snapEnabled ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'text-slate-500 hover:text-white hover:bg-slate-800 border border-transparent'}`}
-                        title={snapEnabled ? 'Snap to grid · ON' : 'Snap to grid · OFF'}>
+                        title={snapEnabled ? t('Snap to grid · ON') : t('Snap to grid · OFF')}>
                         <i className="fa-solid fa-border-all text-xs"></i>
                     </button>
                     <div className="flex-1"></div>
                     {/* Status */}
                     <span className="text-[9px] text-slate-600 font-mono">
-                        {activeTool === 'draw' ? <span className="text-purple-300">Draw freehand · Esc to cancel</span> :
-                         (activeTool === 'zone' || activeTool === 'line') ? <span className="text-purple-300">Drag to draw {activeTool}</span> :
-                         activeTool ? <span className="text-purple-300">Click to place {activeTool}</span> : `${Math.round(zoom * 100)}%`}
+                        {activeTool === 'draw' ? <span className="text-purple-300">{t('Draw freehand · Esc to cancel')}</span> :
+                         (activeTool === 'zone' || activeTool === 'line') ? <span className="text-purple-300">{t('Drag to draw {tool}', { tool: t(activeTool, { context: 'boardElement' }) })}</span> :
+                         activeTool ? <span className="text-purple-300">{t('Click to place {tool}', { tool: t(activeTool, { context: 'boardElement' }) })}</span> : `${Math.round(zoom * 100)}%`}
                         {saving && <i className="fa-solid fa-spinner animate-spin ml-2 text-purple-300"></i>}
                         {selectedIds.size > 0 && (
-                            <span className="ml-2 text-sky-300">{selectedIds.size} selected</span>
+                            <span className="ml-2 text-sky-300">{t('{count} selected', { count: selectedIds.size })}</span>
                         )}
-                        <span className="ml-2 text-slate-700">{elements.length} el</span>
-                        {snapEnabled && <span className="ml-2 text-sky-400">snap {GRID_SIZE}px</span>}
-                        <span className="ml-2 text-slate-700 hidden lg:inline">· Shift+drag select · ⌫ del · ⌘Z undo · ⌘C/V copy · ⌘D dup · ↑↓←→ nudge</span>
+                        <span className="ml-2 text-slate-700">{t('{count} el', { count: elements.length })}</span>
+                        {snapEnabled && <span className="ml-2 text-sky-400">{t('snap {size}px', { size: GRID_SIZE })}</span>}
+                        <span className="ml-2 text-slate-700 hidden lg:inline">{t('· Shift+drag select · ⌫ del · ⌘Z undo · ⌘C/V copy · ⌘D dup · ↑↓←→ nudge')}</span>
                     </span>
                 </div>
             )}
@@ -1608,11 +1615,11 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                     {activeTool && (
                         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-2 pointer-events-none animate-pulse">
                             {activeTool === 'draw' ? (
-                                <><i className="fa-solid fa-pencil"></i> Click & drag to draw · Esc to cancel</>
+                                <><i className="fa-solid fa-pencil"></i> {t('Click & drag to draw · Esc to cancel')}</>
                             ) : activeTool === 'zone' || activeTool === 'line' ? (
-                                <><i className={`${ELEMENT_ICONS[activeTool]?.icon}`}></i> Click to place or drag to size · Esc to cancel</>
+                                <><i className={`${ELEMENT_ICONS[activeTool]?.icon}`}></i> {t('Click to place or drag to size · Esc to cancel')}</>
                             ) : (
-                                <><i className={`${ELEMENT_ICONS[activeTool]?.icon}`}></i> Click to place · Esc to cancel</>
+                                <><i className={`${ELEMENT_ICONS[activeTool]?.icon}`}></i> {t('Click to place · Esc to cancel')}</>
                             )}
                         </div>
                     )}
@@ -1855,22 +1862,22 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center text-slate-600">
                                 <i className="fa-solid fa-map text-4xl mb-3 opacity-30"></i>
-                                <p className="text-sm font-medium opacity-50">Tactical Board</p>
-                                <p className="text-xs opacity-40">{canManage ? 'Select a tool from the toolbar and click to place elements.' : 'No tactical elements placed.'}</p>
+                                <p className="text-sm font-medium opacity-50">{t('Tactical Board')}</p>
+                                <p className="text-xs opacity-40">{canManage ? t('Select a tool from the toolbar and click to place elements.') : t('No tactical elements placed.')}</p>
                             </div>
                         </div>
                     )}
 
                     {/* Zoom Controls */}
                     <div className="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700/50 rounded-lg backdrop-blur-xs p-1 flex flex-col gap-1 z-10">
-                        <button onClick={() => commitZoom(z => Math.min(z * 1.2, 3.0))} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Zoom In">
+                        <button onClick={() => commitZoom(z => Math.min(z * 1.2, 3.0))} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Zoom In')}>
                             <i className="fa-solid fa-plus"></i>
                         </button>
-                        <button onClick={() => commitZoom(z => Math.max(z * 0.8, 0.2))} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Zoom Out">
+                        <button onClick={() => commitZoom(z => Math.max(z * 0.8, 0.2))} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Zoom Out')}>
                             <i className="fa-solid fa-minus"></i>
                         </button>
                         <div className="border-t border-slate-700/50 my-0.5"></div>
-                        <button onClick={() => { commitStagePos({ x: 0, y: 0 }); commitZoom(1.0); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Reset View">
+                        <button onClick={() => { commitStagePos({ x: 0, y: 0 }); commitZoom(1.0); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Reset View')}>
                             <i className="fa-solid fa-expand"></i>
                         </button>
                     </div>
@@ -1880,26 +1887,26 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                 {selectedElement && (
                     <div className="w-56 shrink-0 bg-slate-900/80 border-l border-slate-700/30 overflow-y-auto custom-scrollbar">
                         <div className="p-3 border-b border-slate-700/30 flex items-center justify-between">
-                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Properties</p>
+                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">{t('Properties')}</p>
                             <button onClick={() => selectElement(null)} className="text-slate-600 hover:text-white text-xs"><i className="fa-solid fa-xmark"></i></button>
                         </div>
                         <div className="p-3 space-y-3">
                             <div>
-                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Type</label>
+                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">{t('Type')}</label>
                                 <div className="flex items-center gap-2 text-xs text-slate-300">
                                     <i className={`${ELEMENT_ICONS[selectedElement.elementType]?.icon}`} style={{ color: selectedElement.color || ELEMENT_ICONS[selectedElement.elementType]?.color }}></i>
-                                    <span className="capitalize font-bold">{selectedElement.elementType}</span>
+                                    <span className="capitalize font-bold">{t(selectedElement.elementType, { context: 'boardElement' })}</span>
                                 </div>
                             </div>
                             <div>
-                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Label</label>
+                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">{t('Label')}</label>
                                 <input type="text" value={editLabel} onChange={e => setEditLabel(e.target.value)}
                                     onBlur={() => { if (editLabel !== (selectedElement.label || '')) handleUpdateElement(selectedElement.id, { label: editLabel }); }}
                                     onKeyDown={e => { if (e.key === 'Enter') handleUpdateElement(selectedElement.id, { label: editLabel }); }}
                                     className="w-full bg-black/20 border border-slate-700/50 text-white text-sm rounded-lg px-3 py-2.5 outline-hidden focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/30 transition-all" />
                             </div>
                             <div>
-                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Color</label>
+                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">{t('Color')}</label>
                                 <div className="flex items-center gap-2">
                                     <input type="color" value={editColor} onChange={e => setEditColor(e.target.value)}
                                         onBlur={() => { if (editColor !== (selectedElement.color || '')) handleUpdateElement(selectedElement.id, { color: editColor }); }}
@@ -1908,17 +1915,17 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
                                 </div>
                             </div>
                             <div>
-                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">Position</label>
+                                <label className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1">{t('Position')}</label>
                                 <p className="text-[10px] font-mono text-slate-400">
                                     X: {Math.round(selectedElement.posX)} · Y: {Math.round(selectedElement.posY)}
                                 </p>
                             </div>
-                            {savingEdit && <p className="text-[9px] text-purple-300"><i className="fa-solid fa-spinner animate-spin mr-1"></i>Saving...</p>}
+                            {savingEdit && <p className="text-[9px] text-purple-300"><i className="fa-solid fa-spinner animate-spin mr-1"></i>{t('Saving...')}</p>}
                             {canManage && (
                                 <div className="pt-2 border-t border-slate-700/30">
                                     <button onClick={() => handleDeleteElement(selectedElement.id)}
                                         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors">
-                                        <i className="fa-solid fa-trash"></i> Delete Element
+                                        <i className="fa-solid fa-trash"></i> {t('Delete Element')}
                                     </button>
                                 </div>
                             )}
@@ -1932,6 +1939,7 @@ const TacticalBoard: React.FC<{ operation: HydratedOperation; canManage: boolean
 
 const OpCommandSignalsTab: React.FC<OpCommandSignalsTabProps> = ({ operation, canManage, isParticipant, onRefresh }) => {
     const { updateOperationDetails } = useOperations();
+    const { t } = useI18n();
     const [subTab, setSubTab] = useState<SubTab>('comms-plan');
 
     const subTabs: { key: SubTab; label: string; icon: string }[] = [
@@ -1946,7 +1954,7 @@ const OpCommandSignalsTab: React.FC<OpCommandSignalsTabProps> = ({ operation, ca
             <div className="shrink-0 px-6 lg:px-8 pt-6 lg:pt-8 pb-4">
                 <div className="flex items-center justify-between gap-4">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                        <i className="fa-solid fa-tower-broadcast text-purple-400/70"></i> Command & Signals
+                        <i className="fa-solid fa-tower-broadcast text-purple-400/70"></i> {t('Command & Signals')}
                     </p>
                     <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/40 rounded-lg p-0.5">
                         {subTabs.map(tab => (
@@ -1954,7 +1962,7 @@ const OpCommandSignalsTab: React.FC<OpCommandSignalsTabProps> = ({ operation, ca
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
                                     subTab === tab.key ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                                 }`}>
-                                <i className={tab.icon}></i> {tab.label}
+                                <i className={tab.icon}></i> {t(tab.label)}
                             </button>
                         ))}
                     </div>

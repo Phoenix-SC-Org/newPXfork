@@ -9,6 +9,7 @@ import LocationInput from '../ui/LocationInput';
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigation } from '../../contexts/NavigationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface CreateAdHocRequestModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
     const { serviceTypes } = useConfig();
     const { addToast } = useNotification();
     const { viewRequestDetails } = useNavigation();
+    const { t } = useI18n();
 
     const activeServiceTypes = useMemo(() => serviceTypes.filter(t => t.isActive), [serviceTypes]);
     const [serviceType, setServiceType] = useState<ServiceType>(activeServiceTypes.length > 0 ? activeServiceTypes[0].name : 'Security');
@@ -52,7 +54,7 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
         e.preventDefault();
 
         if (rsiHandle.includes(',') || rsiHandle.trim().split(/\s+/).length > 1) {
-            addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "Please enter only the PRIMARY contact's handle in this field. List additional group members in the Party Members box." });
+            addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t("Please enter only the PRIMARY contact's handle in this field. List additional group members in the Party Members box.") });
             return;
         }
 
@@ -101,12 +103,12 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
 
             } catch (err) {
                 console.error("Failed to create ad-hoc request:", err);
-                addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while creating the ad-hoc request. Please try again." });
+                addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while creating the ad-hoc request. Please try again.') });
             } finally {
                 setIsLoading(false);
             }
         }
-    }, [createAdHocRequest, serviceType, location, description, urgency, threatLevel, rsiHandle, partyInfo, partyHandles, onClose, viewRequestDetails, refreshRequests, addToast]);
+    }, [createAdHocRequest, serviceType, location, description, urgency, threatLevel, rsiHandle, partyInfo, partyHandles, onClose, viewRequestDetails, refreshRequests, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -115,8 +117,8 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Log Ad-Hoc Request"
-            subtitle="Manual Entry Mode"
+            title={t('Log Ad-Hoc Request')}
+            subtitle={t('Manual Entry Mode')}
             icon="fa-solid fa-file-pen"
             color="amber"
             width="max-w-xl"
@@ -125,23 +127,23 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
                 <div className="p-6 space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className={labelClass}>Primary Client Handle</label>
+                            <label className={labelClass}>{t('Primary Client Handle')}</label>
                             <input
                                 type="text"
                                 value={rsiHandle}
                                 onChange={(e) => setRsiHandle(e.target.value)}
-                                placeholder="e.g., SquadLeader_1"
+                                placeholder={t('e.g., SquadLeader_1')}
                                 className={inputClass}
                                 required
                                 disabled={isLoading}
                             />
                             <p className="text-[9px] text-amber-500/80 mt-1 flex items-center font-bold">
                                 <i className="fa-solid fa-triangle-exclamation mr-1"></i>
-                                Single handle only.
+                                {t('Single handle only.')}
                             </p>
                         </div>
                         <div>
-                            <label className={labelClass}>Service Type</label>
+                            <label className={labelClass}>{t('Service Type')}</label>
                             <select
                                 value={serviceType}
                                 onChange={(e) => setServiceType(e.target.value)}
@@ -156,7 +158,7 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className={labelClass}>Urgency</label>
+                            <label className={labelClass}>{t('Urgency')}</label>
                             <select
                                 value={urgency}
                                 onChange={(e) => setUrgency(e.target.value as UrgencyLevel)}
@@ -164,12 +166,12 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
                                 disabled={isLoading}
                             >
                                 {Object.values(UrgencyLevel).map(level => (
-                                    <option key={level} value={level}>{level}</option>
+                                    <option key={level} value={level}>{t(level)}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Threat Level</label>
+                            <label className={labelClass}>{t('Threat Level')}</label>
                             <select
                                 value={threatLevel}
                                 onChange={(e) => setThreatLevel(e.target.value as ThreatLevel)}
@@ -177,13 +179,13 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
                                 disabled={isLoading}
                             >
                                 {Object.values(ThreatLevel).map(level => (
-                                    <option key={level} value={level}>{level}</option>
+                                    <option key={level} value={level}>{t(level)}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label className={labelClass}>Location</label>
+                        <label className={labelClass}>{t('Location')}</label>
                         <LocationInput
                             value={location}
                             onChange={setLocation}
@@ -193,14 +195,14 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
 
                     {/* Party Members Section */}
                     <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
-                        <label className={labelClass}>Additional Party Members</label>
+                        <label className={labelClass}>{t('Additional Party Members')}</label>
                         <div className="flex gap-2 mb-3">
                             <input
                                 type="text"
                                 value={currentHandle}
                                 onChange={(e) => setCurrentHandle(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddHandle(e); }}
-                                placeholder="RSI Handle (e.g. Wingman_Bob)"
+                                placeholder={t('RSI Handle (e.g. Wingman_Bob)')}
                                 className={inputClass}
                                 disabled={isLoading}
                             />
@@ -227,26 +229,26 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
                                     </button>
                                 </span>
                             ))}
-                            {partyHandles.length === 0 && <span className="text-xs text-slate-600 italic">No additional members added.</span>}
+                            {partyHandles.length === 0 && <span className="text-xs text-slate-600 italic">{t('No additional members added.')}</span>}
                         </div>
 
                         <input
                             type="text"
                             value={partyInfo}
                             onChange={(e) => setPartyInfo(e.target.value)}
-                            placeholder="Party Status / Context (e.g. All injured)"
+                            placeholder={t('Party Status / Context (e.g. All injured)')}
                             className={inputClass}
                             disabled={isLoading}
                         />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Description</label>
+                        <label className={labelClass}>{t('Description')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={3}
-                            placeholder="Situation report..."
+                            placeholder={t('Situation report...')}
                             className={`${inputClass} resize-none`}
                             required
                             disabled={isLoading}
@@ -256,13 +258,13 @@ const CreateAdHocRequestModal: React.FC<CreateAdHocRequestModalProps> = ({ isOpe
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/50 hover:bg-amber-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Log Request'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Log Request')}
                     </button>
                 </div>
             </form>

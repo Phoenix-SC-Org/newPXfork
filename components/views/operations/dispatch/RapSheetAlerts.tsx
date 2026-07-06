@@ -1,5 +1,6 @@
 import React from 'react';
 import type { HydratedWarrant, IntelThreatLevel, User } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     activeWarrants: HydratedWarrant[];
@@ -15,6 +16,7 @@ interface Props {
  *   - Low reputation on a registered subject (≤ 15)
  */
 export default function RapSheetAlerts({ activeWarrants, highestThreat, subject }: Props) {
+    const { t } = useI18n();
     const showWarrant = activeWarrants.length > 0;
     const showThreat = highestThreat === 'Critical' || highestThreat === 'High';
     const showLowTrust = !!subject && (subject.reputation ?? 100) <= 15;
@@ -30,12 +32,12 @@ export default function RapSheetAlerts({ activeWarrants, highestThreat, subject 
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-black uppercase tracking-[0.25em] text-red-300">
-                            Active Caution{activeWarrants.length > 1 ? 's' : ''}
+                            {activeWarrants.length > 1 ? t('Active Cautions') : t('Active Caution')}
                         </div>
                         <div className="text-sm text-white truncate">
-                            {activeWarrants.length} outstanding
-                            {activeWarrants[0]?.action ? ` · ${activeWarrants[0].action}` : ''}
-                            {activeWarrants[0]?.uecReward ? ` · ${activeWarrants[0].uecReward.toLocaleString()} aUEC reward` : ''}
+                            {t('{count} outstanding', { count: activeWarrants.length })}
+                            {activeWarrants[0]?.action ? ` · ${t(activeWarrants[0].action, { context: 'warrantAction' })}` : ''}
+                            {activeWarrants[0]?.uecReward ? ` · ${t('{amount} aUEC reward', { amount: activeWarrants[0].uecReward.toLocaleString() })}` : ''}
                         </div>
                     </div>
                 </div>
@@ -56,10 +58,10 @@ export default function RapSheetAlerts({ activeWarrants, highestThreat, subject 
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className={`text-[10px] font-black uppercase tracking-[0.25em] ${highestThreat === 'Critical' ? 'text-red-300' : 'text-amber-300'}`}>
-                            Elevated Threat
+                            {t('Elevated Threat')}
                         </div>
                         <div className="text-sm text-white">
-                            Intel reports rate this subject at <strong>{highestThreat}</strong>. Approach with caution.
+                            {t('Intel reports rate this subject at')} <strong>{highestThreat && t(highestThreat)}</strong>. {t('Approach with caution.')}
                         </div>
                     </div>
                 </div>
@@ -71,9 +73,9 @@ export default function RapSheetAlerts({ activeWarrants, highestThreat, subject 
                         <i className="fa-solid fa-scale-unbalanced text-slate-300"></i>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">Low Trust</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">{t('Low Trust')}</div>
                         <div className="text-sm text-white">
-                            Reputation {subject?.reputation ?? 0}/100 — consider verifying intent before committing units.
+                            {t('Reputation {rep}/100 — consider verifying intent before committing units.', { rep: subject?.reputation ?? 0 })}
                         </div>
                     </div>
                 </div>

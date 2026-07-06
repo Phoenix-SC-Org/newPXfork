@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { HydratedOperation, OperationStatus } from '../../../../types';
 import { useAuth, useFormatDate } from '../../../../contexts/AuthContext';
 import { useOperations } from '../../../../contexts/OperationsContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpCommsTabProps {
     operation: HydratedOperation;
@@ -12,6 +13,7 @@ interface OpCommsTabProps {
 
 const OpCommsTab: React.FC<OpCommsTabProps> = ({ operation, canManage, isParticipant, onRefresh }) => {
     const { currentUser } = useAuth();
+    const { t } = useI18n();
     const { addOperationTimelineEntry } = useOperations();
     const fmt = useFormatDate();
     const [timelineInput, setTimelineInput] = useState('');
@@ -78,7 +80,7 @@ const OpCommsTab: React.FC<OpCommsTabProps> = ({ operation, canManage, isPartici
                                 isMine ? 'bg-purple-600 text-white rounded-br-none' : 'bg-slate-700 text-slate-200 rounded-bl-none'
                             }`}>
                                 <div className={`text-[10px] font-bold mb-1 opacity-70 flex justify-between gap-4 ${isMine ? 'text-purple-100' : 'text-slate-400'}`}>
-                                    <span>{entry.author?.name || 'Unknown'}</span>
+                                    <span>{entry.author?.name || t('Unknown')}</span>
                                     <span>{fmt.time(entry.createdAt)}</span>
                                 </div>
                                 <p className="whitespace-pre-wrap leading-relaxed">{entry.logEntry}</p>
@@ -88,14 +90,14 @@ const OpCommsTab: React.FC<OpCommsTabProps> = ({ operation, canManage, isPartici
                 }) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
                         <i className="fa-solid fa-comment-slash text-4xl mb-4"></i>
-                        <p className="text-sm font-medium italic">Secure channel established. Silence on comms.</p>
+                        <p className="text-sm font-medium italic">{t('Secure channel established. Silence on comms.')}</p>
                     </div>
                 )}
             </div>
 
             {(isParticipant || canManage) && operation.status !== OperationStatus.Concluded && (
                 <form onSubmit={handleTimelineSubmit} className="p-4 bg-slate-900/80 border-t border-slate-700/50 flex gap-3 backdrop-blur-md shrink-0">
-                    <input type="text" value={timelineInput} onChange={(e) => setTimelineInput(e.target.value)} placeholder="Add entry to mission log..."
+                    <input type="text" value={timelineInput} onChange={(e) => setTimelineInput(e.target.value)} placeholder={t('Add entry to mission log...')}
                         className="flex-1 bg-slate-900/60 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/30 focus:bg-slate-900/80 outline-hidden transition-all placeholder:text-slate-500" disabled={loadingAction} />
                     <button type="submit" disabled={!timelineInput.trim() || loadingAction}
                         className="bg-purple-600 hover:bg-purple-500 text-white w-12 rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/30 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100">

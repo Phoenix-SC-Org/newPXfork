@@ -5,8 +5,10 @@ import { useAuth } from '../../../../../contexts/AuthContext';
 import { OperationStatus } from '../../../../../types';
 import { EmptyState } from '../../../../shared/ui';
 import { useNavigation } from '../../../../../contexts/NavigationContext';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 export default function OperationsPanel() {
+    const { t } = useI18n();
     const { operations } = useOperations();
     const { currentUser, hasPermission } = useAuth();
     const { setActiveView, viewOperationDetails } = useNavigation();
@@ -35,8 +37,8 @@ export default function OperationsPanel() {
         return (
             <EmptyState
                 icon="fa-crosshairs"
-                heading="No active operations"
-                description="Scheduled and active ops will appear here."
+                heading={t('No active operations')}
+                description={t('Scheduled and active ops will appear here.')}
                 accent="amber"
             />
         );
@@ -65,7 +67,7 @@ export default function OperationsPanel() {
                                     ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                                     : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                             }`}>
-                                {op.status}
+                                {t(op.status, { context: 'operation' })}
                             </span>
                         </div>
                         <p className="text-[11px] text-slate-500 truncate mt-0.5">{op.description}</p>
@@ -81,7 +83,7 @@ export default function OperationsPanel() {
                     onClick={() => setActiveView('operations')}
                     className="w-full text-center text-[11px] font-mono uppercase tracking-widest text-slate-500 hover:text-purple-300 transition-colors py-1"
                 >
-                    View all operations →
+                    {t('View all operations →')}
                 </button>
             </div>
         </div>

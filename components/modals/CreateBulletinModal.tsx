@@ -3,6 +3,7 @@ import { IntelThreatLevel, BulletinDuration } from '../../types';
 import { useMembers } from '../../contexts/MembersContext';
 import { useIntel } from '../../contexts/IntelContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -26,6 +27,7 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
     const { createBulletin } = useIntel();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
@@ -80,19 +82,19 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                 sharedWithAllies,
             });
             addToast(
-                'Bulletin Published',
+                t('Bulletin Published'),
                 <i className="fa-solid fa-satellite-dish"></i>,
                 'bg-amber-600 text-white shadow-amber-900/50',
-                { description: 'Your intel bulletin has been broadcast successfully.' }
+                { description: t('Your intel bulletin has been broadcast successfully.') }
             );
             onClose();
         } catch (err) {
             console.error(err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to create bulletin. Please try again." });
+            addToast(t("Error"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to create bulletin. Please try again.") });
         } finally {
             setIsLoading(false);
         }
-    }, [title, body, threatLevel, location, duration, classificationLevel, selectedMarkers, sharedWithAllies, createBulletin, currentUser, onClose, addToast]);
+    }, [title, body, threatLevel, location, duration, classificationLevel, selectedMarkers, sharedWithAllies, createBulletin, currentUser, onClose, addToast, t]);
 
     const threatLevels = [IntelThreatLevel.Critical, IntelThreatLevel.High, IntelThreatLevel.Medium, IntelThreatLevel.Low];
 
@@ -110,8 +112,8 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Issue Intel Bulletin"
-            subtitle="Time-Sensitive Intelligence"
+            title={t('Issue Intel Bulletin')}
+            subtitle={t('Time-Sensitive Intelligence')}
             icon="fa-solid fa-satellite-dish"
             color="amber"
             width="max-w-xl"
@@ -119,12 +121,12 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                     <div>
-                        <label className={labelClass}>Title <span className="text-slate-600">({title.length}/120)</span></label>
+                        <label className={labelClass}>{t('Title')} <span className="text-slate-600">({title.length}/120)</span></label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value.slice(0, 120))}
-                            placeholder="Hostile patrol spotted near Nyx gateway"
+                            placeholder={t('Hostile patrol spotted near Nyx gateway')}
                             className={inputClass}
                             required
                             disabled={isLoading}
@@ -133,12 +135,12 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                     </div>
 
                     <div>
-                        <label className={labelClass}>Body <span className="text-slate-600">({body.length}/500)</span></label>
+                        <label className={labelClass}>{t('Body')} <span className="text-slate-600">({body.length}/500)</span></label>
                         <textarea
                             value={body}
                             onChange={(e) => setBody(e.target.value.slice(0, 500))}
                             rows={3}
-                            placeholder="Provide actionable intelligence details..."
+                            placeholder={t('Provide actionable intelligence details...')}
                             className={`${inputClass} resize-none`}
                             required
                             disabled={isLoading}
@@ -147,7 +149,7 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                     </div>
 
                     <div>
-                        <label className={labelClass}>Threat Level</label>
+                        <label className={labelClass}>{t('Threat Level')}</label>
                         <div className="grid grid-cols-4 gap-1.5">
                             {threatLevels.map(level => (
                                 <button
@@ -160,26 +162,26 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                                             : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'
                                     }`}
                                 >
-                                    {level}
+                                    {t(level)}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Location <span className="text-slate-600">(optional)</span></label>
+                        <label className={labelClass}>{t('Location')} <span className="text-slate-600">{t('(optional)')}</span></label>
                         <input
                             type="text"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            placeholder="Stanton, Pyro, Nyx..."
+                            placeholder={t('Stanton, Pyro, Nyx...')}
                             className={inputClass}
                             disabled={isLoading}
                         />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Duration</label>
+                        <label className={labelClass}>{t('Duration')}</label>
                         <div className="grid grid-cols-6 gap-1.5">
                             {DURATION_OPTIONS.map(opt => (
                                 <button
@@ -192,7 +194,7 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                                             : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-600'
                                     }`}
                                 >
-                                    {opt.label}
+                                    {t(opt.label)}
                                 </button>
                             ))}
                         </div>
@@ -200,17 +202,17 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
 
                     <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 space-y-4">
                         <h4 className="text-[10px] font-black text-sky-500 uppercase tracking-widest flex items-center gap-2">
-                            <i className="fa-solid fa-lock"></i> Classification & Privacy
+                            <i className="fa-solid fa-lock"></i> {t('Classification & Privacy')}
                         </h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Classification Level</label>
+                                <label className={labelClass}>{t('Classification Level')}</label>
                                 <select value={classificationLevel} onChange={e => setClassificationLevel(e.target.value)} className={inputClass} disabled={isLoading}>
-                                    {securityClearances.map(c => <option key={c.id} value={c.level}>Level {c.level} - {c.name}</option>)}
+                                    {securityClearances.map(c => <option key={c.id} value={c.level}>{t('Level {level} - {name}', { level: c.level, name: c.name })}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className={labelClass}>Limiting Markers</label>
+                                <label className={labelClass}>{t('Limiting Markers')}</label>
                                 <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
                                     {limitingMarkers.map(m => (
                                         <button
@@ -240,14 +242,14 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                             >
                                 <span className="flex items-center gap-2">
                                     <i className="fa-solid fa-handshake"></i>
-                                    Share with Allies
+                                    {t('Share with Allies')}
                                 </span>
                                 <span className={`flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${sharedWithAllies ? 'bg-emerald-500/80 justify-end' : 'bg-slate-700 justify-start'}`}>
                                     <span className="h-4 w-4 rounded-full bg-white"></span>
                                 </span>
                             </button>
                             <p className="mt-1.5 text-[10px] text-slate-500">
-                                Allied orgs you've enabled the bulletin channel for can pull this bulletin (subject to clearance).
+                                {t("Allied orgs you've enabled the bulletin channel for can pull this bulletin (subject to clearance).")}
                             </p>
                         </div>
                     </div>
@@ -255,9 +257,9 @@ const CreateBulletinModal: React.FC<CreateBulletinModalProps> = ({ isOpen, onClo
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button type="submit" disabled={isLoading || !title.trim() || !body.trim()} className="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-900/20 disabled:opacity-50">
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Broadcast Bulletin'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Broadcast Bulletin')}
                     </button>
                 </div>
             </form>

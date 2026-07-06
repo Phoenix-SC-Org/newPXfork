@@ -5,6 +5,7 @@ import { useFormatDate } from '../../../../contexts/AuthContext';
 import { useOperations } from '../../../../contexts/OperationsContext';
 import { computePayouts, PayoutRow } from '../../../../lib/operations/payouts';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpLedgerTabProps {
     operation: HydratedOperation;
@@ -28,6 +29,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
     const fmt = useFormatDate();
     const { setOperationPayoutMode, setOperationPayoutSplits, toggleParticipantPayoutPaid } = useOperations();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     // No such field exists on the UI context; consumers fall through to their `|| []` fallback.
     const allUsers: any = undefined;
 
@@ -90,18 +92,18 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
 
     const handleSaveSplits = async () => {
         if (!draftValid) {
-            addToast('Validation Error', <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50',
-                { description: `Splits must total 100% (currently ${draftSum.toFixed(2)}%).` });
+            addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50',
+                { description: t('Splits must total 100% (currently {sum}%).', { sum: draftSum.toFixed(2) }) });
             return;
         }
         setSavingSplits(true);
         try {
             const splits = Object.entries(draftSplits).map(([uid, v]) => ({ userId: Number(uid), percent: Number(v) || 0 }));
             await setOperationPayoutSplits(operation.id, splits);
-            addToast('Splits Saved', <i className="fa-solid fa-check"></i>, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Splits Saved'), <i className="fa-solid fa-check"></i>, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Failed to save splits.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
+                { description: err?.message || t('Failed to save splits.') });
         } finally {
             setSavingSplits(false);
         }
@@ -111,7 +113,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
         try {
             await setOperationPayoutMode(operation.id, mode);
         } catch (err: any) {
-            addToast('Failed to Change Mode', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
+            addToast(t('Failed to Change Mode'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
         }
     };
@@ -120,7 +122,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
         try {
             await toggleParticipantPayoutPaid(operation.id, userId, !currentlyPaid);
         } catch (err: any) {
-            addToast('Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
+            addToast(t('Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
         }
     };
@@ -147,44 +149,44 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
         <div className="p-4 md:p-6 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <i className="fa-solid fa-coins text-slate-500"></i> Financial Ledger
+                    <i className="fa-solid fa-coins text-slate-500"></i> {t('Financial Ledger')}
                 </h3>
                 {editable && (
                     <div className="flex items-center gap-2">
                         <button onClick={onOpenAddUec} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-300 px-3 py-1.5 rounded-sm border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors uppercase tracking-wider">
-                            <i className="fa-solid fa-plus mr-1"></i> Deposit
+                            <i className="fa-solid fa-plus mr-1"></i> {t('Deposit')}
                         </button>
                         <button onClick={onOpenAddCost} className="text-[10px] font-bold bg-red-500/10 text-red-300 px-3 py-1.5 rounded-sm border border-red-500/30 hover:bg-red-500/20 transition-colors uppercase tracking-wider">
-                            <i className="fa-solid fa-minus mr-1"></i> Cost
+                            <i className="fa-solid fa-minus mr-1"></i> {t('Cost')}
                         </button>
                     </div>
                 )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <MetricTile label="Total Pool" value={totalPool} suffix="aUEC" tone="emerald" icon="fa-arrow-trend-up" />
-                <MetricTile label="Total Costs" value={totalCosts} suffix="aUEC" tone="red" icon="fa-arrow-trend-down" />
-                <MetricTile label="Net" value={netPool} suffix="aUEC" tone={netPool >= 0 ? 'emerald' : 'red'} icon="fa-equals" />
-                <MetricTile label="Paid Out" value={`${paidCount} / ${totalCount}`} tone="sky" icon="fa-check-double" />
+                <MetricTile label={t('Total Pool')} value={totalPool} suffix="aUEC" tone="emerald" icon="fa-arrow-trend-up" />
+                <MetricTile label={t('Total Costs')} value={totalCosts} suffix="aUEC" tone="red" icon="fa-arrow-trend-down" />
+                <MetricTile label={t('Net')} value={netPool} suffix="aUEC" tone={netPool >= 0 ? 'emerald' : 'red'} icon="fa-equals" />
+                <MetricTile label={t('Paid Out')} value={`${paidCount} / ${totalCount}`} tone="sky" icon="fa-check-double" />
             </div>
 
             <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl">
                 <div className="px-5 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <i className="fa-solid fa-chart-pie text-sky-400/70 text-sm"></i>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Estimated Payouts</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{t('Estimated Payouts')}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Mode</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('Mode')}</span>
                         <select
                             value={operation.payoutMode}
                             onChange={e => handleModeChange(e.target.value as OperationPayoutMode)}
                             disabled={!editable}
                             className="bg-slate-950/60 border border-slate-700 text-[10px] uppercase tracking-wider font-bold text-slate-200 rounded-sm px-2 py-1 focus:outline-hidden focus:border-sky-500/40 disabled:opacity-50"
                         >
-                            <option value="equal">Equal</option>
-                            <option value="weighted">Time-Weighted</option>
-                            <option value="custom">Custom</option>
+                            <option value="equal">{t('Equal')}</option>
+                            <option value="weighted">{t('Time-Weighted')}</option>
+                            <option value="custom">{t('Custom')}</option>
                         </select>
                     </div>
                 </div>
@@ -192,14 +194,14 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 p-5">
                     <div className="md:col-span-2 space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
                         {operation.participants.length === 0 ? (
-                            <p className="text-xs text-slate-500 italic text-center py-6">No participants on the roster.</p>
+                            <p className="text-xs text-slate-500 italic text-center py-6">{t('No participants on the roster.')}</p>
                         ) : (
                             <div className="space-y-1.5">
                                 <div className="grid grid-cols-12 gap-2 px-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                                    <div className="col-span-5">Participant</div>
-                                    <div className="col-span-2 text-right">Share</div>
-                                    <div className="col-span-3 text-right">Amount</div>
-                                    <div className="col-span-2 text-right">Paid</div>
+                                    <div className="col-span-5">{t('Participant')}</div>
+                                    <div className="col-span-2 text-right">{t('Share')}</div>
+                                    <div className="col-span-3 text-right">{t('Amount')}</div>
+                                    <div className="col-span-2 text-right">{t('Paid')}</div>
                                 </div>
                                 {operation.participants.map(p => {
                                     const row = payouts.find(r => r.userId === p.userId);
@@ -211,7 +213,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                         <div key={p.userId} className="grid grid-cols-12 gap-2 items-center px-3 py-2 bg-slate-950/40 border border-slate-800/60 rounded-lg">
                                             <div className="col-span-5 flex items-center gap-2 min-w-0">
                                                 {p.user?.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-6 h-6 rounded-full shrink-0 object-cover" />}
-                                                <span className="text-sm font-bold text-slate-200 truncate">{p.user?.name || 'Unknown'}</span>
+                                                <span className="text-sm font-bold text-slate-200 truncate">{p.user?.name || t('Unknown')}</span>
                                             </div>
                                             <div className="col-span-2 text-right">
                                                 {isCustom && editable ? (
@@ -235,7 +237,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                             </div>
                                             <div className="col-span-2 text-right flex items-center justify-end gap-2">
                                                 {isPaid && p.payoutPaidAt && (
-                                                    <span className="text-[9px] text-slate-500" title={`Paid ${fmt(p.payoutPaidAt)}${paidByUser ? ` by ${paidByUser.name}` : ''}`}>
+                                                    <span className="text-[9px] text-slate-500" title={paidByUser ? t('Paid {date} by {name}', { date: fmt(p.payoutPaidAt), name: paidByUser.name }) : t('Paid {date}', { date: fmt(p.payoutPaidAt) })}>
                                                         {fmt.date(p.payoutPaidAt)}
                                                     </span>
                                                 )}
@@ -245,7 +247,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                                     onChange={() => handleTogglePaid(p.userId, isPaid)}
                                                     disabled={!editable}
                                                     className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                    title={concluded ? 'Operation concluded — payout record locked' : (isPaid ? 'Mark as unpaid' : 'Mark as paid')}
+                                                    title={concluded ? t('Operation concluded — payout record locked') : (isPaid ? t('Mark as unpaid') : t('Mark as paid'))}
                                                 />
                                             </div>
                                         </div>
@@ -255,14 +257,14 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                 {isCustom && editable && (
                                     <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">
                                         <span className={`text-[10px] font-mono uppercase tracking-widest ${draftValid ? 'text-emerald-300' : 'text-amber-300'}`}>
-                                            Sum: {draftSum.toFixed(2)}% {!draftValid && '(must total 100%)'}
+                                            {t('Sum: {sum}%', { sum: draftSum.toFixed(2) })} {!draftValid && t('(must total 100%)')}
                                         </span>
                                         <div className="flex items-center gap-2">
                                             <button onClick={handleResetEven} className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm bg-slate-800/60 border border-slate-700 text-slate-300 hover:bg-slate-800">
-                                                Reset to Even
+                                                {t('Reset to Even')}
                                             </button>
                                             <button onClick={handleSaveSplits} disabled={!draftValid || savingSplits} className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-sm bg-sky-500/15 border border-sky-500/40 text-sky-200 hover:bg-sky-500/25 disabled:opacity-50">
-                                                {savingSplits ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Splits'}
+                                                {savingSplits ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Splits')}
                                             </button>
                                         </div>
                                     </div>
@@ -272,7 +274,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                     </div>
 
                     <div className="hidden md:block h-[280px] relative">
-                        <PieChart data={pieData} title="Distribution" icon={<i className="fa-solid fa-chart-pie"></i>} unit="aUEC" />
+                        <PieChart data={pieData} title={t('Distribution')} icon={<i className="fa-solid fa-chart-pie"></i>} unit="aUEC" />
                     </div>
                 </div>
             </div>
@@ -281,7 +283,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                 <div className="px-5 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <i className="fa-solid fa-receipt text-sky-400/70 text-sm"></i>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Transaction Log</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{t('Transaction Log')}</span>
                     </div>
                     <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-800 rounded-sm p-0.5">
                         {(['all', 'deposits', 'costs'] as TxFilter[]).map(f => (
@@ -289,7 +291,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                 className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded transition-colors ${
                                     txFilter === f ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'
                                 }`}>
-                                {f === 'all' ? 'All' : f === 'deposits' ? 'Deposits' : 'Costs'}
+                                {f === 'all' ? t('All') : f === 'deposits' ? t('Deposits') : t('Costs')}
                             </button>
                         ))}
                     </div>
@@ -299,7 +301,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                     {txEntries.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 text-slate-600 italic opacity-60">
                             <i className="fa-solid fa-money-bill-wave text-2xl mb-2"></i>
-                            <p className="text-xs">No transactions recorded.</p>
+                            <p className="text-xs">{t('No transactions recorded.')}</p>
                         </div>
                     ) : (
                         txEntries.map(log => {
@@ -307,7 +309,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                             const cat = log.costCategory ? COST_CATEGORY_LABEL[log.costCategory] : null;
                             const reasonText = isCost
                                 ? (log.costDescription || (log.logEntry || '').split('. ').slice(-1)[0] || '')
-                                : ((log.logEntry || '').split('Reason: ')[1] || 'Deposit');
+                                : ((log.logEntry || '').split('Reason: ')[1] || t('Deposit'));
                             return (
                                 <div key={log.id} className="flex items-start gap-3 p-3 bg-slate-950/40 border border-slate-800/60 rounded-lg">
                                     <div className={`w-9 h-9 flex items-center justify-center rounded-sm shrink-0 ${isCost ? 'bg-red-500/10 text-red-300 border border-red-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'}`}>
@@ -320,7 +322,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                             </span>
                                             {cat && (
                                                 <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-red-200 bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded-sm">
-                                                    <i className={`fa-solid ${cat.icon} text-[8px]`}></i> {cat.label}
+                                                    <i className={`fa-solid ${cat.icon} text-[8px]`}></i> {t(cat.label)}
                                                 </span>
                                             )}
                                         </div>

@@ -13,6 +13,7 @@ import LocationInput from '../ui/LocationInput';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useNow } from '../../hooks/useNow';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface CreateOperationWizardProps {
     isOpen: boolean;
@@ -239,6 +240,7 @@ const STEPS = [
 type StepKey = typeof STEPS[number]['key'];
 
 const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, onClose }) => {
+    const { t } = useI18n();
     const { addToast } = useNotification();
     const { viewOperationDetails } = useNavigation();
     const {
@@ -266,12 +268,12 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
         const v: Record<StepKey, string | null> = {
             basics: null, locations: null, phases: null, security: null, review: null,
         };
-        if (!state.name.trim()) v.basics = 'Operation name is required.';
-        else if (!state.description.trim()) v.basics = 'Briefing description is required.';
-        else if (state.isSpecial && !state.joinCode.trim()) v.basics = 'Special Operations require a Join Code/PIN.';
+        if (!state.name.trim()) v.basics = t('Operation name is required.');
+        else if (!state.description.trim()) v.basics = t('Briefing description is required.');
+        else if (state.isSpecial && !state.joinCode.trim()) v.basics = t('Special Operations require a Join Code/PIN.');
 
-        if (state.isScheduled && !state.scheduledStart) v.security = 'Scheduled operations require a start time.';
-        if (state.createDiscordEvent && (!state.scheduledStart || !state.scheduledEnd)) v.security = 'Discord events need a start AND end time.';
+        if (state.isScheduled && !state.scheduledStart) v.security = t('Scheduled operations require a start time.');
+        if (state.createDiscordEvent && (!state.scheduledStart || !state.scheduledEnd)) v.security = t('Discord events need a start AND end time.');
         // Discord rejects scheduled events whose start is in the past or whose end is
         // not strictly after start. Catch both client-side so the user gets a clear
         // message instead of Discord's generic "Invalid Form Body" response.
@@ -279,15 +281,15 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
             const startMs = new Date(state.scheduledStart).getTime();
             const endMs = new Date(state.scheduledEnd).getTime();
             if (Number.isFinite(startMs) && startMs <= now) {
-                v.security = 'Discord events need a start time in the future.';
+                v.security = t('Discord events need a start time in the future.');
             } else if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs <= startMs) {
-                v.security = 'Discord event end time must be after the start time.';
+                v.security = t('Discord event end time must be after the start time.');
             }
         }
-        if (state.postDiscordAnnouncement && !state.discordAnnouncementChannelId) v.security = 'Pick a Discord channel for the announcement embed.';
+        if (state.postDiscordAnnouncement && !state.discordAnnouncementChannelId) v.security = t('Pick a Discord channel for the announcement embed.');
 
         return v;
-    }, [state, now]);
+    }, [state, now, t]);
 
     const canAdvance = !validation[stepKey];
     const isLastStep = stepIndex === STEPS.length - 1;
@@ -300,7 +302,7 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
         // an invalid field through.
         for (const step of STEPS) {
             if (validation[step.key]) {
-                addToast('Validation Error', <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: validation[step.key]! });
+                addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: validation[step.key]! });
                 setStepKey(step.key);
                 return;
             }
@@ -358,20 +360,20 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
                 inlinePhases: phasesPayload,
             } as any);
             if (newOp?.discordEventFailed) {
-                addToast('Discord Event Failed', <i className="fa-brands fa-discord"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: typeof newOp.discordEventFailed === 'string' ? newOp.discordEventFailed : 'Failed to create Discord event.' });
+                addToast(t('Discord Event Failed'), <i className="fa-brands fa-discord"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: typeof newOp.discordEventFailed === 'string' ? newOp.discordEventFailed : t('Failed to create Discord event.') });
             }
             if (newOp?.discordAnnouncementFailed) {
-                addToast('Discord Announcement Failed', <i className="fa-brands fa-discord"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: typeof newOp.discordAnnouncementFailed === 'string' ? newOp.discordAnnouncementFailed : 'Failed to post Discord announcement.' });
+                addToast(t('Discord Announcement Failed'), <i className="fa-brands fa-discord"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: typeof newOp.discordAnnouncementFailed === 'string' ? newOp.discordAnnouncementFailed : t('Failed to post Discord announcement.') });
             }
             onClose();
             viewOperationDetails(newOp);
         } catch (err: any) {
             console.error('Failed to create operation:', err);
-            addToast('Operation Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'An error occurred while creating the operation.' });
+            addToast(t('Operation Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('An error occurred while creating the operation.') });
         } finally {
             setIsLoading(false);
         }
-    }, [state, validation, createOperation, addToast, onClose, viewOperationDetails]);
+    }, [state, validation, createOperation, addToast, onClose, viewOperationDetails, t]);
 
     const renderStepBody = () => {
         switch (stepKey) {
@@ -389,8 +391,8 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
             key={isOpen ? 'open' : 'closed'}
             isOpen={isOpen}
             onClose={onClose}
-            title="Create New Operation"
-            subtitle="Mission Planning"
+            title={t('Create New Operation')}
+            subtitle={t('Mission Planning')}
             icon="fa-solid fa-chess-board"
             color="purple"
             width="max-w-3xl"
@@ -417,7 +419,7 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
                                         } ${hasError && !isActive ? 'border-red-500/40 text-red-400' : ''}`}
                                     >
                                         <i className={`fa-solid ${s.icon} text-[9px]`}></i>
-                                        <span className="hidden sm:inline">{i + 1}. {s.label}</span>
+                                        <span className="hidden sm:inline">{i + 1}. {t(s.label)}</span>
                                         <span className="sm:hidden">{i + 1}</span>
                                     </button>
                                 </React.Fragment>
@@ -440,22 +442,22 @@ const CreateOperationWizard: React.FC<CreateOperationWizardProps> = ({ isOpen, o
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex items-center justify-between gap-3 rounded-b-xl">
-                    <button onClick={onClose} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button onClick={onClose} className="px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <div className="flex items-center gap-2">
                         {stepIndex > 0 && (
                             <button onClick={goBack} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50">
-                                <i className="fa-solid fa-arrow-left"></i> Back
+                                <i className="fa-solid fa-arrow-left"></i> {t('Back')}
                             </button>
                         )}
                         {!isLastStep ? (
                             <button onClick={goNext} disabled={!canAdvance || isLoading}
                                 className="flex items-center gap-2 px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 border border-purple-500/40 text-white text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Next <i className="fa-solid fa-arrow-right"></i>
+                                {t('Next')} <i className="fa-solid fa-arrow-right"></i>
                             </button>
                         ) : (
                             <button onClick={handleSubmit} disabled={isLoading || !canAdvance || Object.values(validation).some(v => !!v)}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 border border-purple-500/40 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-purple-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                {isLoading ? <><i className="fa-solid fa-spinner animate-spin"></i> Creating</> : <><i className="fa-solid fa-plus"></i> Create Operation</>}
+                                {isLoading ? <><i className="fa-solid fa-spinner animate-spin"></i> {t('Creating')}</> : <><i className="fa-solid fa-plus"></i> {t('Create Operation')}</>}
                             </button>
                         )}
                     </div>
@@ -474,68 +476,71 @@ const BasicsStep: React.FC<{
     dispatch: React.Dispatch<Action>;
     units: any[];
     disabled: boolean;
-}> = ({ state, dispatch, units, disabled }) => (
+}> = ({ state, dispatch, units, disabled }) => {
+    const { t } = useI18n();
+    return (
     <div className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label className={labelClass}>Operation Name</label>
+                <label className={labelClass}>{t('Operation Name')}</label>
                 <input type="text" value={state.name} onChange={e => dispatch({ type: 'set', key: 'name', value: e.target.value })}
-                    placeholder="e.g., Operation Silent Blade" className={inputClass} required disabled={disabled} />
+                    placeholder={t('e.g., Operation Silent Blade')} className={inputClass} required disabled={disabled} />
             </div>
             <div>
-                <label className={labelClass}>Operation Type</label>
+                <label className={labelClass}>{t('Operation Type')}</label>
                 <select value={state.type} onChange={e => {
-                    const t = e.target.value as OperationType;
-                    dispatch({ type: 'set', key: 'type', value: t });
-                    if (t === OperationType.Training) dispatch({ type: 'set', key: 'isTraining', value: true });
+                    const nextType = e.target.value as OperationType;
+                    dispatch({ type: 'set', key: 'type', value: nextType });
+                    if (nextType === OperationType.Training) dispatch({ type: 'set', key: 'isTraining', value: true });
                     else dispatch({ type: 'set', key: 'isTraining', value: false });
                 }} className={inputClass} disabled={disabled}>
-                    {Object.values(OperationType).map(t => <option key={t} value={t}>{t}</option>)}
+                    {Object.values(OperationType).map(ot => <option key={ot} value={ot}>{t(ot)}</option>)}
                 </select>
             </div>
         </div>
         <div>
-            <label className={labelClass}>Description / Briefing</label>
+            <label className={labelClass}>{t('Description / Briefing')}</label>
             <textarea value={state.description} onChange={e => dispatch({ type: 'set', key: 'description', value: e.target.value })}
-                rows={4} placeholder="Provide a detailed description of the operation's objectives..."
+                rows={4} placeholder={t("Provide a detailed description of the operation's objectives...")}
                 className={`${inputClass} resize-none`} required disabled={disabled} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label className={labelClass}>Hosting Unit (Optional)</label>
+                <label className={labelClass}>{t('Hosting Unit (Optional)')}</label>
                 <select value={state.unitId} onChange={e => dispatch({ type: 'set', key: 'unitId', value: e.target.value })}
                     className={inputClass} disabled={disabled}>
-                    <option value="">- Global / Public -</option>
+                    <option value="">{t('- Global / Public -')}</option>
                     {[...units].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)).map(u =>
                         <option key={u.id} value={u.id}>{u.name}</option>
                     )}
                 </select>
             </div>
             <div>
-                <label className={labelClass}>Max Participants (Optional)</label>
+                <label className={labelClass}>{t('Max Participants (Optional)')}</label>
                 <input type="number" min="0" value={state.maxParticipants}
                     onChange={e => dispatch({ type: 'set', key: 'maxParticipants', value: e.target.value })}
                     onKeyDown={e => { if (e.key === '-' || e.key === '+' || e.key === 'e') e.preventDefault(); }}
-                    className={inputClass} placeholder="Unlimited" disabled={disabled} />
+                    className={inputClass} placeholder={t('Unlimited')} disabled={disabled} />
             </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-800 pt-4">
-            <Switch label="Track aUEC Earnings" hint="Enable financial ledger" checked={state.tracksUec}
+            <Switch label={t('Track aUEC Earnings')} hint={t('Enable financial ledger')} checked={state.tracksUec}
                 onChange={v => dispatch({ type: 'set', key: 'tracksUec', value: v })} accent="purple" disabled={disabled} />
-            <Switch label="Special Operation" hint="Standard members cannot see/join" checked={state.isSpecial}
+            <Switch label={t('Special Operation')} hint={t('Standard members cannot see/join')} checked={state.isSpecial}
                 onChange={v => dispatch({ type: 'set', key: 'isSpecial', value: v })} accent="amber" disabled={disabled} />
         </div>
         {state.isSpecial && (
             <div className="bg-amber-950/20 p-3 rounded-lg border border-amber-500/20 animate-fade-in">
-                <label className="block text-[10px] font-black text-amber-300 uppercase tracking-widest mb-2">Access PIN Code</label>
+                <label className="block text-[10px] font-black text-amber-300 uppercase tracking-widest mb-2">{t('Access PIN Code')}</label>
                 <input type="text" value={state.joinCode} onChange={e => dispatch({ type: 'set', key: 'joinCode', value: e.target.value })}
-                    placeholder="e.g. 1234"
+                    placeholder={t('e.g. 1234')}
                     className="w-full bg-slate-950/50 border border-amber-500/30 rounded-lg p-2 text-white font-mono text-center tracking-widest outline-hidden focus:ring-1 focus:ring-amber-500"
                     required disabled={disabled} />
             </div>
         )}
     </div>
-);
+    );
+};
 
 // Locations step — uses the platform-locations search (LocationInput) instead
 // of the legacy org-managed locations dropdown. Same component the service
@@ -546,16 +551,17 @@ const LocationsStep: React.FC<{
     dispatch: React.Dispatch<Action>;
     disabled: boolean;
 }> = ({ state, dispatch, disabled }) => {
+    const { t } = useI18n();
     const hasPrimary = state.locationText.trim().length > 0;
     return (
         <div className="space-y-5">
             <p className="text-xs text-slate-400">
-                Search the Star Citizen platform location index. Pick a primary location, then add secondary locations if the operation spans multiple sites. The primary is shown on operation cards and headers; secondaries appear on the detail view.
+                {t('Search the Star Citizen platform location index. Pick a primary location, then add secondary locations if the operation spans multiple sites. The primary is shown on operation cards and headers; secondaries appear on the detail view.')}
             </p>
 
             {/* Primary */}
             <div>
-                <label className={labelClass}>Primary Location</label>
+                <label className={labelClass}>{t('Primary Location')}</label>
                 <LocationInput
                     value={state.locationText}
                     onChange={(v) => dispatch({ type: 'set', key: 'locationText', value: v })}
@@ -566,16 +572,16 @@ const LocationsStep: React.FC<{
             {/* Additional */}
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <label className={labelClass} style={{ marginBottom: 0 }}>Additional Locations</label>
+                    <label className={labelClass} style={{ marginBottom: 0 }}>{t('Additional Locations')}</label>
                     <button type="button"
                         onClick={() => dispatch({ type: 'add_additional_location' })}
                         className="text-[10px] font-bold text-purple-300 hover:text-purple-200 uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={disabled}>
-                        <i className="fa-solid fa-plus mr-1"></i> Add Location
+                        <i className="fa-solid fa-plus mr-1"></i> {t('Add Location')}
                     </button>
                 </div>
                 {state.additionalLocations.length === 0 ? (
-                    <p className="text-[11px] text-slate-600 italic">None — this op happens at the primary location only.</p>
+                    <p className="text-[11px] text-slate-600 italic">{t('None — this op happens at the primary location only.')}</p>
                 ) : (
                     <ul className="space-y-2">
                         {state.additionalLocations.map((loc, idx) => (
@@ -590,14 +596,14 @@ const LocationsStep: React.FC<{
                                 <button type="button"
                                     onClick={() => dispatch({ type: 'promote_additional_to_primary', index: idx })}
                                     className="shrink-0 mt-1.5 text-[10px] text-amber-400 hover:text-amber-300 px-2 py-1.5 rounded-sm hover:bg-slate-800 uppercase tracking-wider font-bold disabled:opacity-30 disabled:cursor-not-allowed"
-                                    title="Promote this location to primary"
+                                    title={t('Promote this location to primary')}
                                     disabled={disabled || !loc.text.trim()}>
                                     <i className="fa-solid fa-star"></i>
                                 </button>
                                 <button type="button"
                                     onClick={() => dispatch({ type: 'remove_additional_location', index: idx })}
                                     className="shrink-0 mt-1.5 text-slate-500 hover:text-red-400 p-2 rounded-sm hover:bg-slate-800"
-                                    title="Remove"
+                                    title={t('Remove')}
                                     disabled={disabled}>
                                     <i className="fa-solid fa-xmark text-xs"></i>
                                 </button>
@@ -610,7 +616,7 @@ const LocationsStep: React.FC<{
             {hasPrimary && (
                 <p className="text-[10px] text-slate-600 italic">
                     <i className="fa-solid fa-circle-info mr-1"></i>
-                    Primary stays on the operation card and timeline; additional locations are listed on the detail view.
+                    {t('Primary stays on the operation card and timeline; additional locations are listed on the detail view.')}
                 </p>
             )}
         </div>
@@ -623,38 +629,38 @@ const PhasesStep: React.FC<{
     templates: any[];
     disabled: boolean;
 }> = ({ state, dispatch, templates, disabled }) => {
+    const { t } = useI18n();
     const sortedTemplates = useMemo(() => [...templates].sort((a, b) => a.name.localeCompare(b.name)), [templates]);
     return (
         <div className="space-y-5">
             <p className="text-xs text-slate-400">
-                Optional execution plan. Pick a template to seed phases, milestones, and tasks — then edit inline. Or skip
-                this step and build the plan later from the operation detail view.
+                {t('Optional execution plan. Pick a template to seed phases, milestones, and tasks — then edit inline. Or skip this step and build the plan later from the operation detail view.')}
             </p>
 
             <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-700/40">
-                <label className={labelClass}>Start From Template</label>
+                <label className={labelClass}>{t('Start From Template')}</label>
                 <div className="flex items-center gap-2">
                     <select value={state.templateId ?? ''}
                         onChange={e => {
                             const id = e.target.value ? parseInt(e.target.value) : null;
-                            const tpl = id ? sortedTemplates.find(t => t.id === id) : null;
+                            const tpl = id ? sortedTemplates.find(x => x.id === id) : null;
                             dispatch({ type: 'apply_template', templateId: id, payload: tpl ? tpl.payload : null });
                         }}
                         className={inputClass} disabled={disabled}>
-                        <option value="">- Build from scratch -</option>
-                        {sortedTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        <option value="">{t('- Build from scratch -')}</option>
+                        {sortedTemplates.map(tpl => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
                     </select>
                     {state.phases.length > 0 && (
                         <button type="button" onClick={() => dispatch({ type: 'apply_template', templateId: null, payload: null })}
                             className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-400 border border-slate-700 rounded-lg hover:border-red-500/40"
-                            disabled={disabled} title="Clear all phases">
-                            Clear
+                            disabled={disabled} title={t('Clear all phases')}>
+                            {t('Clear')}
                         </button>
                     )}
                 </div>
                 {state.templateId && state.phases.length > 0 && (
                     <p className="text-[10px] text-slate-500 italic mt-2">
-                        Edits below override the template. Use the operation's Administer tab later to save the edited plan as a new template.
+                        {t("Edits below override the template. Use the operation's Administer tab later to save the edited plan as a new template.")}
                     </p>
                 )}
             </div>
@@ -667,19 +673,19 @@ const PhasesStep: React.FC<{
                             <span className="text-[10px] font-mono text-slate-500 w-6">P{phaseIdx + 1}</span>
                             <input type="text" value={phase.name}
                                 onChange={e => dispatch({ type: 'update_phase', key: phase._key, patch: { name: e.target.value } })}
-                                placeholder="Phase name"
+                                placeholder={t('Phase name')}
                                 className="flex-1 bg-transparent text-white text-sm font-bold outline-hidden placeholder:text-slate-600"
                                 disabled={disabled} />
                             <select value={phase.phaseType || 'sequential'}
                                 onChange={e => dispatch({ type: 'update_phase', key: phase._key, patch: { phaseType: e.target.value as any } })}
                                 className="bg-slate-900/60 text-white text-[10px] font-bold uppercase rounded-sm px-2 py-1 border border-slate-700"
                                 disabled={disabled}>
-                                <option value="sequential">Sequential</option>
-                                <option value="contingency">Contingency</option>
+                                <option value="sequential">{t('Sequential')}</option>
+                                <option value="contingency">{t('Contingency')}</option>
                             </select>
                             <button type="button" onClick={() => dispatch({ type: 'remove_phase', key: phase._key })}
                                 className="text-slate-500 hover:text-red-400 p-1.5 rounded-sm hover:bg-slate-800/60"
-                                title="Remove phase" disabled={disabled}>
+                                title={t('Remove phase')} disabled={disabled}>
                                 <i className="fa-solid fa-trash text-xs"></i>
                             </button>
                         </div>
@@ -687,28 +693,28 @@ const PhasesStep: React.FC<{
                             {/* Milestones */}
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Milestones</p>
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t('Milestones')}</p>
                                     <button type="button" onClick={() => dispatch({ type: 'add_milestone', phaseKey: phase._key })}
                                         className="text-[10px] text-purple-300 hover:text-purple-200 uppercase tracking-wider font-bold"
                                         disabled={disabled}>
-                                        <i className="fa-solid fa-plus mr-1"></i> Milestone
+                                        <i className="fa-solid fa-plus mr-1"></i> {t('Milestone')}
                                     </button>
                                 </div>
                                 {(phase.milestones || []).length === 0 ? (
-                                    <p className="text-[10px] text-slate-600 italic">None.</p>
+                                    <p className="text-[10px] text-slate-600 italic">{t('None.')}</p>
                                 ) : (
                                     <ul className="space-y-1.5">
                                         {(phase.milestones || []).map((m, i) => (
                                             <li key={m._key} className="flex items-center gap-2 bg-slate-900/40 rounded-sm p-2 border border-slate-800">
                                                 <input type="text" value={m.label}
                                                     onChange={e => dispatch({ type: 'update_milestone', phaseKey: phase._key, index: i, patch: { label: e.target.value } })}
-                                                    placeholder="Milestone label"
+                                                    placeholder={t('Milestone label')}
                                                     className="flex-1 bg-transparent text-white text-xs outline-hidden placeholder:text-slate-600"
                                                     disabled={disabled} />
                                                 <input type="number" value={m.offsetMinutes ?? ''}
                                                     onChange={e => dispatch({ type: 'update_milestone', phaseKey: phase._key, index: i, patch: { offsetMinutes: e.target.value === '' ? undefined : parseInt(e.target.value) } })}
-                                                    placeholder="±min"
-                                                    title="Minutes offset from operation start. Optional — leave blank to time it later."
+                                                    placeholder={t('±min')}
+                                                    title={t('Minutes offset from operation start. Optional — leave blank to time it later.')}
                                                     className="w-20 bg-slate-950/40 text-white text-[11px] outline-hidden border border-slate-800 rounded-sm px-2 py-1 text-right"
                                                     disabled={disabled} />
                                                 <button type="button" onClick={() => dispatch({ type: 'remove_milestone', phaseKey: phase._key, index: i })}
@@ -724,29 +730,29 @@ const PhasesStep: React.FC<{
                             {/* Tasks */}
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Tasks</p>
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t('Tasks')}</p>
                                     <button type="button" onClick={() => dispatch({ type: 'add_task', phaseKey: phase._key })}
                                         className="text-[10px] text-purple-300 hover:text-purple-200 uppercase tracking-wider font-bold"
                                         disabled={disabled}>
-                                        <i className="fa-solid fa-plus mr-1"></i> Task
+                                        <i className="fa-solid fa-plus mr-1"></i> {t('Task')}
                                     </button>
                                 </div>
                                 {(phase.tasks || []).length === 0 ? (
-                                    <p className="text-[10px] text-slate-600 italic">None.</p>
+                                    <p className="text-[10px] text-slate-600 italic">{t('None.')}</p>
                                 ) : (
                                     <ul className="space-y-1.5">
-                                        {(phase.tasks || []).map((t, i) => (
-                                            <li key={t._key} className="flex items-center gap-2 bg-slate-900/40 rounded-sm p-2 border border-slate-800">
-                                                <input type="text" value={t.title}
+                                        {(phase.tasks || []).map((task, i) => (
+                                            <li key={task._key} className="flex items-center gap-2 bg-slate-900/40 rounded-sm p-2 border border-slate-800">
+                                                <input type="text" value={task.title}
                                                     onChange={e => dispatch({ type: 'update_task', phaseKey: phase._key, index: i, patch: { title: e.target.value } })}
-                                                    placeholder="Task title"
+                                                    placeholder={t('Task title')}
                                                     className="flex-1 bg-transparent text-white text-xs outline-hidden placeholder:text-slate-600"
                                                     disabled={disabled} />
-                                                <select value={t.priority || TaskPriority.Normal}
+                                                <select value={task.priority || TaskPriority.Normal}
                                                     onChange={e => dispatch({ type: 'update_task', phaseKey: phase._key, index: i, patch: { priority: e.target.value as TaskPriority } })}
                                                     className="bg-slate-950/40 text-white text-[10px] uppercase font-bold rounded-sm px-2 py-1 border border-slate-800"
                                                     disabled={disabled}>
-                                                    {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
+                                                    {Object.values(TaskPriority).map(p => <option key={p} value={p}>{t(p)}</option>)}
                                                 </select>
                                                 <button type="button" onClick={() => dispatch({ type: 'remove_task', phaseKey: phase._key, index: i })}
                                                     className="text-slate-600 hover:text-red-400 p-1 rounded-sm"
@@ -764,7 +770,7 @@ const PhasesStep: React.FC<{
                 <button type="button" onClick={() => dispatch({ type: 'add_phase' })}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-700/40 text-slate-500 hover:text-purple-300 hover:border-purple-500/40 text-[10px] font-bold uppercase tracking-wider transition-colors"
                     disabled={disabled}>
-                    <i className="fa-solid fa-plus"></i> Add Phase
+                    <i className="fa-solid fa-plus"></i> {t('Add Phase')}
                 </button>
             </div>
         </div>
@@ -780,6 +786,7 @@ const SecurityStep: React.FC<{
     defaultAnnounceChannelId?: string;
     disabled: boolean;
 }> = ({ state, dispatch, securityClearances, limitingMarkers, discordConfigured, defaultAnnounceChannelId, disabled }) => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const [channels, setChannels] = useState<{ id: string; name: string; type: number }[]>([]);
     const [channelsLoading, setChannelsLoading] = useState(false);
@@ -800,11 +807,11 @@ const SecurityStep: React.FC<{
             setChannelsError(result?.error || null);
         } catch (err: any) {
             setChannels([]);
-            setChannelsError(err?.message || 'Failed to load Discord channels.');
+            setChannelsError(err?.message || t('Failed to load Discord channels.'));
         } finally {
             setChannelsLoading(false);
         }
-    }, [rpcAction]);
+    }, [rpcAction, t]);
 
     // Manual (button) trigger: raise the loading flag synchronously — fine in an
     // event handler — then run the async fetch.
@@ -849,23 +856,23 @@ const SecurityStep: React.FC<{
     <div className="space-y-5">
         <div className="bg-slate-900/40 p-4 rounded-xl border border-red-500/15">
             <h4 className="text-xs font-black text-red-400 uppercase tracking-widest mb-3 flex items-center">
-                <i className="fa-solid fa-lock mr-2"></i> Access Control
+                <i className="fa-solid fa-lock mr-2"></i> {t('Access Control')}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label className={labelClass}>Minimum Clearance Level</label>
+                    <label className={labelClass}>{t('Minimum Clearance Level')}</label>
                     <select value={state.clearanceLevel}
                         onChange={e => dispatch({ type: 'set', key: 'clearanceLevel', value: e.target.value })}
                         className={inputClass} disabled={disabled}>
                         {securityClearances.map(c => (
-                            <option key={c.id} value={c.level}>Level {c.level} - {c.name}</option>
+                            <option key={c.id} value={c.level}>{t('Level {level} - {name}', { level: c.level, name: c.name })}</option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <label className={labelClass}>Required Markers</label>
+                    <label className={labelClass}>{t('Required Markers')}</label>
                     {limitingMarkers.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic">No markers defined.</p>
+                        <p className="text-xs text-slate-500 italic">{t('No markers defined.')}</p>
                     ) : (
                         <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar pr-1 bg-slate-950/40 rounded-lg border border-slate-800 p-2">
                             {limitingMarkers.map(m => (
@@ -878,8 +885,8 @@ const SecurityStep: React.FC<{
                                         <span className="font-mono">{m.code}</span>
                                     </div>
                                     {m.syncRestricted && (
-                                        <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold" title="Sync Restricted — blocks Joint Operation sharing">
-                                            Sync Restricted
+                                        <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold" title={t('Sync Restricted — blocks Joint Operation sharing')}>
+                                            {t('Sync Restricted')}
                                         </span>
                                     )}
                                 </label>
@@ -893,8 +900,8 @@ const SecurityStep: React.FC<{
         <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-700/40">
             <div className="mb-3">
                 <Switch
-                    label="Schedule for Later"
-                    hint={state.createDiscordEvent ? 'Required for Discord event' : undefined}
+                    label={t('Schedule for Later')}
+                    hint={state.createDiscordEvent ? t('Required for Discord event') : undefined}
                     checked={state.isScheduled}
                     disabled={disabled || state.createDiscordEvent}
                     accent="purple"
@@ -905,17 +912,17 @@ const SecurityStep: React.FC<{
                 <div className="space-y-3 animate-fade-in">
                     <p className="text-[10px] text-slate-500 italic flex items-center gap-1.5">
                         <i className="fa-solid fa-globe text-purple-400/60"></i>
-                        Times are in your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+                        {t('Times are in your local timezone ({tz})', { tz: Intl.DateTimeFormat().resolvedOptions().timeZone })}
                     </p>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>Start Time</label>
+                            <label className={labelClass}>{t('Start Time')}</label>
                             <input type="datetime-local" value={state.scheduledStart}
                                 onChange={e => dispatch({ type: 'set', key: 'scheduledStart', value: e.target.value })}
                                 className={inputClass} disabled={disabled} />
                         </div>
                         <div>
-                            <label className={labelClass}>End Time {state.createDiscordEvent ? '(Required)' : '(Approx)'}</label>
+                            <label className={labelClass}>{t('End Time')} {state.createDiscordEvent ? t('(Required)') : t('(Approx)')}</label>
                             <input type="datetime-local" value={state.scheduledEnd}
                                 onChange={e => dispatch({ type: 'set', key: 'scheduledEnd', value: e.target.value })}
                                 className={`${inputClass} ${state.createDiscordEvent && !state.scheduledEnd ? 'border-amber-500/50' : ''}`}
@@ -925,7 +932,7 @@ const SecurityStep: React.FC<{
                 </div>
             )}
             {discordConfigured && (
-                <Switch label="Create Discord Event" hint="Post a scheduled event to your server" checked={state.createDiscordEvent}
+                <Switch label={t('Create Discord Event')} hint={t('Post a scheduled event to your server')} checked={state.createDiscordEvent}
                     onChange={v => {
                         dispatch({ type: 'set', key: 'createDiscordEvent', value: v });
                         if (v) dispatch({ type: 'set', key: 'isScheduled', value: true });
@@ -935,8 +942,8 @@ const SecurityStep: React.FC<{
             {discordConfigured && (
                 <div className="mt-3">
                     <Switch
-                        label="Post Announcement Embed"
-                        hint="Posts an embed with ✅ ❌ ❓ reactions to a channel of your choice — useful for role-restricted comms."
+                        label={t('Post Announcement Embed')}
+                        hint={t('Posts an embed with ✅ ❌ ❓ reactions to a channel of your choice — useful for role-restricted comms.')}
                         checked={state.postDiscordAnnouncement}
                         onChange={v => dispatch({ type: 'set', key: 'postDiscordAnnouncement', value: v })}
                         accent="discord"
@@ -945,13 +952,13 @@ const SecurityStep: React.FC<{
                     {state.postDiscordAnnouncement && (
                         <div className="mt-3 space-y-2 animate-fade-in">
                             <div className="flex items-center justify-between gap-2">
-                                <label className={labelClass}>Channel</label>
+                                <label className={labelClass}>{t('Channel')}</label>
                                 <button
                                     type="button"
                                     onClick={() => loadChannels(true)}
                                     disabled={disabled || channelsLoading}
                                     className="text-[10px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40"
-                                    title="Refresh channel list"
+                                    title={t('Refresh channel list')}
                                 >
                                     <i className={`fa-solid fa-rotate ${channelsLoading ? 'fa-spin' : ''}`}></i>
                                 </button>
@@ -965,7 +972,7 @@ const SecurityStep: React.FC<{
                                     className={inputClass}
                                     disabled={disabled || channelsLoading || channels.length === 0}
                                 >
-                                    <option value="">{channelsLoading ? 'Loading channels…' : 'Select a channel…'}</option>
+                                    <option value="">{channelsLoading ? t('Loading channels…') : t('Select a channel…')}</option>
                                     {channels.map(c => (
                                         <option key={c.id} value={c.id}>
                                             {c.type === 5 ? '📢 ' : '# '}{c.name}
@@ -974,7 +981,7 @@ const SecurityStep: React.FC<{
                                 </select>
                             )}
                             {defaultAnnounceChannelId && state.discordAnnouncementChannelId === defaultAnnounceChannelId && (
-                                <p className="text-[10px] text-slate-500 italic">Pre-selected from your org's default announcement channel.</p>
+                                <p className="text-[10px] text-slate-500 italic">{t("Pre-selected from your org's default announcement channel.")}</p>
                             )}
                         </div>
                     )}
@@ -993,8 +1000,9 @@ const ReviewStep: React.FC<{
     validation: Record<StepKey, string | null>;
     setStepKey: (s: StepKey) => void;
 }> = ({ state, units, securityClearances, limitingMarkers, validation, setStepKey }) => {
+    const { t } = useI18n();
     const unit = units.find(u => String(u.id) === state.unitId);
-    const primaryLocationLabel = state.locationText.trim() || 'Unknown';
+    const primaryLocationLabel = state.locationText.trim() || t('Unknown');
     const additionalLocationLabels = state.additionalLocations.map(l => l.text.trim()).filter(Boolean);
     const clearance = securityClearances.find(c => String(c.level) === state.clearanceLevel);
     const markers = state.selectedMarkers.map(id => limitingMarkers.find(m => m.id === id)).filter(Boolean);
@@ -1015,50 +1023,50 @@ const ReviewStep: React.FC<{
             {blockingErrors.length > 0 && (
                 <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-4 space-y-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-red-300 flex items-center gap-2">
-                        <i className="fa-solid fa-triangle-exclamation"></i> Fix before creating
+                        <i className="fa-solid fa-triangle-exclamation"></i> {t('Fix before creating')}
                     </p>
                     {blockingErrors.map(k => (
                         <button key={k} type="button" onClick={() => setStepKey(k)}
                             className="w-full text-left text-xs text-red-200 hover:text-white bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg p-2.5 transition-colors">
-                            <span className="font-bold uppercase tracking-wider text-[10px] mr-2">{STEPS.find(s => s.key === k)?.label}:</span>
+                            <span className="font-bold uppercase tracking-wider text-[10px] mr-2">{t(STEPS.find(s => s.key === k)?.label || '')}:</span>
                             {validation[k]}
                         </button>
                     ))}
                 </div>
             )}
 
-            <ReviewBlock title="Basics">
-                <ReviewRow label="Name" value={state.name || '—'} />
-                <ReviewRow label="Type" value={state.type} />
-                <ReviewRow label="Hosting Unit" value={unit?.name || 'Global / Public'} />
-                <ReviewRow label="Max Participants" value={state.maxParticipants || 'Unlimited'} />
-                <ReviewRow label="Tracks aUEC" value={state.tracksUec ? 'Yes' : 'No'} />
-                <ReviewRow label="Special Op" value={state.isSpecial ? `Yes (PIN: ${state.joinCode || '—'})` : 'No'} />
-                <ReviewRow label="Briefing" value={state.description || '—'} multiline />
+            <ReviewBlock title={t('Basics')}>
+                <ReviewRow label={t('Name')} value={state.name || '—'} />
+                <ReviewRow label={t('Type')} value={t(state.type)} />
+                <ReviewRow label={t('Hosting Unit')} value={unit?.name || t('Global / Public')} />
+                <ReviewRow label={t('Max Participants')} value={state.maxParticipants || t('Unlimited')} />
+                <ReviewRow label={t('Tracks aUEC')} value={state.tracksUec ? t('Yes') : t('No')} />
+                <ReviewRow label={t('Special Op')} value={state.isSpecial ? t('Yes (PIN: {pin})', { pin: state.joinCode || '—' }) : t('No')} />
+                <ReviewRow label={t('Briefing')} value={state.description || '—'} multiline />
             </ReviewBlock>
 
-            <ReviewBlock title="Locations">
-                <ReviewRow label="Primary" value={primaryLocationLabel} />
-                <ReviewRow label="Additional"
-                    value={additionalLocationLabels.length === 0 ? 'None' : additionalLocationLabels.join(', ')} />
+            <ReviewBlock title={t('Locations')}>
+                <ReviewRow label={t('Primary')} value={primaryLocationLabel} />
+                <ReviewRow label={t('Additional')}
+                    value={additionalLocationLabels.length === 0 ? t('None') : additionalLocationLabels.join(', ')} />
             </ReviewBlock>
 
-            <ReviewBlock title="Plan">
-                <ReviewRow label="Phases / Tasks / Milestones" value={`${phaseTotals.phases} / ${phaseTotals.tasks} / ${phaseTotals.milestones}`} />
+            <ReviewBlock title={t('Plan')}>
+                <ReviewRow label={t('Phases / Tasks / Milestones')} value={`${phaseTotals.phases} / ${phaseTotals.tasks} / ${phaseTotals.milestones}`} />
                 {state.templateId && phaseTotals.phases > 0 && (
-                    <ReviewRow label="Source" value="Template (with edits)" />
+                    <ReviewRow label={t('Source')} value={t('Template (with edits)')} />
                 )}
             </ReviewBlock>
 
-            <ReviewBlock title="Security & Schedule">
-                <ReviewRow label="Clearance" value={clearance ? `Level ${clearance.level} — ${clearance.name}` : `Level ${state.clearanceLevel}`} />
-                <ReviewRow label="Markers"
+            <ReviewBlock title={t('Security & Schedule')}>
+                <ReviewRow label={t('Clearance')} value={clearance ? t('Level {level} — {name}', { level: clearance.level, name: clearance.name }) : t('Level {level}', { level: state.clearanceLevel })} />
+                <ReviewRow label={t('Markers')}
                     value={markers.length === 0
-                        ? 'None'
-                        : markers.map((m: any) => m.syncRestricted ? `${m.code} (sync-restricted)` : m.code).join(', ')} />
-                <ReviewRow label="Scheduled"
-                    value={state.isScheduled ? `${state.scheduledStart || '—'} → ${state.scheduledEnd || '—'}` : 'No'} />
-                <ReviewRow label="Discord Event" value={state.createDiscordEvent ? 'Yes' : 'No'} />
+                        ? t('None')
+                        : markers.map((m: any) => m.syncRestricted ? t('{code} (sync-restricted)', { code: m.code }) : m.code).join(', ')} />
+                <ReviewRow label={t('Scheduled')}
+                    value={state.isScheduled ? `${state.scheduledStart || '—'} → ${state.scheduledEnd || '—'}` : t('No')} />
+                <ReviewRow label={t('Discord Event')} value={state.createDiscordEvent ? t('Yes') : t('No')} />
             </ReviewBlock>
         </div>
     );

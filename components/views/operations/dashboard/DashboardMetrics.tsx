@@ -10,8 +10,10 @@ import {
     WarrantStatus,
 } from '../../../../types';
 import { MetricCard } from '../../../shared/ui';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 export default function DashboardMetrics() {
+    const { t } = useI18n();
     const { hydratedServiceRequests } = useData();
     const { members } = useMembers();
     const { operations, warrants } = useOperations();
@@ -51,31 +53,31 @@ export default function DashboardMetrics() {
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <MetricCard
-                label="Active Ops"
+                label={t('Active Ops')}
                 value={activeOpsCount}
-                sub={activeOpsCount === 0 ? 'Nothing running' : 'In progress'}
+                sub={activeOpsCount === 0 ? t('Nothing running') : t('In progress')}
                 icon="fa-crosshairs"
                 accent="amber"
             />
             <MetricCard
-                label="Pending Requests"
+                label={t('Pending Requests')}
                 value={pendingRequestsCount}
-                sub={criticalRequestsCount > 0 ? `${criticalRequestsCount} critical` : 'Queue clear'}
+                sub={criticalRequestsCount > 0 ? t('{count} critical', { count: criticalRequestsCount }) : t('Queue clear')}
                 icon="fa-clipboard-list"
                 accent={criticalRequestsCount > 0 ? 'rose' : 'sky'}
                 emphasize={criticalRequestsCount > 0}
             />
             <MetricCard
-                label="Active Cautions"
+                label={t('Active Cautions')}
                 value={activeWarrantsCount}
-                sub={activeWarrantsCount === 0 ? 'None live' : 'Live'}
+                sub={activeWarrantsCount === 0 ? t('None live') : t('Live')}
                 icon="fa-triangle-exclamation"
                 accent="rose"
             />
             <MetricCard
-                label="On-Duty Members"
+                label={t('On-Duty Members')}
                 value={onDutyCount}
-                sub={onDutyCount === 0 ? 'Nobody on duty' : 'Responding'}
+                sub={onDutyCount === 0 ? t('Nobody on duty') : t('Responding')}
                 icon="fa-user-shield"
                 accent={onDutyCount === 0 ? 'slate' : 'emerald'}
             />

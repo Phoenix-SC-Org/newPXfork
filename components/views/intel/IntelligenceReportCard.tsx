@@ -3,6 +3,7 @@ import { HydratedIntelligenceReport } from '../../../types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMembers } from '../../../contexts/MembersContext';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import { ACCENTS } from '../../shared/ui/accents';
 import { IntelPill } from '../operations/requests/pills';
 import {
@@ -42,6 +43,7 @@ const IntelligenceReportCard: React.FC<Props> = ({
     const { currentUser } = useAuth();
     const { securityClearances } = useMembers();
     const { aiConfig } = useConfig();
+    const { t } = useI18n();
 
     const isAuthor = currentUser?.id === report.createdBy?.id;
     const markers = Array.isArray(report.limitingMarkers) ? report.limitingMarkers : [];
@@ -60,7 +62,7 @@ const IntelligenceReportCard: React.FC<Props> = ({
     const subjectT = s(report.subjectType);
     const subjIcon = subjectIcon(subjectT);
     const reportShortId = report.id ? report.id.substring(0, 6).toUpperCase() : '------';
-    const clearanceName = securityClearances.find(c => c.level === classLevel)?.name || `LEVEL ${classLevel}`;
+    const clearanceName = securityClearances.find(c => c.level === classLevel)?.name || t('LEVEL {level}', { level: classLevel });
 
     return (
         <div
@@ -95,7 +97,7 @@ const IntelligenceReportCard: React.FC<Props> = ({
                             </span>
                             <span className="text-slate-700">·</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                {subjectLabel(subjectT)}
+                                {t(subjectLabel(subjectT))}
                             </span>
                             {affiliatedOrg && (
                                 <>
@@ -131,23 +133,23 @@ const IntelligenceReportCard: React.FC<Props> = ({
                 {tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 max-h-[26px] overflow-hidden shrink-0">
                         {tags.map((tag) => {
-                            const t = s(tag);
-                            if (!t) return null;
+                            const tagStr = s(tag);
+                            if (!tagStr) return null;
                             if (onTagClick) {
                                 return (
                                     <button
-                                        key={t}
-                                        onClick={(e) => { e.stopPropagation(); onTagClick(t); }}
+                                        key={tagStr}
+                                        onClick={(e) => { e.stopPropagation(); onTagClick(tagStr); }}
                                         className="inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-[10px] uppercase tracking-wider bg-slate-900/60 border-white/10 text-slate-400 hover:bg-sky-500/10 hover:border-sky-500/30 hover:text-sky-300 transition-colors"
-                                        title={`Filter by tag "${t}"`}
+                                        title={t('Filter by tag "{tag}"', { tag: tagStr })}
                                     >
-                                        <span className="opacity-60 mr-0.5">#</span>{t}
+                                        <span className="opacity-60 mr-0.5">#</span>{tagStr}
                                     </button>
                                 );
                             }
                             return (
-                                <span key={t} className="inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-[10px] uppercase tracking-wider bg-slate-900/40 border-white/5 text-slate-500">
-                                    <span className="opacity-60 mr-0.5">#</span>{t}
+                                <span key={tagStr} className="inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-[10px] uppercase tracking-wider bg-slate-900/40 border-white/5 text-slate-500">
+                                    <span className="opacity-60 mr-0.5">#</span>{tagStr}
                                 </span>
                             );
                         })}
@@ -188,7 +190,7 @@ const IntelligenceReportCard: React.FC<Props> = ({
                     <button
                         onClick={(e) => { e.stopPropagation(); onViewDossier(targetId); }}
                         disabled={!aiConfig.enabled}
-                        title={aiConfig.enabled ? 'View Dossier' : 'Dossier unavailable — Gemini API key not configured'}
+                        title={aiConfig.enabled ? t('View Dossier') : t('Dossier unavailable — Gemini API key not configured')}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[10px] font-black uppercase tracking-widest border transition-colors ${
                             aiConfig.enabled
                                 ? 'bg-sky-500/10 text-sky-300 border-sky-500/30 hover:bg-sky-500/20'
@@ -196,20 +198,20 @@ const IntelligenceReportCard: React.FC<Props> = ({
                         }`}
                     >
                         <i className={`fa-solid ${aiConfig.enabled ? 'fa-folder-open' : 'fa-lock'}`} aria-hidden />
-                        <span className="hidden sm:inline">Dossier</span>
+                        <span className="hidden sm:inline">{t('Dossier')}</span>
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onClick(); }}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest bg-slate-800/60 text-slate-200 border border-white/10 hover:bg-slate-700/80 transition-colors"
                     >
                         <i className="fa-solid fa-circle-info" aria-hidden />
-                        <span className="hidden sm:inline">Details</span>
+                        <span className="hidden sm:inline">{t('Details')}</span>
                     </button>
                     {onDelete && (isAuthor || !report.createdBy) && (
                         <button
                             onClick={onDelete}
                             disabled={isDeleting}
-                            title="Purge Record"
+                            title={t('Purge Record')}
                             className="p-1.5 rounded-sm text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                             {isDeleting

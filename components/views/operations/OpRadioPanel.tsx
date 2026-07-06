@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import TXLevelMeter from '../../ui/TXLevelMeter';
+import { useI18n } from '../../../i18n/I18nContext';
 
 export interface OpRadioState {
     isConnected: boolean;
@@ -25,6 +26,7 @@ interface OpRadioPanelProps {
 }
 
 const OpRadioPanel: React.FC<OpRadioPanelProps> = ({ radio, compact }) => {
+    const { t } = useI18n();
     const {
         isConnected, isConnecting, isTransmitting,
         activeSpeakers, participants, error,
@@ -55,24 +57,24 @@ const OpRadioPanel: React.FC<OpRadioPanelProps> = ({ radio, compact }) => {
                     <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-amber-500/15 border border-amber-500/30">
                         <i className="fa-solid fa-tower-broadcast text-amber-300 text-[11px]" />
                     </span>
-                    <span className="text-[10px] font-black text-amber-200 uppercase tracking-[0.2em]">Op Radio</span>
+                    <span className="text-[10px] font-black text-amber-200 uppercase tracking-[0.2em]">{t('Op Radio')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     {isConnected ? (
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-300 uppercase tracking-widest">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_6px_rgba(34,197,94,0.7)] animate-pulse" />
-                            Linked
+                            {t('Linked')}
                         </span>
                     ) : isConnecting ? (
-                        <span className="text-[10px] font-bold text-amber-300 uppercase tracking-widest animate-pulse">Linking…</span>
+                        <span className="text-[10px] font-bold text-amber-300 uppercase tracking-widest animate-pulse">{t('Linking…')}</span>
                     ) : (
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Offline</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('Offline')}</span>
                     )}
                     {isConnected && (
                         <button
                             onClick={disconnect}
                             className="px-1.5 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
-                            title="Disconnect"
+                            title={t('Disconnect', { context: 'radio' })}
                         >
                             <i className="fa-solid fa-power-off" />
                         </button>
@@ -110,7 +112,7 @@ const OpRadioPanel: React.FC<OpRadioPanelProps> = ({ radio, compact }) => {
                             ? 'text-red-300 bg-red-500/10 border-red-500/30 hover:bg-red-500/20'
                             : 'text-slate-300 bg-slate-800/60 border-slate-700/50 hover:bg-slate-800'
                     }`}
-                    title={isMuted ? 'Unmute' : 'Mute'}
+                    title={isMuted ? t('Unmute') : t('Mute')}
                 >
                     <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
                 </button>
@@ -140,7 +142,7 @@ const OpRadioPanel: React.FC<OpRadioPanelProps> = ({ radio, compact }) => {
                 }`}
             >
                 <i className={`fa-solid ${isTransmitting ? 'fa-microphone' : 'fa-microphone-slash'} mr-2`} />
-                {isTransmitting ? 'Transmitting' : 'Push to Talk'}
+                {isTransmitting ? t('Transmitting') : t('Push to Talk')}
             </button>
 
             <TXLevelMeter
@@ -155,7 +157,7 @@ const OpRadioPanel: React.FC<OpRadioPanelProps> = ({ radio, compact }) => {
                     onClick={connect}
                     className="w-full py-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 rounded-sm transition-colors"
                 >
-                    <i className="fa-solid fa-rotate-right mr-1" /> Reconnect
+                    <i className="fa-solid fa-rotate-right mr-1" /> {t('Reconnect')}
                 </button>
             )}
         </div>

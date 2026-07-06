@@ -4,6 +4,7 @@ import { useAuth, useFormatDate } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 import WindowFrame, { WindowColor } from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -52,6 +53,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
     const { securityClearances, limitingMarkers } = useMembers();
     const { aiConfig } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const isAuthor = currentUser?.id === report.createdBy?.id;
     const canEdit = hasPermission('intel:manage') || isAuthor;
@@ -163,7 +165,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
             if (onUpdate) onUpdate();
             setIsEditing(false);
         } catch {
-            addToast("Update Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to update intel report. Please try again." });
+            addToast(t("Update Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to update intel report. Please try again.") });
         } finally {
             setIsLoading(false);
         }
@@ -179,10 +181,10 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
 
     const currentClearanceName = useMemo(() => {
         const classLvl = typeof report.classificationLevel === 'number' ? report.classificationLevel : 0;
-        if (classLvl === 0) return 'UNCLASSIFIED';
+        if (classLvl === 0) return t('UNCLASSIFIED');
         const c = securityClearances.find(cl => cl.level === classLvl);
-        return c ? s(c.name) : 'LEVEL ' + String(classLvl);
-    }, [securityClearances, report.classificationLevel]);
+        return c ? s(c.name) : t('LEVEL {level}', { level: classLvl });
+    }, [securityClearances, report.classificationLevel, t]);
 
     const refId = reportId.split('-')[0]?.toUpperCase() || '';
 
@@ -192,7 +194,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
             onClose={onClose}
             onMinimize={onMinimize}
             title={targetId}
-            subtitle={'REF: ' + refId}
+            subtitle={t('REF: {id}', { id: refId })}
             icon={isOrg ? "fa-solid fa-building" : "fa-solid fa-file-contract"}
             color={getWindowColor(threatLevel)}
             width="max-w-2xl"
@@ -204,13 +206,13 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
 
                     {/* Privacy & Classification Controls */}
                     <div className="bg-slate-950/30 border border-slate-800 rounded-xl p-4">
-                        <SectionHeader title="Privacy & Classification" icon="fa-solid fa-lock" />
+                        <SectionHeader title={t('Privacy & Classification')} icon="fa-solid fa-lock" />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                             <div>
-                                <label className={labelClass}>{'Classification Level'}</label>
+                                <label className={labelClass}>{t('Classification Level')}</label>
                                 {isEditing ? (
                                     <select value={classificationLevel} onChange={e => setClassificationLevel(e.target.value)} className={inputClass}>
-                                        {securityClearances.map(c => <option key={c.id} value={String(c.level)}>{'Level ' + String(c.level) + ' - ' + s(c.name)}</option>)}
+                                        {securityClearances.map(c => <option key={c.id} value={String(c.level)}>{t('Level {level} - {name}', { level: String(c.level), name: s(c.name) })}</option>)}
                                     </select>
                                 ) : (
                                     <span className="inline-block bg-sky-900/20 text-sky-400 px-2 py-1 rounded-sm text-[10px] font-black uppercase border border-sky-500/30">
@@ -219,7 +221,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                                 )}
                             </div>
                             <div>
-                                <label className={labelClass}>{'Limiting Markers'}</label>
+                                <label className={labelClass}>{t('Limiting Markers')}</label>
                                 <div className="flex flex-wrap gap-1.5">
                                     {isEditing ? (
                                         limitingMarkers.map(m => (
@@ -239,7 +241,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                                                     {s(m?.code)}
                                                 </span>
                                             ))
-                                            : <span className="text-[10px] text-slate-600 italic">{'None Applied'}</span>
+                                            : <span className="text-[10px] text-slate-600 italic">{t('None Applied')}</span>
                                     )}
                                 </div>
                             </div>
@@ -249,31 +251,31 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                     {/* Header Details */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>{'Threat Level'}</label>
+                            <label className={labelClass}>{t('Threat Level')}</label>
                             {isEditing ? (
                                 <select value={threatLevel} onChange={(e) => setThreatLevel(e.target.value as IntelThreatLevel)} className={inputClass}>
-                                    {Object.values(IntelThreatLevel).map(l => <option key={l} value={l}>{l}</option>)}
+                                    {Object.values(IntelThreatLevel).map(l => <option key={l} value={l}>{t(l)}</option>)}
                                 </select>
                             ) : (
                                 <span className={`inline-block px-2 py-1 rounded-sm text-[10px] font-black uppercase border ${getWindowColor(threatLevel) === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-slate-800 text-slate-300'}`}>
-                                    {s(threatLevel)}
+                                    {t(s(threatLevel))}
                                 </span>
                             )}
                         </div>
                         {!isOrg && (
                             <div>
-                                <label className={labelClass}>{'Affiliation'}</label>
+                                <label className={labelClass}>{t('Affiliation')}</label>
                                 {isEditing ? (
-                                    <input type="text" value={affiliatedOrg} onChange={(e) => setAffiliatedOrg(e.target.value)} className={inputClass} placeholder="Organization" />
+                                    <input type="text" value={affiliatedOrg} onChange={(e) => setAffiliatedOrg(e.target.value)} className={inputClass} placeholder={t('Organization')} />
                                 ) : (
-                                    <span className="text-sm font-bold text-white uppercase tracking-tight">{s(report.affiliatedOrg, 'No Known Org')}</span>
+                                    <span className="text-sm font-bold text-white uppercase tracking-tight">{s(report.affiliatedOrg, t('No Known Org'))}</span>
                                 )}
                             </div>
                         )}
                     </div>
 
                     <div>
-                        <label className={labelClass}>{'Incident Report'}</label>
+                        <label className={labelClass}>{t('Incident Report')}</label>
                         {isEditing ? (
                             <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={10} className={`${inputClass} resize-none font-mono text-xs`} />
                         ) : (
@@ -285,7 +287,7 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
 
                     {(isEditing || reportEvidence.length > 0) && (
                         <div>
-                            <label className={labelClass}>{'Intelligence Artifacts (Evidence)'}</label>
+                            <label className={labelClass}>{t('Intelligence Artifacts (Evidence)')}</label>
                             {isEditing ? (
                                 <textarea value={evidenceInput} onChange={(e) => setEvidenceInput(e.target.value)} rows={3} placeholder="https://..." className={`${inputClass} resize-none font-mono text-[10px]`} />
                             ) : (
@@ -303,9 +305,9 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                     )}
 
                     <div>
-                        <label className={labelClass}>{'Classification Tags'}</label>
+                        <label className={labelClass}>{t('Classification Tags')}</label>
                         {isEditing ? (
-                            <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className={inputClass} placeholder="Tag1, Tag2..." />
+                            <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className={inputClass} placeholder={t('Tag1, Tag2...')} />
                         ) : (
                             <div className="flex flex-wrap gap-2">
                                 {keyedTags.map(({ value: tag, key }) => (
@@ -323,8 +325,8 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                                 <i className="fa-solid fa-user-shield"></i>
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-slate-400">{'Auth: ' + authorName}</span>
-                                <span>{'Filed: ' + createdAt}</span>
+                                <span className="font-bold text-slate-400">{t('Auth: {name}', { name: authorName })}</span>
+                                <span>{t('Filed: {date}', { date: createdAt })}</span>
                             </div>
                         </div>
                     </div>
@@ -333,10 +335,10 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                 <div className="p-4 border-t border-white/5 bg-slate-950 flex flex-wrap justify-between items-center rounded-b-xl gap-4 shrink-0">
                     <div className="flex gap-2">
                         {canDelete && !isEditing && onDelete && (
-                            <button onClick={onDelete} className="px-4 py-2 bg-red-600/10 text-red-500 border border-red-500/30 hover:bg-red-600 hover:text-white rounded-sm text-[10px] font-black uppercase transition-all">{'Delete'}</button>
+                            <button onClick={onDelete} className="px-4 py-2 bg-red-600/10 text-red-500 border border-red-500/30 hover:bg-red-600 hover:text-white rounded-sm text-[10px] font-black uppercase transition-all">{t('Delete')}</button>
                         )}
                         {canEdit && !isEditing && (
-                            <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 rounded-sm text-[10px] font-black uppercase transition-all">{'Edit'}</button>
+                            <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 rounded-sm text-[10px] font-black uppercase transition-all">{t('Edit')}</button>
                         )}
                         <button
                             onClick={handleDossierOpen}
@@ -346,22 +348,22 @@ const IntelReportDetailModal: React.FC<IntelReportDetailModalProps> = ({ isOpen,
                                     ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
                                     : 'bg-slate-800/50 text-slate-600 border border-slate-700/30 cursor-not-allowed'
                             }`}
-                            title={aiConfig.enabled ? 'View Dossier' : 'Dossier unavailable — Gemini API key not configured by organization admin'}
+                            title={aiConfig.enabled ? t('View Dossier') : t('Dossier unavailable — Gemini API key not configured by organization admin')}
                         >
                             {!aiConfig.enabled && <i className="fa-solid fa-lock text-[9px] mr-1.5"></i>}
-                            {'Dossier'}
+                            {t('Dossier')}
                         </button>
                     </div>
 
                     {isEditing ? (
                         <div className="flex gap-2">
-                            <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-sm text-[10px] font-black uppercase transition-all">{'Cancel'}</button>
+                            <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-sm text-[10px] font-black uppercase transition-all">{t('Cancel')}</button>
                             <button onClick={handleSave} disabled={isLoading} className="px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-sm text-[10px] font-black uppercase transition-all shadow-lg shadow-green-900/20">
-                                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Changes'}
+                                {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Changes')}
                             </button>
                         </div>
                     ) : (
-                        <button onClick={onClose} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-sm text-[10px] font-black uppercase transition-all">{'Close'}</button>
+                        <button onClick={onClose} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-sm text-[10px] font-black uppercase transition-all">{t('Close')}</button>
                     )}
                 </div>
             </div>

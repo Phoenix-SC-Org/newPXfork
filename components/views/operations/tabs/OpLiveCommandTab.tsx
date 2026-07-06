@@ -4,6 +4,7 @@ import { HydratedOperation, OperationLiveStatus } from '../../../../types';
 import { useOperations } from '../../../../contexts/OperationsContext';
 import { useData } from '../../../../contexts/DataContext';
 import OpCommsTab from './OpCommsTab';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpLiveCommandTabProps {
     operation: HydratedOperation;
@@ -36,6 +37,7 @@ const statusColor = (status?: string) => {
 const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManage, isParticipant, onRefresh }) => {
     const { resetOperationReadiness } = useOperations();
     const { rpcAction } = useData();
+    const { t } = useI18n();
     const [alertMessage, setAlertMessage] = useState('');
     const [isSendingAlert, setIsSendingAlert] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -96,12 +98,12 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                 <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-red-400 font-black flex items-center gap-1.5">
                         <i className="fa-solid fa-bullhorn text-[9px]" />
-                        Broadcast Alert
+                        {t('Broadcast Alert')}
                     </label>
                     <textarea
                         value={alertMessage}
                         onChange={e => setAlertMessage(e.target.value)}
-                        placeholder="Alert message to all participants..."
+                        placeholder={t('Alert message to all participants...')}
                         maxLength={500}
                         rows={3}
                         className="w-full bg-slate-900/60 border border-red-500/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-red-500/40 focus:ring-1 focus:ring-red-500/30 outline-hidden resize-none transition-all"
@@ -112,9 +114,9 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                         className="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 shadow-lg shadow-red-900/20 disabled:opacity-50 transition-all"
                     >
                         {isSendingAlert ? (
-                            <><i className="fa-solid fa-spinner fa-spin mr-1.5" />Sending...</>
+                            <><i className="fa-solid fa-spinner fa-spin mr-1.5" />{t('Sending...')}</>
                         ) : (
-                            <><i className="fa-solid fa-bullhorn mr-1.5" />Send Alert</>
+                            <><i className="fa-solid fa-bullhorn mr-1.5" />{t('Send Alert')}</>
                         )}
                     </button>
                 </div>
@@ -123,7 +125,7 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                 <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-slate-500 font-black flex items-center gap-1.5">
                         <i className="fa-solid fa-signal text-[9px]" />
-                        Operation Status
+                        {t('Operation Status')}
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
                         {STATUS_OPTIONS.map(opt => {
@@ -140,7 +142,7 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                                             : 'bg-slate-900/60 text-slate-500 border-slate-700/50 hover:text-slate-300 hover:border-slate-600'
                                     } disabled:opacity-50`}
                                 >
-                                    {opt.label}
+                                    {t(opt.label)}
                                 </button>
                             );
                         })}
@@ -151,11 +153,11 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                 <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-slate-500 font-black flex items-center gap-1.5">
                         <i className="fa-solid fa-check-double text-[9px]" />
-                        Readiness
+                        {t('Readiness')}
                     </label>
                     <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-700/50">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-slate-400">{readyCount}/{totalCount} ready</span>
+                            <span className="text-xs text-slate-400">{t('{ready}/{total} ready', { ready: readyCount, total: totalCount })}</span>
                             <span className="text-xs font-bold text-green-400">{readyPct}%</span>
                         </div>
                         <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -171,7 +173,7 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                                 {activeParticipants.filter(p => !p.isReady).map(p => (
                                     <div key={p.userId} className="flex items-center gap-1.5 text-[10px] text-slate-500">
                                         <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                                        {p.user?.name || 'Unknown'}
+                                        {p.user?.name || t('Unknown')}
                                     </div>
                                 ))}
                             </div>
@@ -186,9 +188,9 @@ const OpLiveCommandTab: React.FC<OpLiveCommandTabProps> = ({ operation, canManag
                             className="w-full py-2 bg-slate-900/60 text-slate-300 border border-slate-700/50 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
                         >
                             {resettingReadiness ? (
-                                <><i className="fa-solid fa-spinner fa-spin" />Resetting...</>
+                                <><i className="fa-solid fa-spinner fa-spin" />{t('Resetting...')}</>
                             ) : (
-                                <><i className="fa-solid fa-rotate-left" />Reset Readiness</>
+                                <><i className="fa-solid fa-rotate-left" />{t('Reset Readiness')}</>
                             )}
                         </button>
                     )}

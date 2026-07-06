@@ -1,6 +1,7 @@
 import React from 'react';
 import type { HydratedWarrant, WarrantAction, WarrantStatus } from '../../../../types';
 import { useFormatDate } from '../../../../contexts/AuthContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     warrant: HydratedWarrant;
@@ -21,6 +22,7 @@ const ACTION_STYLE: Record<WarrantAction | string, { icon: string; className: st
 
 export default function MdtWarrantRow({ warrant }: Props) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const status = warrant.status as WarrantStatus;
     const action = ACTION_STYLE[warrant.action as string] || ACTION_STYLE['Caution'];
     const statusClass = STATUS_STYLE[status] || 'bg-slate-500/10 text-slate-300 border-slate-500/30';
@@ -32,9 +34,9 @@ export default function MdtWarrantRow({ warrant }: Props) {
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold text-white truncate">{warrant.action}</span>
+                    <span className="text-sm font-bold text-white truncate">{t(warrant.action, { context: 'warrantAction' })}</span>
                     <span className={`text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border ${statusClass}`}>
-                        {status}
+                        {t(status, { context: 'warrant' })}
                     </span>
                     {warrant.uecReward > 0 && (
                         <span className="text-[10px] text-amber-300 font-mono uppercase tracking-widest">
@@ -43,10 +45,10 @@ export default function MdtWarrantRow({ warrant }: Props) {
                     )}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-0.5 truncate">
-                    {warrant.reason || 'No reason provided'}
+                    {warrant.reason || t('No reason provided')}
                 </div>
                 <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                    Issued {fmt.date(warrant.issuedAt)}
+                    {t('Issued {date}', { date: fmt.date(warrant.issuedAt) })}
                     {warrant.sourceFeedLabel && <span className="ml-2 text-sky-400/80">· {warrant.sourceFeedLabel}</span>}
                 </div>
             </div>

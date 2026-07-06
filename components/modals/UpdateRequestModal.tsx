@@ -5,6 +5,7 @@ import { useRequests } from '../../contexts/RequestsContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface UpdateRequestModalProps {
     isOpen: boolean;
@@ -44,6 +45,7 @@ const RepButton: React.FC<RepButtonProps> = ({ value, label, icon, activeClass, 
 const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose, request }) => {
     const { updateRequestStatus } = useRequests();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [status, setStatus] = useState(request.status);
     const [notes, setNotes] = useState('');
     const [uecEarned, setUecEarned] = useState(request.uecEarned?.toString() || '');
@@ -90,11 +92,11 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
             onClose();
         } catch (err) {
             console.error("Failed to update status:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while updating the status. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while updating the status. Please try again.') });
             setIsLoading(false);
         }
 
-    }, [request, status, notes, updateRequestStatus, isCompletion, uecEarned, medigelConsumed, repChange, onClose, addToast]);
+    }, [request, status, notes, updateRequestStatus, isCompletion, uecEarned, medigelConsumed, repChange, onClose, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -103,8 +105,8 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Update Status"
-            subtitle="Manual Log Entry"
+            title={t('Update Status')}
+            subtitle={t('Manual Log Entry')}
             icon="fa-solid fa-pen-to-square"
             color="amber"
             width="max-w-lg"
@@ -112,14 +114,14 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-6">
                     <div>
-                        <label className={labelClass}>Request Status</label>
+                        <label className={labelClass}>{t('Request Status')}</label>
                         <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value as ServiceRequestStatus)}
                             className={inputClass}
                             disabled={isLoading}
                         >
-                            {Object.values(ServiceRequestStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                            {Object.values(ServiceRequestStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                         </select>
                     </div>
 
@@ -127,7 +129,7 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
                         <div className="space-y-6 pt-6 border-t border-slate-800 animate-fade-in">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className={labelClass}>UEC Earned</label>
+                                    <label className={labelClass}>{t('UEC Earned')}</label>
                                     <div className="relative">
                                         <i className="fa-solid fa-coins absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"></i>
                                         <input
@@ -142,7 +144,7 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
                                 </div>
                                 {request.serviceType === 'Rescue' && (
                                     <div>
-                                        <label className={labelClass}>Medigel (L)</label>
+                                        <label className={labelClass}>{t('Medigel (L)')}</label>
                                         <input
                                             type="number"
                                             step="0.1"
@@ -156,11 +158,11 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
                                 )}
                             </div>
                             <div>
-                                <label className={labelClass}>Client Conduct</label>
+                                <label className={labelClass}>{t('Client Conduct')}</label>
                                 <div className="flex items-center space-x-3">
-                                    <RepButton value={1} label="Positive" icon={<i className="fa-solid fa-thumbs-up" />} activeClass="bg-green-500/20 border-green-500 text-green-400 shadow-lg shadow-green-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
-                                    <RepButton value={0} label="Neutral" icon={<span className="font-mono text-lg font-bold">-</span>} activeClass="bg-slate-700 border-slate-500 text-white" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
-                                    <RepButton value={-1} label="Negative" icon={<i className="fa-solid fa-thumbs-down" />} activeClass="bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                    <RepButton value={1} label={t('Positive')} icon={<i className="fa-solid fa-thumbs-up" />} activeClass="bg-green-500/20 border-green-500 text-green-400 shadow-lg shadow-green-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                    <RepButton value={0} label={t('Neutral')} icon={<span className="font-mono text-lg font-bold">-</span>} activeClass="bg-slate-700 border-slate-500 text-white" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                    <RepButton value={-1} label={t('Negative')} icon={<i className="fa-solid fa-thumbs-down" />} activeClass="bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
                                 </div>
                             </div>
                         </div>
@@ -168,13 +170,13 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
 
                     <div>
                         <label className={labelClass}>
-                            {isCompletion ? 'After-Action Notes' : 'Log Entry Notes'}
+                            {isCompletion ? t('After-Action Notes') : t('Log Entry Notes')}
                         </label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
-                            placeholder={isCompletion ? "Detail the outcome of the mission..." : "Add any relevant notes for this status change..."}
+                            placeholder={isCompletion ? t('Detail the outcome of the mission...') : t('Add any relevant notes for this status change...')}
                             className={`${inputClass} resize-none`}
                             disabled={isLoading}
                         />
@@ -182,13 +184,13 @@ const UpdateRequestModal: React.FC<UpdateRequestModalProps> = ({ isOpen, onClose
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/50 hover:bg-amber-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Update Status'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Update Status')}
                     </button>
                 </div>
             </form>

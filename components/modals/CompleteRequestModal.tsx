@@ -7,6 +7,7 @@ import { useRequests } from '../../contexts/RequestsContext';
 import CreateIntelReportModal from './CreateIntelReportModal';
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface CompleteRequestModalProps {
     isOpen: boolean;
@@ -45,6 +46,7 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
     const { currentUser } = useAuth();
     const { completeRequest } = useRequests();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [notes, setNotes] = useState('');
     const [uecEarned, setUecEarned] = useState('');
     const [medigelConsumed, setMedigelConsumed] = useState('');
@@ -93,10 +95,10 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
             }
         } catch (err) {
             console.error("Failed to complete request:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while completing the request. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while completing the request. Please try again.') });
             setIsLoading(false);
         }
-    }, [request, notes, uecEarned, medigelConsumed, repChange, outcome, completeRequest, onClose, fileIntelReport, currentUser, addToast]);
+    }, [request, notes, uecEarned, medigelConsumed, repChange, outcome, completeRequest, onClose, fileIntelReport, currentUser, addToast, t]);
 
     const handleIntelClose = () => {
         setShowIntelModal(false);
@@ -113,8 +115,8 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
             <WindowFrame
                 isOpen={isOpen && !showIntelModal}
                 onClose={onClose}
-                title="Mission Debrief"
-                subtitle="Complete & Archive"
+                title={t('Mission Debrief')}
+                subtitle={t('Complete & Archive')}
                 icon="fa-solid fa-flag-checkered"
                 color="green"
                 width="max-w-lg"
@@ -122,20 +124,20 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
                 <form onSubmit={handleSubmit} className="flex flex-col h-full">
                     <div className="p-6 space-y-6">
                         <div>
-                            <label className={labelClass}>Outcome</label>
+                            <label className={labelClass}>{t('Outcome')}</label>
                             <select
                                 value={outcome}
                                 onChange={(e) => setOutcome(e.target.value as ServiceRequestStatus)}
                                 className={inputClass.replace('font-mono', '')}
                                 disabled={isLoading}
                             >
-                                {outcomeOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                {outcomeOptions.map(opt => <option key={opt} value={opt}>{t(opt)}</option>)}
                             </select>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className={labelClass}>UEC Earned</label>
+                                <label className={labelClass}>{t('UEC Earned')}</label>
                                 <div className="relative">
                                     <i className="fa-solid fa-coins absolute left-3 top-1/2 -translate-y-1/2 text-slate-600"></i>
                                     <input
@@ -152,7 +154,7 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
                                 </div>
                             </div>
                             <div>
-                                <label className={labelClass}>Medigel (L)</label>
+                                <label className={labelClass}>{t('Medigel (L)')}</label>
                                 <input
                                     type="number"
                                     step="0.1"
@@ -166,21 +168,21 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
                         </div>
 
                         <div>
-                            <label className={labelClass}>Client Conduct Assessment</label>
+                            <label className={labelClass}>{t('Client Conduct Assessment')}</label>
                             <div className="flex items-center space-x-3">
-                                <RepButton value={1} label="Positive" icon={<i className="fa-solid fa-thumbs-up" />} activeClass="bg-green-500/20 border-green-500 text-green-400 shadow-lg shadow-green-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
-                                <RepButton value={0} label="Neutral" icon={<span className="font-mono text-lg font-bold">-</span>} activeClass="bg-slate-700 border-slate-500 text-white" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
-                                <RepButton value={-1} label="Negative" icon={<i className="fa-solid fa-thumbs-down" />} activeClass="bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                <RepButton value={1} label={t('Positive')} icon={<i className="fa-solid fa-thumbs-up" />} activeClass="bg-green-500/20 border-green-500 text-green-400 shadow-lg shadow-green-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                <RepButton value={0} label={t('Neutral')} icon={<span className="font-mono text-lg font-bold">-</span>} activeClass="bg-slate-700 border-slate-500 text-white" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
+                                <RepButton value={-1} label={t('Negative')} icon={<i className="fa-solid fa-thumbs-down" />} activeClass="bg-red-500/20 border-red-500 text-red-400 shadow-lg shadow-red-900/20" repChange={repChange} isLoading={isLoading} onSelect={setRepChange} />
                             </div>
                         </div>
 
                         <div>
-                            <label className={labelClass}>After-Action Report</label>
+                            <label className={labelClass}>{t('After-Action Report')}</label>
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 rows={4}
-                                placeholder="Detail the outcome, key events, and any issues..."
+                                placeholder={t('Detail the outcome, key events, and any issues...')}
                                 className={`${inputClass.replace('font-mono', '')} resize-none`}
                                 disabled={isLoading}
                             />
@@ -197,8 +199,8 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
                                         disabled={isLoading}
                                     />
                                     <div>
-                                        <span className="text-red-400 font-bold block text-sm">File Intelligence Report</span>
-                                        <span className="text-xs text-red-300/60 block mt-1">Flag this client or incident in the Intelligence Hub due to negative outcome.</span>
+                                        <span className="text-red-400 font-bold block text-sm">{t('File Intelligence Report')}</span>
+                                        <span className="text-xs text-red-300/60 block mt-1">{t('Flag this client or incident in the Intelligence Hub due to negative outcome.')}</span>
                                     </div>
                                 </label>
                             </div>
@@ -206,13 +208,13 @@ const CompleteRequestModal: React.FC<CompleteRequestModalProps> = ({ isOpen, onC
                     </div>
 
                     <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-slate-800 rounded-b-xl shrink-0 gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                         <button
                             type="submit"
                             className="px-6 py-2 bg-green-600/10 text-green-400 border border-green-600/30 hover:bg-green-600/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             disabled={isLoading}
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Archive Mission'}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Archive Mission')}
                         </button>
                     </div>
                 </form>

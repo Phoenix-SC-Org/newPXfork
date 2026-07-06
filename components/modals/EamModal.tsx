@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { playCachedSound } from '../../lib/audioCache';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface EamModalProps {
     message: string;
@@ -10,6 +11,7 @@ interface EamModalProps {
 }
 
 const EamModal: React.FC<EamModalProps> = ({ message, onClose, soundUrl, volume = 50 }) => {
+    const { t } = useI18n();
     const [countdown, setCountdown] = useState(10);
     const intervalRef = useRef<number | null>(null);
 
@@ -56,8 +58,8 @@ const EamModal: React.FC<EamModalProps> = ({ message, onClose, soundUrl, volume 
                             <i className="fa-solid fa-radiation text-3xl text-white"></i>
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-white tracking-[0.15em] uppercase leading-none mb-1 shadow-black drop-shadow-xs">Emergency Action Message</h1>
-                            <p className="text-red-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">Priority Alpha // Override Authorized</p>
+                            <h1 className="text-3xl font-black text-white tracking-[0.15em] uppercase leading-none mb-1 shadow-black drop-shadow-xs">{t('Emergency Action Message')}</h1>
+                            <p className="text-red-400 font-mono text-xs tracking-[0.3em] uppercase font-bold">{t('Priority Alpha // Override Authorized')}</p>
                         </div>
                     </div>
                     <div className="hidden sm:block text-right">
@@ -69,7 +71,7 @@ const EamModal: React.FC<EamModalProps> = ({ message, onClose, soundUrl, volume 
                 <div className="p-8 md:p-12 bg-black/60 relative min-h-[300px] flex items-center justify-center">
                      {/* "Classified" Watermark */}
                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-12 border-8 border-red-500/5 text-red-500/5 text-8xl md:text-9xl font-black uppercase pointer-events-none whitespace-nowrap select-none">
-                        ALERT
+                        {t('ALERT')}
                     </div>
 
                     <div className="relative z-10 w-full">
@@ -81,7 +83,7 @@ const EamModal: React.FC<EamModalProps> = ({ message, onClose, soundUrl, volume 
 
                 {/* Footer / Controls */}
                 <div className="bg-slate-900 border-t border-red-500/30 p-6 flex flex-col items-center gap-5 relative z-10">
-                    <p className="text-red-400/60 text-[10px] font-mono uppercase tracking-[0.2em] animate-pulse">Acknowledgment Required to Restore Terminal Control</p>
+                    <p className="text-red-400/60 text-[10px] font-mono uppercase tracking-[0.2em] animate-pulse">{t('Acknowledgment Required to Restore Terminal Control')}</p>
                     
                     <button
                         onClick={onClose}
@@ -95,11 +97,11 @@ const EamModal: React.FC<EamModalProps> = ({ message, onClose, soundUrl, volume 
                     >
                         {countdown > 0 ? (
                             <div className="flex items-center justify-center gap-3 relative z-10">
-                                <span>Decrypting Protocol</span>
+                                <span>{t('Decrypting Protocol')}</span>
                                 <span className="font-mono text-red-400">00:0{countdown}</span>
                             </div>
                         ) : (
-                            <span className="relative z-10 animate-pulse">Acknowledge & Dismiss</span>
+                            <span className="relative z-10 animate-pulse">{t('Acknowledge & Dismiss')}</span>
                         )}
                         
                         {/* Progress Bar Background for countdown */}

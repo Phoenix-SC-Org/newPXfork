@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { HydratedOperation, LogisticsCategory } from '../../../../types';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useData } from '../../../../contexts/DataContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpLogisticsTabProps {
     operation: HydratedOperation;
@@ -29,6 +30,7 @@ const categoryColors: Record<string, string> = {
 const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, isParticipant, onRefresh }) => {
     const { currentUser } = useAuth();
     const { rpcAction } = useData();
+    const { t } = useI18n();
     const items = useMemo(() => operation.logistics || [], [operation.logistics]);
 
     const [showForm, setShowForm] = useState(false);
@@ -90,11 +92,11 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
         <div className="p-4 md:p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <i className="fa-solid fa-boxes-stacked text-slate-500"></i> Logistics
+                    <i className="fa-solid fa-boxes-stacked text-slate-500"></i> {t('Logistics')}
                 </h3>
                 {canManage && (
                     <button onClick={() => setShowForm(!showForm)} className="text-[10px] font-bold text-purple-300 hover:text-purple-200 uppercase">
-                        <i className="fa-solid fa-plus mr-1"></i> Add Item
+                        <i className="fa-solid fa-plus mr-1"></i> {t('Add Item')}
                     </button>
                 )}
             </div>
@@ -102,7 +104,7 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
             {items.length > 0 && (
                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Overall Fulfillment</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t('Overall Fulfillment')}</span>
                         <span className="text-sm font-bold text-white">{overallProgress}%</span>
                     </div>
                     <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -110,9 +112,9 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
                             style={{ width: `${Math.min(overallProgress, 100)}%` }}></div>
                     </div>
                     <div className="flex gap-4 mt-2 text-[10px] text-slate-500">
-                        <span>{items.filter(i => i.status === 'Fulfilled').length} fulfilled</span>
-                        <span>{items.filter(i => i.status === 'Partial').length} partial</span>
-                        <span>{items.filter(i => i.status === 'Needed').length} needed</span>
+                        <span>{t('{count} fulfilled', { count: items.filter(i => i.status === 'Fulfilled').length })}</span>
+                        <span>{t('{count} partial', { count: items.filter(i => i.status === 'Partial').length })}</span>
+                        <span>{t('{count} needed', { count: items.filter(i => i.status === 'Needed').length })}</span>
                     </div>
                 </div>
             )}
@@ -121,30 +123,30 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
                 <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4 space-y-3 animate-fade-in">
                     <div className="grid grid-cols-3 gap-3">
                         <div className="col-span-2">
-                            <label className={labelClass}>Item Name</label>
-                            <input type="text" value={itemName} onChange={e => setItemName(e.target.value)} placeholder="e.g., Medpens" className={`${inputClass} w-full`} />
+                            <label className={labelClass}>{t('Item Name')}</label>
+                            <input type="text" value={itemName} onChange={e => setItemName(e.target.value)} placeholder={t('e.g., Medpens')} className={`${inputClass} w-full`} />
                         </div>
                         <div>
-                            <label className={labelClass}>Qty Needed</label>
+                            <label className={labelClass}>{t('Qty Needed')}</label>
                             <input type="number" value={quantityNeeded} onChange={e => setQuantityNeeded(e.target.value)} min="1" className={`${inputClass} w-full`} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className={labelClass}>Category</label>
+                            <label className={labelClass}>{t('Category')}</label>
                             <select value={category} onChange={e => setCategory(e.target.value as LogisticsCategory)} className={`${inputClass} w-full`}>
-                                {Object.values(LogisticsCategory).map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                                {Object.values(LogisticsCategory).map(c => <option key={c} value={c}>{t(c.charAt(0).toUpperCase() + c.slice(1))}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className={labelClass}>Notes</label>
-                            <input type="text" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional" className={`${inputClass} w-full`} />
+                            <label className={labelClass}>{t('Notes')}</label>
+                            <input type="text" value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('Optional')} className={`${inputClass} w-full`} />
                         </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                        <button onClick={() => setShowForm(false)} className="text-xs text-slate-400 hover:text-white px-3 py-1.5">Cancel</button>
+                        <button onClick={() => setShowForm(false)} className="text-xs text-slate-400 hover:text-white px-3 py-1.5">{t('Cancel')}</button>
                         <button onClick={handleAdd} disabled={saving || !itemName.trim()} className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-sm disabled:opacity-50">
-                            {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Add Item'}
+                            {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Add Item')}
                         </button>
                     </div>
                 </div>
@@ -156,7 +158,7 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
                     <div key={cat}>
                         <h4 className={`text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2 ${categoryColors[cat] || 'text-slate-400'}`}>
                             <i className={categoryIcons[cat] || categoryIcons.general}></i>
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            {t(cat.charAt(0).toUpperCase() + cat.slice(1))}
                             <span className="text-slate-600 text-[9px]">({catItems.length})</span>
                         </h4>
                         <div className="space-y-2">
@@ -171,7 +173,7 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
                                                     item.status === 'Fulfilled' ? 'text-green-400 bg-green-500/10 border-green-500/30' :
                                                     item.status === 'Partial' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' :
                                                     'text-slate-400 bg-slate-500/10 border-slate-500/30'
-                                                }`}>{item.status}</span>
+                                                }`}>{t(item.status)}</span>
                                             </div>
                                             <div className="flex items-center gap-3 mt-1.5">
                                                 <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden max-w-[200px]">
@@ -206,7 +208,7 @@ const OpLogisticsTab: React.FC<OpLogisticsTabProps> = ({ operation, canManage, i
             {items.length === 0 && !canManage && (
                 <div className="flex flex-col items-center justify-center h-32 text-slate-600 opacity-50">
                     <i className="fa-solid fa-box-open text-3xl mb-2"></i>
-                    <p className="text-xs italic">No logistics items tracked.</p>
+                    <p className="text-xs italic">{t('No logistics items tracked.')}</p>
                 </div>
             )}
         </div>

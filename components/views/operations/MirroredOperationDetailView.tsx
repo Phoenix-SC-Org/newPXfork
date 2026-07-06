@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { MirroredOperation, RSVPStatus } from '../../../types';
 import TacticalBoardViewer from './TacticalBoardViewer';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     mirror: MirroredOperation;
@@ -34,6 +35,7 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
     const { rpcAction } = useData();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [mirror, setMirror] = useState<MirroredOperation>(initialMirror);
     const [rsvping, setRsvping] = useState(false);
 
@@ -52,16 +54,16 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
     const op = mirror.snapshot;
     const myParticipation = mirror.myParticipation?.find(p => p.userId === currentUser?.id);
     const myRsvp = myParticipation?.rsvpStatus || 'Pending';
-    const hostName = mirror.hostPeerName || 'an allied org';
+    const hostName = mirror.hostPeerName || t('an allied org');
 
     const handleRsvp = async (status: string) => {
         setRsvping(true);
         try {
             await rpcAction('mirror:rsvp', { id: mirror.id, rsvpStatus: status });
-            addToast('RSVP Updated', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: `You're marked "${status}" for this operation.` });
+            addToast(t('RSVP Updated'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t("You're marked \"{status}\" for this operation.", { status: t(status) }) });
             await refresh();
         } catch {
-            addToast('RSVP Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'Could not reach the host instance.' });
+            addToast(t('RSVP Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('Could not reach the host instance.') });
         } finally { setRsvping(false); }
     };
 
@@ -71,16 +73,16 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
             // Deletes locally + pushes the removal to the host so its allied
             // participant row doesn't linger as a ghost RSVP.
             await rpcAction('mirror:rsvp_remove', { id: mirror.id });
-            addToast('RSVP Withdrawn', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'Your RSVP was removed from this operation.' });
+            addToast(t('RSVP Withdrawn'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('Your RSVP was removed from this operation.') });
             await refresh();
         } catch {
-            addToast('Withdraw Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'Could not reach the host instance.' });
+            addToast(t('Withdraw Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('Could not reach the host instance.') });
         } finally { setRsvping(false); }
     };
 
     const backBtn = (
         <button onClick={onBack} className="text-xs text-slate-400 hover:text-white flex items-center gap-2">
-            <i className="fa-solid fa-arrow-left"></i> Back to Operations
+            <i className="fa-solid fa-arrow-left"></i> {t('Back to Operations')}
         </button>
     );
 
@@ -90,7 +92,7 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
                 {backBtn}
                 <div className="text-center text-slate-500 py-16">
                     <i className="fa-solid fa-satellite-dish text-2xl mb-3"></i>
-                    <p>This allied operation hasn't been shared yet, or has been withdrawn by {hostName}.</p>
+                    <p>{t("This allied operation hasn't been shared yet, or has been withdrawn by {name}.", { name: hostName })}</p>
                 </div>
             </div>
         );
@@ -101,15 +103,15 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 {backBtn}
                 <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
-                    <i className="fa-solid fa-eye mr-1.5"></i> Read-only · Hosted by {hostName}
+                    <i className="fa-solid fa-eye mr-1.5"></i> {t('Read-only · Hosted by {name}', { name: hostName })}
                 </span>
             </div>
 
             <div className="bg-linear-to-r from-slate-800/60 to-slate-900/40 rounded-xl border border-slate-700/40 p-6">
                 <div className="flex items-start gap-3 flex-wrap">
                     <h1 className="text-2xl font-black text-white tracking-tight">{op.name}</h1>
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full border bg-slate-700/40 text-slate-300 border-slate-600/40 mt-1">{op.status}</span>
-                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full border bg-slate-700/40 text-slate-300 border-slate-600/40 mt-1">{op.type}</span>
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full border bg-slate-700/40 text-slate-300 border-slate-600/40 mt-1">{t(op.status)}</span>
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full border bg-slate-700/40 text-slate-300 border-slate-600/40 mt-1">{t(op.type)}</span>
                 </div>
                 {op.description && <p className="text-slate-400 text-sm mt-3">{op.description}</p>}
                 {(op.scheduledStart || op.locationText) && (
@@ -122,20 +124,20 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
 
             {/* RSVP (accepted mirrors only) */}
             {mirror.accepted && (
-                <Section title="Your RSVP" icon="fa-reply">
+                <Section title={t('Your RSVP')} icon="fa-reply">
                     <div className="flex items-center gap-2 flex-wrap">
                         {RSVP_BUTTONS.map(b => (
                             <button key={b.status} onClick={() => handleRsvp(b.status)} disabled={rsvping}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all border disabled:opacity-50 ${
                                     myRsvp === b.status ? b.active : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50'
                                 }`}>
-                                <i className={`fa-solid ${b.icon}`}></i> {b.label}
+                                <i className={`fa-solid ${b.icon}`}></i> {t(b.label)}
                             </button>
                         ))}
                         {myParticipation && (
                             <button onClick={handleWithdraw} disabled={rsvping}
                                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all border disabled:opacity-50 bg-slate-800/50 text-red-400/80 border-red-500/20 hover:bg-red-500/10 hover:text-red-300">
-                                <i className="fa-solid fa-user-minus"></i> Withdraw
+                                <i className="fa-solid fa-user-minus"></i> {t('Withdraw')}
                             </button>
                         )}
                         {rsvping && <i className="fa-solid fa-spinner animate-spin text-slate-500"></i>}
@@ -145,19 +147,19 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
 
             {/* SMEAC */}
             {(op.roe || op.commanderNotes) && (
-                <Section title="Orders" icon="fa-scroll">
-                    {op.roe && <div className="mb-3"><p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Rules of Engagement</p><p className="text-sm text-slate-300 whitespace-pre-wrap">{op.roe}</p></div>}
-                    {op.commanderNotes && <div><p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Commander's Notes</p><p className="text-sm text-slate-300 whitespace-pre-wrap">{op.commanderNotes}</p></div>}
+                <Section title={t('Orders')} icon="fa-scroll">
+                    {op.roe && <div className="mb-3"><p className="text-[10px] text-slate-500 uppercase font-bold mb-1">{t('Rules of Engagement')}</p><p className="text-sm text-slate-300 whitespace-pre-wrap">{op.roe}</p></div>}
+                    {op.commanderNotes && <div><p className="text-[10px] text-slate-500 uppercase font-bold mb-1">{t("Commander's Notes")}</p><p className="text-sm text-slate-300 whitespace-pre-wrap">{op.commanderNotes}</p></div>}
                 </Section>
             )}
 
             {!!op.phases?.length && (
-                <Section title="Phases" icon="fa-diagram-project">
+                <Section title={t('Phases')} icon="fa-diagram-project">
                     <div className="space-y-2">
                         {op.phases.map(ph => (
                             <div key={ph.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/30 border border-slate-700/30">
                                 <span className="text-sm text-white font-semibold">{ph.name}</span>
-                                <span className="text-[10px] text-slate-500 uppercase">{ph.status}</span>
+                                <span className="text-[10px] text-slate-500 uppercase">{t(ph.status)}</span>
                             </div>
                         ))}
                     </div>
@@ -165,12 +167,12 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
             )}
 
             {!!op.tasks?.length && (
-                <Section title="Tasking" icon="fa-list-check">
+                <Section title={t('Tasking')} icon="fa-list-check">
                     <div className="space-y-2">
-                        {op.tasks.map(t => (
-                            <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/30 border border-slate-700/30">
-                                <span className="text-sm text-slate-200">{t.title}</span>
-                                <span className="text-[10px] text-slate-500 uppercase">{t.status} · {t.priority}</span>
+                        {op.tasks.map(task => (
+                            <div key={task.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/30 border border-slate-700/30">
+                                <span className="text-sm text-slate-200">{task.title}</span>
+                                <span className="text-[10px] text-slate-500 uppercase">{t(task.status)} · {t(task.priority)}</span>
                             </div>
                         ))}
                     </div>
@@ -178,7 +180,7 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
             )}
 
             {!!op.commandNodes?.length && (
-                <Section title="Command Structure" icon="fa-sitemap">
+                <Section title={t('Command Structure')} icon="fa-sitemap">
                     <div className="flex flex-wrap gap-2">
                         {op.commandNodes.map(n => (
                             <span key={n.id} className="text-xs px-2.5 py-1 rounded-md bg-slate-800/40 border border-slate-700/40 text-slate-300">{n.label}</span>
@@ -187,27 +189,27 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
                 </Section>
             )}
 
-            <Section title="Participants" icon="fa-users">
+            <Section title={t('Participants')} icon="fa-users">
                 <div className="space-y-1.5">
                     {(op.participants || []).map(p => (
                         <div key={`h-${p.userId}`} className="flex items-center justify-between text-sm">
-                            <span className="text-slate-200">{p.user?.name || 'Member'}{p.roleRequested ? <span className="text-slate-500"> · {p.roleRequested}</span> : null}</span>
-                            <span className="text-[10px] text-slate-500 uppercase">{p.rsvpStatus || (p.isReady ? 'Ready' : '')}</span>
+                            <span className="text-slate-200">{p.user?.name || t('Member')}{p.roleRequested ? <span className="text-slate-500"> · {p.roleRequested}</span> : null}</span>
+                            <span className="text-[10px] text-slate-500 uppercase">{p.rsvpStatus ? t(p.rsvpStatus) : (p.isReady ? t('Ready') : '')}</span>
                         </div>
                     ))}
                     {(op.alliedParticipants || []).map(p => (
                         <div key={`a-${p.peerId}-${p.remoteUserHandle}`} className="flex items-center justify-between text-sm">
-                            <span className="text-cyan-300">{p.displayName || p.remoteUserHandle}<span className="text-slate-500"> · ally</span></span>
-                            <span className="text-[10px] text-slate-500 uppercase">{p.rsvpStatus}</span>
+                            <span className="text-cyan-300">{p.displayName || p.remoteUserHandle}<span className="text-slate-500"> · {t('ally')}</span></span>
+                            <span className="text-[10px] text-slate-500 uppercase">{p.rsvpStatus ? t(p.rsvpStatus) : ''}</span>
                         </div>
                     ))}
-                    {!(op.participants?.length || op.alliedParticipants?.length) && <p className="text-xs text-slate-600 italic">No participants yet.</p>}
+                    {!(op.participants?.length || op.alliedParticipants?.length) && <p className="text-xs text-slate-600 italic">{t('No participants yet.')}</p>}
                 </div>
             </Section>
 
             {/* Tactical board — read-only render of the synced snapshot. */}
             {!!op.boardElements?.length && (
-                <Section title="Tactical Board" icon="fa-chess-board">
+                <Section title={t('Tactical Board')} icon="fa-chess-board">
                     <TacticalBoardViewer boardElements={op.boardElements} />
                 </Section>
             )}

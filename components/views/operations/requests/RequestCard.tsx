@@ -19,6 +19,7 @@ import SlaBadge from './SlaBadge';
 import ResponderStack from './ResponderStack';
 import { statusAccent, timeAgoShort, reputationAccent } from './requestStyles';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     request: HydratedServiceRequest;
@@ -52,6 +53,7 @@ const RequestCard: React.FC<Props> = ({
     const { warrants } = useOperations();
     const { intelTargetIndex } = useIntel();
     const { confirm, addToast } = useNotification();
+    const { t } = useI18n();
 
     const isClientOwner = currentUser?.id === request.clientId;
     const isLead = currentUser?.id === request.leadResponderId;
@@ -101,9 +103,9 @@ const RequestCard: React.FC<Props> = ({
         e.stopPropagation();
         if (loadingAction) return;
         const confirmed = await confirm({
-            title: 'Delete Request?',
-            message: `Are you sure you want to permanently delete request ${request.id}? This action cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Request?'),
+            message: t('Are you sure you want to permanently delete request {id}? This action cannot be undone.', { id: request.id }),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (confirmed) {
@@ -111,7 +113,7 @@ const RequestCard: React.FC<Props> = ({
             try { await deleteRequest(request.id); }
             catch (err) {
                 console.error('Failed to delete', err);
-                addToast('Delete Failed', <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'Could not delete the service request.' });
+                addToast(t('Delete Failed'), <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('Could not delete the service request.') });
             } finally { setLoadingAction(null); }
         }
     };
@@ -120,9 +122,9 @@ const RequestCard: React.FC<Props> = ({
         e.stopPropagation();
         if (loadingAction) return;
         const confirmed = await confirm({
-            title: 'Cancel Request',
-            message: 'Are you sure you want to cancel this request?',
-            confirmText: 'Cancel Request',
+            title: t('Cancel Request'),
+            message: t('Are you sure you want to cancel this request?'),
+            confirmText: t('Cancel Request'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -133,7 +135,7 @@ const RequestCard: React.FC<Props> = ({
     };
 
     const showSla = SHOW_SLA_FOR.has(request.status);
-    const clientName = clientRsiHandle || 'Ad-Hoc Client';
+    const clientName = clientRsiHandle || t('Ad-Hoc Client');
     const repAccent = request.client ? ACCENTS[reputationAccent(request.client.reputation)] : null;
 
     return (
@@ -205,14 +207,14 @@ const RequestCard: React.FC<Props> = ({
                             </div>
                         )}
                         <div className="min-w-0 flex-1">
-                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Client</p>
+                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">{t('Client')}</p>
                             <div className="flex items-center gap-2 min-w-0">
                                 <p className="text-white font-bold text-sm truncate">{clientName}</p>
                                 <ClientFlagPills isAffiliate={request.client?.isAffiliate} isVip={request.client?.isVip} className="shrink-0" />
                             </div>
                             {request.client && (
                                 <p className={`text-[10px] font-mono ${repAccent?.text ?? 'text-slate-400'}`}>
-                                    REP · {request.client.reputation}
+                                    {t('REP · {rep}', { rep: request.client.reputation })}
                                 </p>
                             )}
                         </div>
@@ -220,7 +222,7 @@ const RequestCard: React.FC<Props> = ({
 
                     <div className="space-y-2">
                         <div>
-                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Location</p>
+                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Location')}</p>
                             <p className="text-slate-200 text-sm font-medium leading-snug wrap-break-word flex items-start gap-2">
                                 <i className="fa-solid fa-map-pin text-sky-400 mt-0.5 shrink-0" aria-hidden />
                                 <span className="min-w-0">{request.location}</span>
@@ -238,7 +240,7 @@ const RequestCard: React.FC<Props> = ({
 
                 <div className="md:col-span-3 flex flex-col gap-3 min-w-0 md:border-l md:border-white/5 md:pl-4">
                     <div className="grow min-w-0">
-                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Mission Briefing</p>
+                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Mission Briefing')}</p>
                         <p className="text-slate-300 text-sm leading-relaxed italic line-clamp-3">
                             &ldquo;{request.description}&rdquo;
                         </p>
@@ -247,7 +249,7 @@ const RequestCard: React.FC<Props> = ({
                     {request.assignedMembers.length > 0 && (
                         <div>
                             <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">
-                                Responding Unit · {request.assignedMembers.length}
+                                {t('Responding Unit · {count}', { count: request.assignedMembers.length })}
                             </p>
                             <ResponderStack
                                 members={request.assignedMembers}
@@ -265,7 +267,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                     >
-                        {loadingAction === 'cancel' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Cancel'}
+                        {loadingAction === 'cancel' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Cancel')}
                     </button>
                 )}
                 {hasPermission('request:accept') && !hasPermission('request:triage') && [ServiceRequestStatus.Submitted, ServiceRequestStatus.Triaged].includes(request.status) && (
@@ -276,7 +278,7 @@ const RequestCard: React.FC<Props> = ({
                                 disabled={!!loadingAction}
                                 className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                             >
-                                {loadingAction === 'refuse' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Refuse'}
+                                {loadingAction === 'refuse' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Refuse')}
                             </button>
                         )}
                         <button
@@ -284,7 +286,7 @@ const RequestCard: React.FC<Props> = ({
                             disabled={!!loadingAction}
                             className="px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition-colors disabled:opacity-50"
                         >
-                            {loadingAction === 'accept' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Accept'}
+                            {loadingAction === 'accept' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Accept')}
                         </button>
                     </>
                 )}
@@ -294,7 +296,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                     >
-                        Triage
+                        {t('Triage')}
                     </button>
                 )}
                 {(hasPermission('request:manage_responders') || hasPermission('request:set_lead') || (isLead && isActionable)) && (
@@ -303,7 +305,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-teal-500/10 text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition-colors disabled:opacity-50"
                     >
-                        Responders
+                        {t('Responders')}
                     </button>
                 )}
                 {hasPermission('request:update') && (
@@ -312,7 +314,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-slate-800/60 text-slate-300 border border-white/10 hover:bg-slate-700/80 transition-colors disabled:opacity-50"
                     >
-                        Status / Log
+                        {t('Status / Log')}
                     </button>
                 )}
                 {hasPermission('request:complete') && isActionable && (
@@ -321,7 +323,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 shadow-lg shadow-emerald-900/30 transition-colors disabled:opacity-50"
                     >
-                        Complete
+                        {t('Complete')}
                     </button>
                 )}
                 {isClientOwner && hasPermission('request:rate') && request.status === ServiceRequestStatus.Success && !request.rated && (
@@ -330,7 +332,7 @@ const RequestCard: React.FC<Props> = ({
                         disabled={!!loadingAction}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors animate-pulse disabled:opacity-50"
                     >
-                        Rate
+                        {t('Rate')}
                     </button>
                 )}
                 {hasPermission('request:delete') && (
@@ -338,7 +340,7 @@ const RequestCard: React.FC<Props> = ({
                         onClick={handleDelete}
                         disabled={!!loadingAction}
                         className="px-2 py-1.5 rounded-sm text-[10px] font-bold uppercase text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center min-w-[32px] disabled:opacity-50"
-                        title="Delete request"
+                        title={t('Delete request')}
                     >
                         {loadingAction === 'delete' ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : <i className="fa-solid fa-trash" aria-hidden />}
                     </button>

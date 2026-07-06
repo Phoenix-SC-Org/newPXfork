@@ -1,5 +1,6 @@
 import React from 'react';
 import { SectionLabel } from '../../../shared/ui';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 export interface QuickAction {
     label: string;
@@ -22,10 +23,11 @@ const ACCENT_MAP: Record<QuickAction['accent'], string> = {
 };
 
 export default function QuickActionsBar({ actions }: Props) {
+    const { t } = useI18n();
     if (actions.length === 0) return null;
     return (
         <div>
-            <SectionLabel label="Quick Actions" icon="fa-bolt" />
+            <SectionLabel label={t('Quick Actions')} icon="fa-bolt" />
             <div className="flex flex-wrap gap-2">
                 {actions.map((a) => (
                     <button

@@ -6,6 +6,7 @@ import { useData } from '../../../../contexts/DataContext';
 import { useFormatDate } from '../../../../contexts/AuthContext';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { useNow } from '../../../../hooks/useNow';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpExecutionTabProps {
     operation: HydratedOperation;
@@ -126,6 +127,7 @@ const InlineEdit: React.FC<{
     className?: string;
     placeholder?: string;
 }> = ({ value, onSave, canEdit, className = '', placeholder }) => {
+    const { t } = useI18n();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(value);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -136,7 +138,7 @@ const InlineEdit: React.FC<{
         return (
             <span className={`${className} ${canEdit ? 'cursor-pointer hover:bg-white/5 rounded-sm px-1 -mx-1 transition-colors' : ''}`}
                 onClick={() => { if (canEdit) { setDraft(value); setEditing(true); } }}>
-                {value || <span className="text-slate-600 italic">{placeholder || 'Untitled'}</span>}
+                {value || <span className="text-slate-600 italic">{placeholder || t('Untitled')}</span>}
             </span>
         );
     }
@@ -157,6 +159,7 @@ const InlineEdit: React.FC<{
 const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, onRefresh }) => {
     const { rpcAction } = useData();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const fmt = useFormatDate();
     // Memoise the `|| []` fallbacks so downstream memos / callbacks that
     // depend on these only re-run when the underlying operation slice
@@ -247,22 +250,22 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             const totalCascade = cascadingTasks.length + cascadingMilestones.length;
             if (totalCascade > 0) {
                 const parts: string[] = [];
-                if (cascadingTasks.length > 0) parts.push(`${cascadingTasks.length} pending/active task${cascadingTasks.length === 1 ? '' : 's'}`);
-                if (cascadingMilestones.length > 0) parts.push(`${cascadingMilestones.length} milestone${cascadingMilestones.length === 1 ? '' : 's'}`);
+                if (cascadingTasks.length > 0) parts.push(cascadingTasks.length === 1 ? t('{count} pending/active task', { count: cascadingTasks.length }) : t('{count} pending/active tasks', { count: cascadingTasks.length }));
+                if (cascadingMilestones.length > 0) parts.push(cascadingMilestones.length === 1 ? t('{count} milestone', { count: cascadingMilestones.length }) : t('{count} milestones', { count: cascadingMilestones.length }));
                 const ok = await confirm({
-                    title: 'Complete Phase',
-                    message: `Mark ${parts.join(' and ')} as Completed? Failed or Skipped items will be left alone.`,
-                    confirmText: 'Complete Phase',
+                    title: t('Complete Phase'),
+                    message: t('Mark {parts} as Completed? Failed or Skipped items will be left alone.', { parts: parts.join(` ${t('and')} `) }),
+                    confirmText: t('Complete Phase'),
                 });
                 if (!ok) return;
             }
         }
         await handleUpdatePhase(phaseId, { status: newStatus });
-    }, [tasks, entries, confirm, handleUpdatePhase]);
+    }, [tasks, entries, confirm, handleUpdatePhase, t]);
 
     const handleDeletePhase = useCallback(async (phaseId: number) => {
         if (kebabSaving) return;
-        const ok = await confirm({ title: 'Delete Phase', message: 'Delete this phase and unassign its milestones/tasks?', confirmText: 'Delete', variant: 'danger' });
+        const ok = await confirm({ title: t('Delete Phase'), message: t('Delete this phase and unassign its milestones/tasks?'), confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         setKebabSaving(true);
         try {
@@ -270,7 +273,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             onRefresh();
             setKebabOpen(null);
         } finally { setKebabSaving(false); }
-    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving]);
+    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving, t]);
 
     const handleAddMilestone = useCallback(async (label: string, scheduledTime: string, phaseId?: number) => {
         if (!label.trim() || !scheduledTime) return;
@@ -301,7 +304,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
 
     const handleDeleteMilestone = useCallback(async (entryId: number) => {
         if (kebabSaving) return;
-        const ok = await confirm({ title: 'Delete Milestone', message: 'Remove this milestone?', confirmText: 'Delete', variant: 'danger' });
+        const ok = await confirm({ title: t('Delete Milestone'), message: t('Remove this milestone?'), confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         setKebabSaving(true);
         try {
@@ -309,7 +312,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             onRefresh();
             setKebabOpen(null);
         } finally { setKebabSaving(false); }
-    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving]);
+    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving, t]);
 
     const handleAddTask = useCallback(async (title: string, phaseId?: number) => {
         if (!title.trim()) return;
@@ -338,7 +341,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
 
     const handleDeleteTask = useCallback(async (taskId: number) => {
         if (kebabSaving) return;
-        const ok = await confirm({ title: 'Delete Task', message: 'Remove this task?', confirmText: 'Delete', variant: 'danger' });
+        const ok = await confirm({ title: t('Delete Task'), message: t('Remove this task?'), confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         setKebabSaving(true);
         try {
@@ -346,7 +349,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             onRefresh();
             setKebabOpen(null);
         } finally { setKebabSaving(false); }
-    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving]);
+    }, [rpcAction, operation.id, onRefresh, confirm, kebabSaving, t]);
 
 
     const handleDragStart = useCallback((e: React.DragEvent, type: 'phase' | 'milestone' | 'task', id: number) => {
@@ -519,18 +522,18 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-linear-to-r from-slate-800/60 to-slate-900/40 rounded-xl border border-slate-700/40">
                 <div className="flex items-center gap-4">
                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                        <i className="fa-solid fa-layer-group text-purple-400/70"></i> Execution Plan
+                        <i className="fa-solid fa-layer-group text-purple-400/70"></i> {t('Execution Plan')}
                     </p>
                     <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
-                        <span>{phases.length} <span className="text-slate-600">phases</span></span>
+                        <span>{phases.length} <span className="text-slate-600">{t('phases')}</span></span>
                         <span className="text-slate-700">&middot;</span>
-                        <span>{entries.length} <span className="text-slate-600">milestones</span></span>
+                        <span>{entries.length} <span className="text-slate-600">{t('milestones')}</span></span>
                         <span className="text-slate-700">&middot;</span>
-                        <span>{completedTasks}/{tasks.length} <span className="text-slate-600">tasks</span></span>
+                        <span>{completedTasks}/{tasks.length} <span className="text-slate-600">{t('tasks')}</span></span>
                         {activePhasesCount > 0 && (
                             <>
                                 <span className="text-slate-700">&middot;</span>
-                                <span className="text-green-400">{activePhasesCount} active</span>
+                                <span className="text-green-400">{t('{count} active', { count: activePhasesCount })}</span>
                             </>
                         )}
                     </div>
@@ -586,7 +589,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                 className="text-sm font-bold text-white"
                                             />
                                             {group.phase.phaseType === 'contingency' && (
-                                                <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-sm uppercase">Contingency</span>
+                                                <span className="text-[8px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-sm uppercase">{t('Contingency')}</span>
                                             )}
                                         </div>
                                         {group.phase.description && <p className="text-xs text-slate-400 truncate mt-0.5">{group.phase.description}</p>}
@@ -599,14 +602,14 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                 className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${
                                                     group.phase!.status === s ? phaseStatusColors[s] : 'text-slate-600 hover:text-slate-400 border border-transparent'
                                                 } ${!canManage ? 'cursor-default' : 'cursor-pointer'}`}
-                                            >{s}</button>
+                                            >{t(s)}</button>
                                         ))}
                                     </div>
 
                                     {/* Drag handle + Kebab */}
                                     {canManage && (
                                         <div className="flex items-center gap-1 shrink-0">
-                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-1" title="Drag to reorder">
+                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-1" title={t('Drag to reorder')}>
                                                 <i className="fa-solid fa-grip-vertical text-xs"></i>
                                             </span>
                                             <div className="relative">
@@ -624,33 +627,33 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                 {kebabOpen === `phase-${group.phase!.id}` && (
                                                     <KebabMenu onClose={closeKebab} triggerRef={kebabTriggerRef}>
                                                         <div>
-                                                            <label className={labelClass}>Name</label>
+                                                            <label className={labelClass}>{t('Name')}</label>
                                                             <input type="text" value={kebabFields.name || ''} onChange={e => setKebabFields(f => ({ ...f, name: e.target.value }))} className={inputClass} />
                                                         </div>
                                                         <div>
-                                                            <label className={labelClass}>Description</label>
-                                                            <input type="text" value={kebabFields.description || ''} onChange={e => setKebabFields(f => ({ ...f, description: e.target.value }))} className={inputClass} placeholder="Optional" />
+                                                            <label className={labelClass}>{t('Description')}</label>
+                                                            <input type="text" value={kebabFields.description || ''} onChange={e => setKebabFields(f => ({ ...f, description: e.target.value }))} className={inputClass} placeholder={t('Optional')} />
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-3">
                                                             <div>
-                                                                <label className={labelClass}>Type</label>
+                                                                <label className={labelClass}>{t('Type')}</label>
                                                                 <select value={kebabFields.phaseType || 'sequential'} onChange={e => setKebabFields(f => ({ ...f, phaseType: e.target.value }))} className={inputClass}>
-                                                                    <option value="sequential">Sequential</option>
-                                                                    <option value="contingency">Contingency</option>
+                                                                    <option value="sequential">{t('Sequential')}</option>
+                                                                    <option value="contingency">{t('Contingency')}</option>
                                                                 </select>
                                                             </div>
                                                             <div>
-                                                                <label className={labelClass}>Color</label>
+                                                                <label className={labelClass}>{t('Color')}</label>
                                                                 <input type="color" value={kebabFields.color || '#3b82f6'} onChange={e => setKebabFields(f => ({ ...f, color: e.target.value }))} className="w-full h-[42px] rounded-lg cursor-pointer bg-transparent border-0" />
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
                                                             <button onClick={() => handleDeletePhase(group.phase!.id)} disabled={kebabSaving} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none">
-                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} Delete
+                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} {t('Delete')}
                                                             </button>
                                                             <button onClick={() => saveKebabPhase(group.phase!.id)} disabled={kebabSaving}
                                                                 className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:pointer-events-none">
-                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> Saving...</> : 'Save'}
+                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> {t('Saving...')}</> : t('Save')}
                                                             </button>
                                                         </div>
                                                     </KebabMenu>
@@ -665,7 +668,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                 </div>
                             ) : (
                                 <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">General (Unphased)</span>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('General (Unphased)')}</span>
                                 </div>
                             )}
 
@@ -675,7 +678,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                 {(sortedMilestones.length > 0 || (canManage && addingMilestoneFor === key)) && (
                                     <div className="space-y-1">
                                         {sortedMilestones.length > 0 && (
-                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest pl-1 pb-1">Milestones</p>
+                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest pl-1 pb-1">{t('Milestones')}</p>
                                         )}
                                         {sortedMilestones.map(entry => {
                                             const entryTime = new Date(entry.scheduledTime).getTime();
@@ -731,13 +734,13 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                                 className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase transition-all border ${
                                                                     (entry.status || 'Pending') === s ? phaseStatusColors[s] : 'text-slate-700 border-transparent hover:text-slate-500'
                                                                 } ${!canManage ? 'cursor-default' : 'cursor-pointer'}`}
-                                                            >{s}</button>
+                                                            >{t(s)}</button>
                                                         ))}
                                                     </div>
 
                                                     {canManage && (
                                                         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-0.5" title="Drag to reorder">
+                                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-0.5" title={t('Drag to reorder')}>
                                                                 <i className="fa-solid fa-grip-vertical text-[10px]"></i>
                                                             </span>
                                                             <div className="relative">
@@ -756,39 +759,39 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                                 {kebabOpen === mKey && (
                                                                     <KebabMenu onClose={closeKebab} triggerRef={kebabTriggerRef}>
                                                                         <div>
-                                                                            <label className={labelClass}>Label</label>
+                                                                            <label className={labelClass}>{t('Label')}</label>
                                                                             <input type="text" value={kebabFields.label || ''} onChange={e => setKebabFields(f => ({ ...f, label: e.target.value }))} className={inputClass} />
                                                                         </div>
                                                                         <div>
-                                                                            <label className={labelClass}>Scheduled Time</label>
+                                                                            <label className={labelClass}>{t('Scheduled Time')}</label>
                                                                             <input type="datetime-local" value={kebabFields.scheduledTime || ''} onChange={e => setKebabFields(f => ({ ...f, scheduledTime: e.target.value }))} className={`${inputClass} scheme-light`} />
                                                                         </div>
                                                                         <div>
-                                                                            <label className={labelClass}>Notes</label>
-                                                                            <input type="text" value={kebabFields.notes || ''} onChange={e => setKebabFields(f => ({ ...f, notes: e.target.value }))} className={inputClass} placeholder="Optional" />
+                                                                            <label className={labelClass}>{t('Notes')}</label>
+                                                                            <input type="text" value={kebabFields.notes || ''} onChange={e => setKebabFields(f => ({ ...f, notes: e.target.value }))} className={inputClass} placeholder={t('Optional')} />
                                                                         </div>
                                                                         <div>
-                                                                            <label className={labelClass}>Status</label>
+                                                                            <label className={labelClass}>{t('Status')}</label>
                                                                             <select value={kebabFields.status || 'Pending'} onChange={e => setKebabFields(f => ({ ...f, status: e.target.value }))} className={inputClass}>
-                                                                                {['Pending', 'Active', 'Completed', 'Skipped'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                                                {['Pending', 'Active', 'Completed', 'Skipped'].map(s => <option key={s} value={s}>{t(s)}</option>)}
                                                                             </select>
                                                                         </div>
                                                                         {phases.length > 0 && (
                                                                             <div>
-                                                                                <label className={labelClass}>Phase</label>
+                                                                                <label className={labelClass}>{t('Phase')}</label>
                                                                                 <select value={kebabFields.phaseId || ''} onChange={e => setKebabFields(f => ({ ...f, phaseId: e.target.value }))} className={inputClass}>
-                                                                                    <option value="">- None -</option>
+                                                                                    <option value="">{t('- None -')}</option>
                                                                                     {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                                                 </select>
                                                                             </div>
                                                                         )}
                                                                         <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
                                                                             <button onClick={() => handleDeleteMilestone(entry.id)} disabled={kebabSaving} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none">
-                                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} Delete
+                                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} {t('Delete')}
                                                                             </button>
                                                                             <button onClick={() => saveKebabMilestone(entry.id)} disabled={kebabSaving}
                                                                                 className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:pointer-events-none">
-                                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> Saving...</> : 'Save'}
+                                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> {t('Saving...')}</> : t('Save')}
                                                                             </button>
                                                                         </div>
                                                                     </KebabMenu>
@@ -810,13 +813,13 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                 {canManage && addingMilestoneFor !== key && (
                                     <button onClick={() => { setAddingMilestoneFor(key); setNewMilestoneLabel(''); setNewMilestoneTime(''); }}
                                         className="text-[10px] font-bold text-slate-600 hover:text-purple-300 uppercase tracking-wider pl-1 py-1 transition-colors">
-                                        <i className="fa-solid fa-plus mr-1"></i> Milestone
+                                        <i className="fa-solid fa-plus mr-1"></i> {t('Milestone')}
                                     </button>
                                 )}
                                 {canManage && addingMilestoneFor === key && (
                                     <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/30 rounded-lg border border-purple-500/20">
                                         <input ref={milestoneInputRef} type="text" value={newMilestoneLabel} onChange={e => setNewMilestoneLabel(e.target.value)}
-                                            placeholder="Milestone label..."
+                                            placeholder={t('Milestone label...')}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && newMilestoneLabel.trim() && newMilestoneTime) {
                                                     handleAddMilestone(newMilestoneLabel, newMilestoneTime, phaseId);
@@ -850,7 +853,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                 {(sortedTasks.length > 0 || (canManage && addingTaskFor === key)) && (
                                     <div className="space-y-1">
                                         {sortedTasks.length > 0 && (
-                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest pl-1 pb-1">Tasks</p>
+                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest pl-1 pb-1">{t('Tasks')}</p>
                                         )}
                                         {sortedTasks.map(task => {
                                             const tKey = `task-${task.id}`;
@@ -892,9 +895,9 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                                 task.taskType === 'primary' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
                                                                 task.taskType === 'secondary' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' :
                                                                 'text-purple-300 bg-purple-500/10 border-purple-500/20'
-                                                            }`}>{task.taskType}</span>
+                                                            }`}>{t(task.taskType)}</span>
                                                             <span className={`text-[8px] px-1.5 py-0.5 rounded-sm border font-bold uppercase ${priorityColors[task.priority] || priorityColors.Normal}`}>
-                                                                {task.priority}
+                                                                {t(task.priority)}
                                                             </span>
                                                         </div>
                                                         {task.description && <p className="text-xs text-slate-400 mt-0.5">{task.description}</p>}
@@ -918,14 +921,14 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                                 className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase transition-all border ${
                                                                     task.status === s ? statusColors[s] : 'text-slate-700 border-transparent hover:text-slate-500'
                                                                 } ${!canManage ? 'cursor-default' : 'cursor-pointer'}`}
-                                                            >{s}</button>
+                                                            >{t(s)}</button>
                                                         ))}
                                                     </div>
 
                                                     {/* Drag handle + Kebab */}
                                                     {canManage && (
                                                         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-0.5" title="Drag to reorder">
+                                                            <span className="cursor-grab text-slate-600 hover:text-slate-400 px-0.5" title={t('Drag to reorder')}>
                                                                 <i className="fa-solid fa-grip-vertical text-[10px]"></i>
                                                             </span>
                                                             <div className="relative">
@@ -945,52 +948,52 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                                                 {kebabOpen === tKey && (
                                                                     <KebabMenu onClose={closeKebab} triggerRef={kebabTriggerRef}>
                                                                         <div>
-                                                                            <label className={labelClass}>Title</label>
+                                                                            <label className={labelClass}>{t('Title')}</label>
                                                                             <input type="text" value={kebabFields.title || ''} onChange={e => setKebabFields(f => ({ ...f, title: e.target.value }))} className={inputClass} />
                                                                         </div>
                                                                         <div>
-                                                                            <label className={labelClass}>Description</label>
-                                                                            <textarea value={kebabFields.description || ''} onChange={e => setKebabFields(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputClass} resize-none`} placeholder="Optional" />
+                                                                            <label className={labelClass}>{t('Description')}</label>
+                                                                            <textarea value={kebabFields.description || ''} onChange={e => setKebabFields(f => ({ ...f, description: e.target.value }))} rows={2} className={`${inputClass} resize-none`} placeholder={t('Optional')} />
                                                                         </div>
                                                                         <div className="grid grid-cols-2 gap-3">
                                                                             <div>
-                                                                                <label className={labelClass}>Type</label>
+                                                                                <label className={labelClass}>{t('Type')}</label>
                                                                                 <select value={kebabFields.taskType || 'primary'} onChange={e => setKebabFields(f => ({ ...f, taskType: e.target.value }))} className={inputClass}>
-                                                                                    <option value="primary">Primary</option>
-                                                                                    <option value="secondary">Secondary</option>
-                                                                                    <option value="assignment">Assignment</option>
+                                                                                    <option value="primary">{t('Primary')}</option>
+                                                                                    <option value="secondary">{t('Secondary')}</option>
+                                                                                    <option value="assignment">{t('Assignment')}</option>
                                                                                 </select>
                                                                             </div>
                                                                             <div>
-                                                                                <label className={labelClass}>Priority</label>
+                                                                                <label className={labelClass}>{t('Priority')}</label>
                                                                                 <select value={kebabFields.priority || 'Normal'} onChange={e => setKebabFields(f => ({ ...f, priority: e.target.value }))} className={inputClass}>
-                                                                                    {Object.values(TaskPriority).map(p => <option key={p} value={p}>{p}</option>)}
+                                                                                    {Object.values(TaskPriority).map(p => <option key={p} value={p}>{t(p)}</option>)}
                                                                                 </select>
                                                                             </div>
                                                                         </div>
                                                                         <div>
-                                                                            <label className={labelClass}>Assignee</label>
+                                                                            <label className={labelClass}>{t('Assignee')}</label>
                                                                             <select value={kebabFields.assignedUserId || ''} onChange={e => setKebabFields(f => ({ ...f, assignedUserId: e.target.value }))} className={inputClass}>
-                                                                                <option value="">- None -</option>
+                                                                                <option value="">{t('- None -')}</option>
                                                                                 {activeParticipants.map(p => <option key={p.userId} value={p.userId}>{p.user?.name}</option>)}
                                                                             </select>
                                                                         </div>
                                                                         {phases.length > 0 && (
                                                                             <div>
-                                                                                <label className={labelClass}>Phase</label>
+                                                                                <label className={labelClass}>{t('Phase')}</label>
                                                                                 <select value={kebabFields.phaseId || ''} onChange={e => setKebabFields(f => ({ ...f, phaseId: e.target.value }))} className={inputClass}>
-                                                                                    <option value="">- None -</option>
+                                                                                    <option value="">{t('- None -')}</option>
                                                                                     {phases.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                                                 </select>
                                                                             </div>
                                                                         )}
                                                                         <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
                                                                             <button onClick={() => handleDeleteTask(task.id)} disabled={kebabSaving} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none">
-                                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} Delete
+                                                                                {kebabSaving ? <i className="fa-solid fa-spinner animate-spin mr-1"></i> : <i className="fa-solid fa-trash mr-1"></i>} {t('Delete')}
                                                                             </button>
                                                                             <button onClick={() => saveKebabTask(task.id)} disabled={kebabSaving}
                                                                                 className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:pointer-events-none">
-                                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> Saving...</> : 'Save'}
+                                                                                {kebabSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> {t('Saving...')}</> : t('Save')}
                                                                             </button>
                                                                         </div>
                                                                     </KebabMenu>
@@ -1012,13 +1015,13 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
                                 {canManage && addingTaskFor !== key && (
                                     <button onClick={() => { setAddingTaskFor(key); setNewTaskTitle(''); }}
                                         className="text-[10px] font-bold text-slate-600 hover:text-purple-300 uppercase tracking-wider pl-1 py-1 transition-colors">
-                                        <i className="fa-solid fa-plus mr-1"></i> Task
+                                        <i className="fa-solid fa-plus mr-1"></i> {t('Task')}
                                     </button>
                                 )}
                                 {canManage && addingTaskFor === key && (
                                     <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/30 rounded-lg border border-purple-500/20">
                                         <input ref={taskInputRef} type="text" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)}
-                                            placeholder="Task title... (Enter to add, Esc to close)"
+                                            placeholder={t('Task title... (Enter to add, Esc to close)')}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && newTaskTitle.trim()) {
                                                     handleAddTask(newTaskTitle, phaseId);
@@ -1036,7 +1039,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
 
                                 {/* Empty state */}
                                 {group.milestones.length === 0 && group.tasks.length === 0 && !canManage && (
-                                    <p className="text-xs text-slate-600 italic py-3 text-center">No milestones or tasks in this phase.</p>
+                                    <p className="text-xs text-slate-600 italic py-3 text-center">{t('No milestones or tasks in this phase.')}</p>
                                 )}
                             </div>
                         </div>
@@ -1048,13 +1051,13 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             {canManage && !addingPhase && (
                 <button onClick={() => { setAddingPhase(true); setNewPhaseName(''); }}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-700/30 text-slate-600 hover:text-purple-300 hover:border-purple-500/30 transition-colors text-[10px] font-bold uppercase tracking-wider">
-                    <i className="fa-solid fa-plus"></i> Add Phase
+                    <i className="fa-solid fa-plus"></i> {t('Add Phase')}
                 </button>
             )}
             {canManage && addingPhase && (
                 <div className="flex items-center gap-2 px-4 py-3 bg-slate-800/30 rounded-xl border border-purple-500/20">
                     <input ref={phaseInputRef} type="text" value={newPhaseName} onChange={e => setNewPhaseName(e.target.value)}
-                        placeholder="Phase name... (Enter to add, Esc to close)"
+                        placeholder={t('Phase name... (Enter to add, Esc to close)')}
                         onKeyDown={e => {
                             if (e.key === 'Enter' && newPhaseName.trim()) {
                                 handleAddPhase(newPhaseName);
@@ -1074,7 +1077,7 @@ const OpExecutionTab: React.FC<OpExecutionTabProps> = ({ operation, canManage, o
             {phases.length === 0 && entries.length === 0 && tasks.length === 0 && !canManage && (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-600">
                     <i className="fa-solid fa-clipboard text-4xl mb-3 opacity-40"></i>
-                    <p className="text-sm font-medium opacity-60">No execution plan defined yet.</p>
+                    <p className="text-sm font-medium opacity-60">{t('No execution plan defined yet.')}</p>
                 </div>
             )}
         </div>

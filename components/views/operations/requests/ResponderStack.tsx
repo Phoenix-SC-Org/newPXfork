@@ -1,5 +1,6 @@
 import React from 'react';
 import type { User } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     members: User[];
@@ -15,6 +16,7 @@ interface Props {
  * Beyond `max` members, a "+N" chip renders in place of further avatars.
  */
 export default function ResponderStack({ members, leadId, max = 4, size = 'sm', className = '' }: Props) {
+    const { t } = useI18n();
     if (!members || members.length === 0) return null;
 
     const visible = members.slice(0, max);
@@ -31,7 +33,7 @@ export default function ResponderStack({ members, leadId, max = 4, size = 'sm', 
                         <div
                             key={m.id}
                             className={`relative rounded-full ring-2 ${ring} overflow-hidden ${dim} bg-slate-800 flex items-center justify-center`}
-                            title={`${m.name}${isLead ? ' · Lead' : ''}`}
+                            title={isLead ? t('{name} · Lead', { name: m.name }) : m.name}
                         >
                             {m.avatarUrl ? (
                                 <img src={m.avatarUrl} alt={m.name} className="w-full h-full object-cover" />
@@ -47,7 +49,7 @@ export default function ResponderStack({ members, leadId, max = 4, size = 'sm', 
                 {overflow > 0 && (
                     <div
                         className={`rounded-full ring-2 ring-slate-950 ${dim} bg-slate-800 flex items-center justify-center font-mono font-bold text-slate-300`}
-                        title={`${overflow} more`}
+                        title={t('{count} more', { count: overflow })}
                     >
                         +{overflow}
                     </div>

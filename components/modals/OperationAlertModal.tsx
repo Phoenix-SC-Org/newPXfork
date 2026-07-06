@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useFormatDate } from '../../contexts/AuthContext';
 import { formatUserTime } from '../../lib/time';
 import { playCachedSound } from '../../lib/audioCache';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface OperationAlertModalProps {
     message: string;
@@ -14,6 +15,7 @@ interface OperationAlertModalProps {
 }
 
 const OperationAlertModal: React.FC<OperationAlertModalProps> = ({ message, senderName, onClose, soundUrl, volume = 50 }) => {
+    const { t } = useI18n();
     const fmt = useFormatDate();
     const [isVisible, setIsVisible] = useState(false);
 
@@ -54,9 +56,9 @@ const OperationAlertModal: React.FC<OperationAlertModalProps> = ({ message, send
                                 <i className="fa-solid fa-tower-broadcast text-lg text-white"></i>
                             </div>
                             <div>
-                                <h2 className="text-lg font-black text-white tracking-wider uppercase leading-none">Operations Alert</h2>
+                                <h2 className="text-lg font-black text-white tracking-wider uppercase leading-none">{t('Operations Alert')}</h2>
                                 <p className="text-amber-400/80 text-[10px] font-mono uppercase tracking-[0.2em] mt-0.5">
-                                    Priority Broadcast {senderName ? `// ${senderName}` : ''}
+                                    {t('Priority Broadcast')} {senderName ? `// ${senderName}` : ''}
                                 </p>
                             </div>
                         </div>
@@ -70,7 +72,7 @@ const OperationAlertModal: React.FC<OperationAlertModalProps> = ({ message, send
                     <div className="p-6 bg-slate-900/80 relative">
                         {/* Subtle watermark */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-amber-500/3 text-7xl font-black uppercase pointer-events-none select-none">
-                            ALERT
+                            {t('ALERT')}
                         </div>
 
                         <div className="relative z-10">
@@ -87,7 +89,7 @@ const OperationAlertModal: React.FC<OperationAlertModalProps> = ({ message, send
                         </p>
                         <button onClick={handleClose}
                             className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-black uppercase tracking-wider shadow-lg shadow-amber-900/30 active:scale-95 transition-all">
-                            Acknowledge
+                            {t('Acknowledge')}
                         </button>
                     </div>
                 </div>

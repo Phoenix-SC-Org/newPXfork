@@ -3,6 +3,7 @@ import { useAuth, useFormatDate } from '../../../../contexts/AuthContext';
 import { useData } from '../../../../contexts/DataContext';
 import { CallsignChip } from '../../../shared/ui';
 import { getUserTimezoneLabel } from '../../../../lib/time';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     /** Client path shows reputation; staff path shows rank/unit + duty toggle */
@@ -13,6 +14,7 @@ export default function DashboardHero({ variant }: Props) {
     const { currentUser, toggleDutyStatus } = useAuth();
     const fmt = useFormatDate();
     const { isFetching } = useData();
+    const { t } = useI18n();
     const [now, setNow] = useState(() => new Date());
     const [toggling, setToggling] = useState(false);
 
@@ -25,9 +27,9 @@ export default function DashboardHero({ variant }: Props) {
 
     const greeting = (() => {
         const h = now.getHours();
-        if (h < 12) return 'Good Morning';
-        if (h < 18) return 'Good Afternoon';
-        return 'Good Evening';
+        if (h < 12) return t('Good Morning');
+        if (h < 18) return t('Good Afternoon');
+        return t('Good Evening');
     })();
 
     const firstName = currentUser.name.split(' ')[0];
@@ -42,8 +44,8 @@ export default function DashboardHero({ variant }: Props) {
     const zoneLabel = getUserTimezoneLabel(fmt.prefs);
 
     const callsignLabel = variant === 'client'
-        ? 'Dashboard · Client'
-        : 'Dashboard · Live';
+        ? t('Dashboard · Client')
+        : t('Dashboard · Live');
 
     const handleToggleDuty = async () => {
         if (toggling) return;
@@ -72,18 +74,18 @@ export default function DashboardHero({ variant }: Props) {
                         </h1>
                         <div className="mt-1 flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-slate-500">
                             {variant === 'client' ? (
-                                <span>Reputation Standing · <span className="text-sky-300">{currentUser.reputation}</span></span>
+                                <span>{t('Reputation Standing')} · <span className="text-sky-300">{currentUser.reputation}</span></span>
                             ) : (
                                 <span>
-                                    {currentUser.rank?.name || 'Operative'}
+                                    {currentUser.rank?.name || t('Operative')}
                                     <span className="text-slate-700 mx-1.5">·</span>
-                                    {currentUser.unit?.name || 'General Pool'}
+                                    {currentUser.unit?.name || t('General Pool')}
                                 </span>
                             )}
                             {isSyncing && (
                                 <span className="ml-2 inline-flex items-center gap-1.5 text-sky-400">
                                     <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                                    Syncing
+                                    {t('Syncing')}
                                 </span>
                             )}
                         </div>
@@ -109,10 +111,10 @@ export default function DashboardHero({ variant }: Props) {
                                         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
                                         : 'border-white/10 bg-slate-800/60 text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
-                                title={isDuty ? 'Go off duty' : 'Go on duty'}
+                                title={isDuty ? t('Go off duty') : t('Go on duty')}
                             >
                                 <span className={`w-1.5 h-1.5 rounded-full ${isDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
-                                {toggling ? '…' : isDuty ? 'On Duty' : 'Off Duty'}
+                                {toggling ? '…' : isDuty ? t('On Duty') : t('Off Duty')}
                             </button>
                         )}
                     </div>

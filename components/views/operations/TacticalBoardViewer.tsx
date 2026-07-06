@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Stage, Layer, Rect, Circle, Line, Text as KonvaText, Group } from 'react-konva';
 import type Konva from 'konva';
 import { OperationBoardElement } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Static read-only render of a tactical board, used by the joint-operation mirror view.
 // Mirrors the element styling of the editor (TacticalBoard in OpCommandSignalsTab.tsx) but
@@ -22,6 +23,7 @@ interface Props {
 }
 
 const TacticalBoardViewer: React.FC<Props> = ({ boardElements, height = 420 }) => {
+    const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(800);
     const [scale, setScale] = useState(1);
@@ -54,14 +56,14 @@ const TacticalBoardViewer: React.FC<Props> = ({ boardElements, height = 420 }) =
     const reset = () => { setScale(1); setPos({ x: 0, y: 0 }); };
 
     if (!boardElements.length) {
-        return <p className="text-xs text-slate-500 italic">No tactical board elements.</p>;
+        return <p className="text-xs text-slate-500 italic">{t('No tactical board elements.')}</p>;
     }
 
     return (
         <div ref={containerRef} className="relative rounded-lg overflow-hidden border border-slate-700/40 bg-slate-950/40" style={{ height }}>
             <button onClick={reset}
                 className="absolute top-2 right-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-slate-800/80 text-slate-300 border border-slate-700 hover:text-white">
-                <i className="fa-solid fa-expand mr-1"></i>Reset view
+                <i className="fa-solid fa-expand mr-1"></i>{t('Reset view')}
             </button>
             <Stage
                 width={width} height={height}
@@ -108,7 +110,7 @@ const TacticalBoardViewer: React.FC<Props> = ({ boardElements, height = 420 }) =
                         if (el.elementType === 'text') {
                             return (
                                 <Group key={el.id} x={el.posX} y={el.posY}>
-                                    <KonvaText text={el.label || 'Text'} fill={color} fontSize={14} fontStyle="bold"
+                                    <KonvaText text={el.label || t('Text')} fill={color} fontSize={14} fontStyle="bold"
                                         rotation={el.rotation || 0} />
                                 </Group>
                             );

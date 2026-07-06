@@ -5,6 +5,7 @@ import OperationsPanel from './panels/OperationsPanel';
 import RequestsPanel from './panels/RequestsPanel';
 import IntelPanel from './panels/IntelPanel';
 import GovernmentPanel from './panels/GovernmentPanel';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 type TabKey = 'operations' | 'requests' | 'intel' | 'government';
 
@@ -20,15 +21,16 @@ const STORAGE_KEY = 'dashboard:active_feature_tab';
 export default function FeatureTabs() {
     const { hasPermission } = useAuth();
     const { governmentsFeatureConfig } = useGovernment();
+    const { t } = useI18n();
 
     const governmentEnabled = governmentsFeatureConfig?.enabled === true && hasPermission('gov:view');
 
     const tabs: Tab[] = useMemo(() => [
-        { key: 'operations',  label: 'Operations',  icon: 'fa-crosshairs',     render: () => <OperationsPanel /> },
-        { key: 'requests',    label: 'Requests',    icon: 'fa-clipboard-list', render: () => <RequestsPanel /> },
-        { key: 'intel',       label: 'Intel Net',   icon: 'fa-satellite-dish', render: () => <IntelPanel /> },
-        ...(governmentEnabled  ? [{ key: 'government'  as const, label: 'Government',  icon: 'fa-landmark',       render: () => <GovernmentPanel /> }]  : []),
-    ], [governmentEnabled]);
+        { key: 'operations',  label: t('Operations'),  icon: 'fa-crosshairs',     render: () => <OperationsPanel /> },
+        { key: 'requests',    label: t('Requests'),    icon: 'fa-clipboard-list', render: () => <RequestsPanel /> },
+        { key: 'intel',       label: t('Intel Net'),   icon: 'fa-satellite-dish', render: () => <IntelPanel /> },
+        ...(governmentEnabled  ? [{ key: 'government'  as const, label: t('Government'),  icon: 'fa-landmark',       render: () => <GovernmentPanel /> }]  : []),
+    ], [governmentEnabled, t]);
 
     const [active, setActive] = useState<TabKey>(() => {
         try {

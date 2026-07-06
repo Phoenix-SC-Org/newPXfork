@@ -6,6 +6,7 @@ import { useFleet } from '../../../../contexts/FleetContext';
 
 import ShipPickerDropdown, { ShipPickerSelection } from '../../fleet/ShipPickerDropdown';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpSituationTabProps {
     operation: HydratedOperation;
@@ -19,9 +20,10 @@ interface OpSituationTabProps {
 
 const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, isParticipant, activeParticipants, onRefresh, loadingAction, onAction }) => {
     const { currentUser } = useAuth();
+    const { t } = useI18n();
     const { toggleParticipantReady, leaveOperation, joinOperationWithShip, rsvpOperation } = useOperations();
     const fmt = useFormatDate();
-    const formatDate = (iso: string | null | undefined) => iso ? fmt(iso) : 'TBD';
+    const formatDate = (iso: string | null | undefined) => iso ? fmt(iso) : t('TBD');
     const { userShips, refreshFleet } = useFleet();
     const { addToast } = useNotification();
 
@@ -66,7 +68,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                 setJoinShipSelection(null);
             }, 'join');
         } catch (error: any) {
-            addToast("Join Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: error.message || "Failed to join operation." });
+            addToast(t('Join Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: error.message || t('Failed to join operation.') });
         }
     };
 
@@ -82,7 +84,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
         return { accepted, tentative, declined, pending };
     }, [activeParticipants]);
 
-    const ownerName = operation.owner?.name || 'Unknown Commander';
+    const ownerName = operation.owner?.name || t('Unknown Commander');
     const ownerAvatar = operation.owner?.avatarUrl || '';
 
     const myParticipant = operation.participants?.find(p => p.userId === currentUser?.id && p.timeLeft === null);
@@ -104,7 +106,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                 }`}
                             >
                                 <i className={`fa-solid ${isReady ? 'fa-circle-check' : 'fa-check'} fa-fw`}></i>
-                                {loadingAction === 'ready' ? <i className="fa-solid fa-spinner animate-spin"></i> : isReady ? 'Ready' : 'Mark Ready'}
+                                {loadingAction === 'ready' ? <i className="fa-solid fa-spinner animate-spin"></i> : isReady ? t('Ready') : t('Mark Ready')}
                             </button>
 
                             {/* RSVP buttons inline */}
@@ -112,7 +114,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                 <>
                                     <div className="h-8 w-px bg-slate-700/60"></div>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider mr-1">RSVP</span>
+                                        <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider mr-1">{t('RSVP')}</span>
                                         {([
                                             { status: RSVPStatus.Accepted, label: 'Accept', icon: 'fa-circle-check', activeClass: 'bg-green-500/20 text-green-400 border-green-500/40' },
                                             { status: RSVPStatus.Tentative, label: 'Maybe', icon: 'fa-circle-question', activeClass: 'bg-amber-500/20 text-amber-400 border-amber-500/40' },
@@ -124,7 +126,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
                                                     currentRsvp === btn.status ? btn.activeClass : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50'
                                                 } disabled:opacity-50`}>
-                                                <i className={`fa-solid ${btn.icon}`}></i> {btn.label}
+                                                <i className={`fa-solid ${btn.icon}`}></i> {t(btn.label)}
                                             </button>
                                         ))}
                                     </div>
@@ -134,19 +136,19 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                             <div className="flex-1"></div>
                             <button onClick={() => onAction(() => leaveOperation(operation.id), 'leave')} disabled={!!loadingAction || isOwner}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/20 text-red-400/80 border border-red-500/20 text-[10px] font-bold uppercase tracking-wider hover:bg-red-900/40 hover:text-red-400 transition-colors disabled:opacity-30"
-                                title={isOwner ? "Owner cannot leave operation" : "Leave"}>
-                                <i className="fa-solid fa-person-walking-arrow-right fa-fw"></i> Withdraw
+                                title={isOwner ? t('Owner cannot leave operation') : t('Leave')}>
+                                <i className="fa-solid fa-person-walking-arrow-right fa-fw"></i> {t('Withdraw')}
                             </button>
                         </>
                     ) : !isOwner ? (
                         <div className="flex items-center gap-3 flex-wrap w-full">
                             {showJoinInput && (
-                                <input type="text" value={joinCodeInput} onChange={e => setJoinCodeInput(e.target.value)} placeholder="Enter PIN"
+                                <input type="text" value={joinCodeInput} onChange={e => setJoinCodeInput(e.target.value)} placeholder={t('Enter PIN')}
                                     className="bg-black/40 border border-slate-600 text-white text-xs px-3 py-2.5 rounded-lg w-32 outline-hidden focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/30 transition-all font-mono tracking-widest text-center" autoFocus />
                             )}
                             {showJoinExpanded && (
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <input type="text" value={joinRoleInput} onChange={e => setJoinRoleInput(e.target.value)} placeholder="Role (optional)"
+                                    <input type="text" value={joinRoleInput} onChange={e => setJoinRoleInput(e.target.value)} placeholder={t('Role (optional)')}
                                         className="bg-black/40 border border-slate-600 text-white text-xs px-3 py-2.5 rounded-lg w-36 outline-hidden focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/30 transition-all" />
                                     <div className="w-48">
                                         <ShipPickerDropdown ships={myShips} value={joinShipSelection?.userShipId} onChange={setJoinShipSelection} />
@@ -160,7 +162,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                             <button onClick={handleJoin} disabled={!!loadingAction}
                                 className="flex items-center gap-2.5 px-6 py-2.5 rounded-lg text-white text-xs font-black uppercase tracking-wider transition-all active:scale-95 disabled:bg-slate-700 disabled:cursor-not-allowed bg-green-600 hover:bg-green-500 shadow-lg shadow-green-900/20">
                                 <i className={`fa-solid ${operation.isSpecial ? 'fa-lock' : 'fa-right-to-bracket'} fa-fw`}></i>
-                                {loadingAction === 'join' ? 'Connecting...' : showJoinExpanded ? 'Confirm Join' : 'Join Operation'}
+                                {loadingAction === 'join' ? t('Connecting...') : showJoinExpanded ? t('Confirm Join') : t('Join Operation')}
                             </button>
                         </div>
                     ) : null}
@@ -174,7 +176,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                     <div className="bg-slate-900/60 rounded-xl border border-slate-700/30 overflow-hidden">
                         <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
                             <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                <i className="fa-solid fa-binoculars text-purple-400/70"></i> Situation Overview
+                                <i className="fa-solid fa-binoculars text-purple-400/70"></i> {t('Situation Overview')}
                             </p>
                         </div>
                         <div className="p-5">
@@ -189,52 +191,52 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                         </div>
                                     )}
                                     <div className="min-w-0">
-                                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Commander</p>
+                                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest">{t('Commander')}</p>
                                         <p className="text-sm font-bold text-white truncate">{ownerName}</p>
                                     </div>
                                 </div>
 
                                 {/* Info Grid */}
                                 <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/20">
-                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Host Unit</p>
-                                    <p className="text-xs font-bold text-white truncate">{operation.unit?.name || 'Joint Command'}</p>
+                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Host Unit')}</p>
+                                    <p className="text-xs font-bold text-white truncate">{operation.unit?.name || t('Joint Command')}</p>
                                 </div>
                                 <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/20">
-                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">AO / Location</p>
+                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('AO / Location')}</p>
                                     <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
                                         <i className="fa-solid fa-location-dot text-purple-400/70 text-[10px]"></i>
-                                        {operation.locationText || operation.location?.name || 'TBD'}
+                                        {operation.locationText || operation.location?.name || t('TBD')}
                                     </p>
                                 </div>
                                 <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-700/20">
-                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Capacity</p>
+                                    <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Capacity')}</p>
                                     <p className="text-xs font-mono font-bold text-white">
-                                        {activeParticipants.length}{operation.maxParticipants ? ` / ${operation.maxParticipants}` : ''} <span className="text-slate-500">PAX</span>
+                                        {activeParticipants.length}{operation.maxParticipants ? ` / ${operation.maxParticipants}` : ''} <span className="text-slate-500">{t('PAX')}</span>
                                     </p>
                                 </div>
 
                                 {/* Time slots - dynamic */}
                                 {operation.scheduledStart && (
                                     <div className="bg-slate-800/30 rounded-lg p-3 border border-purple-500/15">
-                                        <p className="text-[9px] text-purple-300/80 uppercase font-black tracking-widest mb-1">Start Time</p>
+                                        <p className="text-[9px] text-purple-300/80 uppercase font-black tracking-widest mb-1">{t('Start Time')}</p>
                                         <p className="text-xs font-mono text-white">{formatDate(operation.scheduledStart)}</p>
                                     </div>
                                 )}
                                 {operation.scheduledEnd && (
                                     <div className="bg-slate-800/30 rounded-lg p-3 border border-purple-500/15">
-                                        <p className="text-[9px] text-purple-300/80 uppercase font-black tracking-widest mb-1">End Time</p>
+                                        <p className="text-[9px] text-purple-300/80 uppercase font-black tracking-widest mb-1">{t('End Time')}</p>
                                         <p className="text-xs font-mono text-white">{formatDate(operation.scheduledEnd)}</p>
                                     </div>
                                 )}
                                 {operation.activeStartTime && (
                                     <div className="bg-slate-800/30 rounded-lg p-3 border border-green-500/15">
-                                        <p className="text-[9px] text-green-400/70 uppercase font-black tracking-widest mb-1">Active Since</p>
+                                        <p className="text-[9px] text-green-400/70 uppercase font-black tracking-widest mb-1">{t('Active Since')}</p>
                                         <p className="text-xs font-mono text-white">{formatDate(operation.activeStartTime)}</p>
                                     </div>
                                 )}
                                 {operation.activeEndTime && (
                                     <div className="bg-slate-800/30 rounded-lg p-3 border border-slate-600/30">
-                                        <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Ended</p>
+                                        <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">{t('Ended')}</p>
                                         <p className="text-xs font-mono text-white">{formatDate(operation.activeEndTime)}</p>
                                     </div>
                                 )}
@@ -247,13 +249,13 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                         <div className="bg-red-950/20 rounded-xl border border-red-500/15 overflow-hidden">
                             <div className="px-5 py-3 bg-red-950/30 border-b border-red-500/10">
                                 <p className="text-[10px] text-red-400/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                    <i className="fa-solid fa-shield-halved"></i> Security Classification
+                                    <i className="fa-solid fa-shield-halved"></i> {t('Security Classification')}
                                 </p>
                             </div>
                             <div className="p-5 flex flex-wrap gap-2">
                                 {operation.clearanceLevel > 0 && (
                                     <span className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-lg">
-                                        Level {operation.clearanceLevel}
+                                        {t('Level {level}', { level: operation.clearanceLevel })}
                                     </span>
                                 )}
                                 {operation.limitingMarkers?.map(m => (
@@ -270,7 +272,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                         <div className="bg-cyan-950/15 rounded-xl border border-cyan-500/15 overflow-hidden">
                             <div className="px-5 py-3 bg-cyan-950/20 border-b border-cyan-500/10">
                                 <p className="text-[10px] text-cyan-400/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                    <i className="fa-solid fa-handshake"></i> Allied Organizations
+                                    <i className="fa-solid fa-handshake"></i> {t('Allied Organizations')}
                                 </p>
                             </div>
                             <div className="p-5 space-y-2">
@@ -279,9 +281,9 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                         <div className="flex items-center gap-3">
                                             {ally.peerIconUrl && <img src={ally.peerIconUrl} className="w-8 h-8 rounded-sm" alt="" />}
                                             <div>
-                                                <span className="text-sm font-bold text-white">{ally.peerOrgName || ally.label || 'Allied Org'}</span>
+                                                <span className="text-sm font-bold text-white">{ally.peerOrgName || ally.label || t('Allied Org')}</span>
                                                 <span className={`ml-2 text-[9px] font-black uppercase ${ally.accepted ? 'text-green-400' : 'text-amber-400'}`}>
-                                                    {ally.accepted ? 'Confirmed' : 'Pending'}
+                                                    {ally.accepted ? t('Confirmed') : t('Pending')}
                                                 </span>
                                             </div>
                                         </div>
@@ -298,7 +300,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                     <div className="bg-slate-900/60 rounded-xl border border-slate-700/30 overflow-hidden">
                         <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30 flex items-center justify-between">
                             <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                <i className="fa-solid fa-signal text-green-500/60"></i> Fleet Readiness
+                                <i className="fa-solid fa-signal text-green-500/60"></i> {t('Fleet Readiness')}
                             </p>
                             <div className="flex items-center gap-1.5">
                                 <span className="text-lg font-black text-green-400 tabular-nums">{readyCount}</span>
@@ -319,7 +321,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                             {/* RSVP Stats */}
                             {operation.scheduledStart && (rsvpStats.accepted + rsvpStats.tentative + rsvpStats.declined) > 0 && (
                                 <div className="flex items-center gap-3 bg-slate-800/30 rounded-lg p-2.5 border border-slate-700/20">
-                                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">RSVP</span>
+                                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('RSVP')}</span>
                                     <div className="flex items-center gap-3 text-[10px] font-mono">
                                         {rsvpStats.accepted > 0 && <span className="text-green-400 flex items-center gap-0.5">{rsvpStats.accepted}<i className="fa-solid fa-check text-[7px]"></i></span>}
                                         {rsvpStats.tentative > 0 && <span className="text-amber-400 flex items-center gap-0.5">{rsvpStats.tentative}<i className="fa-solid fa-question text-[7px]"></i></span>}
@@ -349,7 +351,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-[11px] font-bold text-white truncate flex items-center gap-1">
-                                                {p.user?.name || 'Unknown'}
+                                                {p.user?.name || t('Unknown')}
                                                 {p.userId === operation.ownerId && <i className="fa-solid fa-crown text-[8px] text-amber-400"></i>}
                                             </p>
                                             {(p.roleRequested || p.ship || p.shipUtilized) && (
@@ -370,7 +372,7 @@ const OpSituationTab: React.FC<OpSituationTabProps> = ({ operation, canManage, i
                                 {activeParticipants.length === 0 && (
                                     <div className="text-center py-8">
                                         <i className="fa-solid fa-user-slash text-2xl text-slate-700 mb-2"></i>
-                                        <p className="text-xs text-slate-600 italic">No active participants</p>
+                                        <p className="text-xs text-slate-600 italic">{t('No active participants')}</p>
                                     </div>
                                 )}
                             </div>

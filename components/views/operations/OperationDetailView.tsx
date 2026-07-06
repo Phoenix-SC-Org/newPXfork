@@ -25,6 +25,7 @@ import { useOpRadio } from '../../../hooks/useOpRadio';
 import { useRadio } from '../../../contexts/RadioContext';
 import CallsignChip from '../../shared/ui/CallsignChip';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getTypeStyles = (type: OperationType) => {
     switch (type) {
@@ -44,6 +45,7 @@ const PHASE_STEPS = [
 ] as const;
 
 const MissionClock: React.FC<{ operation: HydratedOperation }> = ({ operation }) => {
+    const { t } = useI18n();
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -73,7 +75,7 @@ const MissionClock: React.FC<{ operation: HydratedOperation }> = ({ operation })
             return (
                 <div className="flex items-center gap-2 animate-pulse">
                     <i className="fa-solid fa-triangle-exclamation text-red-400 text-[10px]"></i>
-                    <span className="text-red-400 font-mono text-sm font-bold">OVERDUE</span>
+                    <span className="text-red-400 font-mono text-sm font-bold">{t('OVERDUE')}</span>
                 </div>
             );
         }
@@ -109,6 +111,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
     } = useOperations();
     const { currentUser, hasPermission } = useAuth();
     const { confirm, addToast } = useNotification();
+    const { t } = useI18n();
 
     const [fullDetails, setFullDetails] = useState<HydratedOperation | null>(null);
 
@@ -324,7 +327,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
             await action();
         } catch (error: any) {
             console.error(`Failed to ${actionName} operation:`, error);
-            if (actionName !== 'join' && error.message) addToast("Operation Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: error.message });
+            if (actionName !== 'join' && error.message) addToast(t('Operation Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: error.message });
         } finally {
             setLoadingAction(null);
         }
@@ -333,9 +336,9 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
     const handleDeleteOperation = async () => {
         if (isDeleting) return;
         const confirmed = await confirm({
-            title: 'Delete Operation',
-            message: `Are you sure you want to permanently delete the operation "${operation.name}"? This action cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Operation'),
+            message: t('Are you sure you want to permanently delete the operation "{name}"? This action cannot be undone.', { name: operation.name }),
+            confirmText: t('Delete'),
             variant: 'danger'
         });
         if (confirmed) {
@@ -345,7 +348,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                 onBack();
             } catch (error) {
                 console.error("Failed to delete operation:", error);
-                addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while deleting the operation." });
+                addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while deleting the operation.') });
                 setIsDeleting(false);
             }
         }
@@ -368,7 +371,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                             <h1 className="text-lg font-black text-white tracking-tight uppercase flex items-center gap-2">
                                 {operation.name}
                                 <span className="bg-red-500/10 text-red-400 border border-red-500/30 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest flex items-center gap-1">
-                                    <i className="fa-solid fa-lock text-[8px]"></i> Classified
+                                    <i className="fa-solid fa-lock text-[8px]"></i> {t('Classified')}
                                 </span>
                             </h1>
                         </div>
@@ -382,19 +385,19 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                             <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                                 <i className="fa-solid fa-user-secret text-4xl text-red-500"></i>
                             </div>
-                            <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Restricted Access</h2>
-                            <p className="text-red-400/80 text-sm font-mono">Authorization code required.</p>
+                            <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">{t('Restricted Access')}</h2>
+                            <p className="text-red-400/80 text-sm font-mono">{t('Authorization code required.')}</p>
                         </div>
                         <form onSubmit={(e) => { e.preventDefault(); handleAction(() => joinOperationWithShip(operation.id, { joinCode: joinCodeRef.current }), 'join'); }} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider text-center">Authorization Code (PIN)</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider text-center">{t('Authorization Code (PIN)')}</label>
                                 <input type="text" onChange={e => { joinCodeRef.current = e.target.value; }}
                                     className="w-full bg-black/40 border border-slate-700 focus:border-red-500 rounded-lg py-3 px-4 text-center text-white font-mono text-lg tracking-[0.5em] outline-hidden transition-colors"
                                     placeholder="&#8226;&#8226;&#8226;&#8226;" autoFocus />
                             </div>
                             <button type="submit" disabled={!!loadingAction}
                                 className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg uppercase tracking-wider shadow-lg shadow-red-900/20 transition-all disabled:opacity-50">
-                                {loadingAction === 'join' ? (<><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> Verifying...</>) : (<><i className="fa-solid fa-unlock-keyhole mr-2"></i> Authenticate & Join</>)}
+                                {loadingAction === 'join' ? (<><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> {t('Verifying...')}</>) : (<><i className="fa-solid fa-unlock-keyhole mr-2"></i> {t('Authenticate & Join')}</>)}
                             </button>
                         </form>
                     </div>
@@ -454,23 +457,23 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                     <CallsignChip label={`OP-${(operation.id || '').split('-')[0].toUpperCase()}`} icon="fa-person-military-rifle" accent="purple" pulse />
                                     {isFetching['operations'] && (
                                         <span className="text-purple-400 text-[10px] font-mono uppercase tracking-widest inline-flex items-center gap-1">
-                                            <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing
+                                            <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing')}
                                         </span>
                                     )}
                                 </div>
                                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight uppercase truncate">{operation.name}</h1>
                                 <div className="flex items-center gap-2 flex-wrap mt-2">
                                     <span className={`px-2.5 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 ${typeStyles.class}`}>
-                                        <i className={`${typeStyles.icon} text-[9px]`}></i> {operation.type}
+                                        <i className={`${typeStyles.icon} text-[9px]`}></i> {t(operation.type)}
                                     </span>
                                     {operation.isSpecial && (
                                         <span className="bg-red-500/10 text-red-400 border border-red-500/30 text-[10px] font-black px-2.5 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1.5">
-                                            <i className="fa-solid fa-lock text-[8px]"></i> Classified
+                                            <i className="fa-solid fa-lock text-[8px]"></i> {t('Classified')}
                                         </span>
                                     )}
                                     {operation.isJoint && (
                                         <span className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[10px] font-black px-2.5 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1.5">
-                                            <i className="fa-solid fa-handshake text-[8px]"></i> Joint
+                                            <i className="fa-solid fa-handshake text-[8px]"></i> {t('Joint')}
                                         </span>
                                     )}
                                     {operation.clearanceLevel > 0 && (
@@ -487,7 +490,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                             operation.liveStatus === 'RTB' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
                                             'bg-slate-500/10 text-slate-400 border-slate-500/30'
                                         }`}>
-                                            <i className="fa-solid fa-signal text-[8px]"></i> {operation.liveStatus}
+                                            <i className="fa-solid fa-signal text-[8px]"></i> {t(operation.liveStatus)}
                                         </span>
                                     )}
                                 </div>
@@ -530,7 +533,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                                     : 'text-slate-600 border-slate-800 bg-slate-900/40'
                                     }`}>
                                         <i className={`${stepIcon} text-[9px]`}></i>
-                                        <span className="hidden sm:inline">{step.label}</span>
+                                        <span className="hidden sm:inline">{t(step.label)}</span>
                                     </div>
                                 </React.Fragment>
                             );
@@ -545,7 +548,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                     <div className="flex items-center gap-3">
                         <i className={`fa-solid fa-tower-broadcast ${radioConfig.configured ? 'text-purple-400' : 'text-slate-600'} text-sm`}></i>
                         <span className={`text-[10px] font-black uppercase tracking-widest ${radioConfig.configured ? 'text-purple-300' : 'text-slate-500'}`}>
-                            {radioConfig.configured ? 'Op radio available' : 'Op radio unavailable — LiveKit not configured'}
+                            {radioConfig.configured ? t('Op radio available') : t('Op radio unavailable — LiveKit not configured')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -556,17 +559,17 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                 className="flex items-center gap-2 px-4 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
                             >
                                 {opRadio.isConnecting ? <i className="fa-solid fa-spinner animate-spin text-[10px]"></i> : <i className="fa-solid fa-headphones text-[10px]"></i>}
-                                Join
+                                {t('Join')}
                             </button>
                         ) : (
                             <span className="px-3 py-1.5 text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                                <i className="fa-solid fa-lock text-[9px] mr-1.5"></i>Admin setup required
+                                <i className="fa-solid fa-lock text-[9px] mr-1.5"></i>{t('Admin setup required')}
                             </span>
                         )}
                         <button
                             onClick={() => setOpRadioBannerDismissed(true)}
                             className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
-                            title="Dismiss"
+                            title={t('Dismiss')}
                         >
                             <i className="fa-solid fa-xmark text-xs"></i>
                         </button>
@@ -585,9 +588,9 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                             className="w-full bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/40 outline-hidden appearance-none transition-all"
                         >
                             {navGroups.map((group) => (
-                                <optgroup key={group.title} label={group.title} className="bg-slate-900 text-slate-400">
+                                <optgroup key={group.title} label={t(group.title, { context: 'op-detail' })} className="bg-slate-900 text-slate-400">
                                     {group.items.map(item => (
-                                        <option key={item.id} value={item.id} className="text-white">{item.label}</option>
+                                        <option key={item.id} value={item.id} className="text-white">{t(item.label)}</option>
                                     ))}
                                 </optgroup>
                             ))}
@@ -602,7 +605,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                 <div className="hidden lg:flex flex-col shrink-0 w-56 border-r border-slate-800/60 bg-slate-900/40 overflow-y-auto custom-scrollbar py-5 px-3 gap-5">
                     {navGroups.map((group) => (
                         <div key={group.title} className="space-y-0.5">
-                            <p className="px-3 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{group.title}</p>
+                            <p className="px-3 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{t(group.title, { context: 'op-detail' })}</p>
                             {group.items.map(item => {
                                 const active = activeSection === item.id;
                                 return (
@@ -616,7 +619,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                         }`}
                                     >
                                         <i className={`${item.icon} w-4 text-center text-[10px]`}></i>
-                                        <span className="truncate">{item.label}</span>
+                                        <span className="truncate">{t(item.label)}</span>
                                     </button>
                                 );
                             })}
@@ -733,18 +736,18 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                             <div className="flex items-center justify-between px-3 py-2.5 bg-slate-950 border-b border-amber-500/20">
                                 <div className="flex items-center gap-2">
                                     <i className="fa-solid fa-tower-broadcast text-amber-400 text-sm" />
-                                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Op Radio</span>
+                                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">{t('Op Radio')}</span>
                                     <span className={`w-1.5 h-1.5 rounded-full ${opRadio.isTransmitting ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-green-400 shadow-[0_0_4px_rgba(34,197,94,0.6)]'} animate-pulse`} />
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <button onClick={() => setIsOpRadioOpen(false)}
                                         className="w-6 h-6 flex items-center justify-center rounded-sm bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors text-[10px]"
-                                        title="Minimize">
+                                        title={t('Minimize')}>
                                         <i className="fa-solid fa-minus" />
                                     </button>
                                     <button onClick={() => { opRadio.disconnect(); setIsOpRadioOpen(false); }}
                                         className="w-6 h-6 flex items-center justify-center rounded-sm bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors text-[10px]"
-                                        title="Disconnect">
+                                        title={t('Disconnect')}>
                                         <i className="fa-solid fa-power-off" />
                                     </button>
                                 </div>
@@ -753,7 +756,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                             {/* Participants */}
                             {opRadio.participants.length > 0 && (
                                 <div className="px-3 py-2 border-b border-slate-800/50">
-                                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1.5">{opRadio.participants.length} Connected</p>
+                                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1.5">{t('{count} Connected', { count: opRadio.participants.length })}</p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {opRadio.participants.map((name) => {
                                             const isSpeaking = opRadio.activeSpeakers.includes(name) || (name === opRadio.participants[0] && opRadio.isTransmitting);
@@ -785,7 +788,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                     <button
                                         onClick={opRadio.toggleMute}
                                         className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${opRadio.isMuted ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                                        title={opRadio.isMuted ? 'Unmute' : 'Mute'}
+                                        title={opRadio.isMuted ? t('Unmute') : t('Mute')}
                                     >
                                         <i className={`fa-solid ${opRadio.isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-sm`} />
                                     </button>
@@ -819,10 +822,10 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                     {opRadio.isTransmitting ? (
                                         <span className="flex items-center justify-center gap-3">
                                             <span className="w-2.5 h-2.5 rounded-full bg-black/40 animate-ping" />
-                                            LIVE TX
+                                            {t('LIVE TX')}
                                         </span>
                                     ) : (
-                                        <><i className="fa-solid fa-microphone-slash mr-2" /> Push to Talk</>
+                                        <><i className="fa-solid fa-microphone-slash mr-2" /> {t('Push to Talk')}</>
                                     )}
                                 </button>
                             </div>
@@ -837,7 +840,7 @@ const OperationDetailView: React.FC<OperationDetailViewProps> = ({ operation: in
                                         ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-amber-900/20 animate-pulse'
                                         : 'bg-slate-800 text-amber-400 border border-amber-500/20 hover:bg-slate-700'
                             }`}
-                            title="Open Op Radio"
+                            title={t('Open Op Radio')}
                         >
                             <i className={`fa-solid ${opRadio.isTransmitting ? 'fa-microphone' : 'fa-tower-broadcast'}`} />
                             {opRadio.participants.length > 1 && (

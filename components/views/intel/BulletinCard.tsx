@@ -3,6 +3,7 @@ import { IntelBulletin, IntelThreatLevel } from '../../../types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useMembers } from '../../../contexts/MembersContext';
 import { safe } from '../../../lib/safeRender';
+import { useI18n } from '../../../i18n/I18nContext';
 import { ACCENTS } from '../../shared/ui/accents';
 import { threatAccent, threatIsAlarm } from './intelStyles';
 
@@ -47,19 +48,25 @@ export const formatCountdown = (expiresAt: string, durationMinutes?: number): st
     return `${seconds}s`;
 };
 
-export const formatRelativeTime = (dateStr: string): string => {
+export const formatRelativeTime = (
+    dateStr: string,
+    t?: (key: string, params?: Record<string, string | number>) => string,
+): string => {
+    const tr = t ?? ((key: string, params?: Record<string, string | number>) =>
+        Object.entries(params ?? {}).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), key));
     const diff = Date.now() - new Date(dateStr).getTime();
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return tr('just now');
+    if (minutes < 60) return tr('{minutes}m ago', { minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+    if (hours < 24) return tr('{hours}h ago', { hours });
+    return tr('{days}d ago', { days: Math.floor(hours / 24) });
 };
 
 const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDeleting, onClick }) => {
     const { currentUser, hasPermission } = useAuth();
     const { securityClearances } = useMembers();
+    const { t } = useI18n();
 
     const isIndefinite = bulletin.durationMinutes === 0;
     const [countdown, setCountdown] = useState(() => formatCountdown(bulletin.expiresAt, bulletin.durationMinutes));
@@ -88,7 +95,7 @@ const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDelet
 
     if (isExpired) return null;
 
-    const clearanceName = securityClearances.find(c => c.level === bulletin.classificationLevel)?.name || `LEVEL ${bulletin.classificationLevel}`;
+    const clearanceName = securityClearances.find(c => c.level === bulletin.classificationLevel)?.name || t('LEVEL {level}', { level: bulletin.classificationLevel });
 
     return (
         <div
@@ -107,7 +114,7 @@ const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDelet
                     <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest ${a.bg} ${a.border} ${a.text} ${isAlarm ? 'animate-pulse' : ''}`}>
                             <i className={`fa-solid ${isAlarm ? 'fa-triangle-exclamation' : 'fa-shield-halved'}`} aria-hidden />
-                            {safe(bulletin.threatLevel)}
+                            {t(String(safe(bulletin.threatLevel)))}
                         </span>
                         {bulletin.location && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-mono">
@@ -122,17 +129,17 @@ const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDelet
                         {isFromAlly ? (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                Ally
+                                {t('Ally')}
                             </span>
                         ) : bulletin.sharedWithAllies ? (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest bg-slate-900/60 text-slate-400 border-white/10">
                                 <span className={`w-1.5 h-1.5 rounded-full ${a.dot} animate-pulse`} />
-                                Shared
+                                {t('Shared')}
                             </span>
                         ) : (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest bg-slate-900/60 text-slate-400 border-white/10">
                                 <span className={`w-1.5 h-1.5 rounded-full ${a.dot} animate-pulse`} />
-                                Live
+                                {t('Live')}
                             </span>
                         )}
                     </div>
@@ -144,7 +151,7 @@ const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDelet
                         <div className="flex items-center gap-1.5 mt-1">
                             <i className="fa-solid fa-handshake text-[9px] text-emerald-400" aria-hidden />
                             <span className="text-[9px] font-bold text-emerald-300/80 uppercase tracking-wider">
-                                via {safe(bulletin.sourceOrganizationName)}
+                                {t('via')} {safe(bulletin.sourceOrganizationName)}
                             </span>
                         </div>
                     )}
@@ -176,21 +183,21 @@ const BulletinCard: React.FC<BulletinCardProps> = ({ bulletin, onDelete, isDelet
 
             <div className="relative pl-4 pr-3 py-2 bg-slate-950/40 border-t border-white/5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest min-w-0">
-                    <span className="truncate">{isFromAlly ? safe(bulletin.sourceOrganizationName, 'Allied Org') : safe(bulletin.createdByUser?.name, 'Unknown')}</span>
+                    <span className="truncate">{isFromAlly ? safe(bulletin.sourceOrganizationName, t('Allied Org')) : safe(bulletin.createdByUser?.name, t('Unknown'))}</span>
                     <span className="text-slate-700">·</span>
-                    <span className="shrink-0">{formatRelativeTime(bulletin.createdAt)}</span>
+                    <span className="shrink-0">{formatRelativeTime(bulletin.createdAt, t)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-[10px] font-black font-mono uppercase tracking-wider ${isIndefinite ? 'text-emerald-400' : a.text}`}>
                         <i className={`fa-solid ${isIndefinite ? 'fa-thumbtack' : 'fa-clock'} mr-1`} aria-hidden />
-                        {countdown}
+                        {isIndefinite ? t('PERMANENT') : countdown}
                     </span>
                     {canDelete && onDelete && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(bulletin.id); }}
                             disabled={isDeleting}
-                            title="Delete Bulletin"
+                            title={t('Delete Bulletin')}
                             className="p-1.5 rounded-sm text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                         >
                             {isDeleting

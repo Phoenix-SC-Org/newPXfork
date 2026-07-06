@@ -9,10 +9,10 @@ import CallsignChip from '../../shared/ui/CallsignChip';
 import { ACCENTS } from '../../shared/ui/accents';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import {
     threatAccent,
     threatIcon,
-    threatLabel,
     threatIsAlarm,
     subjectIcon,
     subjectLabel,
@@ -86,6 +86,7 @@ const DossierView: React.FC<DossierViewProps> = ({
     const fmt = useFormatDate();
     const { confirm: uiConfirm, addToast } = useNotification();
     const { openWindow } = useModalRegistry();
+    const { t } = useI18n();
 
     // Memoise the `? : []` derivations so the empty-array branch keeps a stable reference,
     // letting downstream memos recompute only when the dossier slice actually changes.
@@ -222,9 +223,9 @@ const DossierView: React.FC<DossierViewProps> = ({
             setSelectedReport(null);
         } else {
             const confirmed = await uiConfirm({
-                title: 'Purge Intelligence Record',
-                message: 'Permanently delete this intelligence report? This action cannot be reversed.',
-                confirmText: 'Purge Record',
+                title: t('Purge Intelligence Record'),
+                message: t('Permanently delete this intelligence report? This action cannot be reversed.'),
+                confirmText: t('Purge Record'),
                 variant: 'danger',
             });
             if (!confirmed) return;
@@ -233,7 +234,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                 onRefresh();
                 setSelectedReport(null);
             } catch {
-                addToast('Delete Failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'Failed to delete the intelligence report.' });
+                addToast(t('Delete Failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('Failed to delete the intelligence report.') });
             }
         }
     };
@@ -325,7 +326,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                             onClick={onBack}
                             className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors mb-3"
                         >
-                            <i className="fa-solid fa-arrow-left" aria-hidden /> Return to Intel Hub
+                            <i className="fa-solid fa-arrow-left" aria-hidden /> {t('Return to Intel Hub')}
                         </button>
 
                         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 lg:gap-4">
@@ -338,31 +339,31 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="min-w-0">
                                     <div className="hidden sm:flex items-center gap-2 mb-2">
                                         <CallsignChip
-                                            label={`DOSSIER · ${targetId}`}
+                                            label={t('DOSSIER · {id}', { id: targetId })}
                                             icon="fa-satellite-dish"
                                             accent={threatAccent(maxThreatLevel)}
                                             pulse={isAlarm}
                                         />
                                         <button
                                             onClick={handleCopyTarget}
-                                            title="Copy target ID"
+                                            title={t('Copy target ID')}
                                             className="inline-flex items-center gap-1.5 px-2 py-1 rounded-sm border font-mono text-[10px] uppercase tracking-widest bg-slate-900/60 border-white/10 text-slate-400 hover:text-slate-200 transition-colors"
                                         >
-                                            {copiedId ? <><i className="fa-solid fa-check text-emerald-400" aria-hidden /> Copied</> : <><i className="fa-regular fa-copy" aria-hidden /> Copy</>}
+                                            {copiedId ? <><i className="fa-solid fa-check text-emerald-400" aria-hidden /> {t('Copied')}</> : <><i className="fa-regular fa-copy" aria-hidden /> {t('Copy')}</>}
                                         </button>
                                     </div>
                                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight flex items-center gap-3 flex-wrap font-mono uppercase">
                                         <span className="truncate">{targetId}</span>
                                         {isFetching['intel'] && (
                                             <span className={`${threatA.text} text-xs font-mono uppercase tracking-widest animate-pulse inline-flex items-center gap-1`}>
-                                                <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> Syncing
+                                                <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> {t('Syncing')}
                                             </span>
                                         )}
                                     </h1>
                                     <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                                        {subjectLabel(isOrg ? IntelSubjectType.Organization : IntelSubjectType.Person)} Dossier
+                                        {t('{subject} Dossier', { subject: t(subjectLabel(isOrg ? IntelSubjectType.Organization : IntelSubjectType.Person)) })}
                                         {reports.length > 0 && (
-                                            <> · {reports.length} report{reports.length !== 1 ? 's' : ''} on file</>
+                                            <>{' · '}{reports.length === 1 ? t('{count} report on file', { count: reports.length }) : t('{count} reports on file', { count: reports.length })}</>
                                         )}
                                     </p>
                                 </div>
@@ -371,7 +372,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                             <div className="flex flex-wrap items-center gap-2 shrink-0">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border font-black text-[11px] uppercase tracking-wider ${threatA.bg} ${threatA.border} ${threatA.text} ${isAlarm ? 'animate-pulse' : ''}`}>
                                     <i className={`fa-solid ${tIcon}`} aria-hidden />
-                                    {threatLabel(maxThreatLevel)}
+                                    {t(maxThreatLevel, { context: 'threat-level' })}
                                 </span>
                             </div>
                         </div>
@@ -386,7 +387,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                             onClick={() => onBreadcrumbJump(-1)}
                             className="inline-flex items-center gap-1.5 text-slate-500 hover:text-sky-300 transition-colors whitespace-nowrap"
                         >
-                            <i className="fa-solid fa-house text-[10px]" aria-hidden /> Intel Hub
+                            <i className="fa-solid fa-house text-[10px]" aria-hidden /> {t('Intel Hub')}
                         </button>
                         {breadcrumbCrumbs.map(({ id, idx, key }) => {
                             const isLast = idx === breadcrumbStack.length - 1;
@@ -402,7 +403,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         <button
                                             onClick={() => onBreadcrumbJump(idx)}
                                             className="text-slate-400 hover:text-sky-300 transition-colors whitespace-nowrap truncate max-w-[140px]"
-                                            title={`Jump to ${id}`}
+                                            title={t('Jump to {id}', { id })}
                                         >
                                             {id}
                                         </button>
@@ -425,10 +426,10 @@ const DossierView: React.FC<DossierViewProps> = ({
                             <i className="fa-solid fa-bullseye text-red-400 text-lg" aria-hidden />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-red-400/80">Active Cautions · {activeWarrants.length}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-red-400/80">{t('Active Cautions')} · {activeWarrants.length}</p>
                             <p className="text-sm font-bold text-red-100 truncate">
-                                {s(activeWarrants[0]?.action)} ADVISORY — {s(activeWarrants[0]?.reason)}
-                                {activeWarrants.length > 1 && <span className="text-red-400/60"> · +{activeWarrants.length - 1} more</span>}
+                                {t('{action} ADVISORY', { action: t(s(activeWarrants[0]?.action), { context: 'warrantAction' }) })} — {s(activeWarrants[0]?.reason)}
+                                {activeWarrants.length > 1 && <span className="text-red-400/60"> · {t('+{count} more', { count: activeWarrants.length - 1 })}</span>}
                             </p>
                         </div>
                         <i className="fa-solid fa-chevron-right text-red-400/60 text-xs" aria-hidden />
@@ -445,7 +446,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-xl font-black text-white font-mono leading-none">{String(stat.value)}</p>
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{stat.label}</p>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{t(stat.label)}</p>
                                 </div>
                             </div>
                         );
@@ -460,7 +461,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                             className={`shrink-0 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md flex items-center gap-2 whitespace-nowrap ${activeTab === tab.id ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
                         >
                             <i className={`fa-solid ${tab.icon}`} aria-hidden />
-                            {tab.label}
+                            {t(tab.label)}
                             {tab.count !== undefined && <span className="text-[10px] opacity-60 font-mono">{tab.count}</span>}
                         </button>
                     ))}
@@ -481,11 +482,11 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                 <i className={`fa-solid ${aiHeaderIcon}`} aria-hidden />
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="text-sm font-bold text-white">AI Tactical Analysis</h3>
+                                                <h3 className="text-sm font-bold text-white">{t('AI Tactical Analysis')}</h3>
                                                 <p className="text-[10px] text-slate-500 uppercase tracking-widest">
-                                                    {aiSubtitle}
+                                                    {t(aiSubtitle)}
                                                     {aiAvailable && aiSummary && !humanisedError && dossier.cachedSummaryDate && (
-                                                        <span className="text-slate-600 normal-case tracking-normal"> · generated {timeAgoShort(dossier.cachedSummaryDate)} ago</span>
+                                                        <span className="text-slate-600 normal-case tracking-normal">{' · '}{t('generated {time} ago', { time: timeAgoShort(dossier.cachedSummaryDate) })}</span>
                                                     )}
                                                 </p>
                                             </div>
@@ -497,7 +498,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         <button
                                             onClick={handleGenerateSummary}
                                             disabled={!aiAvailable || isGeneratingSummary || isLocked}
-                                            title={!aiAvailable ? 'An organization administrator must install a Gemini API key before AI analysis can be generated.' : undefined}
+                                            title={!aiAvailable ? t('An organization administrator must install a Gemini API key before AI analysis can be generated.') : undefined}
                                             className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest border transition-colors ${
                                                 !aiAvailable
                                                     ? 'bg-slate-800/40 text-slate-600 border-slate-700/40 cursor-not-allowed'
@@ -510,7 +511,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         >
                                             {isGeneratingSummary
                                                 ? <i className="fa-solid fa-spinner animate-spin" aria-hidden />
-                                                : !aiAvailable ? 'Unavailable' : isLocked ? 'Locked' : humanisedError ? 'Retry' : 'Generate'}
+                                                : !aiAvailable ? t('Unavailable') : isLocked ? t('Locked') : humanisedError ? t('Retry') : t('Generate')}
                                         </button>
                                         )}
                                     </div>
@@ -519,7 +520,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         {isGeneratingSummary && (
                                             <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center z-10">
                                                 <i className="fa-solid fa-microchip text-indigo-300 text-2xl animate-pulse mb-3" aria-hidden />
-                                                <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest animate-pulse">Analyzing intelligence data…</p>
+                                                <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest animate-pulse">{t('Analyzing intelligence data…')}</p>
                                             </div>
                                         )}
 
@@ -527,9 +528,9 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         {!aiAvailable && !aiSummary && (
                                             <div className="py-10 flex flex-col items-center justify-center text-slate-500 text-center">
                                                 <i className="fa-solid fa-key text-3xl mb-3 text-slate-600" aria-hidden />
-                                                <p className="text-xs font-black uppercase tracking-widest text-slate-300">AI Key Not Installed</p>
+                                                <p className="text-xs font-black uppercase tracking-widest text-slate-300">{t('AI Key Not Installed')}</p>
                                                 <p className="text-[10px] text-slate-500 mt-1.5 max-w-xs">
-                                                    Tactical analysis is unavailable until an organization administrator installs a Gemini API key.
+                                                    {t('Tactical analysis is unavailable until an organization administrator installs a Gemini API key.')}
                                                 </p>
                                             </div>
                                         )}
@@ -538,9 +539,9 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         {aiAvailable && isLocked && !aiSummary && !humanisedError && (
                                             <div className="py-10 flex flex-col items-center justify-center text-center">
                                                 <i className="fa-solid fa-hourglass-half text-slate-500 text-3xl mb-3" aria-hidden />
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate limit active</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Rate limit active')}</p>
                                                 <p className="text-2xl font-black font-mono text-slate-200 mt-2">{timeLeft || '—'}</p>
-                                                <p className="text-[10px] text-slate-500 mt-2">until next analysis</p>
+                                                <p className="text-[10px] text-slate-500 mt-2">{t('until next analysis')}</p>
                                             </div>
                                         )}
 
@@ -549,9 +550,9 @@ const DossierView: React.FC<DossierViewProps> = ({
                                             <div className={`p-4 rounded-lg text-sm leading-relaxed border ${humanisedError.kind === 'quota' ? 'bg-amber-900/10 border-amber-500/20 text-amber-200/90' : 'bg-red-900/10 border-red-500/20 text-red-200/90'}`}>
                                                 <div className={`flex items-center gap-2 mb-2 font-black text-xs uppercase tracking-widest ${humanisedError.kind === 'quota' ? 'text-amber-300' : 'text-red-300'}`}>
                                                     <i className={`fa-solid ${humanisedError.kind === 'quota' ? 'fa-clock' : 'fa-circle-exclamation'}`} aria-hidden />
-                                                    {humanisedError.title}
+                                                    {t(humanisedError.title)}
                                                 </div>
-                                                {humanisedError.body}
+                                                {t(humanisedError.body)}
                                             </div>
                                         )}
 
@@ -576,8 +577,8 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         {aiAvailable && !aiSummary && !humanisedError && !isLocked && (
                                             <div className="py-10 flex flex-col items-center justify-center text-slate-500 text-center">
                                                 <i className="fa-solid fa-microchip text-3xl mb-3 text-slate-600" aria-hidden />
-                                                <p className="text-xs font-black uppercase tracking-widest">No analysis generated yet</p>
-                                                <p className="text-[10px] text-slate-600 mt-1">Click Generate to run AI tactical analysis on this dossier.</p>
+                                                <p className="text-xs font-black uppercase tracking-widest">{t('No analysis generated yet')}</p>
+                                                <p className="text-[10px] text-slate-600 mt-1">{t('Click Generate to run AI tactical analysis on this dossier.')}</p>
                                             </div>
                                         )}
                                     </div>
@@ -589,7 +590,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="rounded-xl border border-red-500/20 bg-slate-900/40 overflow-hidden">
                                     <div className="px-5 py-3 bg-red-500/5 border-b border-red-500/10 flex items-center gap-2">
                                         <i className="fa-solid fa-bullseye text-red-400 text-sm" aria-hidden />
-                                        <h3 className="text-xs font-black text-red-300 uppercase tracking-widest">Active Cautions</h3>
+                                        <h3 className="text-xs font-black text-red-300 uppercase tracking-widest">{t('Active Cautions')}</h3>
                                         <span className="text-[10px] font-mono font-bold text-red-400/60 ml-auto">{activeWarrants.length}</span>
                                     </div>
                                     <div className="divide-y divide-white/5">
@@ -603,12 +604,12 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                 <div key={wId || stableKey(w)} className="p-4 flex justify-between items-start gap-4 hover:bg-red-500/5 transition-colors">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-3 mb-1">
-                                                            <span className="text-xs font-black text-red-300 uppercase tracking-widest">{wAction} Advisory</span>
+                                                            <span className="text-xs font-black text-red-300 uppercase tracking-widest">{t('{action} Advisory', { action: t(wAction, { context: 'warrantAction' }) })}</span>
                                                             <span className="text-[10px] text-slate-600 font-mono">#{wId.substring(0, 8).toUpperCase()}</span>
                                                         </div>
                                                         <p className="text-white font-bold text-sm mb-1.5">{wReason}</p>
                                                         <div className="flex items-center gap-4 text-[10px] text-slate-500 font-mono uppercase tracking-wider">
-                                                            <span>Filed: {wIssuedAt}</span>
+                                                            <span>{t('Filed: {date}', { date: wIssuedAt })}</span>
                                                             <span className="text-lime-400 font-black">{wReward.toLocaleString()} aUEC</span>
                                                         </div>
                                                     </div>
@@ -628,7 +629,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="rounded-xl border border-white/10 bg-slate-900/40 overflow-hidden">
                                     <div className="px-4 py-3 bg-slate-950/40 border-b border-white/5 flex items-center justify-between">
                                         <h3 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                                            <i className="fa-solid fa-clock-rotate-left text-amber-400" aria-hidden /> Interaction History
+                                            <i className="fa-solid fa-clock-rotate-left text-amber-400" aria-hidden /> {t('Interaction History')}
                                         </h3>
                                         <span className="text-[10px] font-mono font-bold text-slate-500">{requests.length}</span>
                                     </div>
@@ -654,7 +655,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                     </p>
                                                     <div className="mt-2 flex items-center justify-between">
                                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${rStatus === 'Success' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-slate-900/60 text-slate-500 border-white/10'}`}>
-                                                            {rStatus}
+                                                            {t(rStatus)}
                                                         </span>
                                                         <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-700 group-hover:text-sky-400 transition-colors" aria-hidden />
                                                     </div>
@@ -663,7 +664,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                         }) : (
                                             <div className="py-8 flex flex-col items-center justify-center text-slate-600">
                                                 <i className="fa-solid fa-inbox text-2xl mb-2" aria-hidden />
-                                                <p className="text-[10px] font-black uppercase tracking-widest">No interactions on file</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest">{t('No interactions on file')}</p>
                                             </div>
                                         )}
                                     </div>
@@ -674,7 +675,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="rounded-xl border border-white/10 bg-slate-900/40 overflow-hidden">
                                     <div className="px-4 py-3 bg-slate-950/40 border-b border-white/5 flex items-center justify-between">
                                         <h3 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                                            <i className="fa-solid fa-crosshairs text-emerald-400" aria-hidden /> Operations
+                                            <i className="fa-solid fa-crosshairs text-emerald-400" aria-hidden /> {t('Operations')}
                                         </h3>
                                         <span className="text-[10px] font-mono font-bold text-slate-500">{operations.length}</span>
                                     </div>
@@ -689,10 +690,10 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-sm font-bold text-white truncate">{opName}</span>
                                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${opStatus === 'Active' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-slate-900/60 text-slate-500 border-white/10'}`}>
-                                                            {opStatus}
+                                                            {t(opStatus)}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">{opType}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">{t(opType)}</p>
                                                 </div>
                                             );
                                         })}
@@ -720,7 +721,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="w-16 h-16 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center mx-auto mb-4 text-slate-600">
                                     <i className="fa-solid fa-file-circle-xmark text-2xl" aria-hidden />
                                 </div>
-                                <p className="font-black text-slate-500 uppercase tracking-widest text-sm">No intelligence reports on file</p>
+                                <p className="font-black text-slate-500 uppercase tracking-widest text-sm">{t('No intelligence reports on file')}</p>
                             </div>
                         )}
                     </div>
@@ -749,7 +750,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="font-black text-white uppercase truncate font-mono group-hover:text-sky-300 transition-colors">{affTargetId}</p>
-                                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">{isOrg ? 'Individual' : 'Organization'}</p>
+                                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">{isOrg ? t('Individual') : t('Organization')}</p>
                                                 </div>
                                                 <i className="fa-solid fa-chevron-right text-slate-600 group-hover:text-sky-400 transition-colors text-xs" aria-hidden />
                                             </div>
@@ -757,7 +758,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                 <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">{affDate}</span>
                                                 <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${affA.bg} ${affA.border} ${affA.text}`}>
                                                     <i className={`fa-solid ${threatIcon(affThreat)}`} aria-hidden />
-                                                    {threatLabel(affThreat)}
+                                                    {t(affThreat || IntelThreatLevel.None, { context: 'threat-level' })}
                                                 </span>
                                             </div>
                                         </button>
@@ -769,7 +770,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                 <div className="w-16 h-16 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center mx-auto mb-4 text-slate-600">
                                     <i className="fa-solid fa-diagram-project text-2xl" aria-hidden />
                                 </div>
-                                <p className="font-black text-slate-500 uppercase tracking-widest text-sm">No known affiliations</p>
+                                <p className="font-black text-slate-500 uppercase tracking-widest text-sm">{t('No known affiliations')}</p>
                             </div>
                         )}
                     </div>

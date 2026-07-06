@@ -3,8 +3,10 @@ import { useGovernment } from '../../../../../contexts/GovernmentContext';
 
 import { EmptyState } from '../../../../shared/ui';
 import { useNavigation } from '../../../../../contexts/NavigationContext';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 export default function GovernmentPanel() {
+    const { t } = useI18n();
     const { governmentElections, governmentLegislation, governmentPositionHolders } = useGovernment();
     const { setActiveView } = useNavigation();
 
@@ -23,15 +25,19 @@ export default function GovernmentPanel() {
         return (
             <EmptyState
                 icon="fa-landmark"
-                heading="No open governance"
-                description={officialsCount > 0 ? `${officialsCount} officials in post. Nothing up for debate right now.` : 'No active elections or legislation.'}
+                heading={t('No open governance')}
+                description={officialsCount > 0
+                    ? (officialsCount === 1
+                        ? t('{count} official in post. Nothing up for debate right now.', { count: officialsCount })
+                        : t('{count} officials in post. Nothing up for debate right now.', { count: officialsCount }))
+                    : t('No active elections or legislation.')}
                 accent="indigo"
                 action={
                     <button
                         onClick={() => setActiveView('government')}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-widest transition-colors"
                     >
-                        <i className="fa-solid fa-landmark" /> Open Government
+                        <i className="fa-solid fa-landmark" /> {t('Open Government')}
                     </button>
                 }
             />
@@ -43,7 +49,7 @@ export default function GovernmentPanel() {
             {openElections.length > 0 && (
                 <>
                     <div className="px-3 py-2 bg-slate-950/40 flex items-center justify-between">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Elections</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Elections')}</span>
                         <span className="text-[10px] font-mono text-slate-600">{openElections.length}</span>
                     </div>
                     {openElections.map((e: any) => (
@@ -57,9 +63,9 @@ export default function GovernmentPanel() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-bold text-white truncate">{e.title || e.name || 'Election'}</span>
+                                    <span className="text-sm font-bold text-white truncate">{e.title || e.name || t('Election')}</span>
                                     <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
-                                        {e.status}
+                                        {t(e.status, { context: 'election' })}
                                     </span>
                                 </div>
                             </div>
@@ -71,7 +77,7 @@ export default function GovernmentPanel() {
             {openLegislation.length > 0 && (
                 <>
                     <div className="px-3 py-2 bg-slate-950/40 flex items-center justify-between">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Legislation</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Legislation')}</span>
                         <span className="text-[10px] font-mono text-slate-600">{openLegislation.length}</span>
                     </div>
                     {openLegislation.map((l: any) => (
@@ -85,9 +91,9 @@ export default function GovernmentPanel() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-bold text-white truncate">{l.title || 'Proposed legislation'}</span>
+                                    <span className="text-sm font-bold text-white truncate">{l.title || t('Proposed legislation')}</span>
                                     <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
-                                        {l.status}
+                                        {t(l.status, { context: 'legislation' })}
                                     </span>
                                 </div>
                             </div>
@@ -101,7 +107,7 @@ export default function GovernmentPanel() {
                     onClick={() => setActiveView('government')}
                     className="w-full text-center text-[11px] font-mono uppercase tracking-widest text-slate-500 hover:text-indigo-300 transition-colors py-1"
                 >
-                    View government →
+                    {t('View government →')}
                 </button>
             </div>
         </div>

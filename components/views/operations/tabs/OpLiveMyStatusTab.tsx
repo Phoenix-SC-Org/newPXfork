@@ -5,6 +5,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useOperations } from '../../../../contexts/OperationsContext';
 import OpRadioPanel, { OpRadioState } from '../OpRadioPanel';
 import OpCommsTab from './OpCommsTab';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpLiveMyStatusTabProps {
     operation: HydratedOperation;
@@ -38,6 +39,7 @@ const statusColor = (status?: string) => {
 const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canManage, isParticipant, onRefresh, radio }) => {
     const { currentUser } = useAuth();
     const { toggleParticipantReady, updateParticipantLiveStatus } = useOperations();
+    const { t } = useI18n();
 
     const myParticipant = useMemo(() =>
         (operation.participants || []).find(p => p.userId === currentUser?.id && p.timeLeft === null),
@@ -81,7 +83,7 @@ const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canMan
                 <div className={`shrink-0 px-4 py-3 ${opColors.bg} border-b ${opColors.border} flex items-center justify-center gap-3`}>
                     <span className={`w-2.5 h-2.5 rounded-full ${opColors.dot} animate-pulse shadow-lg`} />
                     <span className={`text-sm font-black uppercase tracking-wider ${opColors.text}`}>
-                        Operation Status: {operation.liveStatus}
+                        {t('Operation Status: {status}', { status: t(operation.liveStatus) })}
                     </span>
                     <span className={`w-2.5 h-2.5 rounded-full ${opColors.dot} animate-pulse shadow-lg`} />
                 </div>
@@ -106,11 +108,11 @@ const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canMan
                                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                     {myParticipant.liveStatus && (
                                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${statusColor(myParticipant.liveStatus).bg} ${statusColor(myParticipant.liveStatus).text} ${statusColor(myParticipant.liveStatus).border}`}>
-                                            {myParticipant.liveStatus}
+                                            {t(myParticipant.liveStatus)}
                                         </span>
                                     )}
                                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${myParticipant.isReady ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-slate-800/40 text-slate-500 border-slate-700/50'}`}>
-                                        {myParticipant.isReady ? 'Ready' : 'Not Ready'}
+                                        {myParticipant.isReady ? t('Ready') : t('Not Ready')}
                                     </span>
                                 </div>
                             )}
@@ -120,7 +122,7 @@ const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canMan
                     {/* Live Status Buttons */}
                     {myParticipant && (
                         <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Personal Status</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('Personal Status')}</label>
                             <div className="grid grid-cols-3 gap-1.5">
                                 {STATUS_OPTIONS.map(opt => {
                                     const colors = statusColor(opt.value);
@@ -137,7 +139,7 @@ const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canMan
                                             } disabled:opacity-50`}
                                         >
                                             <i className={`fa-solid ${opt.icon} mr-1 text-[9px]`} />
-                                            {opt.label}
+                                            {t(opt.label)}
                                         </button>
                                     );
                                 })}
@@ -154,7 +156,7 @@ const OpLiveMyStatusTab: React.FC<OpLiveMyStatusTabProps> = ({ operation, canMan
                                 } disabled:opacity-50`}
                             >
                                 <i className={`fa-solid ${myParticipant.isReady ? 'fa-check-circle' : 'fa-circle'} mr-1.5`} />
-                                {myParticipant.isReady ? 'Ready' : 'Mark Ready'}
+                                {myParticipant.isReady ? t('Ready') : t('Mark Ready')}
                             </button>
                         </div>
                     )}

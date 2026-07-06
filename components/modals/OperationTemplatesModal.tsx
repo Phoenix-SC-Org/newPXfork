@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import WindowFrame from '../layout/WindowFrame';
 import type { OperationTemplate, OperationTemplatePayload } from '../../types';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface OperationTemplatesModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ function countTemplate(p: OperationTemplatePayload): { phases: number; tasks: nu
 }
 
 const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpen, onClose }) => {
+    const { t } = useI18n();
     const { operationTemplates, deleteOperationTemplate, importOperationTemplate, updateOperationTemplate } = useOperations();
     const { hasPermission } = useAuth();
     const { addToast, confirm } = useNotification();
@@ -74,16 +76,16 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
 
     const handleDelete = async (tpl: OperationTemplate) => {
         const ok = await confirm({
-            title: 'Delete Template',
-            message: `Permanently delete the template "${tpl.name}"? Operations created from this template are unaffected.`,
-            confirmText: 'Delete',
+            title: t('Delete Template'),
+            message: t('Permanently delete the template "{name}"? Operations created from this template are unaffected.', { name: tpl.name }),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!ok) return;
         try {
             await deleteOperationTemplate(tpl.id);
         } catch (err: any) {
-            addToast('Delete Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not delete template.' });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not delete template.') });
         }
     };
 
@@ -105,10 +107,10 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                     if (!importName && typeof parsed.name === 'string') setImportName(parsed.name);
                     if (!importDescription && typeof parsed.description === 'string') setImportDescription(parsed.description);
                 } else {
-                    throw new Error('JSON does not look like a template (expected "phases" array or "payload" object).');
+                    throw new Error(t('JSON does not look like a template (expected "phases" array or "payload" object).'));
                 }
             } catch (err: any) {
-                addToast('Invalid file', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not read JSON.' });
+                addToast(t('Invalid file'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not read JSON.') });
             }
         };
         reader.readAsText(file);
@@ -117,19 +119,19 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
 
     const handleImport = async () => {
         if (!importName.trim()) {
-            addToast('Name required', <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: 'Give the template a name before importing.' });
+            addToast(t('Name required'), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: t('Give the template a name before importing.') });
             return;
         }
         let parsed: any;
         try {
             parsed = JSON.parse(importJson);
         } catch {
-            addToast('Invalid JSON', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'The pasted text is not valid JSON.' });
+            addToast(t('Invalid JSON'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('The pasted text is not valid JSON.') });
             return;
         }
         const payload: OperationTemplatePayload = parsed?.phases ? parsed : parsed?.payload;
         if (!payload || !Array.isArray(payload.phases)) {
-            addToast('Invalid template', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: 'JSON must have a "phases" array (or a "payload" object that does).' });
+            addToast(t('Invalid template'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t('JSON must have a "phases" array (or a "payload" object that does).') });
             return;
         }
         setImporting(true);
@@ -139,9 +141,9 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
             setImportName('');
             setImportDescription('');
             setImportJson('');
-            addToast('Template imported', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/30');
+            addToast(t('Template imported'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/30');
         } catch (err: any) {
-            addToast('Import Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not import template.' });
+            addToast(t('Import Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not import template.') });
         } finally {
             setImporting(false);
         }
@@ -156,7 +158,7 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
     const saveEdit = async () => {
         if (editingId == null) return;
         if (!editName.trim()) {
-            addToast('Name required', <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50');
+            addToast(t('Name required'), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50');
             return;
         }
         setSavingEdit(true);
@@ -164,7 +166,7 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
             await updateOperationTemplate(editingId, { name: editName.trim(), description: editDescription.trim() || undefined });
             setEditingId(null);
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not update template.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not update template.') });
         } finally {
             setSavingEdit(false);
         }
@@ -174,8 +176,8 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Operation Templates"
-            subtitle="Reusable phase / task / milestone plans"
+            title={t('Operation Templates')}
+            subtitle={t('Reusable phase / task / milestone plans')}
             icon="fa-solid fa-clipboard-list"
             color="purple"
             width="max-w-3xl"
@@ -187,7 +189,7 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                         <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                         <input
                             type="search"
-                            placeholder="Search templates..."
+                            placeholder={t('Search templates...')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="w-full bg-slate-900/60 text-white pl-9 pr-3 py-2 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 text-sm focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/40 transition-all"
@@ -200,13 +202,13 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                 onClick={() => { fileInputRef.current?.click(); setImportOpen(true); }}
                                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 text-slate-300 border border-slate-700 hover:text-white hover:border-purple-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors"
                             >
-                                <i className="fa-solid fa-file-arrow-up"></i> Pick JSON
+                                <i className="fa-solid fa-file-arrow-up"></i> {t('Pick JSON')}
                             </button>
                             <button
                                 onClick={() => setImportOpen(o => !o)}
                                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 hover:bg-purple-500/20 text-[10px] font-bold uppercase tracking-wider transition-colors"
                             >
-                                <i className={`fa-solid ${importOpen ? 'fa-xmark' : 'fa-plus'}`}></i> {importOpen ? 'Cancel Import' : 'Import Template'}
+                                <i className={`fa-solid ${importOpen ? 'fa-xmark' : 'fa-plus'}`}></i> {importOpen ? t('Cancel Import') : t('Import Template')}
                             </button>
                         </>
                     )}
@@ -217,26 +219,26 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                     <div className="p-5 border-b border-white/5 bg-slate-900/30 space-y-3 animate-fade-in">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label className={labelClass}>Template Name</label>
-                                <input value={importName} onChange={e => setImportName(e.target.value)} className={inputClass} placeholder="e.g., Standard Patrol" />
+                                <label className={labelClass}>{t('Template Name')}</label>
+                                <input value={importName} onChange={e => setImportName(e.target.value)} className={inputClass} placeholder={t('e.g., Standard Patrol')} />
                             </div>
                             <div>
-                                <label className={labelClass}>Description (Optional)</label>
-                                <input value={importDescription} onChange={e => setImportDescription(e.target.value)} className={inputClass} placeholder="Short summary..." />
+                                <label className={labelClass}>{t('Description (Optional)')}</label>
+                                <input value={importDescription} onChange={e => setImportDescription(e.target.value)} className={inputClass} placeholder={t('Short summary...')} />
                             </div>
                         </div>
                         <div>
-                            <label className={labelClass}>Payload JSON</label>
+                            <label className={labelClass}>{t('Payload JSON')}</label>
                             <textarea
                                 value={importJson}
                                 onChange={e => setImportJson(e.target.value)}
                                 rows={8}
                                 spellCheck={false}
-                                placeholder='Paste an exported template, or a payload like { "phases": [ ... ] }'
+                                placeholder={t('Paste an exported template, or a payload like { "phases": [ ... ] }')}
                                 className={`${inputClass} font-mono text-xs resize-y`}
                             />
                             <p className="text-[10px] text-slate-500 mt-1">
-                                Server validates the structure on import; invalid templates are rejected with a descriptive error.
+                                {t('Server validates the structure on import; invalid templates are rejected with a descriptive error.')}
                             </p>
                         </div>
                         <div className="flex justify-end">
@@ -246,8 +248,8 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                 className="flex items-center gap-2 px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 border border-purple-500/40 text-white text-[11px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {importing
-                                    ? <><i className="fa-solid fa-spinner animate-spin"></i> Importing</>
-                                    : <><i className="fa-solid fa-check"></i> Import</>}
+                                    ? <><i className="fa-solid fa-spinner animate-spin"></i> {t('Importing')}</>
+                                    : <><i className="fa-solid fa-check"></i> {t('Import')}</>}
                             </button>
                         </div>
                     </div>
@@ -259,11 +261,11 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                         <div className="flex flex-col items-center justify-center py-16 text-slate-600">
                             <i className="fa-solid fa-clipboard-list text-4xl mb-3 opacity-40"></i>
                             <p className="text-sm font-medium opacity-60">
-                                {operationTemplates.length === 0 ? 'No templates yet.' : 'No templates match your search.'}
+                                {operationTemplates.length === 0 ? t('No templates yet.') : t('No templates match your search.')}
                             </p>
                             {operationTemplates.length === 0 && canManage && (
                                 <p className="text-[11px] text-slate-700 mt-2 max-w-md text-center">
-                                    Save an existing operation as a template from its detail view, or import one from JSON above.
+                                    {t('Save an existing operation as a template from its detail view, or import one from JSON above.')}
                                 </p>
                             )}
                         </div>
@@ -277,17 +279,17 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                         {isEditing ? (
                                             <div className="space-y-3">
                                                 <div>
-                                                    <label className={labelClass}>Name</label>
+                                                    <label className={labelClass}>{t('Name')}</label>
                                                     <input value={editName} onChange={e => setEditName(e.target.value)} className={inputClass} />
                                                 </div>
                                                 <div>
-                                                    <label className={labelClass}>Description</label>
-                                                    <input value={editDescription} onChange={e => setEditDescription(e.target.value)} className={inputClass} placeholder="Optional" />
+                                                    <label className={labelClass}>{t('Description')}</label>
+                                                    <input value={editDescription} onChange={e => setEditDescription(e.target.value)} className={inputClass} placeholder={t('Optional')} />
                                                 </div>
                                                 <div className="flex justify-end gap-2">
-                                                    <button onClick={() => setEditingId(null)} className="text-[10px] text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 uppercase tracking-wider font-bold">Cancel</button>
+                                                    <button onClick={() => setEditingId(null)} className="text-[10px] text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 uppercase tracking-wider font-bold">{t('Cancel')}</button>
                                                     <button onClick={saveEdit} disabled={savingEdit} className="text-[10px] text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-1.5 rounded-lg uppercase tracking-wider font-bold disabled:opacity-50">
-                                                        {savingEdit ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save'}
+                                                        {savingEdit ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -297,21 +299,21 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <span className="text-sm font-bold text-white">{tpl.name}</span>
                                                         <span className="text-[9px] font-mono text-slate-500 bg-slate-800/60 border border-slate-700/40 px-1.5 py-0.5 rounded-sm">
-                                                            {stats.phases}p · {stats.tasks}t · {stats.milestones}m
+                                                            {t('{phases}p · {tasks}t · {milestones}m', { phases: stats.phases, tasks: stats.tasks, milestones: stats.milestones })}
                                                         </span>
                                                     </div>
                                                     {tpl.description && (
                                                         <p className="text-xs text-slate-400 mt-1">{tpl.description}</p>
                                                     )}
                                                     <p className="text-[10px] text-slate-600 mt-1.5">
-                                                        {tpl.createdByName ? `By ${tpl.createdByName}` : 'Unknown author'} · {new Date(tpl.createdAt).toLocaleDateString()}
+                                                        {tpl.createdByName ? t('By {name}', { name: tpl.createdByName }) : t('Unknown author')} · {new Date(tpl.createdAt).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={() => handleExport(tpl)}
                                                         className="text-slate-400 hover:text-purple-300 p-2 rounded-sm hover:bg-slate-800/60 transition-colors"
-                                                        title="Export as JSON"
+                                                        title={t('Export as JSON')}
                                                     >
                                                         <i className="fa-solid fa-file-arrow-down text-xs"></i>
                                                     </button>
@@ -320,14 +322,14 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                                             <button
                                                                 onClick={() => startEdit(tpl)}
                                                                 className="text-slate-400 hover:text-purple-300 p-2 rounded-sm hover:bg-slate-800/60 transition-colors"
-                                                                title="Rename"
+                                                                title={t('Rename')}
                                                             >
                                                                 <i className="fa-solid fa-pen-to-square text-xs"></i>
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDelete(tpl)}
                                                                 className="text-slate-400 hover:text-red-400 p-2 rounded-sm hover:bg-slate-800/60 transition-colors"
-                                                                title="Delete"
+                                                                title={t('Delete')}
                                                             >
                                                                 <i className="fa-solid fa-trash text-xs"></i>
                                                             </button>
@@ -344,7 +346,7 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end rounded-b-xl">
-                    <button onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Close</button>
+                    <button onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">{t('Close')}</button>
                 </div>
             </div>
         </WindowFrame>

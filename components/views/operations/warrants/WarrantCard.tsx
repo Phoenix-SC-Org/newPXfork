@@ -12,6 +12,7 @@ import {
     warrantActionLabel,
     timeAgoShort,
 } from './warrantStyles';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     warrant: HydratedWarrant;
@@ -23,6 +24,7 @@ interface Props {
 
 const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, onClick }) => {
     const { confirm } = useNotification();
+    const { t } = useI18n();
 
     const statusA = ACCENTS[warrantStatusAccent(warrant.status)];
     const statusIcon = warrantStatusIcon(warrant.status);
@@ -37,9 +39,9 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
         const confirmed = await confirm({
-            title: 'Delete Caution Note',
-            message: `Are you sure you want to delete the caution note for ${warrant.targetRsiHandle}?`,
-            confirmText: 'Delete',
+            title: t('Delete Caution Note'),
+            message: t('Are you sure you want to delete the caution note for {handle}?', { handle: warrant.targetRsiHandle }),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (confirmed) await onDelete(warrant.id);
@@ -75,7 +77,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                             </span>
                             <span className="text-slate-700">·</span>
                             <span className={`text-[10px] font-black uppercase tracking-widest ${actionA.text}`}>
-                                {actionLabel}
+                                {t(actionLabel)}
                             </span>
                         </div>
                     </div>
@@ -91,7 +93,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                     )}
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border font-black text-[10px] uppercase tracking-wider ${statusA.bg} ${statusA.border} ${statusA.text} ${isLive ? 'animate-pulse' : ''}`}>
                         <i className={`fa-solid ${statusIcon}`} aria-hidden />
-                        {warrantStatusLabel(warrant.status)}
+                        {t(warrantStatusLabel(warrant.status))}
                     </span>
                 </div>
             </div>
@@ -99,7 +101,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
             <div className="relative pl-4 pr-4 py-4 grow grid grid-cols-1 md:grid-cols-5 gap-4 min-h-0">
                 <div className="md:col-span-2 flex flex-col gap-3 min-w-0">
                     <div className="p-3 rounded-lg bg-slate-950/40 border border-white/5">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Reward Value</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Reward Value')}</p>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-black text-lime-400 font-mono tracking-tight leading-none">{warrant.uecReward.toLocaleString()}</span>
                             <span className="text-[10px] font-bold text-lime-400/70 uppercase tracking-widest">aUEC</span>
@@ -111,13 +113,13 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                         // rather than fake admin attribution.
                         <div className="flex items-center gap-2 text-[11px] text-sky-300 min-w-0">
                             <i className="fa-solid fa-satellite-dish text-slate-500 shrink-0" aria-hidden />
-                            <span className="text-slate-500 uppercase font-black tracking-widest text-[9px]">Issued</span>
-                            <span className="truncate font-semibold">via {warrant.sourceFeedLabel}</span>
+                            <span className="text-slate-500 uppercase font-black tracking-widest text-[9px]">{t('Issued')}</span>
+                            <span className="truncate font-semibold">{t('via {label}', { label: warrant.sourceFeedLabel })}</span>
                         </div>
                     ) : warrant.issuedByUser && (
                         <div className="flex items-center gap-2 text-[11px] text-slate-300 min-w-0">
                             <i className="fa-solid fa-stamp text-slate-500 shrink-0" aria-hidden />
-                            <span className="text-slate-500 uppercase font-black tracking-widest text-[9px]">Issued</span>
+                            <span className="text-slate-500 uppercase font-black tracking-widest text-[9px]">{t('Issued')}</span>
                             <img
                                 src={warrant.issuedByUser.avatarUrl}
                                 alt=""
@@ -130,7 +132,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                     {warrant.status === WarrantStatus.Claimed && warrant.claimedByUser && (
                         <div className="flex items-center gap-2 text-[11px] text-emerald-200 min-w-0 p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
                             <i className="fa-solid fa-handcuffs text-emerald-400 shrink-0" aria-hidden />
-                            <span className="text-emerald-400/80 uppercase font-black tracking-widest text-[9px]">Claimed</span>
+                            <span className="text-emerald-400/80 uppercase font-black tracking-widest text-[9px]">{t('Claimed')}</span>
                             <img
                                 src={warrant.claimedByUser.avatarUrl}
                                 alt=""
@@ -143,7 +145,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
 
                 <div className="md:col-span-3 flex flex-col gap-3 min-w-0 md:border-l md:border-white/5 md:pl-4">
                     <div className="grow min-w-0">
-                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Authorization</p>
+                        <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">{t('Authorization')}</p>
                         <p className="text-slate-300 text-sm leading-relaxed italic line-clamp-5">
                             &ldquo;{warrant.reason}&rdquo;
                         </p>
@@ -151,7 +153,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
 
                     {warrant.notes && (
                         <div className="rounded-md border border-white/5 bg-slate-950/40 px-2.5 py-1.5">
-                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Field Notes</p>
+                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-0.5">{t('Field Notes')}</p>
                             <p className="text-xs text-slate-400 line-clamp-2">{warrant.notes}</p>
                         </div>
                     )}
@@ -164,16 +166,16 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                         <button
                             onClick={handleDelete}
                             className="px-2.5 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
-                            title="Delete caution note"
+                            title={t('Delete caution note')}
                         >
-                            <i className="fa-solid fa-trash" aria-hidden /> Delete
+                            <i className="fa-solid fa-trash" aria-hidden /> {t('Delete')}
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onUpdate(warrant); }}
                             className="px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-300 border border-sky-500/30 hover:bg-sky-500/20 transition-colors"
                         >
                             <i className="fa-solid fa-pen-to-square mr-1.5" aria-hidden />
-                            Manage
+                            {t('Manage')}
                         </button>
                     </>
                 ) : (
@@ -181,7 +183,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                         onClick={(e) => { e.stopPropagation(); onClick?.(); }}
                         className="px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider bg-slate-800/60 text-slate-300 border border-white/10 hover:bg-slate-700/80 transition-colors"
                     >
-                        <i className="fa-solid fa-eye mr-1.5" aria-hidden /> View Details
+                        <i className="fa-solid fa-eye mr-1.5" aria-hidden /> {t('View Details')}
                     </button>
                 )}
             </div>

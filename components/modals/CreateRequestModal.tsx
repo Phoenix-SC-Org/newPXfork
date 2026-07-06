@@ -10,6 +10,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import LocationInput from '../ui/LocationInput';
 import WindowFrame from '../layout/WindowFrame';
 import { useNavigation } from '../../contexts/NavigationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface CreateRequestModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
     const { members } = useMembers();
     const { brandingConfig, heroCardConfig, serviceTypes } = useConfig();
     const { viewRequestDetails } = useNavigation();
+    const { t } = useI18n();
 
     React.useEffect(() => {
         if (isOpen) {
@@ -106,15 +108,15 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                 console.error("Failed to create request:", err);
                 const msg = err?.message || err?.toString() || '';
                 if (msg.toLowerCase().includes('already have an active') || msg.toLowerCase().includes('action blocked')) {
-                    setSubmissionError('You already have an active service request. Please use "Log Ad-Hoc" for additional requests, or wait for your current request to complete.');
+                    setSubmissionError(t('You already have an active service request. Please use "Log Ad-Hoc" for additional requests, or wait for your current request to complete.'));
                 } else {
-                    setSubmissionError('Failed to create request. Please try again or contact support if the issue persists.');
+                    setSubmissionError(t('Failed to create request. Please try again or contact support if the issue persists.'));
                 }
             } finally {
                 setIsLoading(false);
             }
         }
-    }, [createRequest, serviceType, location, description, urgency, threatLevel, partyInfo, partyHandles, onClose, viewRequestDetails, currentUser, refreshRequests]);
+    }, [createRequest, serviceType, location, description, urgency, threatLevel, partyInfo, partyHandles, onClose, viewRequestDetails, currentUser, refreshRequests, t]);
 
     // Check for Low Reputation Standing
     if (currentUser && currentUser.reputation <= 10) {
@@ -122,8 +124,8 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
             <WindowFrame
                 isOpen={isOpen}
                 onClose={onClose}
-                title="Access Restricted"
-                subtitle="Standing Protocol"
+                title={t('Access Restricted')}
+                subtitle={t('Standing Protocol')}
                 icon="fa-solid fa-user-lock"
                 color="red"
                 width="max-w-md"
@@ -133,10 +135,9 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         <i className="fa-solid fa-user-lock text-4xl"></i>
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-xl uppercase tracking-wider">Service Access Restricted</h3>
+                        <h3 className="text-white font-bold text-xl uppercase tracking-wider">{t('Service Access Restricted')}</h3>
                         <p className="text-slate-400 text-sm mt-3 leading-relaxed">
-                            Your account reputation standing is currently too low to initiate automated service requests.
-                            Please contact <span className="text-white font-bold">{brandingConfig.name || 'Organisation'}</span> command via Discord to review your standing.
+                            {t('Your account reputation standing is currently too low to initiate automated service requests. Please contact')} <span className="text-white font-bold">{brandingConfig.name || t('Organisation')}</span> {t('command via Discord to review your standing.')}
                         </p>
                     </div>
                     <a
@@ -145,7 +146,7 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         rel="noopener noreferrer"
                         className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase tracking-[0.2em] flex items-center justify-center group transition-all"
                     >
-                        <i className="fa-brands fa-discord mr-2 text-base group-hover:animate-pulse"></i> Open Discord Uplink
+                        <i className="fa-brands fa-discord mr-2 text-base group-hover:animate-pulse"></i> {t('Open Discord Uplink')}
                     </a>
                     <p className="text-[10px] text-slate-600 font-mono uppercase tracking-widest">ERROR_CODE: REP_LOW_RESTRICT</p>
                 </div>
@@ -159,8 +160,8 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
             <WindowFrame
                 isOpen={isOpen}
                 onClose={onClose}
-                title="Active Request Found"
-                subtitle="System Override"
+                title={t('Active Request Found')}
+                subtitle={t('System Override')}
                 icon="fa-solid fa-ban"
                 color="slate"
                 width="max-w-md"
@@ -170,17 +171,16 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         <i className="fa-solid fa-spinner animate-spin-slow text-3xl"></i>
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-xl">Mission In Progress</h3>
+                        <h3 className="text-white font-bold text-xl">{t('Mission In Progress')}</h3>
                         <p className="text-slate-400 text-sm mt-3 leading-relaxed">
-                            You already have an active service request in the queue.
-                            Please wait for your current operation to conclude before submitting a new one.
+                            {t('You already have an active service request in the queue. Please wait for your current operation to conclude before submitting a new one.')}
                         </p>
                     </div>
                     <button
                         onClick={onClose}
                         className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase tracking-[0.2em] flex items-center justify-center group transition-all"
                     >
-                        Acknowledge
+                        {t('Acknowledge')}
                     </button>
                 </div>
             </WindowFrame>
@@ -193,8 +193,8 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
             <WindowFrame
                 isOpen={isOpen}
                 onClose={onClose}
-                title="Service Unavailable"
-                subtitle="Offline Status"
+                title={t('Service Unavailable')}
+                subtitle={t('Offline Status')}
                 icon="fa-solid fa-store-slash"
                 color="slate"
                 width="max-w-md"
@@ -204,10 +204,9 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         <i className="fa-solid fa-store-slash text-3xl"></i>
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-xl">No Units Available</h3>
+                        <h3 className="text-white font-bold text-xl">{t('No Units Available')}</h3>
                         <p className="text-slate-400 text-sm mt-3 leading-relaxed">
-                            There are currently no {brandingConfig.name || 'organization'} units on duty to respond to new requests.
-                            Please check back later or contact us via Discord for immediate assistance.
+                            {t('There are currently no {org} units on duty to respond to new requests. Please check back later or contact us via Discord for immediate assistance.', { org: brandingConfig.name || t('organization') })}
                         </p>
                     </div>
                     <a
@@ -216,7 +215,7 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         rel="noopener noreferrer"
                         className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs uppercase tracking-[0.2em] flex items-center justify-center group transition-all"
                     >
-                        <i className="fa-brands fa-discord mr-2 text-base group-hover:animate-pulse"></i> Contact Command
+                        <i className="fa-brands fa-discord mr-2 text-base group-hover:animate-pulse"></i> {t('Contact Command')}
                     </a>
                 </div>
             </WindowFrame>
@@ -230,8 +229,8 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Create Service Request"
-            subtitle="New Mission Profile"
+            title={t('Create Service Request')}
+            subtitle={t('New Mission Profile')}
             icon="fa-solid fa-satellite-dish"
             color="sky"
             width="max-w-xl"
@@ -240,7 +239,7 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                 <div className="p-6 space-y-5">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className={labelClass}>Service Type</label>
+                            <label className={labelClass}>{t('Service Type')}</label>
                             <select
                                 value={serviceType}
                                 onChange={(e) => setServiceType(e.target.value)}
@@ -254,14 +253,14 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         </div>
                         {!isClient && (
                             <div>
-                                <label className={labelClass}>Urgency</label>
+                                <label className={labelClass}>{t('Urgency')}</label>
                                 <select
                                     value={urgency}
                                     onChange={(e) => setUrgency(e.target.value as UrgencyLevel)}
                                     className={inputClass}
                                     disabled={isLoading}
                                 >
-                                    {Object.values(UrgencyLevel).map(level => <option key={level} value={level}>{level}</option>)}
+                                    {Object.values(UrgencyLevel).map(level => <option key={level} value={level}>{t(level)}</option>)}
                                 </select>
                             </div>
                         )}
@@ -269,32 +268,32 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className={labelClass}>Location</label>
+                            <label className={labelClass}>{t('Location')}</label>
                             <LocationInput value={location} onChange={setLocation} disabled={isLoading} />
                         </div>
                         <div>
-                            <label className={labelClass}>Threat Level</label>
+                            <label className={labelClass}>{t('Threat Level')}</label>
                             <select
                                 value={threatLevel}
                                 onChange={(e) => setThreatLevel(e.target.value as ThreatLevel)}
                                 className={inputClass}
                                 disabled={isLoading}
                             >
-                                {Object.values(ThreatLevel).map(level => <option key={level} value={level}>{level}</option>)}
+                                {Object.values(ThreatLevel).map(level => <option key={level} value={level}>{t(level)}</option>)}
                             </select>
                         </div>
                     </div>
 
                     {/* Party Section */}
                     <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
-                        <label className={labelClass}>Additional Party Members</label>
+                        <label className={labelClass}>{t('Additional Party Members')}</label>
                         <div className="flex gap-2 mb-3">
                             <input
                                 type="text"
                                 value={currentHandle}
                                 onChange={(e) => setCurrentHandle(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddHandle(e); }}
-                                placeholder="RSI Handle (e.g. Maverick)"
+                                placeholder={t('RSI Handle (e.g. Maverick)')}
                                 className={inputClass}
                                 disabled={isLoading}
                             />
@@ -320,19 +319,19 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                             type="text"
                             value={partyInfo}
                             onChange={(e) => setPartyInfo(e.target.value)}
-                            placeholder="Party Status / Context (e.g. All injured, 1 ship)"
+                            placeholder={t('Party Status / Context (e.g. All injured, 1 ship)')}
                             className={inputClass}
                             disabled={isLoading}
                         />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Description</label>
+                        <label className={labelClass}>{t('Description')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={4}
-                            placeholder="Provide detailed briefing..."
+                            placeholder={t('Provide detailed briefing...')}
                             className={`${inputClass} resize-none`}
                             required
                             disabled={isLoading}
@@ -348,7 +347,7 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                                 className="h-4 w-4 rounded-sm bg-slate-900 border-slate-600 text-sky-500 focus:ring-sky-500 transition-colors"
                                 disabled={isLoading}
                             />
-                            <span className="text-xs">I agree to the Terms of Service.</span>
+                            <span className="text-xs">{t('I agree to the Terms of Service.')}</span>
                         </label>
                     )}
                 </div>
@@ -373,14 +372,14 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ isOpen, onClose
                         className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors"
                         disabled={isLoading}
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={isLoading || (isClient && !tosAgreed)}
                         className="px-6 py-2 bg-sky-500/10 text-sky-400 border border-sky-500/50 hover:bg-sky-500/20 hover:shadow-[0_0_15px_rgba(14,165,233,0.3)] rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit Request'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit Request')}
                     </button>
                     </div>
                 </div>

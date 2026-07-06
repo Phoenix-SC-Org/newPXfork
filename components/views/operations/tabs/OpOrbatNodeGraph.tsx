@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { HydratedOperation, OperationCommandNode } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpOrbatNodeGraphProps {
     operation: HydratedOperation;
@@ -110,6 +111,7 @@ function computeLayout(roots: EnrichedNode[]): { layoutNodes: LayoutNode[]; edge
 }
 
 const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManage, onAddNode, onEditNode, onDeleteNode, fillParent }) => {
+    const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const [panX, setPanX] = useState(0);
     const [panY, setPanY] = useState(0);
@@ -275,7 +277,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                             <div className="min-w-0 flex-1">
                                                 <h4 className="text-xs font-black text-white uppercase tracking-wider truncate">{n.node.label}</h4>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">{cfg.label}</span>
+                                                    <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">{t(cfg.label)}</span>
                                                     {n.node.liveStatus && (
                                                         <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${
                                                             n.node.liveStatus === 'Engaged' ? 'bg-red-500/15 text-red-400' :
@@ -293,7 +295,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                                                 n.node.liveStatus === 'Disengaging' ? 'bg-orange-500' :
                                                                 'bg-slate-500'
                                                             }`}></span>
-                                                            {n.node.liveStatus}
+                                                            {t(n.node.liveStatus)}
                                                         </span>
                                                     )}
                                                 </div>
@@ -319,25 +321,25 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                                     ) : participant ? (
                                                         <span className="flex items-center gap-1 text-slate-400 bg-slate-500/10 border border-slate-500/20 px-1.5 py-0.5 rounded-sm">
                                                             <i className="fa-solid fa-person-walking text-[8px]"></i>
-                                                            On Foot
+                                                            {t('On Foot')}
                                                         </span>
                                                     ) : null}
-                                                    {!n.node.assignedUser && !n.node.assignedUnit && <span className="text-slate-600 italic">Unassigned</span>}
+                                                    {!n.node.assignedUser && !n.node.assignedUnit && <span className="text-slate-600 italic">{t('Unassigned')}</span>}
                                                 </div>
                                             </div>
                                         </div>
                                         {canManage && (
                                             <div className="flex gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity shrink-0">
                                                 <button onClick={(e) => { e.stopPropagation(); onAddNode(n.node.id); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-sm transition-colors text-[10px]" title="Add Child">
+                                                    className="w-6 h-6 flex items-center justify-center text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-sm transition-colors text-[10px]" title={t('Add Child')}>
                                                     <i className="fa-solid fa-plus"></i>
                                                 </button>
                                                 <button onClick={(e) => { e.stopPropagation(); onEditNode(n.node); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[10px]" title="Edit">
+                                                    className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[10px]" title={t('Edit')}>
                                                     <i className="fa-solid fa-pen"></i>
                                                 </button>
                                                 <button onClick={(e) => { e.stopPropagation(); onDeleteNode(n.node.id); }}
-                                                    className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-colors text-[10px]" title="Delete">
+                                                    className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-colors text-[10px]" title={t('Delete')}>
                                                     <i className="fa-solid fa-trash"></i>
                                                 </button>
                                             </div>
@@ -370,11 +372,11 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[10px] font-bold text-white truncate">{n.node.label}</p>
                                         {participant ? (
-                                            <p className="text-[9px] text-slate-400 truncate">{participant.user?.name || 'Unknown'}</p>
+                                            <p className="text-[9px] text-slate-400 truncate">{participant.user?.name || t('Unknown')}</p>
                                         ) : n.node.assignedUser ? (
                                             <p className="text-[9px] text-slate-400 truncate">{n.node.assignedUser.name}</p>
                                         ) : (
-                                            <p className="text-[9px] text-slate-600 italic">Unassigned</p>
+                                            <p className="text-[9px] text-slate-600 italic">{t('Unassigned')}</p>
                                         )}
                                         {participant && (participant.ship || participant.shipUtilized) ? (
                                             <div className="flex items-center gap-1 mt-0.5">
@@ -388,7 +390,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                         ) : participant ? (
                                             <div className="flex items-center gap-1 mt-0.5">
                                                 <i className="fa-solid fa-person-walking text-[7px] text-slate-500"></i>
-                                                <span className="text-[8px] text-slate-500">On Foot</span>
+                                                <span className="text-[8px] text-slate-500">{t('On Foot')}</span>
                                             </div>
                                         ) : null}
                                     </div>
@@ -400,11 +402,11 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                     {canManage && (
                                         <div className="flex gap-0.5 opacity-0 group-hover/pos:opacity-100 transition-opacity shrink-0">
                                             <button onClick={(e) => { e.stopPropagation(); onEditNode(n.node); }}
-                                                className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[9px]" title="Edit">
+                                                className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[9px]" title={t('Edit')}>
                                                 <i className="fa-solid fa-pen"></i>
                                             </button>
                                             <button onClick={(e) => { e.stopPropagation(); onDeleteNode(n.node.id); }}
-                                                className="w-5 h-5 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-colors text-[9px]" title="Delete">
+                                                className="w-5 h-5 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-colors text-[9px]" title={t('Delete')}>
                                                 <i className="fa-solid fa-trash"></i>
                                             </button>
                                         </div>
@@ -419,8 +421,8 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center text-slate-600 opacity-50">
                                 <i className="fa-solid fa-sitemap text-5xl mb-3"></i>
-                                <p className="text-sm font-medium">ORBAT Structure</p>
-                                <p className="text-xs">{canManage ? 'Add a root node to start building the command structure.' : 'No command structure defined.'}</p>
+                                <p className="text-sm font-medium">{t('ORBAT Structure')}</p>
+                                <p className="text-xs">{canManage ? t('Add a root node to start building the command structure.') : t('No command structure defined.')}</p>
                             </div>
                         </div>
                     )}
@@ -429,16 +431,16 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                 {/* Zoom Controls */}
                 <div className="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700 rounded-lg backdrop-blur-xs p-1 flex flex-col gap-1 z-10">
                     <button onClick={() => setZoom(z => Math.min(z * 1.2, 2.0))}
-                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Zoom In">
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Zoom In')}>
                         <i className="fa-solid fa-plus"></i>
                     </button>
                     <button onClick={() => setZoom(z => Math.max(z * 0.8, 0.3))}
-                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Zoom Out">
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Zoom Out')}>
                         <i className="fa-solid fa-minus"></i>
                     </button>
                     <div className="border-t border-slate-700 my-0.5"></div>
                     <button onClick={fitToView}
-                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title="Fit to View">
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-sm transition-colors text-sm" title={t('Fit to View')}>
                         <i className="fa-solid fa-expand"></i>
                     </button>
                 </div>
@@ -449,7 +451,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
             {reservePool.length > 0 && (
                 <div className="mt-3 bg-slate-800/30 border border-slate-700/30 rounded-lg p-3">
                     <p className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-2">
-                        <i className="fa-solid fa-users mr-1"></i> Reserve Pool ({reservePool.length} unassigned)
+                        <i className="fa-solid fa-users mr-1"></i> {t('Reserve Pool ({count} unassigned)', { count: reservePool.length })}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {reservePool.map(p => (
@@ -461,7 +463,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                         <i className="fa-solid fa-user text-[8px] text-slate-500"></i>
                                     </div>
                                 )}
-                                <span className="text-[10px] text-white font-bold">{p.user?.name || 'Unknown'}</span>
+                                <span className="text-[10px] text-white font-bold">{p.user?.name || t('Unknown')}</span>
                                 {(p.ship || p.shipUtilized) ? (
                                     <span className="text-[8px] text-amber-400 flex items-center gap-1">
                                         {p.ship?.imageUrl ? (
@@ -474,7 +476,7 @@ const OpOrbatNodeGraph: React.FC<OpOrbatNodeGraphProps> = ({ operation, canManag
                                 ) : (
                                     <span className="text-[8px] text-slate-500 flex items-center gap-1">
                                         <i className="fa-solid fa-person-walking text-[7px]"></i>
-                                        On Foot
+                                        {t('On Foot')}
                                     </span>
                                 )}
                                 {p.isReady && <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center"><i className="fa-solid fa-check text-[5px] text-black"></i></div>}

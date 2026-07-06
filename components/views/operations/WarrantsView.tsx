@@ -24,6 +24,7 @@ import {
     warrantIsLive,
     timeAgoShort,
 } from './warrants/warrantStyles';
+import { useI18n } from '../../../i18n/I18nContext';
 
 /** UI-level filter — Active and Standing are merged into a single "active" bucket. */
 type WarrantFilter = 'active' | 'claimed' | 'cancelled' | 'all';
@@ -40,6 +41,7 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
     const { confirm } = useNotification();
     const { setSelectedWarrant } = useNavigation();
     const now = useNow();
+    const { t } = useI18n();
     const canManageWarrants = hasPermission('warrant:manage');
     const [filter, setFilter] = useState<WarrantFilter>('active');
     const [searchTerm, setSearchTerm] = useState('');
@@ -89,28 +91,30 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
     }, [warrants, filter, searchTerm]);
 
     const warrantTableColumns: TableColumn<HydratedWarrant>[] = useMemo(() => [
-        { key: 'targetRsiHandle', label: 'Target', sortable: true, width: '140px', render: (w) => <span className="font-mono font-bold text-white text-xs">{w.targetRsiHandle}</span> },
-        { key: 'action', label: 'Action', sortable: true, width: '110px', render: (w) => {
+        { key: 'targetRsiHandle', label: t('Target'), sortable: true, width: '140px', render: (w) => <span className="font-mono font-bold text-white text-xs">{w.targetRsiHandle}</span> },
+        { key: 'action', label: t('Action'), sortable: true, width: '110px', render: (w) => {
             const a = ACCENTS[warrantActionAccent(w.action)];
-            return <span className={`text-[10px] font-black uppercase ${a.text}`}><i className={`fa-solid ${warrantActionIcon(w.action)} mr-1`} aria-hidden />{warrantActionLabel(w.action)}</span>;
+            return <span className={`text-[10px] font-black uppercase ${a.text}`}><i className={`fa-solid ${warrantActionIcon(w.action)} mr-1`} aria-hidden />{t(warrantActionLabel(w.action))}</span>;
         }},
-        { key: 'status', label: 'Status', sortable: true, width: '90px', render: (w) => {
+        { key: 'status', label: t('Status'), sortable: true, width: '90px', render: (w) => {
             const a = ACCENTS[warrantStatusAccent(w.status)];
-            return <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border ${a.bg} ${a.border} ${a.text} ${warrantIsLive(w.status) ? 'animate-pulse' : ''}`}>{warrantStatusLabel(w.status)}</span>;
+            return <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border ${a.bg} ${a.border} ${a.text} ${warrantIsLive(w.status) ? 'animate-pulse' : ''}`}>{t(warrantStatusLabel(w.status))}</span>;
         }},
-        { key: 'uecReward', label: 'Reward', sortable: true, width: '100px', render: (w) => <span className="text-xs font-bold text-lime-400 font-mono">{w.uecReward.toLocaleString()} <span className="text-[9px] text-lime-400/60">aUEC</span></span> },
-        { key: 'reason', label: 'Reason', render: (w) => <span className="text-xs text-slate-400 truncate block">{w.reason.substring(0, 60)}{w.reason.length > 60 ? '...' : ''}</span> },
-        { key: 'issuedAt', label: 'Issued', sortable: true, width: '80px', render: (w) => <span className="text-[10px] text-slate-500 font-mono">{timeAgoShort(w.issuedAt)}</span> },
-        { key: 'sourceFeedLabel', label: 'Source', width: '70px', render: (w) => w.sourceFeedLabel ? <span className="text-[9px] text-sky-400 bg-sky-900/40 px-1.5 py-0.5 rounded-sm border border-sky-500/30 uppercase font-bold">EXT</span> : <span className="text-[9px] text-slate-600">LOCAL</span> },
-    ], []);
+        { key: 'uecReward', label: t('Reward'), sortable: true, width: '100px', render: (w) => <span className="text-xs font-bold text-lime-400 font-mono">{w.uecReward.toLocaleString()} <span className="text-[9px] text-lime-400/60">aUEC</span></span> },
+        { key: 'reason', label: t('Reason'), render: (w) => <span className="text-xs text-slate-400 truncate block">{w.reason.substring(0, 60)}{w.reason.length > 60 ? '...' : ''}</span> },
+        { key: 'issuedAt', label: t('Issued'), sortable: true, width: '80px', render: (w) => <span className="text-[10px] text-slate-500 font-mono">{timeAgoShort(w.issuedAt)}</span> },
+        { key: 'sourceFeedLabel', label: t('Source'), width: '70px', render: (w) => w.sourceFeedLabel ? <span className="text-[9px] text-sky-400 bg-sky-900/40 px-1.5 py-0.5 rounded-sm border border-sky-500/30 uppercase font-bold">EXT</span> : <span className="text-[9px] text-slate-600">LOCAL</span> },
+    ], [t]);
 
     const handleBulkDeleteWarrants = async () => {
         if (selectedIds.size === 0) return;
         const confirmed = await confirm({
-            title: 'Bulk Delete Caution Notes',
-            message: `Permanently delete ${selectedIds.size} selected caution note${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`,
+            title: t('Bulk Delete Caution Notes'),
+            message: selectedIds.size === 1
+                ? t('Permanently delete {count} selected caution note? This cannot be undone.', { count: selectedIds.size })
+                : t('Permanently delete {count} selected caution notes? This cannot be undone.', { count: selectedIds.size }),
             variant: 'danger',
-            confirmText: `Delete ${selectedIds.size} Caution Notes`
+            confirmText: t('Delete {count} Caution Notes', { count: selectedIds.size })
         });
         if (!confirmed) return;
         try {
@@ -141,16 +145,16 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · CAUTION NOTES"
+                chipLabel={t('MODULE · CAUTION NOTES')}
                 chipIcon="fa-crosshairs"
                 chipAccent="red"
-                title="Caution Notes"
-                subtitle="Flagged handles, advisories, and field-caution tracking."
+                title={t('Caution Notes')}
+                subtitle={t('Flagged handles, advisories, and field-caution tracking.')}
                 syncing={isFetching['warrants']}
                 actions={<>
                     {hasPermission('warrant:create') && (
                         <HeroActionButton onClick={openCreateModal} accent="red" icon="fa-plus">
-                            File Caution
+                            {t('File Caution')}
                         </HeroActionButton>
                     )}
                     <div className="flex bg-slate-900/60 rounded-lg border border-slate-700 p-0.5">
@@ -165,10 +169,10 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
                     </div>
                 </>}
                 stats={<>
-                    <HeroStat icon="fa-bolt" label="Active" value={heroCounts.active} accent="red" emphasize={heroCounts.active > 0} />
-                    <HeroStat icon="fa-coins" label="Total Reward" value={heroCounts.totalBounty.toLocaleString()} sub="aUEC outstanding" accent="amber" />
-                    <HeroStat icon="fa-handcuffs" label="Claimed (30d)" value={heroCounts.claimed30d} accent="sky" />
-                    <HeroStat icon="fa-flag-checkered" label="Closed (30d)" value={heroCounts.closed30d} accent="slate" />
+                    <HeroStat icon="fa-bolt" label={t('Active')} value={heroCounts.active} accent="red" emphasize={heroCounts.active > 0} />
+                    <HeroStat icon="fa-coins" label={t('Total Reward')} value={heroCounts.totalBounty.toLocaleString()} sub={t('aUEC outstanding')} accent="amber" />
+                    <HeroStat icon="fa-handcuffs" label={t('Claimed (30d)')} value={heroCounts.claimed30d} accent="sky" />
+                    <HeroStat icon="fa-flag-checkered" label={t('Closed (30d)')} value={heroCounts.closed30d} accent="slate" />
                 </>}
                 tabs={tabs.map(tab => (
                     <button
@@ -181,7 +185,7 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
                         }`}
                     >
                         <i className={`fa-solid ${tab.icon}`}></i>
-                        {tab.label}
+                        {t(tab.label)}
                         {tab.badge != null && (
                             <span className="ml-1 min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-red-500/20 text-red-300 rounded-full flex items-center justify-center">{tab.badge}</span>
                         )}
@@ -194,7 +198,7 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
                     <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                     <input
                         type="search"
-                        placeholder="Search target, reason, or ID…"
+                        placeholder={t('Search target, reason, or ID…')}
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
@@ -206,13 +210,13 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
 
                 {viewMode === 'table' && selectedIds.size > 0 && hasPermission('warrant:manage') && (
                     <div className="flex items-center gap-3 p-3 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-fade-in">
-                        <span className="text-xs font-bold text-red-400">{selectedIds.size} selected</span>
+                        <span className="text-xs font-bold text-red-400">{t('{count} selected', { count: selectedIds.size })}</span>
                         <span className="h-4 w-px bg-red-500/30"></span>
                         <button onClick={handleBulkDeleteWarrants} className="text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-300 px-3 py-1.5 rounded-sm bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors">
-                            <i className="fa-solid fa-trash mr-1.5"></i>Delete Selected
+                            <i className="fa-solid fa-trash mr-1.5"></i>{t('Delete Selected')}
                         </button>
                         <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
-                            Clear Selection
+                            {t('Clear Selection')}
                         </button>
                     </div>
                 )}
@@ -245,8 +249,8 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
                         <EmptyState
                             icon="fa-folder-open"
                             accent="red"
-                            heading="No caution notes match"
-                            description={searchTerm ? 'Try a different search term.' : 'New caution notes will appear here when filed.'}
+                            heading={t('No caution notes match')}
+                            description={searchTerm ? t('Try a different search term.') : t('New caution notes will appear here when filed.')}
                         />
                     </div>
                 )}

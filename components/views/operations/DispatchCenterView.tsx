@@ -15,6 +15,7 @@ import MDTPanel from './dispatch/MDTPanel';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
 import { useNow } from '../../../hooks/useNow';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ActiveRoom {
     roomName: string;
@@ -28,6 +29,7 @@ const IncidentCard: React.FC<{
     onClick: () => void;
     onRunMdt?: (handle: string) => void;
 }> = ({ request, onClick, onRunMdt }) => {
+    const { t } = useI18n();
     const isActive = request.status === ServiceRequestStatus.InProgress || request.status === ServiceRequestStatus.Accepted;
     const isCritical = request.urgency === UrgencyLevel.Critical || request.urgency === UrgencyLevel.High;
     const clientHandle = request.client?.rsiHandle || request.unregisteredClientRsiHandle;
@@ -43,7 +45,7 @@ const IncidentCard: React.FC<{
         >
             <div className="flex justify-between items-start mb-2">
                 <span className={`text-[10px] uppercase font-black px-1.5 py-0.5 rounded-sm border ${isCritical ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-slate-700 text-slate-400 border-slate-600'}`}>
-                    {request.urgency}
+                    {t(request.urgency)}
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">#{request.id.split('-')[1]}</span>
             </div>
@@ -61,7 +63,7 @@ const IncidentCard: React.FC<{
                     {onRunMdt && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onRunMdt(clientHandle); }}
-                            title={`Run MDT on ${clientHandle}`}
+                            title={t('Run MDT on {handle}', { handle: clientHandle })}
                             className="text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-sm px-1.5 py-0.5 transition-colors shrink-0 ml-2"
                         >
                             <i className="fa-solid fa-magnifying-glass mr-1"></i>MDT
@@ -74,11 +76,11 @@ const IncidentCard: React.FC<{
                     {request.assignedMembers.length > 0 ? request.assignedMembers.map(m => (
                         <img key={m.id} src={m.avatarUrl} className="inline-block h-5 w-5 rounded-full ring-1 ring-slate-900" title={m.name} alt="" />
                     )) : (
-                        <span className="text-[9px] text-slate-600 italic">Unassigned</span>
+                        <span className="text-[9px] text-slate-600 italic">{t('Unassigned')}</span>
                     )}
                 </div>
                 <span className={`text-[9px] font-bold uppercase ${isActive ? 'text-blue-400' : 'text-amber-400'}`}>
-                    {request.status}
+                    {t(request.status)}
                 </span>
             </div>
         </div>
@@ -91,6 +93,7 @@ const UnitCard: React.FC<{
     liveChannel?: string;
     onDragStart: (e: React.DragEvent, userId: number) => void;
 }> = ({ user, activeRequest, liveChannel, onDragStart }) => {
+    const { t } = useI18n();
     return (
         <div
             draggable
@@ -108,14 +111,14 @@ const UnitCard: React.FC<{
                         {activeRequest ? (
                             <span className="text-blue-400"><i className="fa-solid fa-tower-broadcast mr-1"></i>DST-{activeRequest.id.split('-')[1]}</span>
                         ) : (
-                            <span className="text-slate-600">IDLE</span>
+                            <span className="text-slate-600">{t('IDLE')}</span>
                         )}
                     </p>
                 </div>
             </div>
             <div className="text-right">
                 <div className={`text-[10px] font-bold px-2 py-0.5 rounded-sm border ${liveChannel ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-slate-700/20 text-slate-500 border-slate-700'}`}>
-                    {liveChannel?.replace(/^radio-/, '').toUpperCase() || 'NO COMMS'}
+                    {liveChannel?.replace(/^radio-/, '').toUpperCase() || t('NO COMMS')}
                 </div>
             </div>
         </div>
@@ -131,6 +134,7 @@ const DispatchCenterView: React.FC = () => {
     const { viewRequestDetails } = useNavigation();
     const { openModal, setIsCreateModalOpen, setIsAdHocModalOpen } = useModalRegistry();
     const now = useNow();
+    const { t } = useI18n();
 
     const [tab, setTab] = useState<'cad' | 'mdt'>('cad');
     const [mdtQuery, setMdtQuery] = useState('');
@@ -312,11 +316,11 @@ const DispatchCenterView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · DISPATCH"
+                chipLabel={t('MODULE · DISPATCH')}
                 chipIcon="fa-headset"
                 chipAccent="cyan"
-                title="Dispatch Console"
-                subtitle="Live queue, unit coordination, and subject lookup. CAD for the room, MDT for the field."
+                title={t('Dispatch Console')}
+                subtitle={t('Live queue, unit coordination, and subject lookup. CAD for the room, MDT for the field.')}
                 titleBreakpoint="lg"
                 actions={
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 lg:min-w-[380px] w-full sm:w-auto">
@@ -326,20 +330,20 @@ const DispatchCenterView: React.FC = () => {
                                 type="search"
                                 value={mdtQuery}
                                 onChange={(e) => setMdtQuery(e.target.value)}
-                                placeholder="MDT · Search RSI handle…"
+                                placeholder={t('MDT · Search RSI handle…')}
                                 className="w-full bg-slate-900/60 text-white pl-9 pr-3 py-2.5 rounded-lg border border-cyan-500/30 placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-hidden transition-all"
                             />
                         </form>
                         <HeroActionButton onClick={() => setIsAdHocModalOpen(true)} accent="sky" icon="fa-user-pen">
-                            Log Ad-hoc
+                            {t('Log Ad-hoc')}
                         </HeroActionButton>
                     </div>
                 }
                 stats={<>
-                    <HeroStat icon="fa-inbox" label="Incoming" value={stats.incoming} accent="red" emphasize={stats.incoming > 0} />
-                    <HeroStat icon="fa-bolt" label="Active" value={stats.active} accent="sky" />
-                    <HeroStat icon="fa-users" label="On-Duty" value={stats.onDuty} accent="emerald" />
-                    <HeroStat icon="fa-clock" label="Overdue" value={stats.overdue} accent="amber" emphasize={stats.overdue > 0} />
+                    <HeroStat icon="fa-inbox" label={t('Incoming')} value={stats.incoming} accent="red" emphasize={stats.incoming > 0} />
+                    <HeroStat icon="fa-bolt" label={t('Active')} value={stats.active} accent="sky" />
+                    <HeroStat icon="fa-users" label={t('On-Duty')} value={stats.onDuty} accent="emerald" />
+                    <HeroStat icon="fa-clock" label={t('Overdue')} value={stats.overdue} accent="amber" emphasize={stats.overdue > 0} />
                 </>}
                 tabs={<>
                     <button
@@ -349,7 +353,7 @@ const DispatchCenterView: React.FC = () => {
                         }`}
                     >
                         <i className="fa-solid fa-tower-broadcast"></i>
-                        CAD · Dispatch
+                        {t('CAD · Dispatch')}
                     </button>
                     <button
                         onClick={() => setTab('mdt')}
@@ -358,7 +362,7 @@ const DispatchCenterView: React.FC = () => {
                         }`}
                     >
                         <i className="fa-solid fa-magnifying-glass"></i>
-                        MDT · Lookup
+                        {t('MDT · Lookup')}
                         {mdtTarget && (
                             <span className="ml-1 text-[10px] font-mono bg-cyan-500/20 text-cyan-200 px-1.5 py-0.5 rounded-sm">
                                 {mdtTarget}
@@ -381,9 +385,9 @@ const DispatchCenterView: React.FC = () => {
             <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
                 <div className="w-full lg:w-1/3 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col h-1/3 lg:h-auto">
                     <div className="h-12 bg-slate-800/50 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Active Incidents ({activeRequests.length})</h3>
+                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">{t('Active Incidents')} ({activeRequests.length})</h3>
                         <button onClick={() => setIsCreateModalOpen(true)} className="text-sky-400 hover:text-sky-300 transition-colors text-xs font-bold uppercase">
-                            <i className="fa-solid fa-plus mr-1"></i> New Request
+                            <i className="fa-solid fa-plus mr-1"></i> {t('New Request')}
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3">
@@ -413,8 +417,8 @@ const DispatchCenterView: React.FC = () => {
                             <EmptyState
                                 icon="fa-inbox"
                                 accent="cyan"
-                                heading="No active incidents"
-                                description="The queue is clear — incoming requests will appear here."
+                                heading={t('No active incidents')}
+                                description={t('The queue is clear — incoming requests will appear here.')}
                                 compact
                             />
                         )}
@@ -423,7 +427,7 @@ const DispatchCenterView: React.FC = () => {
 
                 <div className="w-full lg:w-1/3 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col h-1/3 lg:h-auto">
                     <div className="h-12 bg-slate-800/50 border-b border-white/5 flex items-center px-4 shrink-0">
-                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">On-Duty Units ({onDutyUnits.length})</h3>
+                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">{t('On-Duty Units')} ({onDutyUnits.length})</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3">
                         {onDutyUnits.length > 0 ? onDutyUnits.map(user => (
@@ -438,8 +442,8 @@ const DispatchCenterView: React.FC = () => {
                             <EmptyState
                                 icon="fa-user-clock"
                                 accent="emerald"
-                                heading="No units on duty"
-                                description="Personnel will appear here once they go on duty."
+                                heading={t('No units on duty')}
+                                description={t('Personnel will appear here once they go on duty.')}
                                 compact
                             />
                         )}
@@ -448,12 +452,12 @@ const DispatchCenterView: React.FC = () => {
 
                 <div className="w-full lg:w-1/3 flex flex-col h-1/3 lg:h-auto">
                     <div className="h-12 bg-slate-800/50 border-b border-white/5 flex items-center px-4 shrink-0 justify-between">
-                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">Comms Matrix</h3>
+                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">{t('Comms Matrix')}</h3>
                         <button
                             onClick={fetchRadioStatus}
                             disabled={isRefreshingComms || !radioConfig.configured}
                             className="text-slate-500 hover:text-sky-400 transition-colors text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={radioConfig.configured ? 'Refresh Comms' : 'LiveKit not configured'}
+                            title={radioConfig.configured ? t('Refresh Comms') : t('LiveKit not configured')}
                         >
                             <i className={`fa-solid ${isRefreshingComms ? 'fa-circle-notch fa-spin' : 'fa-arrows-rotate'}`} aria-hidden></i>
                         </button>
@@ -463,7 +467,7 @@ const DispatchCenterView: React.FC = () => {
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2.5">
                                 <i className="fa-solid fa-triangle-exclamation text-amber-500 text-[10px] mt-0.5"></i>
                                 <p className="text-[10px] text-slate-500">
-                                    <strong className="text-amber-400">LiveKit not configured.</strong> Live comms data is unavailable. Channel occupancy shown below will always be empty.
+                                    <strong className="text-amber-400">{t('LiveKit not configured.')}</strong> {t('Live comms data is unavailable. Channel occupancy shown below will always be empty.')}
                                 </p>
                             </div>
                         )}
@@ -490,7 +494,7 @@ const DispatchCenterView: React.FC = () => {
                                             <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: channel.color }}></div>
                                             <span className="font-bold text-xs text-slate-200 uppercase tracking-wide">{channel.name}</span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-slate-500">{occupants.length} Users</span>
+                                        <span className="text-[10px] font-mono text-slate-500">{t('{count} Users', { count: occupants.length })}</span>
                                     </div>
                                     <div className="p-2 min-h-[40px] transition-colors group-hover:bg-white/5">
                                         <div className="flex flex-wrap gap-2">
@@ -506,7 +510,7 @@ const DispatchCenterView: React.FC = () => {
                                                 </div>
                                             ))}
                                             {occupants.length === 0 && (
-                                                <span className="text-[9px] text-slate-600 italic px-2">Channel Empty</span>
+                                                <span className="text-[9px] text-slate-600 italic px-2">{t('Channel Empty')}</span>
                                             )}
                                         </div>
                                     </div>

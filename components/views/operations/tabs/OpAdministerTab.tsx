@@ -8,6 +8,7 @@ import { useOperations } from '../../../../contexts/OperationsContext';
 
 import { toLocalDatetimeValue, formatOpDateTimeWithZone } from '../../../../lib/time';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface OpAdministerTabProps {
     operation: HydratedOperation;
@@ -29,6 +30,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
         extractTemplateFromOperation, createOperationTemplate, operationTemplates,
     } = useOperations();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     // Discord announcement (re)post. First post shows the org default channel + a guild-channel
     // dropdown; once posted, the same controls edit in place (preserves reactions) or change
@@ -49,11 +51,11 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
             setDiscordChannelsError(result?.error || null);
         } catch (err: any) {
             setDiscordChannels([]);
-            setDiscordChannelsError(err?.message || 'Failed to load Discord channels.');
+            setDiscordChannelsError(err?.message || t('Failed to load Discord channels.'));
         } finally {
             setDiscordChannelsLoading(false);
         }
-    }, [rpcAction]);
+    }, [rpcAction, t]);
 
     // Pre-select the existing channel, falling back to the org default. This is a
     // one-time seed of a user-editable dropdown: once pickerChannelId is set
@@ -75,7 +77,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
 
     const handleRepostAnnouncement = useCallback(async () => {
         if (!pickerChannelId) {
-            addToast('Pick a channel', <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: 'Choose a Discord channel before posting.' });
+            addToast(t('Pick a channel'), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: t('Choose a Discord channel before posting.') });
             return;
         }
         setReposting(true);
@@ -83,21 +85,21 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
             const result = await rpcAction('operation:repost_announcement', { operationId: operation.id, channelId: pickerChannelId });
             if (result?.ok) {
                 addToast(
-                    result.mode === 'edited' ? 'Announcement Updated' : 'Announcement Posted',
+                    result.mode === 'edited' ? t('Announcement Updated') : t('Announcement Posted'),
                     <i className="fa-brands fa-discord"></i>,
                     'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                    { description: result.mode === 'edited' ? 'Existing message edited in place.' : 'Embed posted to Discord.' },
+                    { description: result.mode === 'edited' ? t('Existing message edited in place.') : t('Embed posted to Discord.') },
                 );
                 onRefresh();
             } else {
-                addToast('Post Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: result?.error || 'Discord did not accept the post.' });
+                addToast(t('Post Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: result?.error || t('Discord did not accept the post.') });
             }
         } catch (err: any) {
-            addToast('Post Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not reach the server.' });
+            addToast(t('Post Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not reach the server.') });
         } finally {
             setReposting(false);
         }
-    }, [rpcAction, operation.id, pickerChannelId, addToast, onRefresh]);
+    }, [rpcAction, operation.id, pickerChannelId, addToast, onRefresh, t]);
 
     // Resolve the template-of-origin name (if any) from the cached templates list.
     // Falls back silently if the template was deleted (FK is ON DELETE SET NULL).
@@ -111,28 +113,28 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
     const [savingTemplate, setSavingTemplate] = useState(false);
     const handleSaveAsTemplate = async () => {
         const defaultName = operation.name;
-        const name = window.prompt('Save current phases, tasks, and milestones as a template. Template name:', defaultName);
+        const name = window.prompt(t('Save current phases, tasks, and milestones as a template. Template name:'), defaultName);
         if (!name || !name.trim()) return;
         setSavingTemplate(true);
         try {
             const payload = await extractTemplateFromOperation(operation.id);
             if (!payload?.phases?.length) {
                 addToast(
-                    'Nothing to save',
+                    t('Nothing to save'),
                     <i className="fa-solid fa-triangle-exclamation"></i>,
                     'bg-amber-500/10 text-amber-400 border-amber-500/50',
-                    { description: 'This operation has no phases, tasks, or milestones to template.' }
+                    { description: t('This operation has no phases, tasks, or milestones to template.') }
                 );
                 return;
             }
             await createOperationTemplate({ name: name.trim(), payload, sourceOperationId: operation.id });
-            addToast('Template saved', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/30');
+            addToast(t('Template saved'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/30');
         } catch (err: any) {
             addToast(
-                'Save Failed',
+                t('Save Failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not save template.' }
+                { description: err?.message || t('Could not save template.') }
             );
         } finally {
             setSavingTemplate(false);
@@ -220,18 +222,18 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
             setIsEditing(false);
             if (result?.discordEventFailed) {
                 addToast(
-                    'Saved — Discord event did not sync',
+                    t('Saved — Discord event did not sync'),
                     <i className="fa-solid fa-triangle-exclamation"></i>,
                     'bg-amber-500/10 text-amber-400 border-amber-500/50',
                     { description: result.discordEventFailed },
                 );
             } else {
-                addToast("Operation Updated", <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "Operation settings have been saved." });
+                addToast(t('Operation Updated'), <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t('Operation settings have been saved.') });
             }
             onRefresh();
         } catch (err) {
             console.error("Failed to update:", err);
-            addToast("Update Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to update operation settings." });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to update operation settings.') });
         } finally {
             setSaving(false);
         }
@@ -242,18 +244,18 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
         setInvitingAlly(true);
         try {
             await rpcAction('operation:invite_ally', { operationId: operation.id, peerId: invitePeerId });
-            addToast("Ally Invited", <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "The allied org has been invited to this operation." });
+            addToast(t('Ally Invited'), <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t('The allied org has been invited to this operation.') });
             setInvitePeerId('');
             onRefresh();
         } catch {
-            addToast("Invite Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to invite the ally. Ensure joint operations are enabled for that peer." });
+            addToast(t('Invite Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to invite the ally. Ensure joint operations are enabled for that peer.') });
         } finally {
             setInvitingAlly(false);
         }
     };
 
     const handleRemoveAlly = async (peerId: string) => {
-        const ok = await confirm({ title: 'Remove Ally', message: 'Remove this allied org from the operation? Their mirror will be revoked.', confirmText: 'Remove', variant: 'danger' });
+        const ok = await confirm({ title: t('Remove Ally'), message: t('Remove this allied org from the operation? Their mirror will be revoked.'), confirmText: t('Remove'), variant: 'danger' });
         if (!ok) return;
         await rpcAction('operation:revoke_ally', { operationId: operation.id, peerId });
         onRefresh();
@@ -269,12 +271,12 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
         <div className="p-6 lg:p-8 space-y-6">
             <div className="flex items-center justify-between p-4 bg-linear-to-r from-slate-800/60 to-slate-900/40 rounded-xl border border-slate-700/40 animate-fade-in-down">
                 <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                    <i className="fa-solid fa-gear text-purple-400/70"></i> Operation Administration
+                    <i className="fa-solid fa-gear text-purple-400/70"></i> {t('Operation Administration')}
                 </p>
                 {!isEditing && (
                     <button onClick={startEdit}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500/20 transition-colors">
-                        <i className="fa-solid fa-pen-to-square"></i> Edit All Details
+                        <i className="fa-solid fa-pen-to-square"></i> {t('Edit All Details')}
                     </button>
                 )}
             </div>
@@ -283,48 +285,48 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                 <div className={cardClass}>
                     <div className="px-5 py-3 bg-purple-500/5 border-b border-purple-500/10">
                         <p className="text-[10px] text-purple-300/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                            <i className="fa-solid fa-pen-to-square"></i> Edit Operation
+                            <i className="fa-solid fa-pen-to-square"></i> {t('Edit Operation')}
                         </p>
                     </div>
                     <div className="p-6 space-y-6">
                         <div className="space-y-4">
-                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-info-circle"></i> Core Details</p>
+                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-info-circle"></i> {t('Core Details')}</p>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="lg:col-span-2">
-                                    <label className={labelClass}>Operation Name</label>
-                                    <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className={inputClass} placeholder="Operation name..." />
+                                    <label className={labelClass}>{t('Operation Name')}</label>
+                                    <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className={inputClass} placeholder={t('Operation name...')} />
                                 </div>
                                 <div className="lg:col-span-2">
-                                    <label className={labelClass}>Description / Briefing</label>
-                                    <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={4} className={`${inputClass} resize-none`} placeholder="Mission briefing..." />
+                                    <label className={labelClass}>{t('Description / Briefing')}</label>
+                                    <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={4} className={`${inputClass} resize-none`} placeholder={t('Mission briefing...')} />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Operation Type</label>
+                                    <label className={labelClass}>{t('Operation Type')}</label>
                                     <select value={editType} onChange={e => setEditType(e.target.value as OperationType)} className={inputClass}>
-                                        {Object.values(OperationType).map(t => <option key={t} value={t}>{t}</option>)}
+                                        {Object.values(OperationType).map(ot => <option key={ot} value={ot}>{t(ot)}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Status</label>
+                                    <label className={labelClass}>{t('Status')}</label>
                                     <select value={editStatus} onChange={e => setEditStatus(e.target.value as OperationStatus)} className={inputClass}>
-                                        {Object.values(OperationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                        {Object.values(OperationStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Max Participants</label>
-                                    <input type="number" value={editMaxParticipants} onChange={e => setEditMaxParticipants(e.target.value ? parseInt(e.target.value) : '')} placeholder="Unlimited" className={inputClass} />
+                                    <label className={labelClass}>{t('Max Participants')}</label>
+                                    <input type="number" value={editMaxParticipants} onChange={e => setEditMaxParticipants(e.target.value ? parseInt(e.target.value) : '')} placeholder={t('Unlimited')} className={inputClass} />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Host Unit</label>
+                                    <label className={labelClass}>{t('Host Unit')}</label>
                                     <select value={editUnitId} onChange={e => setEditUnitId(e.target.value)} className={inputClass}>
-                                        <option value="">No unit</option>
+                                        <option value="">{t('No unit')}</option>
                                         {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Location / AO</label>
+                                    <label className={labelClass}>{t('Location / AO')}</label>
                                     <select value={editLocationId} onChange={e => setEditLocationId(e.target.value)} className={inputClass}>
-                                        <option value="">No location</option>
+                                        <option value="">{t('No location')}</option>
                                         {locations.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}
                                     </select>
                                 </div>
@@ -332,26 +334,26 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                         </div>
 
                         <div className="border-t border-slate-700/30 pt-5 space-y-4">
-                            <p className="text-[10px] text-amber-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-clock"></i> Schedule</p>
+                            <p className="text-[10px] text-amber-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-clock"></i> {t('Schedule', { context: 'noun' })}</p>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className={labelClass}>Scheduled Start</label>
+                                    <label className={labelClass}>{t('Scheduled Start')}</label>
                                     <input type="datetime-local" value={editScheduledStart} onChange={e => setEditScheduledStart(e.target.value)} className={`${inputClass} scheme-light`} />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Scheduled End</label>
+                                    <label className={labelClass}>{t('Scheduled End')}</label>
                                     <input type="datetime-local" value={editScheduledEnd} onChange={e => setEditScheduledEnd(e.target.value)} className={`${inputClass} scheme-light`} />
                                 </div>
                             </div>
                         </div>
 
                         <div className="border-t border-slate-700/30 pt-5 space-y-4">
-                            <p className="text-[10px] text-purple-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-sliders"></i> Configuration</p>
+                            <p className="text-[10px] text-purple-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-sliders"></i> {t('Configuration')}</p>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <button type="button" onClick={() => setEditIsSpecial(!editIsSpecial)}
                                     className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${editIsSpecial ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-slate-800/30 border-slate-700/30 text-slate-500 hover:border-slate-600'}`}>
                                     <i className="fa-solid fa-lock text-sm"></i>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Classified</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('Classified')}</span>
                                     <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${editIsSpecial ? 'border-red-400 bg-red-400' : 'border-slate-600'}`}>
                                         {editIsSpecial && <i className="fa-solid fa-check text-[7px] text-black"></i>}
                                     </div>
@@ -359,7 +361,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 <button type="button" onClick={() => setEditIsJoint(!editIsJoint)}
                                     className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${editIsJoint ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-slate-800/30 border-slate-700/30 text-slate-500 hover:border-slate-600'}`}>
                                     <i className="fa-solid fa-handshake text-sm"></i>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Joint Operation</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('Joint Operation')}</span>
                                     <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${editIsJoint ? 'border-cyan-400 bg-cyan-400' : 'border-slate-600'}`}>
                                         {editIsJoint && <i className="fa-solid fa-check text-[7px] text-black"></i>}
                                     </div>
@@ -367,7 +369,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 <button type="button" onClick={() => setEditIsTraining(!editIsTraining)}
                                     className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${editIsTraining ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-slate-800/30 border-slate-700/30 text-slate-500 hover:border-slate-600'}`}>
                                     <i className="fa-solid fa-graduation-cap text-sm"></i>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Training Exercise</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('Training Exercise')}</span>
                                     <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${editIsTraining ? 'border-amber-400 bg-amber-400' : 'border-slate-600'}`}>
                                         {editIsTraining && <i className="fa-solid fa-check text-[7px] text-black"></i>}
                                     </div>
@@ -375,7 +377,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 <button type="button" onClick={() => setEditTracksUec(!editTracksUec)}
                                     className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${editTracksUec ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-slate-800/30 border-slate-700/30 text-slate-500 hover:border-slate-600'}`}>
                                     <i className="fa-solid fa-coins text-sm"></i>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Track UEC</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('Track UEC')}</span>
                                     <div className={`ml-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${editTracksUec ? 'border-green-400 bg-green-400' : 'border-slate-600'}`}>
                                         {editTracksUec && <i className="fa-solid fa-check text-[7px] text-black"></i>}
                                     </div>
@@ -383,26 +385,26 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                             </div>
                             {editIsSpecial && (
                                 <div>
-                                    <label className={labelClass}>Join Code / PIN</label>
-                                    <input type="text" value={editJoinCode} onChange={e => setEditJoinCode(e.target.value)} placeholder="Enter access code..."
+                                    <label className={labelClass}>{t('Join Code / PIN')}</label>
+                                    <input type="text" value={editJoinCode} onChange={e => setEditJoinCode(e.target.value)} placeholder={t('Enter access code...')}
                                         className={`${inputClass} max-w-xs font-mono tracking-widest`} />
                                 </div>
                             )}
                         </div>
 
                         <div className="border-t border-slate-700/30 pt-5 space-y-4">
-                            <p className="text-[10px] text-red-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-shield-halved"></i> Security Classification</p>
+                            <p className="text-[10px] text-red-400/70 uppercase font-black tracking-widest flex items-center gap-2"><i className="fa-solid fa-shield-halved"></i> {t('Security Classification')}</p>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className={labelClass}>Clearance Level</label>
+                                    <label className={labelClass}>{t('Clearance Level')}</label>
                                     <select value={editClearanceLevel} onChange={e => setEditClearanceLevel(e.target.value)} className={inputClass}>
                                         {securityClearances.map(c => (
-                                            <option key={c.id} value={c.level}>Level {c.level} - {c.name}</option>
+                                            <option key={c.id} value={c.level}>{t('Level {level}', { level: c.level })} - {c.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Limiting Markers</label>
+                                    <label className={labelClass}>{t('Limiting Markers')}</label>
                                     <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1 custom-scrollbar bg-black/20 border border-slate-700/50 rounded-lg p-2.5">
                                         {limitingMarkers.length > 0 ? limitingMarkers.map(m => (
                                             <label key={m.id} className="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer hover:text-white">
@@ -415,17 +417,17 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                                     className="rounded-sm bg-slate-800 border-slate-600 text-purple-500 focus:ring-0 h-3.5 w-3.5" />
                                                 <span>{m.code || m.name}</span>
                                             </label>
-                                        )) : <span className="text-xs text-slate-600 italic">No markers configured.</span>}
+                                        )) : <span className="text-xs text-slate-600 italic">{t('No markers configured.')}</span>}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex gap-3 justify-end pt-3 border-t border-slate-700/30">
-                            <button onClick={() => setIsEditing(false)} className="px-5 py-2.5 text-xs font-bold uppercase text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">Cancel</button>
+                            <button onClick={() => setIsEditing(false)} className="px-5 py-2.5 text-xs font-bold uppercase text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">{t('Cancel')}</button>
                             <button onClick={handleSave} disabled={saving || !editName.trim()}
                                 className="px-6 py-2.5 bg-purple-600/10 text-purple-300 border border-purple-600/30 hover:bg-purple-600/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50">
-                                {saving ? <><i className="fa-solid fa-spinner animate-spin mr-2"></i>Saving...</> : 'Save Changes'}
+                                {saving ? <><i className="fa-solid fa-spinner animate-spin mr-2"></i>{t('Saving...')}</> : t('Save Changes')}
                             </button>
                         </div>
                     </div>
@@ -435,36 +437,36 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                     <div className={cardClass}>
                         <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
                             <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                <i className="fa-solid fa-info-circle text-purple-400/70"></i> Operation Details
+                                <i className="fa-solid fa-info-circle text-purple-400/70"></i> {t('Operation Details')}
                             </p>
                         </div>
                         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-4">
-                            <InfoItem label="Name" value={operation.name} />
-                            <InfoItem label="Type" value={operation.type} />
-                            <InfoItem label="Status" value={operation.status} />
-                            <InfoItem label="Host Unit" value={operation.unit?.name || 'None'} />
-                            <InfoItem label="Location" value={operation.locationText || operation.location?.name || 'None'} />
-                            <InfoItem label="Max Participants" value={operation.maxParticipants ? String(operation.maxParticipants) : 'Unlimited'} />
-                            <InfoItem label="Scheduled Start" value={operation.scheduledStart ? formatOpDateTimeWithZone(operation.scheduledStart) : 'Not set'} />
-                            <InfoItem label="Scheduled End" value={operation.scheduledEnd ? formatOpDateTimeWithZone(operation.scheduledEnd) : 'Not set'} />
-                            <InfoItem label="Clearance Level" value={securityClearances.find(c => c.level === (operation.clearanceLevel || 0))?.name || `Level ${operation.clearanceLevel || 0}`} />
+                            <InfoItem label={t('Name')} value={operation.name} />
+                            <InfoItem label={t('Type')} value={t(operation.type)} />
+                            <InfoItem label={t('Status')} value={t(operation.status)} />
+                            <InfoItem label={t('Host Unit')} value={operation.unit?.name || t('None')} />
+                            <InfoItem label={t('Location')} value={operation.locationText || operation.location?.name || t('None')} />
+                            <InfoItem label={t('Max Participants')} value={operation.maxParticipants ? String(operation.maxParticipants) : t('Unlimited')} />
+                            <InfoItem label={t('Scheduled Start')} value={operation.scheduledStart ? formatOpDateTimeWithZone(operation.scheduledStart) : t('Not set')} />
+                            <InfoItem label={t('Scheduled End')} value={operation.scheduledEnd ? formatOpDateTimeWithZone(operation.scheduledEnd) : t('Not set')} />
+                            <InfoItem label={t('Clearance Level')} value={securityClearances.find(c => c.level === (operation.clearanceLevel || 0))?.name || t('Level {level}', { level: operation.clearanceLevel || 0 })} />
                         </div>
                     </div>
 
                     <div className={cardClass}>
                         <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
                             <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                <i className="fa-solid fa-sliders text-purple-400/70"></i> Configuration Flags
+                                <i className="fa-solid fa-sliders text-purple-400/70"></i> {t('Configuration Flags')}
                             </p>
                         </div>
                         <div className="p-5 flex flex-wrap gap-3">
-                            <FlagChip label="Classified" active={operation.isSpecial} color="red" icon="fa-solid fa-lock" />
-                            <FlagChip label="Joint Operation" active={operation.isJoint} color="cyan" icon="fa-solid fa-handshake" />
-                            <FlagChip label="Training" active={operation.isTraining} color="amber" icon="fa-solid fa-graduation-cap" />
-                            <FlagChip label="Tracks UEC" active={operation.tracksUec} color="green" icon="fa-solid fa-coins" />
+                            <FlagChip label={t('Classified')} active={operation.isSpecial} color="red" icon="fa-solid fa-lock" />
+                            <FlagChip label={t('Joint Operation')} active={operation.isJoint} color="cyan" icon="fa-solid fa-handshake" />
+                            <FlagChip label={t('Training')} active={operation.isTraining} color="amber" icon="fa-solid fa-graduation-cap" />
+                            <FlagChip label={t('Tracks UEC')} active={operation.tracksUec} color="green" icon="fa-solid fa-coins" />
                             {operation.isSpecial && operation.joinCode && (
                                 <span className="text-[10px] font-mono text-slate-500 bg-slate-800/50 border border-slate-700/30 px-3 py-1.5 rounded-lg">
-                                    PIN: <span className="text-white">{operation.joinCode}</span>
+                                    {t('PIN:')} <span className="text-white">{operation.joinCode}</span>
                                 </span>
                             )}
                         </div>
@@ -474,7 +476,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                         <div className={cardClass}>
                             <div className="px-5 py-3 bg-cyan-950/20 border-b border-cyan-500/10 flex items-center justify-between">
                                 <p className="text-[10px] text-cyan-400/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                                    <i className="fa-solid fa-handshake"></i> Allied Organizations
+                                    <i className="fa-solid fa-handshake"></i> {t('Allied Organizations')}
                                 </p>
                             </div>
                             <div className="p-5 space-y-3">
@@ -483,9 +485,9 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                         <div className="flex items-center gap-3">
                                             {ally.peerIconUrl && <img src={ally.peerIconUrl} className="w-8 h-8 rounded-sm" alt="" />}
                                             <div>
-                                                <span className="text-sm font-bold text-white">{ally.peerOrgName || ally.label || 'Allied Org'}</span>
+                                                <span className="text-sm font-bold text-white">{ally.peerOrgName || ally.label || t('Allied Org')}</span>
                                                 <span className={`ml-2 text-[9px] font-black uppercase ${ally.accepted ? 'text-green-400' : 'text-amber-400'}`}>
-                                                    {ally.accepted ? 'Confirmed' : 'Pending'}
+                                                    {ally.accepted ? t('Confirmed') : t('Pending')}
                                                 </span>
                                             </div>
                                         </div>
@@ -496,18 +498,18 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                     </div>
                                 ))}
                                 {(operation.alliedOrgs || []).length === 0 && (
-                                    <p className="text-xs text-slate-600 italic">No allied organizations invited.</p>
+                                    <p className="text-xs text-slate-600 italic">{t('No allied organizations invited.')}</p>
                                 )}
                                 <div className="flex gap-2 pt-2">
                                     <select value={invitePeerId} onChange={e => setInvitePeerId(e.target.value)}
                                         className="flex-1 bg-black/20 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-xs outline-hidden focus:border-cyan-500/50">
-                                        <option value="">Select an ally…</option>
+                                        <option value="">{t('Select an ally…')}</option>
                                         {eligiblePeers.filter(p => !(operation.alliedOrgs || []).some(a => a.peerId === p.id))
                                             .map(p => <option key={p.id} value={p.id}>{p.peerOrgName || p.label}</option>)}
                                     </select>
                                     <button onClick={handleInviteAlly} disabled={invitingAlly || !invitePeerId}
                                         className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold uppercase tracking-wider hover:bg-cyan-500/20 transition-colors disabled:opacity-50">
-                                        {invitingAlly ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-plus"></i> Invite</>}
+                                        {invitingAlly ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-plus"></i> {t('Invite')}</>}
                                     </button>
                                 </div>
                             </div>
@@ -520,7 +522,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                 <div className={cardClass}>
                     <div className="px-5 py-3 bg-slate-800/40 border-b border-slate-700/30">
                         <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                            <i className="fa-solid fa-rocket text-purple-400/70"></i> Mission Control
+                            <i className="fa-solid fa-rocket text-purple-400/70"></i> {t('Mission Control')}
                         </p>
                     </div>
                     <div className="p-5 flex flex-wrap gap-3">
@@ -529,7 +531,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 disabled={!!loadingAction}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50">
                                 {loadingAction === 'launch' ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rocket"></i>}
-                                Launch Mission
+                                {t('Launch Mission')}
                             </button>
                         )}
                         {operation.status === OperationStatus.Active && (
@@ -537,7 +539,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 disabled={!!loadingAction}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all disabled:opacity-50">
                                 {loadingAction === 'end' ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-flag-checkered"></i>}
-                                End Mission
+                                {t('End Mission')}
                             </button>
                         )}
                         {operation.status === OperationStatus.Concluded && (
@@ -545,7 +547,7 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 disabled={!!loadingAction}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all disabled:opacity-50">
                                 {loadingAction === 'reactivate' ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-rotate-right"></i>}
-                                Reactivate
+                                {t('Reactivate')}
                             </button>
                         )}
                     </div>
@@ -556,18 +558,18 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                 <div className="bg-purple-950/10 rounded-xl border border-purple-500/15 overflow-hidden">
                     <div className="px-5 py-3 bg-purple-950/20 border-b border-purple-500/10">
                         <p className="text-[10px] text-purple-300/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                            <i className="fa-solid fa-clipboard-list"></i> Templates
+                            <i className="fa-solid fa-clipboard-list"></i> {t('Templates')}
                         </p>
                     </div>
                     <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
                         <div className="max-w-xl">
                             <p className="text-xs text-slate-400">
-                                Save this operation's phase / task / milestone structure as a reusable template. Participants, allies, command nodes, board, and logs are not included.
+                                {t("Save this operation's phase / task / milestone structure as a reusable template. Participants, allies, command nodes, board, and logs are not included.")}
                             </p>
                             {sourceTemplate && (
                                 <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5">
                                     <i className="fa-solid fa-bookmark text-purple-400/70"></i>
-                                    Created from template: <span className="text-purple-300 font-bold">{sourceTemplate.name}</span>
+                                    {t('Created from template:')} <span className="text-purple-300 font-bold">{sourceTemplate.name}</span>
                                 </p>
                             )}
                         </div>
@@ -577,8 +579,8 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                             className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {savingTemplate
-                                ? <><i className="fa-solid fa-spinner animate-spin"></i> Saving...</>
-                                : <><i className="fa-solid fa-bookmark"></i> Save as Template</>}
+                                ? <><i className="fa-solid fa-spinner animate-spin"></i> {t('Saving...')}</>
+                                : <><i className="fa-solid fa-bookmark"></i> {t('Save as Template')}</>}
                         </button>
                     </div>
                 </div>
@@ -588,23 +590,23 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                 <div className="bg-indigo-950/10 rounded-xl border border-indigo-500/15 overflow-hidden">
                     <div className="px-5 py-3 bg-indigo-950/20 border-b border-indigo-500/10">
                         <p className="text-[10px] text-indigo-300/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                            <i className="fa-brands fa-discord"></i> Discord Announcement
+                            <i className="fa-brands fa-discord"></i> {t('Discord Announcement')}
                         </p>
                     </div>
                     <div className="p-5 flex flex-col gap-3">
                         <p className="text-xs text-slate-400 max-w-2xl">
-                            Posts a rich embed (with ✅ ❌ ❓ reactions) of this operation to a Discord channel. If a message already exists for this channel, it's edited in place — reactions are preserved. Switching channels deletes the old message and posts fresh.
+                            {t("Posts a rich embed (with ✅ ❌ ❓ reactions) of this operation to a Discord channel. If a message already exists for this channel, it's edited in place — reactions are preserved. Switching channels deletes the old message and posts fresh.")}
                         </p>
                         <div className="flex flex-wrap items-end gap-3">
                             <div className="flex-1 min-w-[260px]">
                                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                                    <label className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Channel</label>
+                                    <label className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{t('Channel')}</label>
                                     <button
                                         type="button"
                                         onClick={() => loadDiscordChannels(true)}
                                         disabled={discordChannelsLoading}
                                         className="text-[10px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40"
-                                        title="Refresh channel list"
+                                        title={t('Refresh channel list')}
                                     >
                                         <i className={`fa-solid fa-rotate ${discordChannelsLoading ? 'fa-spin' : ''}`}></i>
                                     </button>
@@ -625,17 +627,17 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                         {pickerChannelId && !discordChannels.some(c => c.id === pickerChannelId) && (
                                             <option value={pickerChannelId}>{pickerChannelId}</option>
                                         )}
-                                        {!pickerChannelId && <option value="">{discordChannelsLoading ? 'Loading channels…' : 'Select a channel…'}</option>}
+                                        {!pickerChannelId && <option value="">{discordChannelsLoading ? t('Loading channels…') : t('Select a channel…')}</option>}
                                         {discordChannels.map(c => (
                                             <option key={c.id} value={c.id}>{c.type === 5 ? '📢 ' : '# '}{c.name}</option>
                                         ))}
                                     </select>
                                 )}
                                 {operation.discordAnnouncementMessageId && operation.discordAnnouncementChannelId === pickerChannelId && (
-                                    <p className="text-[10px] text-slate-500 italic mt-1">Same channel as the existing announcement — clicking will edit it in place.</p>
+                                    <p className="text-[10px] text-slate-500 italic mt-1">{t('Same channel as the existing announcement — clicking will edit it in place.')}</p>
                                 )}
                                 {operation.discordAnnouncementMessageId && operation.discordAnnouncementChannelId !== pickerChannelId && (
-                                    <p className="text-[10px] text-amber-400 italic mt-1">Channel changed — the old message will be deleted and a fresh embed posted.</p>
+                                    <p className="text-[10px] text-amber-400 italic mt-1">{t('Channel changed — the old message will be deleted and a fresh embed posted.')}</p>
                                 )}
                             </div>
                             <button
@@ -644,10 +646,10 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {reposting
-                                    ? <><i className="fa-solid fa-spinner animate-spin"></i> Posting…</>
+                                    ? <><i className="fa-solid fa-spinner animate-spin"></i> {t('Posting…')}</>
                                     : operation.discordAnnouncementMessageId
-                                        ? <><i className="fa-solid fa-rotate"></i> Repost Announcement</>
-                                        : <><i className="fa-brands fa-discord"></i> Post to Discord</>}
+                                        ? <><i className="fa-solid fa-rotate"></i> {t('Repost Announcement')}</>
+                                        : <><i className="fa-brands fa-discord"></i> {t('Post to Discord')}</>}
                             </button>
                         </div>
                     </div>
@@ -657,16 +659,16 @@ const OpAdministerTab: React.FC<OpAdministerTabProps> = ({ operation, canManage,
             <div className="bg-red-950/10 rounded-xl border border-red-500/15 overflow-hidden">
                 <div className="px-5 py-3 bg-red-950/20 border-b border-red-500/10">
                     <p className="text-[10px] text-red-400/80 uppercase font-black tracking-[0.15em] flex items-center gap-2">
-                        <i className="fa-solid fa-triangle-exclamation"></i> Danger Zone
+                        <i className="fa-solid fa-triangle-exclamation"></i> {t('Danger Zone')}
                     </p>
                 </div>
                 <div className="p-5 flex flex-wrap gap-3">
                     <button onClick={onDeleteOperation} disabled={isDeleting}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none">
                         {isDeleting ? (
-                            <><i className="fa-solid fa-spinner animate-spin"></i> Deleting Operation...</>
+                            <><i className="fa-solid fa-spinner animate-spin"></i> {t('Deleting Operation...')}</>
                         ) : (
-                            <><i className="fa-solid fa-trash-can"></i> Delete Operation</>
+                            <><i className="fa-solid fa-trash-can"></i> {t('Delete Operation')}</>
                         )}
                     </button>
                 </div>
