@@ -3,6 +3,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useFormatDate } from '../../../contexts/AuthContext';
 import type { WarehouseMovement, WarehouseMovementReason } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const REASON_LABEL: Record<WarehouseMovementReason, string> = {
     initial: 'Initial',
@@ -41,6 +42,7 @@ interface Props {
 export default function WhMovementsTab({ movements, isLoading, onRefresh }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const fmt = useFormatDate();
     const [reasonFilter, setReasonFilter] = useState<'all' | WarehouseMovementReason>('all');
     const [stockFilter, setStockFilter] = useState<'all' | number>('all');
@@ -52,11 +54,11 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
         for (const m of movements) {
             if (!m.stock || seen.has(m.stock.id)) continue;
             const cat = m.stock.catalog;
-            const label = `${cat?.name || 'Stock'}${cat?.qualityLabel ? ` · ${cat.qualityLabel}` : ''} @ ${m.stock.location?.name || '?'}`;
+            const label = `${cat?.name || t('Stock')}${cat?.qualityLabel ? ` · ${cat.qualityLabel}` : ''} @ ${m.stock.location?.name || '?'}`;
             seen.set(m.stock.id, { id: m.stock.id, label });
         }
         return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
-    }, [movements]);
+    }, [movements, t]);
 
     const filtered = useMemo(() => {
         return movements.filter((m) => {
@@ -79,7 +81,7 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
             link.remove();
             URL.revokeObjectURL(url);
         } catch (err: any) {
-            addToast('Export failed', <i className="fa-solid fa-xmark" />,
+            addToast(t('Export failed'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         }
     };
@@ -89,15 +91,15 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
             <div className="flex flex-wrap items-center gap-2">
                 <select value={reasonFilter} onChange={(e) => setReasonFilter(e.target.value as any)}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300">
-                    <option value="all">All reasons</option>
+                    <option value="all">{t('All reasons')}</option>
                     {(Object.keys(REASON_LABEL) as WarehouseMovementReason[]).map((r) => (
-                        <option key={r} value={r}>{REASON_LABEL[r]}</option>
+                        <option key={r} value={r}>{t(REASON_LABEL[r])}</option>
                     ))}
                 </select>
 
                 <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300">
-                    <option value="all">All stock</option>
+                    <option value="all">{t('All stock')}</option>
                     {stockOptions.map((o) => (
                         <option key={o.id} value={o.id}>{o.label}</option>
                     ))}
@@ -106,34 +108,34 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
                 <div className="flex-1" />
                 <button onClick={onRefresh}
                     className="inline-flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-200 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition">
-                    <i className="fa-solid fa-arrows-rotate" /> Refresh
+                    <i className="fa-solid fa-arrows-rotate" /> {t('Refresh')}
                 </button>
                 <button onClick={exportCsv}
                     className="inline-flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-cyan-500/40 text-slate-300 hover:text-cyan-200 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition">
-                    <i className="fa-solid fa-file-csv" /> Export CSV
+                    <i className="fa-solid fa-file-csv" /> {t('Export CSV')}
                 </button>
             </div>
 
             {isLoading ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    <i className="fa-solid fa-spinner fa-spin mr-2" />Loading movements…
+                    <i className="fa-solid fa-spinner fa-spin mr-2" />{t('Loading movements…')}
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    No movements match the current filters.
+                    {t('No movements match the current filters.')}
                 </div>
             ) : (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 overflow-hidden">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-white/5 text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                                <th className="text-left px-4 py-2">When</th>
-                                <th className="text-left px-4 py-2">Commodity</th>
-                                <th className="text-left px-4 py-2">Reason</th>
-                                <th className="text-right px-4 py-2">Delta</th>
-                                <th className="text-left px-4 py-2">Actor</th>
-                                <th className="text-left px-4 py-2">Source</th>
-                                <th className="text-left px-4 py-2">Notes</th>
+                                <th className="text-left px-4 py-2">{t('When')}</th>
+                                <th className="text-left px-4 py-2">{t('Commodity')}</th>
+                                <th className="text-left px-4 py-2">{t('Reason')}</th>
+                                <th className="text-right px-4 py-2">{t('Delta')}</th>
+                                <th className="text-left px-4 py-2">{t('Actor')}</th>
+                                <th className="text-left px-4 py-2">{t('Source')}</th>
+                                <th className="text-left px-4 py-2">{t('Notes')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -146,12 +148,12 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
                                             {fmt(m.createdAt)}
                                         </td>
                                         <td className="px-4 py-2 text-xs">
-                                            <span className="text-white">{cat?.name || 'Stock'}</span>
+                                            <span className="text-white">{cat?.name || t('Stock')}</span>
                                             {cat?.qualityLabel && <span className="text-slate-500 font-mono"> · {cat.qualityLabel}</span>}
                                             {s?.location?.name && <span className="text-slate-500"> @ {s.location.name}</span>}
                                         </td>
                                         <td className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest ${REASON_TONE[m.reason]}`}>
-                                            {REASON_LABEL[m.reason]}
+                                            {t(REASON_LABEL[m.reason])}
                                         </td>
                                         <td className={`px-4 py-2 text-right font-mono font-bold ${m.delta > 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                                             {m.delta > 0 ? `+${m.delta}` : m.delta}
@@ -162,7 +164,7 @@ export default function WhMovementsTab({ movements, isLoading, onRefresh }: Prop
                                         <td className="px-4 py-2 text-[11px]">
                                             {m.relatedRequestId ? (
                                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-amber-300 bg-amber-500/10 border border-amber-500/30 font-mono uppercase tracking-widest">
-                                                    <i className="fa-solid fa-file-pen text-[9px]" /> Request
+                                                    <i className="fa-solid fa-file-pen text-[9px]" /> {t('Request', { context: 'withdrawalSource' })}
                                                 </span>
                                             ) : (
                                                 <span className="text-slate-600">—</span>

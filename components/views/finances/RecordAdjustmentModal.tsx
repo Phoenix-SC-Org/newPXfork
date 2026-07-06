@@ -3,6 +3,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import { useData } from '../../../contexts/DataContext';
 import type { TreasuryAccount } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     accounts: TreasuryAccount[];
@@ -13,6 +14,7 @@ interface Props {
 export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [accountId, setAccountId] = useState<number>(accounts[0]?.id ?? 0);
     const [direction, setDirection] = useState<'credit' | 'debit'>('credit');
     const [amount, setAmount] = useState<string>('');
@@ -32,10 +34,10 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                 amount: signed,
                 reason: reason.trim(),
             });
-            addToast('Adjustment recorded', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Adjustment recorded'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
         } catch (err: any) {
-            addToast('Adjustment failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Adjustment failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -47,19 +49,19 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
         <WindowFrame
             isOpen
             onClose={onClose}
-            title="Record Adjustment"
-            subtitle="Officer direct entry"
+            title={t('Record Adjustment')}
+            subtitle={t('Officer direct entry')}
             icon="fa-solid fa-wrench"
             color="slate"
             width="max-w-md"
         >
             <div className="p-5 space-y-4">
                 <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-sm border border-slate-800 leading-relaxed">
-                    Adjustments apply immediately and bypass the pending queue. Use this to correct balances, seed a new account with an opening value, or book a one-off payout that didn't go through a request.
+                    {t("Adjustments apply immediately and bypass the pending queue. Use this to correct balances, seed a new account with an opening value, or book a one-off payout that didn't go through a request.")}
                 </p>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Account</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Account')}</span>
                     <select
                         value={accountId}
                         onChange={(e) => setAccountId(Number(e.target.value))}
@@ -83,7 +85,7 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                                 : 'bg-slate-900 border-white/10 text-slate-400'
                         }`}
                     >
-                        <i className="fa-solid fa-plus mr-1" /> Credit
+                        <i className="fa-solid fa-plus mr-1" /> {t('Credit')}
                     </button>
                     <button
                         type="button"
@@ -94,12 +96,12 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                                 : 'bg-slate-900 border-white/10 text-slate-400'
                         }`}
                     >
-                        <i className="fa-solid fa-minus mr-1" /> Debit
+                        <i className="fa-solid fa-minus mr-1" /> {t('Debit')}
                     </button>
                 </div>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Amount (aUEC)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Amount (aUEC)')}</span>
                     <input
                         type="number"
                         inputMode="numeric"
@@ -111,7 +113,7 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Reason</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Reason')}</span>
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
@@ -126,14 +128,14 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={submit}
                         disabled={!valid || submitting}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {submitting ? 'Recording…' : 'Record Adjustment'}
+                        {submitting ? t('Recording…') : t('Record Adjustment')}
                     </button>
                 </div>
             </div>

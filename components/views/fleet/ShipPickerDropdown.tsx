@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { UserShip, ShipStatus } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusColor = (status: ShipStatus) => {
     switch (status) {
@@ -27,6 +28,7 @@ interface ShipPickerDropdownProps {
 }
 
 const ShipPickerDropdown: React.FC<ShipPickerDropdownProps> = ({ ships, value, onChange, disabled, label }) => {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const ref = useRef<HTMLDivElement>(null);
@@ -78,10 +80,10 @@ const ShipPickerDropdown: React.FC<ShipPickerDropdownProps> = ({ ships, value, o
                             <img src={selected.ship.imageUrl} alt="" className="w-8 h-5 object-cover rounded-sm shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         )}
                         <span className="text-white truncate flex-1">{selected.customName || selected.ship?.name}</span>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${getStatusColor(selected.status)}`}>{selected.status}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${getStatusColor(selected.status)}`}>{t(selected.status)}</span>
                     </>
                 ) : (
-                    <span className="text-slate-500 flex-1">Select ship…</span>
+                    <span className="text-slate-500 flex-1">{t('Select ship…')}</span>
                 )}
                 <i className={`fa-solid fa-chevron-down text-[10px] text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}></i>
             </button>
@@ -94,7 +96,7 @@ const ShipPickerDropdown: React.FC<ShipPickerDropdownProps> = ({ ships, value, o
                                 type="text"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder="Search ships…"
+                                placeholder={t('Search ships…')}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-hidden focus:border-orange-500/40 focus:ring-1 focus:ring-orange-500/30 transition-all"
                                 autoFocus
                             />
@@ -105,7 +107,7 @@ const ShipPickerDropdown: React.FC<ShipPickerDropdownProps> = ({ ships, value, o
                             onClick={() => handleSelect(null)}
                             className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-b border-white/5"
                         >
-                            <i className="fa-solid fa-ban text-[10px]"></i> None / Clear
+                            <i className="fa-solid fa-ban text-[10px]"></i> {t('None / Clear')}
                         </button>
 
                         {filtered.length > 0 ? filtered.map(us => (
@@ -127,12 +129,12 @@ const ShipPickerDropdown: React.FC<ShipPickerDropdownProps> = ({ ships, value, o
                                 </div>
                                 {value === us.id && <i className="fa-solid fa-check text-orange-300 text-[10px] shrink-0"></i>}
                                 <span className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm border shrink-0 ${getStatusColor(us.status)}`}>
-                                    {us.status}
+                                    {t(us.status)}
                                 </span>
                             </button>
                         )) : (
                             <div className="px-3 py-4 text-center text-slate-500 text-xs italic">
-                                {search ? 'No ships match your search' : 'No ships in hangar'}
+                                {search ? t('No ships match your search') : t('No ships in hangar')}
                             </div>
                         )}
                     </div>

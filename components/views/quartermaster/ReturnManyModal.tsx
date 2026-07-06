@@ -3,6 +3,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import { useData } from '../../../contexts/DataContext';
 import type { QmIssuance, QmUserRef } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type ReturnOutcome = 'returned_on_time' | 'returned_late' | 'returned_damaged';
 
@@ -30,6 +31,7 @@ const OUTCOMES: { key: ReturnOutcome; label: string }[] = [
 export default function ReturnManyModal({ member, issuances, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [defaultOutcome, setDefaultOutcome] = useState<ReturnOutcome>('returned_on_time');
     const [notes, setNotes] = useState('');
@@ -87,17 +89,17 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
             });
             const closed = Number(res?.closed ?? payload.length);
             addToast(
-                `Closed ${closed} ${closed === 1 ? 'issuance' : 'issuances'}`,
+                closed === 1 ? t('Closed {count} issuance', { count: closed }) : t('Closed {count} issuances', { count: closed }),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
             );
             onSubmitted();
         } catch (err: any) {
             addToast(
-                'Return failed — no issuances closed',
+                t('Return failed — no issuances closed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'The batch was rolled back.' },
+                { description: err?.message || t('The batch was rolled back.') },
             );
             setSubmitting(false);
         }
@@ -110,8 +112,10 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
         <WindowFrame
             isOpen
             onClose={onClose}
-            title={`Return from ${member.name}`}
-            subtitle={`${issuances.length} active ${issuances.length === 1 ? 'issuance' : 'issuances'}`}
+            title={t('Return from {name}', { name: member.name })}
+            subtitle={issuances.length === 1
+                ? t('{count} active issuance', { count: issuances.length })
+                : t('{count} active issuances', { count: issuances.length })}
             icon="fa-solid fa-rotate-left"
             color="green"
             width="max-w-xl"
@@ -119,7 +123,7 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
             <div className="p-5 space-y-4">
                 <div>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
-                        Default outcome <span className="text-slate-600">· applies to selected lines</span>
+                        {t('Default outcome')} <span className="text-slate-600">· {t('applies to selected lines')}</span>
                     </span>
                     <div className="mt-1 flex gap-1 bg-slate-900 rounded-lg border border-white/10 p-1 w-fit">
                         {OUTCOMES.map(o => (
@@ -130,7 +134,7 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                                     defaultOutcome === o.key ? 'bg-emerald-500/20 text-emerald-200' : 'text-slate-400 hover:text-slate-200'
                                 }`}
                             >
-                                {o.label}
+                                {t(o.label, { context: 'returnOutcome' })}
                             </button>
                         ))}
                     </div>
@@ -144,10 +148,10 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                             onChange={(e) => selectAll(e.target.checked)}
                             className="accent-emerald-500 w-4 h-4"
                         />
-                        {allSelected ? 'Deselect all' : 'Select all'}
+                        {allSelected ? t('Deselect all') : t('Select all')}
                     </label>
                     <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                        {selectedCount} / {lines.length} selected
+                        {t('{selected} / {total} selected', { selected: selectedCount, total: lines.length })}
                     </span>
                 </div>
 
@@ -155,7 +159,7 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                     {lines.map((line, idx) => {
                         const iss = byId.get(line.issuanceId);
                         if (!iss) return null;
-                        const name = iss.inventory?.catalog?.name || iss.inventory?.customName || `Item #${iss.inventoryId}`;
+                        const name = iss.inventory?.catalog?.name || iss.inventory?.customName || t('Item #{id}', { id: iss.inventoryId });
                         const qty = Math.trunc(Number(line.returnedQty));
                         const invalid = line.selected && (!Number.isFinite(qty) || qty < 0 || qty > iss.quantity);
                         const partial = line.selected && qty < iss.quantity;
@@ -175,10 +179,10 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm text-white truncate font-bold">
                                             {iss.quantity}× {name}
-                                            {iss.isOverdue && <span className="ml-2 text-[9px] font-bold uppercase tracking-widest text-rose-300">Overdue</span>}
+                                            {iss.isOverdue && <span className="ml-2 text-[9px] font-bold uppercase tracking-widest text-rose-300">{t('Overdue')}</span>}
                                         </div>
                                         <div className="text-[10px] text-slate-500 font-mono truncate">
-                                            {iss.inventory?.catalog?.category || 'custom'}
+                                            {iss.inventory?.catalog?.category ? t(iss.inventory.catalog.category, { context: 'qmCategory' }) : t('custom', { context: 'qmSource' })}
                                             {iss.notes && ` · ${iss.notes}`}
                                         </div>
                                     </div>
@@ -193,7 +197,7 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                                         className={`w-14 bg-slate-950 border rounded px-2 py-1 text-sm font-mono text-right disabled:opacity-40 ${
                                             invalid ? 'border-rose-500/60 text-rose-200' : 'border-white/10 text-white'
                                         }`}
-                                        aria-label="Returned quantity"
+                                        aria-label={t('Returned quantity')}
                                     />
                                     <select
                                         value={line.outcome}
@@ -201,12 +205,12 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                                         onChange={(e) => setLine(idx, { outcome: e.target.value as ReturnOutcome })}
                                         className="bg-slate-950 border border-white/10 rounded-sm px-2 py-1 text-[11px] text-slate-200 disabled:opacity-40"
                                     >
-                                        {OUTCOMES.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                                        {OUTCOMES.map(o => <option key={o.key} value={o.key}>{t(o.label, { context: 'returnOutcome' })}</option>)}
                                     </select>
                                 </div>
                                 {partial && (
                                     <div className="text-[10px] text-amber-400 font-mono mt-1 ml-6">
-                                        Partial: {iss.quantity - qty} of {iss.quantity} not returned
+                                        {t('Partial: {missing} of {total} not returned', { missing: iss.quantity - qty, total: iss.quantity })}
                                     </div>
                                 )}
                             </div>
@@ -215,20 +219,20 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                 </div>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Notes (optional)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Notes (optional)')}</span>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={2}
                         maxLength={400}
-                        placeholder="Applied to each returned line"
+                        placeholder={t('Applied to each returned line')}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                     />
                 </label>
 
                 <div className="flex items-center justify-end gap-2 pt-2">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={submit}
@@ -236,8 +240,8 @@ export default function ReturnManyModal({ member, issuances, onClose, onSubmitte
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {submitting
-                            ? 'Closing…'
-                            : selectedCount > 1 ? `Close ${selectedCount}` : 'Close Issuance'}
+                            ? t('Closing…')
+                            : selectedCount > 1 ? t('Close {count}', { count: selectedCount }) : t('Close Issuance')}
                     </button>
                 </div>
             </div>

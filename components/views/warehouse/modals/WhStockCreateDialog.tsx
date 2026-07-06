@@ -4,6 +4,7 @@ import { useWarehouse } from '../../../../contexts/WarehouseContext';
 import WindowFrame from '../../../layout/WindowFrame';
 import CatalogSearchCombobox, { ComboboxItem } from '../../../ui/CatalogSearchCombobox';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
     const { rpcAction } = useData();
     const { warehouseCatalog } = useWarehouse();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [locations, setLocations] = useState<QmLocationOption[]>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
@@ -98,7 +100,7 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
             rpcAction('warehouse:list_locations', {})
                 .then((rows: any[]) => setLocations(Array.isArray(rows) ? rows : []))
                 .catch((err: any) => {
-                    addToast('Could not load locations',
+                    addToast(t('Could not load locations'),
                         <i className="fa-solid fa-xmark" />,
                         'bg-red-500/10 text-red-400 border-red-500/50',
                         { description: err?.message });
@@ -106,15 +108,15 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
                 })
                 .finally(() => setLocationsLoading(false));
         }
-    }, [isOpen, rpcAction, addToast]);
+    }, [isOpen, rpcAction, addToast, t]);
 
     if (!isOpen) return null;
 
     const qtyNum = initialQty.trim() ? parseInt(initialQty, 10) : 0;
     let validationError: string | null = null;
-    if (!selectedCommodity) validationError = 'Pick a commodity.';
-    else if (!locationId) validationError = 'Pick a location.';
-    else if (initialQty.trim() && (!Number.isFinite(qtyNum) || qtyNum < 0)) validationError = 'Initial quantity must be zero or positive.';
+    if (!selectedCommodity) validationError = t('Pick a commodity.');
+    else if (!locationId) validationError = t('Pick a location.');
+    else if (initialQty.trim() && (!Number.isFinite(qtyNum) || qtyNum < 0)) validationError = t('Initial quantity must be zero or positive.');
 
     const handleSubmit = async () => {
         if (validationError || !selectedCommodity) return;
@@ -134,13 +136,13 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
                     notes: 'Initial stock seed',
                 });
             }
-            addToast('Stock created',
+            addToast(t('Stock created'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
             onClose();
         } catch (err: any) {
-            addToast('Could not create stock',
+            addToast(t('Could not create stock'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
@@ -153,8 +155,8 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Place a commodity at a location"
-            subtitle="New Stock Row"
+            title={t('Place a commodity at a location')}
+            subtitle={t('New Stock Row')}
             icon="fa-solid fa-warehouse"
             color="sky"
             width="max-w-lg"
@@ -162,23 +164,23 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Commodity</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Commodity')}</label>
                         <CatalogSearchCombobox
                             rpcName="warehouse:search_catalog"
                             value={selectedCommodity}
                             onChange={setSelectedCommodity}
                             initialScope="both"
                             showScopeToggle
-                            placeholder="Search org and platform commodities…"
-                            helpText="Your org's commodities appear by default; type to also search the platform catalog. Picking a platform commodity adds it to your catalog automatically."
+                            placeholder={t('Search org and platform commodities…')}
+                            helpText={t("Your org's commodities appear by default; type to also search the platform catalog. Picking a platform commodity adds it to your catalog automatically.")}
                             defaultItems={customCatalogDefaults}
-                            defaultItemsLabel="Your org commodities"
+                            defaultItemsLabel={t('Your org commodities')}
                         />
                     </div>
 
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                            Quality label {qualityLocked ? '' : '(optional)'}
+                            {qualityLocked ? t('Quality label') : t('Quality label (optional)')}
                         </label>
                         <input
                             type="text"
@@ -196,35 +198,35 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
                         )}
                         <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-widest">
                             {qualityLocked
-                                ? 'Locked to this commodity’s catalog row — use Edit Commodity on the stock card to change it.'
+                                ? t('Locked to this commodity’s catalog row — use Edit Commodity on the stock card to change it.')
                                 : selectedCommodity
-                                    ? 'Free-text — pick a banding scheme that fits your org.'
-                                    : 'Pick a commodity first to set its quality.'}
+                                    ? t('Free-text — pick a banding scheme that fits your org.')
+                                    : t('Pick a commodity first to set its quality.')}
                         </p>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Location</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Location', { context: 'warehouse' })}</label>
                         <select value={locationId} onChange={(e) => setLocationId(e.target.value ? Number(e.target.value) : '')}
                             disabled={locationsLoading}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden disabled:opacity-50">
-                            <option value="">{locationsLoading ? 'Loading…' : 'Select…'}</option>
+                            <option value="">{locationsLoading ? t('Loading…') : t('Select…')}</option>
                             {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                         </select>
                         {!locationsLoading && locations.length === 0 && (
-                            <p className="text-[11px] text-amber-300 mt-1">No locations exist yet — open the Locations tab to add one.</p>
+                            <p className="text-[11px] text-amber-300 mt-1">{t('No locations exist yet — open the Locations tab to add one.')}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Initial quantity (optional)</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Initial quantity (optional)')}</label>
                         <input type="number" min={0} value={initialQty} onChange={(e) => setInitialQty(e.target.value)} placeholder="0"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base font-mono text-white focus:ring-2 focus:ring-sky-500 outline-hidden" />
-                        <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-widest">Records as an "initial" movement.</p>
+                        <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-widest">{t('Records as an "initial" movement.')}</p>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Notes (optional)</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Notes (optional)')}</label>
                         <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-sky-500 outline-hidden resize-none" />
                     </div>
@@ -239,11 +241,11 @@ export default function WhStockCreateDialog({ isOpen, onClose, onSubmitted }: Pr
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
                     <button onClick={onClose} disabled={submitting}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors disabled:opacity-50">
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button onClick={handleSubmit} disabled={submitting || !!validationError}
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        {submitting ? <><i className="fa-solid fa-spinner fa-spin" />Saving…</> : <><i className="fa-solid fa-plus" />Create</>}
+                        {submitting ? <><i className="fa-solid fa-spinner fa-spin" />{t('Saving…')}</> : <><i className="fa-solid fa-plus" />{t('Create')}</>}
                     </button>
                 </div>
             </div>

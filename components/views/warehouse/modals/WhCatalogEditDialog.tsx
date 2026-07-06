@@ -4,6 +4,7 @@ import { useWarehouse } from '../../../../contexts/WarehouseContext';
 import WindowFrame from '../../../layout/WindowFrame';
 import type { WarehouseCatalogItem, WarehouseCatalogCategory } from '../../../../types';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 const CATEGORIES: { key: WarehouseCatalogCategory; label: string }[] = [
     { key: 'ore',        label: 'Ore' },
@@ -26,6 +27,7 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
     const { rpcAction } = useData();
     const { warehouseCatalog } = useWarehouse();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [name, setName] = useState('');
     const [category, setCategory] = useState<WarehouseCatalogCategory>('ore');
@@ -67,7 +69,7 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
     if (!isOpen || !target) return null;
 
     const trimmedName = name.trim();
-    const validationError = !trimmedName ? 'Name is required.' : null;
+    const validationError = !trimmedName ? t('Name is required.') : null;
 
     const handleSubmit = async () => {
         if (validationError) return;
@@ -86,13 +88,13 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
                     description: description.trim() || null,
                 });
             }
-            addToast(existing ? 'Commodity updated' : 'Commodity added',
+            addToast(existing ? t('Commodity updated') : t('Commodity added'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
             onClose();
         } catch (err: any) {
-            addToast('Save failed',
+            addToast(t('Save failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
@@ -105,24 +107,24 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
         if (!existing) return;
         const archived = !!existing.archivedAt;
         const confirmed = await confirm({
-            title: archived ? 'Restore commodity?' : 'Archive commodity?',
+            title: archived ? t('Restore commodity?') : t('Archive commodity?'),
             message: archived
-                ? 'Restoring brings this commodity back to the active catalog.'
-                : 'Archiving hides this commodity from the catalog and stock-creation pickers. Existing stock rows and movement history are preserved.',
-            confirmText: archived ? 'Restore' : 'Archive',
+                ? t('Restoring brings this commodity back to the active catalog.')
+                : t('Archiving hides this commodity from the catalog and stock-creation pickers. Existing stock rows and movement history are preserved.'),
+            confirmText: archived ? t('Restore') : t('Archive'),
             variant: archived ? 'info' : 'warning',
         });
         if (!confirmed) return;
         setSubmitting(true);
         try {
             await rpcAction('warehouse:archive_catalog_item', { catalogId: existing.id, archive: !archived });
-            addToast(archived ? 'Commodity restored' : 'Commodity archived',
+            addToast(archived ? t('Commodity restored') : t('Commodity archived'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
             onClose();
         } catch (err: any) {
-            addToast('Archive failed',
+            addToast(t('Archive failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
@@ -134,22 +136,22 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
     const handleDelete = async () => {
         if (!existing) return;
         const confirmed = await confirm({
-            title: 'Delete commodity?',
-            message: `Permanently delete "${existing.name}" from the catalog. All stock rows, movement history, and withdrawal requests for this commodity will also be deleted. This cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete commodity?'),
+            message: t('Permanently delete "{name}" from the catalog. All stock rows, movement history, and withdrawal requests for this commodity will also be deleted. This cannot be undone.', { name: existing.name }),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!confirmed) return;
         setSubmitting(true);
         try {
             await rpcAction('warehouse:delete_catalog_item', { catalogId: existing.id });
-            addToast('Commodity deleted',
+            addToast(t('Commodity deleted'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
             onClose();
         } catch (err: any) {
-            addToast('Delete failed',
+            addToast(t('Delete failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
@@ -168,8 +170,8 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={existing ? existing.name : 'Add a commodity to the catalog'}
-            subtitle={existing ? 'Edit Commodity' : 'New Commodity'}
+            title={existing ? existing.name : t('Add a commodity to the catalog')}
+            subtitle={existing ? t('Edit Commodity') : t('New Commodity')}
             icon="fa-solid fa-boxes-stacked"
             color="sky"
             width="max-w-lg"
@@ -177,28 +179,28 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Name</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Name')}</label>
                         <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Iron Ore"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Category</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Category')}</label>
                             <select value={category} onChange={(e) => setCategory(e.target.value as WarehouseCatalogCategory)}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden">
-                                {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                                {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{t(c.label)}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Unit</label>
-                            <input type="text" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="SCU / L / rounds"
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Unit')}</label>
+                            <input type="text" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t('SCU / L / rounds')}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden" />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Quality label (optional)</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Quality label (optional)')}</label>
                         <input type="text" list="wh-quality-suggestions" value={qualityLabel} onChange={(e) => setQualityLabel(e.target.value)} placeholder="500-600"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden" />
                         {qualitySuggestions.length > 0 && (
@@ -206,11 +208,11 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
                                 {qualitySuggestions.map((q) => <option key={q} value={q} />)}
                             </datalist>
                         )}
-                        <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-widest">Free-text — pick a banding scheme that fits your org.</p>
+                        <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-widest">{t('Free-text — pick a banding scheme that fits your org.')}</p>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Description (optional)</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Description (optional)')}</label>
                         <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden resize-none" />
                     </div>
@@ -232,13 +234,13 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
                                         : 'text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30'
                                 }`}>
                                 <i className={`fa-solid ${existing.archivedAt ? 'fa-arrow-rotate-left' : 'fa-box-archive'} mr-1.5`} />
-                                {existing.archivedAt ? 'Restore' : 'Archive'}
+                                {existing.archivedAt ? t('Restore') : t('Archive')}
                             </button>
                             <button onClick={handleDelete} disabled={submitting}
-                                title="Permanently delete this commodity along with all its stock rows and history."
+                                title={t('Permanently delete this commodity along with all its stock rows and history.')}
                                 className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50 text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30">
                                 <i className="fa-solid fa-trash mr-1.5" />
-                                Delete
+                                {t('Delete')}
                             </button>
                         </div>
                     ) : <span />}
@@ -246,11 +248,11 @@ export default function WhCatalogEditDialog({ isOpen, target, onClose, onSubmitt
                     <div className="flex items-center gap-3">
                         <button onClick={onClose} disabled={submitting}
                             className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors disabled:opacity-50">
-                            Cancel
+                            {t('Cancel')}
                         </button>
                         <button onClick={handleSubmit} disabled={submitting || !!validationError}
                             className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                            {submitting ? <><i className="fa-solid fa-spinner fa-spin" />Saving…</> : <><i className="fa-solid fa-check" />{existing ? 'Save' : 'Create'}</>}
+                            {submitting ? <><i className="fa-solid fa-spinner fa-spin" />{t('Saving…')}</> : <><i className="fa-solid fa-check" />{existing ? t('Save') : t('Create')}</>}
                         </button>
                     </div>
                 </div>

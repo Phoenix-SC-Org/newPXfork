@@ -2,6 +2,7 @@ import React from 'react';
 import MetricCard from '../../shared/ui/MetricCard';
 import type { FinancesOverview, TreasuryAccount } from '../../../types';
 import LedgerRow from './LedgerRow';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     overview: FinancesOverview;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, onOpenRequests }: Props) {
+    const { t } = useI18n();
     const activeAccounts = accounts.filter((a) => a.isActive);
     const pendingTotal = overview.pendingDepositsCount + overview.pendingWithdrawalsCount;
     const netFormatted = overview.thirtyDayNet >= 0
@@ -21,33 +23,35 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
         <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
-                    label="Total Balance"
+                    label={t('Total Balance')}
                     value={overview.totalBalance.toLocaleString()}
-                    sub={`${activeAccounts.length} active account${activeAccounts.length === 1 ? '' : 's'} · aUEC`}
+                    sub={activeAccounts.length === 1
+                        ? t('{count} active account · aUEC', { count: activeAccounts.length })
+                        : t('{count} active accounts · aUEC', { count: activeAccounts.length })}
                     icon="fa-coins"
                     accent="amber"
                     emphasize
                 />
                 <MetricCard
-                    label="Pending Deposits"
+                    label={t('Pending Deposits')}
                     value={overview.pendingDepositsCount}
-                    sub={`${overview.pendingDepositsAmount.toLocaleString()} aUEC awaiting confirmation`}
+                    sub={t('{amount} aUEC awaiting confirmation', { amount: overview.pendingDepositsAmount.toLocaleString() })}
                     icon="fa-arrow-down-to-bracket"
                     accent="emerald"
                     onClick={pendingTotal > 0 ? onOpenRequests : undefined}
                 />
                 <MetricCard
-                    label="Pending Withdrawals"
+                    label={t('Pending Withdrawals')}
                     value={overview.pendingWithdrawalsCount}
-                    sub={`${overview.pendingWithdrawalsAmount.toLocaleString()} aUEC requested`}
+                    sub={t('{amount} aUEC requested', { amount: overview.pendingWithdrawalsAmount.toLocaleString() })}
                     icon="fa-arrow-up-from-bracket"
                     accent="rose"
                     onClick={pendingTotal > 0 ? onOpenRequests : undefined}
                 />
                 <MetricCard
-                    label="30-day Net"
+                    label={t('30-day Net')}
                     value={netFormatted}
-                    sub="Confirmed entries only"
+                    sub={t('Confirmed entries only')}
                     icon={overview.thirtyDayNet >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}
                     accent={overview.thirtyDayNet >= 0 ? 'sky' : 'rose'}
                 />
@@ -56,9 +60,9 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
             <div>
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h2 className="text-sm font-bold text-white uppercase tracking-widest">Accounts</h2>
+                        <h2 className="text-sm font-bold text-white uppercase tracking-widest">{t('Accounts')}</h2>
                         <p className="text-[11px] text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                            Live balances
+                            {t('Live balances')}
                         </p>
                     </div>
                 </div>
@@ -68,7 +72,7 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
                             <div className="flex items-start justify-between gap-3 mb-2">
                                 <div className="min-w-0">
                                     <div className="text-[10px] font-mono uppercase tracking-widest text-amber-400">
-                                        {a.type}
+                                        {t(a.type, { context: 'finance' })}
                                     </div>
                                     <div className="text-sm font-bold text-white truncate">{a.name}</div>
                                 </div>
@@ -86,21 +90,21 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
             <div>
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h2 className="text-sm font-bold text-white uppercase tracking-widest">Recent activity</h2>
+                        <h2 className="text-sm font-bold text-white uppercase tracking-widest">{t('Recent activity')}</h2>
                         <p className="text-[11px] text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                            Last 10 entries
+                            {t('Last 10 entries')}
                         </p>
                     </div>
                     <button
                         onClick={onOpenLedger}
                         className="text-[11px] font-bold uppercase tracking-widest text-amber-300 hover:text-amber-200 inline-flex items-center gap-1"
                     >
-                        View full ledger <i className="fa-solid fa-arrow-right text-[10px]" />
+                        {t('View full ledger')} <i className="fa-solid fa-arrow-right text-[10px]" />
                     </button>
                 </div>
                 {overview.recentEntries.length === 0 ? (
                     <div className="rounded-xl border border-white/5 bg-slate-900/30 p-8 text-center text-slate-500 text-sm">
-                        No activity yet. Deposits and withdrawals will appear here.
+                        {t('No activity yet. Deposits and withdrawals will appear here.')}
                     </div>
                 ) : (
                     <div className="space-y-2">

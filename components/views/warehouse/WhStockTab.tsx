@@ -5,6 +5,7 @@ import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import type { WarehouseStock, WarehouseCatalogCategory, QmLocation } from '../../../types';
 import { SkeletonCardGrid } from '../../shared/ui/Skeleton';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CATEGORY_LABEL: Record<WarehouseCatalogCategory, string> = {
     ore: 'Ore',
@@ -40,20 +41,21 @@ interface StockExportRow {
 
 /** Reserved-quantity badge with a breakdown tooltip (requests vs. open contracts). */
 function ReservedBadge({ quantityReserved, fromRequests }: { quantityReserved: number; fromRequests: number }) {
+    const { t } = useI18n();
     const fromContracts = Math.max(0, quantityReserved - fromRequests);
     const tooltip = fromRequests > 0 && fromContracts > 0
-        ? `${fromRequests} from withdrawal requests · ${fromContracts} from open contracts`
+        ? t('{fromRequests} from withdrawal requests · {fromContracts} from open contracts', { fromRequests, fromContracts })
         : fromRequests > 0
-            ? `${fromRequests} from withdrawal requests`
+            ? t('{fromRequests} from withdrawal requests', { fromRequests })
             : fromContracts > 0
-                ? `${fromContracts} from open marketplace contracts`
+                ? t('{fromContracts} from open marketplace contracts', { fromContracts })
                 : undefined;
     return (
         <div title={tooltip}>
             <div className="text-lg font-bold font-mono text-amber-300 cursor-help underline decoration-dotted decoration-amber-500/40 underline-offset-2">
                 {quantityReserved}
             </div>
-            <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Reserved</div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Reserved')}</div>
         </div>
     );
 }
@@ -77,6 +79,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
     const { rpcAction } = useData();
     const { warehouseRequests } = useWarehouse();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<'all' | WarehouseCatalogCategory>('all');
@@ -125,11 +128,11 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
             setHasLoadedOnce(true);
         } catch (err: any) {
             if (seq !== requestSeqRef.current) return;
-            addToast('Failed to load stock', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Failed to load stock'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         } finally {
             if (seq === requestSeqRef.current) setLoading(false);
         }
-    }, [rpcAction, filterPayload, page, addToast]);
+    }, [rpcAction, filterPayload, page, addToast, t]);
 
     const isFirstFilterChangeRef = useRef(true);
     useEffect(() => {
@@ -172,7 +175,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                 if (csvCancelRef.current) break;
                 const page: any = await rpcAction('warehouse:export_csv', { offset, limit: CSV_EXPORT_PAGE_SIZE });
                 if (!page || !Array.isArray(page.rows)) {
-                    throw new Error('Server returned an unexpected response.');
+                    throw new Error(t('Server returned an unexpected response.'));
                 }
                 if (offset === 0) {
                     filename = page.filename || `warehouse-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -184,9 +187,11 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
             }
 
             if (csvCancelRef.current) {
-                addToast('Export cancelled', <i className="fa-solid fa-ban" />,
+                addToast(t('Export cancelled'), <i className="fa-solid fa-ban" />,
                     'bg-amber-500/10 text-amber-400 border-amber-500/50',
-                    { description: `${collected.length} row${collected.length === 1 ? '' : 's'} fetched before cancel.` });
+                    { description: collected.length === 1
+                        ? t('{count} row fetched before cancel.', { count: collected.length })
+                        : t('{count} rows fetched before cancel.', { count: collected.length }) });
                 return;
             }
 
@@ -213,17 +218,19 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            addToast('Stock exported', <i className="fa-solid fa-check" />,
+            addToast(t('Stock exported'), <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                { description: `${collected.length} row${collected.length === 1 ? '' : 's'} written to ${a.download}.` });
+                { description: collected.length === 1
+                    ? t('{count} row written to {filename}.', { count: collected.length, filename: a.download })
+                    : t('{count} rows written to {filename}.', { count: collected.length, filename: a.download }) });
         } catch (err: any) {
-            addToast('Export failed', <i className="fa-solid fa-xmark" />,
+            addToast(t('Export failed'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not export stock.' });
+                { description: err?.message || t('Could not export stock.') });
         } finally {
             setCsvExporting(false);
         }
-    }, [rpcAction, addToast]);
+    }, [rpcAction, addToast, t]);
 
     const handleCancelCsvExport = useCallback(() => {
         csvCancelRef.current = true;
@@ -256,12 +263,12 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
     const grouped = useMemo(() => {
         const groups = new Map<string, { name: string; rows: WarehouseStock[] }>();
         for (const s of visible) {
-            const key = s.location?.name || 'Unspecified Location';
+            const key = s.location?.name || t('Unspecified Location');
             if (!groups.has(key)) groups.set(key, { name: key, rows: [] });
             groups.get(key)!.rows.push(s);
         }
         return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
-    }, [visible]);
+    }, [visible, t]);
 
     const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -277,7 +284,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                                 categoryFilter === cat ? 'bg-cyan-500/20 text-cyan-200' : 'text-slate-400 hover:text-slate-200'
                             }`}
                         >
-                            {cat === 'all' ? 'All' : CATEGORY_LABEL[cat]}
+                            {cat === 'all' ? t('All') : t(CATEGORY_LABEL[cat])}
                         </button>
                     ))}
                 </div>
@@ -287,20 +294,20 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                     onChange={(e) => setLocationFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300"
                 >
-                    <option value="all">All locations</option>
+                    <option value="all">{t('All locations')}</option>
                     {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
 
                 <input
                     type="text"
-                    placeholder="Search…"
+                    placeholder={t('Search…')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500"
                 />
 
                 <div className="flex-1" />
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{totalCount} total · page {page + 1}/{totalPages}</span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('{count} total · page {page}/{totalPages}', { count: totalCount, page: page + 1, totalPages })}</span>
                 <button
                     onClick={csvExporting ? handleCancelCsvExport : handleStartCsvExport}
                     disabled={totalCount === 0 && !csvExporting}
@@ -309,17 +316,17 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                             ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
                             : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-white/10'
                     }`}
-                    title={csvExporting ? 'Cancel CSV export' : 'Export all stock rows to CSV'}
+                    title={csvExporting ? t('Cancel CSV export') : t('Export all stock rows to CSV')}
                 >
                     <i className={`fa-solid ${csvExporting ? 'fa-ban' : 'fa-file-csv'}`} />
-                    {csvExporting ? 'Cancel' : 'Export CSV'}
+                    {csvExporting ? t('Cancel') : t('Export CSV')}
                 </button>
                 {canManage && (
                     <button
                         onClick={onCreateStock}
                         className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition"
                     >
-                        <i className="fa-solid fa-plus" /> Add Stock
+                        <i className="fa-solid fa-plus" /> {t('Add Stock')}
                     </button>
                 )}
             </div>
@@ -329,7 +336,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                     <i className="fa-solid fa-file-csv text-cyan-300 text-xs" />
                     <div className="flex-1">
                         <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest font-black mb-1">
-                            <span>Exporting CSV</span>
+                            <span>{t('Exporting CSV')}</span>
                             <span>{csvProgress.fetched} / {csvProgress.total}</span>
                         </div>
                         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -346,7 +353,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                 <SkeletonCardGrid count={9} accent="cyan" />
             ) : visible.length === 0 ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    {totalCount === 0 ? 'No stock placed yet. Use "Add Stock" to seed your first commodity at a location.' : 'No commodities match the current filters.'}
+                    {totalCount === 0 ? t('No stock placed yet. Use "Add Stock" to seed your first commodity at a location.') : t('No commodities match the current filters.')}
                 </div>
             ) : (
                 <div className={`space-y-6 ${loading ? 'opacity-60 transition-opacity' : ''}`}>
@@ -366,14 +373,14 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                                             <div className="flex-1 p-4 flex flex-col min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-300">
-                                                        {s.catalog?.category ? CATEGORY_LABEL[s.catalog.category] : 'Misc'}
+                                                        {s.catalog?.category ? t(CATEGORY_LABEL[s.catalog.category]) : t('Misc')}
                                                     </span>
                                                     {s.catalog?.qualityLabel && (
                                                         <span className="text-[10px] font-mono text-slate-500">· {s.catalog.qualityLabel}</span>
                                                     )}
                                                 </div>
                                                 <div className="text-sm font-bold text-white truncate mb-2">
-                                                    {s.catalog?.name || 'Unknown commodity'}
+                                                    {s.catalog?.name || t('Unknown commodity')}
                                                 </div>
                                                 <div className="flex items-baseline gap-3 mt-1">
                                                     <div>
@@ -381,7 +388,7 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                                                             {s.quantityOnHand}
                                                         </div>
                                                         <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
-                                                            On hand · {s.catalog?.unit || 'units'}
+                                                            {t('On hand')} · {s.catalog?.unit || t('units')}
                                                         </div>
                                                     </div>
                                                     {reserved && (
@@ -397,37 +404,37 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                                                         <button
                                                             onClick={() => onAdjust(s)}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-cyan-200"
-                                                            title="Adjust stock"
+                                                            title={t('Adjust stock')}
                                                         >
-                                                            <i className="fa-solid fa-sliders mr-1" />Adjust
+                                                            <i className="fa-solid fa-sliders mr-1" />{t('Adjust', { context: 'action' })}
                                                         </button>
                                                     )}
                                                     {canManage && (
                                                         <button
                                                             onClick={() => onTransfer(s)}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-cyan-200"
-                                                            title="Transfer to another location"
+                                                            title={t('Transfer to another location')}
                                                             disabled={s.quantityOnHand === 0}
                                                         >
-                                                            <i className="fa-solid fa-arrow-right-arrow-left mr-1" />Transfer
+                                                            <i className="fa-solid fa-arrow-right-arrow-left mr-1" />{t('Transfer', { context: 'warehouse' })}
                                                         </button>
                                                     )}
                                                     {canAdmin && s.catalog && (
                                                         <button
                                                             onClick={() => onEditCommodity(s)}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-cyan-200"
-                                                            title="Edit commodity — change name, quality, unit, category, or description"
+                                                            title={t('Edit commodity — change name, quality, unit, category, or description')}
                                                         >
-                                                            <i className="fa-solid fa-pen mr-1" />Edit commodity
+                                                            <i className="fa-solid fa-pen mr-1" />{t('Edit commodity')}
                                                         </button>
                                                     )}
                                                     {canManage && (
                                                         <button
                                                             onClick={() => onDelete(s)}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-rose-300"
-                                                            title="Delete this stock row from the location"
+                                                            title={t('Delete this stock row from the location')}
                                                         >
-                                                            <i className="fa-solid fa-trash mr-1" />Delete
+                                                            <i className="fa-solid fa-trash mr-1" />{t('Delete')}
                                                         </button>
                                                     )}
                                                     <div className="flex-1" />
@@ -435,10 +442,10 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                                                         <button
                                                             onClick={() => onRequest(s)}
                                                             disabled={s.quantityOnHand === 0}
-                                                            title={s.quantityOnHand === 0 ? 'No stock available to request' : 'Request a withdrawal'}
+                                                            title={s.quantityOnHand === 0 ? t('No stock available to request') : t('Request a withdrawal')}
                                                             className="text-[10px] font-bold uppercase tracking-widest text-cyan-300 hover:text-cyan-200 disabled:text-slate-600 disabled:hover:text-slate-600 disabled:cursor-not-allowed"
                                                         >
-                                                            Request →
+                                                            {t('Request', { context: 'action' })} →
                                                         </button>
                                                     )}
                                                 </div>
@@ -456,12 +463,12 @@ export default function WhStockTab({ locations, canManage, canRequest, canAdmin,
                 <div className="flex justify-end items-center gap-2 text-xs text-slate-400">
                     <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
                         className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        <i className="fa-solid fa-chevron-left mr-1" /> Prev
+                        <i className="fa-solid fa-chevron-left mr-1" /> {t('Prev')}
                     </button>
-                    <span>Page {page + 1} / {totalPages}</span>
+                    <span>{t('Page {page} / {totalPages}', { page: page + 1, totalPages })}</span>
                     <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}
                         className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        Next <i className="fa-solid fa-chevron-right ml-1" />
+                        {t('Next')} <i className="fa-solid fa-chevron-right ml-1" />
                     </button>
                 </div>
             )}

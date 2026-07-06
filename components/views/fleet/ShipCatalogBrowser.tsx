@@ -5,6 +5,7 @@ import { PlatformShip } from '../../../types';
 import { ShipCard } from './ShipCard';
 import WindowFrame from '../../layout/WindowFrame';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ShipCatalogBrowserProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface ShipCatalogBrowserProps {
 
 const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelect, onClose }) => {
     const { shipCatalog } = useFleet();
+    const { t } = useI18n();
     const [search, setSearch] = useState('');
     const [filterManufacturer, setFilterManufacturer] = useState('');
     const [filterSize, setFilterSize] = useState('');
@@ -63,8 +65,8 @@ const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelec
 
     return (
         <WindowFrame
-            title="Ship Catalog"
-            subtitle="Browse & Select Ships"
+            title={t('Ship Catalog')}
+            subtitle={t('Browse & Select Ships')}
             icon="fa-solid fa-database"
             color="orange"
             width="max-w-5xl"
@@ -78,24 +80,24 @@ const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelec
                             <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                             <input
                                 type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search ships…"
+                                placeholder={t('Search ships…')}
                                 className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-500 font-mono text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/40 transition-all"
                             />
                         </div>
                         <select value={filterManufacturer} onChange={(e) => setFilterManufacturer(e.target.value)} className={selectClass}>
-                            <option value="">All Manufacturers</option>
+                            <option value="">{t('All Manufacturers')}</option>
                             {manufacturers.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                         <select value={filterSize} onChange={(e) => setFilterSize(e.target.value)} className={selectClass}>
-                            <option value="">All Sizes</option>
+                            <option value="">{t('All Sizes')}</option>
                             {sizes.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className={selectClass}>
-                            <option value="">All Roles</option>
+                            <option value="">{t('All Roles')}</option>
                             {roles.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-2 px-1 uppercase tracking-widest font-mono">{filtered.length} ships available · Click to select, then add</p>
+                    <p className="text-[10px] text-slate-500 mt-2 px-1 uppercase tracking-widest font-mono">{t('{count} ships available · Click to select, then add', { count: filtered.length })}</p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -103,8 +105,8 @@ const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelec
                         <EmptyState
                             icon="fa-database"
                             accent="orange"
-                            heading="Ship catalog is empty"
-                            description="An administrator needs to sync the ship catalog from the Star Citizen Wiki."
+                            heading={t('Ship catalog is empty')}
+                            description={t('An administrator needs to sync the ship catalog from the Star Citizen Wiki.')}
                         />
                     ) : (
                         <>
@@ -135,8 +137,8 @@ const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelec
                                     <EmptyState
                                         icon="fa-filter"
                                         accent="orange"
-                                        heading="No ships match your filters"
-                                        description="Try clearing filters or adjusting the search."
+                                        heading={t('No ships match your filters')}
+                                        description={t('Try clearing filters or adjusting the search.')}
                                         compact
                                     />
                                 </div>
@@ -149,23 +151,23 @@ const ShipCatalogBrowser: React.FC<ShipCatalogBrowserProps> = ({ isOpen, onSelec
                     <div className="text-sm text-slate-400">
                         {selectedIds.size > 0 ? (
                             <>
-                                <span className="text-orange-300 font-bold">{selectedIds.size}</span> ship{selectedIds.size !== 1 ? 's' : ''} selected
-                                <button onClick={() => setSelectedIds(new Set())} className="ml-3 text-xs text-slate-500 hover:text-white underline uppercase tracking-widest">Clear</button>
+                                <span className="text-orange-300 font-bold">{selectedIds.size}</span> {selectedIds.size === 1 ? t('ship selected') : t('ships selected')}
+                                <button onClick={() => setSelectedIds(new Set())} className="ml-3 text-xs text-slate-500 hover:text-white underline uppercase tracking-widest">{t('Clear')}</button>
                             </>
                         ) : (
-                            <span className="text-slate-500 text-xs uppercase tracking-widest font-mono">Click ships to select</span>
+                            <span className="text-slate-500 text-xs uppercase tracking-widest font-mono">{t('Click ships to select')}</span>
                         )}
                     </div>
                     <div className="flex gap-3">
                         <button onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-                            Cancel
+                            {t('Cancel')}
                         </button>
                         <button
                             onClick={handleConfirm}
                             disabled={selectedIds.size === 0}
                             className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-orange-600 hover:bg-orange-500 border border-orange-500/40 rounded-lg shadow-lg shadow-orange-900/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <i className="fa-solid fa-plus"></i>Add {selectedIds.size > 0 ? selectedIds.size : ''} Ship{selectedIds.size !== 1 ? 's' : ''}
+                            <i className="fa-solid fa-plus"></i>{selectedIds.size === 0 ? t('Add Ships') : selectedIds.size === 1 ? t('Add {count} Ship', { count: selectedIds.size }) : t('Add {count} Ships', { count: selectedIds.size })}
                         </button>
                     </div>
                 </div>

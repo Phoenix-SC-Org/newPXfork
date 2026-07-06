@@ -3,6 +3,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import { useData } from '../../../contexts/DataContext';
 import type { TreasuryAccount } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     accounts: TreasuryAccount[];
@@ -13,6 +14,7 @@ interface Props {
 export default function SubmitDepositModal({ accounts, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [accountId, setAccountId] = useState<number>(accounts[0]?.id ?? 0);
     const [amount, setAmount] = useState<string>('');
     const [memo, setMemo] = useState<string>('');
@@ -32,14 +34,14 @@ export default function SubmitDepositModal({ accounts, onClose, onSubmitted }: P
                 notes: notes.trim() || undefined,
             });
             addToast(
-                'Deposit submitted',
+                t('Deposit submitted'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
-                { description: 'An officer will confirm it against the org alt account.' },
+                { description: t('An officer will confirm it against the org alt account.') },
             );
             onSubmitted();
         } catch (err: any) {
-            addToast('Submission failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Submission failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -51,19 +53,19 @@ export default function SubmitDepositModal({ accounts, onClose, onSubmitted }: P
         <WindowFrame
             isOpen
             onClose={onClose}
-            title="Submit Deposit"
-            subtitle="Treasury ledger"
+            title={t('Submit Deposit')}
+            subtitle={t('Treasury ledger')}
             icon="fa-solid fa-arrow-down-to-bracket"
             color="green"
             width="max-w-md"
         >
             <div className="p-5 space-y-4">
                 <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-sm border border-slate-800 leading-relaxed">
-                    Transfer your aUEC to the org's bank alt <span className="text-emerald-300 font-mono">in-game first</span>, using the memo below as your transfer reference. An officer will confirm the claim by matching the memo against the alt-account history.
+                    {t("Transfer your aUEC to the org's bank alt")} <span className="text-emerald-300 font-mono">{t('in-game first')}</span>{t(', using the memo below as your transfer reference. An officer will confirm the claim by matching the memo against the alt-account history.')}
                 </p>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Account</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Account')}</span>
                     <select
                         value={accountId}
                         onChange={(e) => setAccountId(Number(e.target.value))}
@@ -74,35 +76,35 @@ export default function SubmitDepositModal({ accounts, onClose, onSubmitted }: P
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Amount (aUEC)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Amount (aUEC)')}</span>
                     <input
                         type="number"
                         inputMode="numeric"
                         min={1}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        placeholder="e.g. 50000"
+                        placeholder={t('e.g. 50000')}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono"
                     />
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Memo / In-game reference</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Memo / In-game reference')}</span>
                     <input
                         type="text"
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
-                        placeholder="e.g. OP-TUESDAY or HANDLE-DEPOSIT"
+                        placeholder={t('e.g. OP-TUESDAY or HANDLE-DEPOSIT')}
                         maxLength={80}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono"
                     />
                     <span className="text-[10px] text-slate-500 mt-1 block">
-                        Use the same reference you put on your in-game transfer so the officer can match it.
+                        {t('Use the same reference you put on your in-game transfer so the officer can match it.')}
                     </span>
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Notes (optional)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Notes (optional)')}</span>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
@@ -117,14 +119,14 @@ export default function SubmitDepositModal({ accounts, onClose, onSubmitted }: P
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={submit}
                         disabled={!valid || submitting}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {submitting ? 'Submitting…' : 'Submit Deposit'}
+                        {submitting ? t('Submitting…') : t('Submit Deposit')}
                     </button>
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import type { QmLocation } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     locations: QmLocation[];
@@ -20,6 +21,7 @@ const TYPE_LABEL: Record<QmLocation['type'], string> = {
 export default function WhLocationsTab({ locations, canManage, onCreate, onRefresh }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const [working, setWorking] = useState<number | null>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editName, setEditName] = useState('');
@@ -53,12 +55,12 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
         setSavingRename(true);
         try {
             await rpcAction('warehouse:update_location', { locationId: loc.id, name: next });
-            addToast('Location renamed', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Location renamed'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             setEditingId(null);
             setEditName('');
             onRefresh();
         } catch (err: any) {
-            addToast('Rename failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Rename failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -68,19 +70,19 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
 
     const deleteLoc = async (loc: QmLocation) => {
         const ok = await confirm({
-            title: `Delete "${loc.name}"?`,
-            message: 'Warehouse stock and movement history at this location will be deleted. Quartermaster inventory rows have their location cleared, and child locations become top-level. Quartermaster (if enabled) shares this location list.',
-            confirmText: 'Delete',
+            title: t('Delete "{name}"?', { name: loc.name }),
+            message: t('Warehouse stock and movement history at this location will be deleted. Quartermaster inventory rows have their location cleared, and child locations become top-level. Quartermaster (if enabled) shares this location list.'),
+            confirmText: t('Delete'),
             variant: 'warning',
         });
         if (!ok) return;
         setWorking(loc.id);
         try {
             await rpcAction('warehouse:delete_location', { locationId: loc.id });
-            addToast('Location deleted', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Location deleted'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onRefresh();
         } catch (err: any) {
-            addToast('Delete failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Delete failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -92,9 +94,9 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-sm font-bold text-white uppercase tracking-widest">Locations</h2>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-widest">{t('Locations', { context: 'warehouse' })}</h2>
                     <p className="text-[11px] text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                        Where commodities sit · shared with Quartermaster
+                        {t('Where commodities sit · shared with Quartermaster')}
                     </p>
                 </div>
                 {canManage && (
@@ -102,14 +104,14 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                         onClick={onCreate}
                         className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold uppercase tracking-widest text-[11px] transition-all"
                     >
-                        <i className="fa-solid fa-plus" /> New Location
+                        <i className="fa-solid fa-plus" /> {t('New Location')}
                     </button>
                 )}
             </div>
 
             {locations.length === 0 ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    No locations yet. Create one to assign stock to.
+                    {t('No locations yet. Create one to assign stock to.')}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -120,7 +122,7 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                                 <div className="flex items-start justify-between gap-3 mb-2">
                                     <div className="min-w-0 flex-1">
                                         <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400">
-                                            {TYPE_LABEL[loc.type]}
+                                            {t(TYPE_LABEL[loc.type])}
                                         </div>
                                         {isEditing ? (
                                             <div className="flex items-center gap-1.5 mt-0.5">
@@ -146,8 +148,8 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                                                     onClick={() => commitRename(loc)}
                                                     disabled={savingRename || editName.trim() === '' || editName.trim() === loc.name}
                                                     className="text-emerald-400 hover:text-emerald-300 disabled:opacity-30 text-xs shrink-0"
-                                                    aria-label="Save rename"
-                                                    title="Save (Enter)"
+                                                    aria-label={t('Save rename')}
+                                                    title={t('Save (Enter)')}
                                                 >
                                                     <i className={`fa-solid ${savingRename ? 'fa-spinner fa-spin' : 'fa-check'}`} />
                                                 </button>
@@ -155,8 +157,8 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                                                     onClick={cancelRename}
                                                     disabled={savingRename}
                                                     className="text-slate-500 hover:text-slate-300 text-xs shrink-0 disabled:opacity-50"
-                                                    aria-label="Cancel rename"
-                                                    title="Cancel (Esc)"
+                                                    aria-label={t('Cancel rename')}
+                                                    title={t('Cancel (Esc)')}
                                                 >
                                                     <i className="fa-solid fa-xmark" />
                                                 </button>
@@ -171,8 +173,8 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                                                 onClick={() => startRename(loc)}
                                                 disabled={working === loc.id || editingId !== null}
                                                 className="text-slate-500 hover:text-cyan-300 text-xs disabled:opacity-50"
-                                                aria-label="Rename"
-                                                title="Rename"
+                                                aria-label={t('Rename')}
+                                                title={t('Rename')}
                                             >
                                                 <i className="fa-solid fa-pen" />
                                             </button>
@@ -180,7 +182,7 @@ export default function WhLocationsTab({ locations, canManage, onCreate, onRefre
                                                 onClick={() => deleteLoc(loc)}
                                                 disabled={working === loc.id || editingId !== null}
                                                 className="text-slate-500 hover:text-rose-400 text-xs disabled:opacity-50"
-                                                aria-label="Delete"
+                                                aria-label={t('Delete')}
                                             >
                                                 <i className="fa-solid fa-trash" />
                                             </button>

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PlatformShip, UserShip, ShipStatus } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusColor = (status: ShipStatus) => {
     switch (status) {
@@ -28,6 +29,7 @@ export const ShipCard: React.FC<{
     onClick?: () => void;
     compact?: boolean;
 }> = React.memo(({ ship, userShip, onClick, compact }) => {
+    const { t } = useI18n();
     if (compact) {
         return (
             <div onClick={onClick} className="flex items-center gap-3 p-2 bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-lg hover:border-orange-500/30 hover:bg-slate-900/80 cursor-pointer transition-all group">
@@ -40,7 +42,7 @@ export const ShipCard: React.FC<{
                 </div>
                 {userShip && (
                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${getStatusColor(userShip.status)}`}>
-                        {userShip.status}
+                        {t(userShip.status)}
                     </span>
                 )}
             </div>
@@ -59,12 +61,12 @@ export const ShipCard: React.FC<{
                 )}
                 {userShip && (
                     <span className={`absolute top-2 right-2 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border backdrop-blur-xs ${getStatusColor(userShip.status)}`}>
-                        {userShip.status}
+                        {t(userShip.status)}
                     </span>
                 )}
                 {userShip?.isPrimary && (
                     <span className="absolute top-2 left-2 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border bg-orange-500/20 text-orange-300 border-orange-500/30 backdrop-blur-xs flex items-center gap-1">
-                        <i className="fa-solid fa-star text-[8px]"></i>Primary
+                        <i className="fa-solid fa-star text-[8px]"></i>{t('Primary')}
                     </span>
                 )}
                 {ship.size && (

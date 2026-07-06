@@ -30,6 +30,7 @@ import ReturnIssuanceModal from './ReturnIssuanceModal';
 import ReturnManyModal from './ReturnManyModal';
 import WriteOffIssuanceModal from './WriteOffIssuanceModal';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface IssueKitTarget {
     seedItem?: QmInventoryItem;
@@ -63,6 +64,7 @@ export default function QuartermasterView() {
     const { allUsers } = useMembers();
     const { hasPermission, currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [tab, setTab] = useState<Tab>('overview');
     const [overview, setOverview] = useState<QmOverview | null>(null);
@@ -91,7 +93,7 @@ export default function QuartermasterView() {
     const canAdmin   = hasPermission('qm:admin');
 
     const visibleTabs = useMemo(
-        () => TABS.filter((t) => !t.permission || hasPermission(t.permission)),
+        () => TABS.filter((td) => !td.permission || hasPermission(td.permission)),
         [hasPermission],
     );
 
@@ -100,8 +102,8 @@ export default function QuartermasterView() {
     // overview + the slices the active tab needs; other slices lazy-load on
     // tab switch.
     const errToast = useCallback((label: string, err: any) => {
-        addToast(`Failed to load ${label}`, <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
-    }, [addToast]);
+        addToast(t('Failed to load {label}', { label: t(label, { context: 'qm data slice' }) }), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+    }, [addToast, t]);
 
     const refreshOverview = useCallback(async () => {
         if (!canView) return;
@@ -282,8 +284,8 @@ export default function QuartermasterView() {
                 <EmptyState
                     icon="fa-lock"
                     accent="orange"
-                    heading="You don't have access to Quartermaster"
-                    description="Ask an admin to grant you the qm:view permission."
+                    heading={t("You don't have access to Quartermaster")}
+                    description={t('Ask an admin to grant you the qm:view permission.')}
                 />
             </div>
         );
@@ -299,28 +301,28 @@ export default function QuartermasterView() {
     return (
         <div className="h-full flex flex-col overflow-hidden bg-slate-950 text-white animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · QUARTERMASTER"
+                chipLabel={t('MODULE · QUARTERMASTER')}
                 chipIcon="fa-warehouse"
                 chipAccent="orange"
-                title="Org Armoury"
-                subtitle="Track physical in-game assets across your locations. Issue kit to members for operations and log returns with outcomes — the movement ledger keeps the stock totals honest."
+                title={t('Org Armoury')}
+                subtitle={t('Track physical in-game assets across your locations. Issue kit to members for operations and log returns with outcomes — the movement ledger keeps the stock totals honest.')}
                 actions={canManage && !firstRun && (
                     <HeroActionButton onClick={() => setCreateInventoryOpen(true)} accent="orange" icon="fa-plus">
-                        Add Stock
+                        {t('Add Stock')}
                     </HeroActionButton>
                 )}
-                tabs={!firstRun ? visibleTabs.map((t) => {
-                    const active = tab === t.key;
-                    const badgeCount = t.key === 'issuances' ? pendingRequestsCount + overdueCount : 0;
+                tabs={!firstRun ? visibleTabs.map((tb) => {
+                    const active = tab === tb.key;
+                    const badgeCount = tb.key === 'issuances' ? pendingRequestsCount + overdueCount : 0;
                     return (
                         <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
+                            key={tb.key}
+                            onClick={() => setTab(tb.key)}
                             className={`px-4 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                                 active ? 'border-orange-400 text-orange-300' : 'border-transparent text-slate-500 hover:text-slate-300'
                             }`}
                         >
-                            <i className={`fa-solid ${t.icon}`} /> {t.label}
+                            <i className={`fa-solid ${tb.icon}`} /> {t(tb.label)}
                             {badgeCount > 0 && (
                                 <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-orange-500/20 text-orange-300 text-[10px] font-bold px-1.5">
                                     {badgeCount}
@@ -359,8 +361,8 @@ export default function QuartermasterView() {
                         <EmptyState
                             icon="fa-warehouse"
                             accent="orange"
-                            heading="Set up your armoury"
-                            description="Start by creating a storage location (e.g. 'Main Hangar'), then add your first stock entry. Catalog items are optional — you can also use free-text custom names."
+                            heading={t('Set up your armoury')}
+                            description={t("Start by creating a storage location (e.g. 'Main Hangar'), then add your first stock entry. Catalog items are optional — you can also use free-text custom names.")}
                         />
                         {canManage && (
                             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -368,7 +370,7 @@ export default function QuartermasterView() {
                                     onClick={() => setCreateLocationOpen(true)}
                                     className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-lg font-bold uppercase tracking-widest text-xs transition-all"
                                 >
-                                    <i className="fa-solid fa-map-location-dot" /> Create first location
+                                    <i className="fa-solid fa-map-location-dot" /> {t('Create first location')}
                                 </button>
                             </div>
                         )}
@@ -404,10 +406,10 @@ export default function QuartermasterView() {
                         onFulfil={async (issuanceId) => {
                             try {
                                 await rpcAction('qm:fulfil_issuance', { issuanceId });
-                                addToast('Issuance fulfilled', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+                                addToast(t('Issuance fulfilled'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
                                 refresh();
                             } catch (err: any) {
-                                addToast('Fulfilment failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+                                addToast(t('Fulfilment failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
                             }
                         }}
                         onReturn={(iss) => setReturnTarget(iss)}

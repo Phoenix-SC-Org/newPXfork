@@ -16,6 +16,7 @@ import SubmitWithdrawalModal from './SubmitWithdrawalModal';
 import RecordAdjustmentModal from './RecordAdjustmentModal';
 import CreateAccountModal from './CreateAccountModal';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type Tab = 'overview' | 'ledger' | 'requests' | 'accounts';
 
@@ -30,6 +31,7 @@ export default function FinancesView() {
     const { rpcAction } = useData();
     const { hasPermission, currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [tab, setTab] = useState<Tab>('overview');
     const [overview, setOverview] = useState<FinancesOverview | null>(null);
@@ -67,13 +69,13 @@ export default function FinancesView() {
             setAccounts(accs || []);
             setEntries(led || []);
         } catch (err: any) {
-            addToast('Failed to load finances', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
-                description: err?.message || 'Check your permissions or reload the page.',
+            addToast(t('Failed to load finances'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+                description: err?.message || t('Check your permissions or reload the page.'),
             });
         } finally {
             setIsLoading(false);
         }
-    }, [rpcAction, canView, addToast]);
+    }, [rpcAction, canView, addToast, t]);
 
     // Imperative refresh for handlers (modal submits, tab refresh, realtime
     // fallback): flips the spinner back on before refetching. Called from event
@@ -184,8 +186,8 @@ export default function FinancesView() {
                 <EmptyState
                     icon="fa-lock"
                     accent="amber"
-                    heading="You don't have access to Finances"
-                    description="Ask an admin to grant you the finance:view permission."
+                    heading={t("You don't have access to Finances")}
+                    description={t('Ask an admin to grant you the finance:view permission.')}
                 />
             </div>
         );
@@ -196,40 +198,40 @@ export default function FinancesView() {
     return (
         <div className="h-full flex flex-col overflow-hidden bg-slate-950 text-white animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · FINANCES"
+                chipLabel={t('MODULE · FINANCES')}
                 chipIcon="fa-vault"
                 chipAccent="amber"
-                title="Org Treasury"
-                subtitle="Track your org's in-game bank alt-account. Deposits are claimed by members, confirmed by officers against the real alt. Every deposit, withdrawal, adjustment and reversal is audited."
+                title={t('Org Treasury')}
+                subtitle={t("Track your org's in-game bank alt-account. Deposits are claimed by members, confirmed by officers against the real alt. Every deposit, withdrawal, adjustment and reversal is audited.")}
                 actions={<>
                     {canManage && accounts.length > 0 && (
                         <HeroActionButton onClick={() => setAdjustmentOpen(true)} accent="slate" icon="fa-wrench">
-                            Adjustment
+                            {t('Adjustment')}
                         </HeroActionButton>
                     )}
                     {canWithdraw && accounts.length > 0 && (
                         <HeroActionButton onClick={() => setWithdrawOpen(true)} accent="rose" icon="fa-minus">
-                            Withdraw
+                            {t('Withdraw', { context: 'finance' })}
                         </HeroActionButton>
                     )}
                     {canDeposit && accounts.length > 0 && (
                         <HeroActionButton onClick={() => setDepositOpen(true)} accent="emerald" icon="fa-plus">
-                            Deposit
+                            {t('Deposit')}
                         </HeroActionButton>
                     )}
                 </>}
-                tabs={!firstRun ? visibleTabs.map((t) => {
-                    const active = tab === t.key;
+                tabs={!firstRun ? visibleTabs.map((tb) => {
+                    const active = tab === tb.key;
                     return (
                         <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
+                            key={tb.key}
+                            onClick={() => setTab(tb.key)}
                             className={`px-4 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                                 active ? 'border-amber-400 text-amber-300' : 'border-transparent text-slate-500 hover:text-slate-300'
                             }`}
                         >
-                            <i className={`fa-solid ${t.icon}`} /> {t.label}
-                            {t.key === 'requests' && overview && (overview.pendingDepositsCount + overview.pendingWithdrawalsCount) > 0 && (
+                            <i className={`fa-solid ${tb.icon}`} /> {t(tb.label, { context: 'finance' })}
+                            {tb.key === 'requests' && overview && (overview.pendingDepositsCount + overview.pendingWithdrawalsCount) > 0 && (
                                 <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold px-1.5">
                                     {overview.pendingDepositsCount + overview.pendingWithdrawalsCount}
                                 </span>
@@ -252,18 +254,18 @@ export default function FinancesView() {
                         <EmptyState
                             icon="fa-vault"
                             accent="amber"
-                            heading="Create your first treasury account"
-                            description="Most orgs use one 'General' account tied to their in-game ORGNAME_BANK alt. You can add reserve or project accounts later."
+                            heading={t('Create your first treasury account')}
+                            description={t("Most orgs use one 'General' account tied to their in-game ORGNAME_BANK alt. You can add reserve or project accounts later.")}
                             action={canManage ? (
                                 <button
                                     onClick={() => setCreateAccountOpen(true)}
                                     className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-5 py-2.5 rounded-lg font-bold uppercase tracking-widest text-xs transition-all"
                                 >
-                                    <i className="fa-solid fa-plus" /> Create Account
+                                    <i className="fa-solid fa-plus" /> {t('Create Account')}
                                 </button>
                             ) : (
                                 <p className="text-xs text-slate-500 font-mono uppercase tracking-widest">
-                                    Ask an admin with finance:manage to create the first account.
+                                    {t('Ask an admin with finance:manage to create the first account.')}
                                 </p>
                             )}
                         />

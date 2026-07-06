@@ -3,6 +3,7 @@ import type { LedgerEntry, TreasuryAccount, LedgerEntryStatus, LedgerEntryType }
 import { ACCENTS, AccentKey } from '../../shared/ui/accents';
 import { useFormatDate } from '../../../contexts/AuthContext';
 import { formatRelativeTime } from '../../../lib/time';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const TYPE_ACCENT: Record<LedgerEntryType, AccentKey> = {
     deposit: 'emerald',
@@ -38,6 +39,7 @@ interface Props {
 
 export default function LedgerRow({ entry, accounts, onApprove, onReject, onReverse, dense }: Props) {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const formatRelative = (iso: string): string => formatRelativeTime(iso, fmt.prefs);
     const accent = TYPE_ACCENT[entry.entryType];
     const a = ACCENTS[accent];
@@ -46,7 +48,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
     const who = entry.counterparty?.name
         || entry.counterpartyText
         || entry.createdBy?.name
-        || 'Unknown';
+        || t('Unknown');
     const magnitude = Math.abs(entry.amount);
     const sign = entry.amount > 0 ? '+' : entry.amount < 0 ? '−' : '';
     const reversed = entry.status === 'reversed';
@@ -61,9 +63,9 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${a.text}`}>{entry.entryType}</span>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${a.text}`}>{t(entry.entryType, { context: 'finance' })}</span>
                             <span className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-sm border ${STATUS_STYLE[entry.status]}`}>
-                                {entry.status}
+                                {t(entry.status, { context: 'finance' })}
                             </span>
                             {account && (
                                 <span className="text-[10px] font-mono text-slate-500 truncate">· {account.name}</span>
@@ -71,7 +73,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                         </div>
                         <div className="text-sm text-white mt-0.5 truncate">
                             <span className="font-bold">{who}</span>
-                            {entry.memo && <span className="text-slate-400"> · memo: <span className="font-mono text-amber-200/80">{entry.memo}</span></span>}
+                            {entry.memo && <span className="text-slate-400"> · {t('memo:')} <span className="font-mono text-amber-200/80">{entry.memo}</span></span>}
                         </div>
                         {entry.notes && <div className="text-[11px] text-slate-500 mt-0.5 truncate">{entry.notes}</div>}
                     </div>
@@ -90,7 +92,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                                     onClick={onApprove}
                                     className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 rounded-sm border border-emerald-500/40 text-[10px] font-bold uppercase tracking-widest"
                                 >
-                                    Confirm
+                                    {t('Confirm')}
                                 </button>
                             )}
                             {onReject && (
@@ -98,7 +100,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                                     onClick={onReject}
                                     className="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 rounded-sm border border-rose-500/40 text-[10px] font-bold uppercase tracking-widest"
                                 >
-                                    Reject
+                                    {t('Reject')}
                                 </button>
                             )}
                             {onReverse && (
@@ -106,7 +108,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                                     onClick={onReverse}
                                     className="px-2.5 py-1.5 bg-slate-700/40 hover:bg-slate-700/60 text-slate-300 rounded-sm border border-slate-600/50 text-[10px] font-bold uppercase tracking-widest"
                                 >
-                                    Reverse
+                                    {t('Reverse')}
                                 </button>
                             )}
                         </div>

@@ -25,6 +25,7 @@ import WhCatalogEditDialog from './modals/WhCatalogEditDialog';
 import WhStockCreateDialog from './modals/WhStockCreateDialog';
 import WhCreateLocationModal from './modals/WhCreateLocationModal';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type Tab = 'stock' | 'movements' | 'withdrawals' | 'catalog' | 'locations';
 
@@ -45,6 +46,7 @@ export default function WarehouseView() {
     const { refreshWarehouse, warehouseCatalog, warehouseStock, warehouseRequests } = useWarehouse();
     const { hasPermission } = useAuth();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [tab, setTab] = useState<Tab>('stock');
     const [overview, setOverview] = useState<WarehouseOverview | null>(null);
@@ -99,12 +101,12 @@ export default function WarehouseView() {
             const rows: WarehouseMovement[] = await rpcAction('warehouse:list_movements', { limit: 200 });
             setMovements(rows || []);
         } catch (err: any) {
-            addToast('Failed to load movements', <i className="fa-solid fa-xmark" />,
+            addToast(t('Failed to load movements'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         } finally {
             setMovementsLoading(false);
         }
-    }, [rpcAction, canView, addToast]);
+    }, [rpcAction, canView, addToast, t]);
 
     // Imperative refresh for event handlers (Refresh button, refreshAll): raise
     // the loading flag then fetch — identical to the previous loadMovements.
@@ -150,33 +152,33 @@ export default function WarehouseView() {
     }, [refreshWarehouse, refreshOverview, loadLocations, loadMovements, tab, bumpStockRefresh]);
 
     const handleDeleteStock = useCallback(async (s: WarehouseStock) => {
-        const itemName = s.catalog?.name || 'commodity';
+        const itemName = s.catalog?.name || t('commodity');
         const quality = s.catalog?.qualityLabel ? ` · ${s.catalog.qualityLabel}` : '';
-        const locName = s.location?.name || 'location';
-        const unit = s.catalog?.unit || 'units';
+        const locName = s.location?.name || t('location');
+        const unit = s.catalog?.unit || t('units');
         const ok = await confirm({
-            title: `Delete ${itemName}${quality} at ${locName}?`,
+            title: t('Delete {itemName}{quality} at {locName}?', { itemName, quality, locName }),
             message: s.quantityOnHand > 0
-                ? `This stock row holds ${s.quantityOnHand} ${unit}. Deleting wipes the row, its full movement history, and any historical withdrawal requests for it. Marketplace contracts that referenced it stay but become unlinked. The commodity remains in your catalog.`
-                : 'Deletes this stock row and its movement history. The commodity remains in your catalog and can be re-added at any location.',
-            confirmText: 'Delete Stock',
+                ? t('This stock row holds {quantity} {unit}. Deleting wipes the row, its full movement history, and any historical withdrawal requests for it. Marketplace contracts that referenced it stay but become unlinked. The commodity remains in your catalog.', { quantity: s.quantityOnHand, unit })
+                : t('Deletes this stock row and its movement history. The commodity remains in your catalog and can be re-added at any location.'),
+            confirmText: t('Delete Stock'),
             variant: 'danger',
         });
         if (!ok) return;
         try {
             await rpcAction('warehouse:delete_stock', { stockId: s.id });
-            addToast('Stock deleted',
+            addToast(t('Stock deleted'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
-                { description: `${itemName}${quality} at ${locName}` });
+                { description: t('{itemName}{quality} at {locName}', { itemName, quality, locName }) });
             await refreshAll();
         } catch (err: any) {
-            addToast('Delete failed',
+            addToast(t('Delete failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
         }
-    }, [confirm, rpcAction, addToast, refreshAll]);
+    }, [confirm, rpcAction, addToast, refreshAll, t]);
 
     if (!canView) {
         return (
@@ -184,8 +186,8 @@ export default function WarehouseView() {
                 <EmptyState
                     icon="fa-lock"
                     accent="cyan"
-                    heading="You don't have access to Warehouse"
-                    description="Ask an admin to grant you the warehouse:view permission."
+                    heading={t("You don't have access to Warehouse")}
+                    description={t('Ask an admin to grant you the warehouse:view permission.')}
                 />
             </div>
         );
@@ -200,31 +202,31 @@ export default function WarehouseView() {
     return (
         <div className="h-full flex flex-col overflow-hidden bg-slate-950 text-white animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · WAREHOUSE"
+                chipLabel={t('MODULE · WAREHOUSE')}
                 chipIcon="fa-boxes-stacked"
                 chipAccent="cyan"
-                title="Org Warehouse"
-                subtitle="Track bulk fungible commodities — ore, refined materials, fuel, RMC, missiles — across your warehouses. Stock totals are computed from an append-only movement ledger so concurrent adjustments stay honest."
+                title={t('Org Warehouse')}
+                subtitle={t('Track bulk fungible commodities — ore, refined materials, fuel, RMC, missiles — across your warehouses. Stock totals are computed from an append-only movement ledger so concurrent adjustments stay honest.')}
                 actions={canManage && !firstRun && (
                     <HeroActionButton onClick={() => setStockCreateOpen(true)} accent="cyan" icon="fa-plus">
-                        Add Stock
+                        {t('Add Stock')}
                     </HeroActionButton>
                 )}
-                tabs={!firstRun ? visibleTabs.map((t) => {
-                    const active = tab === t.key;
-                    const badgeCount = t.key === 'withdrawals' ? openRequestCount : 0;
+                tabs={!firstRun ? visibleTabs.map((tabDef) => {
+                    const active = tab === tabDef.key;
+                    const badgeCount = tabDef.key === 'withdrawals' ? openRequestCount : 0;
                     return (
                         <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
+                            key={tabDef.key}
+                            onClick={() => setTab(tabDef.key)}
                             className={`flex items-center gap-2 px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors border-b-2 ${
                                 active
                                     ? 'text-cyan-200 border-cyan-400'
                                     : 'text-slate-400 hover:text-slate-200 border-transparent'
                             }`}
                         >
-                            <i className={`fa-solid ${t.icon}`} />
-                            {t.label}
+                            <i className={`fa-solid ${tabDef.icon}`} />
+                            {t(tabDef.label, { context: 'warehouse' })}
                             {badgeCount > 0 && (
                                 <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-mono">
                                     {badgeCount}
@@ -257,16 +259,16 @@ export default function WarehouseView() {
                     <EmptyState
                         icon="fa-boxes-stacked"
                         accent="cyan"
-                        heading="No commodities yet"
+                        heading={t('No commodities yet')}
                         description={canAdmin
-                            ? 'Start by defining a commodity in the Catalog (e.g. "Iron Ore", quality "500-600", unit "SCU"). Then add stock at a location.'
-                            : 'Ask an officer to set up your org\'s commodity catalog and warehouse stock.'}
+                            ? t('Start by defining a commodity in the Catalog (e.g. "Iron Ore", quality "500-600", unit "SCU"). Then add stock at a location.')
+                            : t("Ask an officer to set up your org's commodity catalog and warehouse stock.")}
                         action={canAdmin && (
                             <button
                                 onClick={() => setCatalogEditTarget('new')}
                                 className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest"
                             >
-                                <i className="fa-solid fa-plus" /> Add Commodity
+                                <i className="fa-solid fa-plus" /> {t('Add Commodity')}
                             </button>
                         )}
                     />

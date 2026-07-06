@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { QmIssuance, QmIssuanceStatus, QmMemberRecord, QmUserRef } from '../../../types';
 import IssuanceRow from './IssuanceRow';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     issuances: QmIssuance[];
@@ -39,6 +40,7 @@ function weightLedger(iss: QmIssuance) {
 export default function QmIssuancesTab({
     issuances, memberRecords, canManage, onFulfil, onReturn, onWriteOff, onIssueKit, onIssueToMember, onReturnFromMember,
 }: Props) {
+    const { t } = useI18n();
     const [viewMode, setViewMode] = useState<ViewMode>('ledger');
     const [filter, setFilter] = useState<'all' | 'open' | QmIssuanceStatus>('open');
     const [expandedMemberId, setExpandedMemberId] = useState<number | null>(null);
@@ -87,7 +89,7 @@ export default function QmIssuancesTab({
                             viewMode === 'ledger' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
-                        <i className="fa-solid fa-list-ul" />Ledger
+                        <i className="fa-solid fa-list-ul" />{t('Ledger', { context: 'quartermaster' })}
                     </button>
                     <button
                         onClick={() => setViewMode('byMember')}
@@ -95,21 +97,21 @@ export default function QmIssuancesTab({
                             viewMode === 'byMember' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
-                        <i className="fa-solid fa-user-tag" />By Member
+                        <i className="fa-solid fa-user-tag" />{t('By Member')}
                     </button>
                 </div>
 
                 {viewMode === 'ledger' && (
                     <div className="flex items-center gap-1 bg-slate-900 rounded-lg border border-white/10 p-1 flex-wrap">
-                        {STATUS_TABS.map((t) => (
+                        {STATUS_TABS.map((tab) => (
                             <button
-                                key={t.key}
-                                onClick={() => setFilter(t.key)}
+                                key={tab.key}
+                                onClick={() => setFilter(tab.key)}
                                 className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-widest transition ${
-                                    filter === t.key ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
+                                    filter === tab.key ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                                 }`}
                             >
-                                {t.label}
+                                {t(tab.label, { context: 'status' })}
                             </button>
                         ))}
                     </div>
@@ -120,7 +122,7 @@ export default function QmIssuancesTab({
                         type="text"
                         value={memberSearch}
                         onChange={(e) => setMemberSearch(e.target.value)}
-                        placeholder="Search members…"
+                        placeholder={t('Search members…')}
                         className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 flex-1 max-w-xs"
                     />
                 )}
@@ -133,7 +135,7 @@ export default function QmIssuancesTab({
                         onClick={onIssueKit}
                         className="ml-auto inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition"
                     >
-                        <i className="fa-solid fa-people-carry-box" /> Issue Kit
+                        <i className="fa-solid fa-people-carry-box" /> {t('Issue Kit')}
                     </button>
                 )}
             </div>
@@ -141,7 +143,7 @@ export default function QmIssuancesTab({
             {viewMode === 'ledger' && (
                 ledgerSorted.length === 0 ? (
                     <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                        No issuances match the current filter.
+                        {t('No issuances match the current filter.')}
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -162,8 +164,8 @@ export default function QmIssuancesTab({
                 filteredRecords.length === 0 ? (
                     <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
                         {memberRecords.length === 0
-                            ? 'No members currently hold any open issuances.'
-                            : 'No members match the search.'}
+                            ? t('No members currently hold any open issuances.')
+                            : t('No members match the search.')}
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -193,18 +195,18 @@ export default function QmIssuancesTab({
                                             </div>
                                             <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-3 flex-wrap">
                                                 <span>
-                                                    <span className="font-bold text-white">{totalOpen}</span> open
-                                                    <span className="text-slate-600"> · {rec.totalQuantity}× total</span>
+                                                    <span className="font-bold text-white">{totalOpen}</span> {t('open')}
+                                                    <span className="text-slate-600"> · {t('{count}× total', { count: rec.totalQuantity })}</span>
                                                 </span>
                                                 {rec.active.length > 0 && (
-                                                    <span className="text-sky-300">{rec.active.length} on issue</span>
+                                                    <span className="text-sky-300">{t('{count} on issue', { count: rec.active.length })}</span>
                                                 )}
                                                 {rec.requested.length > 0 && (
-                                                    <span className="text-amber-300">{rec.requested.length} requested</span>
+                                                    <span className="text-amber-300">{t('{count} requested', { count: rec.requested.length })}</span>
                                                 )}
                                                 {rec.overdueCount > 0 && (
                                                     <span className="text-rose-300 font-bold uppercase tracking-widest text-[10px]">
-                                                        {rec.overdueCount} overdue
+                                                        {t('{count} overdue', { count: rec.overdueCount })}
                                                     </span>
                                                 )}
                                             </div>
@@ -215,7 +217,7 @@ export default function QmIssuancesTab({
                                                     onClick={() => onIssueToMember(rec.user)}
                                                     className="px-2.5 py-1.5 bg-orange-600/20 hover:bg-orange-600/40 text-orange-200 rounded-sm border border-orange-500/40 text-[10px] font-bold uppercase tracking-widest transition"
                                                 >
-                                                    <i className="fa-solid fa-plus mr-1" />Issue more
+                                                    <i className="fa-solid fa-plus mr-1" />{t('Issue more')}
                                                 </button>
                                             )}
                                             {canManage && onReturnFromMember && rec.active.length > 0 && (
@@ -223,7 +225,7 @@ export default function QmIssuancesTab({
                                                     onClick={() => onReturnFromMember(rec.user, rec.active)}
                                                     className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-200 rounded-sm border border-emerald-500/40 text-[10px] font-bold uppercase tracking-widest transition"
                                                 >
-                                                    <i className="fa-solid fa-rotate-left mr-1" />Return
+                                                    <i className="fa-solid fa-rotate-left mr-1" />{t('Return')}
                                                 </button>
                                             )}
                                             <i className={`fa-solid fa-chevron-${expanded ? 'up' : 'down'} text-slate-500 w-4 text-center ml-1`} />

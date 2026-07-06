@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import apiService from '../../../services/apiService';
 import { EmptyState } from '../../shared/ui';
 import HeroShell from '../../shared/ui/HeroShell';
@@ -26,6 +27,7 @@ const TYPE_FILTERS: { key: 'all' | MarketplaceListingType; label: string }[] = [
 ];
 
 const MarketplaceView: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { currentUser, hasPermission } = useAuth();
     const { addToast } = useNotification();
@@ -97,10 +99,10 @@ const MarketplaceView: React.FC = () => {
             await load();
             return true;
         } catch (e: any) {
-            addToast('Action Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e?.message || 'Something went wrong.' });
+            addToast(t('Action Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e?.message || t('Something went wrong.') });
             return false;
         }
-    }, [rpcAction, addToast, load]);
+    }, [rpcAction, addToast, load, t]);
 
     const selectedListing = listings.find((l) => l.id === selectedListingId) || null;
     const selectedContract = contracts.find((c) => c.id === selectedContractId) || null;
@@ -108,19 +110,19 @@ const MarketplaceView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · MARKETPLACE"
+                chipLabel={t('MODULE · MARKETPLACE')}
                 chipIcon="fa-store"
                 chipAccent="indigo"
-                title="Marketplace"
-                subtitle="Trade items and services within the org. Post a listing, propose a contract, hand off, and rate. Prices are in aUEC for negotiation — settle in-game."
+                title={t('Marketplace')}
+                subtitle={t('Trade items and services within the org. Post a listing, propose a contract, hand off, and rate. Prices are in aUEC for negotiation — settle in-game.')}
                 actions={canList ? (
-                    <HeroActionButton onClick={() => setShowCreate(true)} accent="indigo" icon="fa-plus">New Listing</HeroActionButton>
+                    <HeroActionButton onClick={() => setShowCreate(true)} accent="indigo" icon="fa-plus">{t('New Listing')}</HeroActionButton>
                 ) : undefined}
                 stats={<>
-                    <HeroStat icon="fa-store" label="Listings" value={listings.length} accent="indigo" emphasize={listings.length > 0} />
-                    <HeroStat icon="fa-file-signature" label="My Listings" value={listings.filter((l) => l.sellerId === meId).length} accent="purple" />
-                    <HeroStat icon="fa-clipboard-list" label="Active Contracts" value={activeContracts.length} accent="amber" emphasize={activeContracts.length > 0} />
-                    <HeroStat icon="fa-circle-check" label="Completed" value={historyContracts.filter((c) => c.status === 'completed').length} accent="emerald" />
+                    <HeroStat icon="fa-store" label={t('Listings')} value={listings.length} accent="indigo" emphasize={listings.length > 0} />
+                    <HeroStat icon="fa-file-signature" label={t('My Listings')} value={listings.filter((l) => l.sellerId === meId).length} accent="purple" />
+                    <HeroStat icon="fa-clipboard-list" label={t('Active Contracts')} value={activeContracts.length} accent="amber" emphasize={activeContracts.length > 0} />
+                    <HeroStat icon="fa-circle-check" label={t('Completed')} value={historyContracts.filter((c) => c.status === 'completed').length} accent="emerald" />
                 </>}
             />
 
@@ -131,18 +133,18 @@ const MarketplaceView: React.FC = () => {
                         {TYPE_FILTERS.map((f) => (
                             <button key={f.key} onClick={() => setTypeFilter(f.key)}
                                 className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-colors ${typeFilter === f.key ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/40' : 'bg-slate-800/40 text-slate-400 border-slate-700/50 hover:text-white'}`}>
-                                {f.key !== 'all' && <i className={`fa-solid ${LISTING_TYPE_META[f.key as MarketplaceListingType].icon} mr-1.5`} aria-hidden />}{f.label}
+                                {f.key !== 'all' && <i className={`fa-solid ${LISTING_TYPE_META[f.key as MarketplaceListingType].icon} mr-1.5`} aria-hidden />}{t(f.label)}
                             </button>
                         ))}
                         <div className="ml-auto flex items-center gap-2">
                             <select value={categoryId ?? ''} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
                                 className="bg-slate-800 border border-slate-700 rounded-md px-2 py-1.5 text-xs text-white outline-hidden focus:border-indigo-500">
-                                <option value="">All categories</option>
+                                <option value="">{t('All categories')}</option>
                                 {categories.map((c) => <option key={c.id} value={c.id}>{c.parentId ? '— ' : ''}{c.name}</option>)}
                             </select>
                             <div className="relative">
                                 <i className="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs" aria-hidden />
-                                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search"
+                                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search')}
                                     className="bg-slate-800 border border-slate-700 rounded-md pl-7 pr-2 py-1.5 text-xs text-white outline-hidden focus:border-indigo-500 w-32 sm:w-44" />
                             </div>
                         </div>
@@ -151,7 +153,7 @@ const MarketplaceView: React.FC = () => {
                     {loading ? (
                         <div className="text-center text-slate-500 py-16"><i className="fa-solid fa-spinner animate-spin text-2xl"></i></div>
                     ) : filteredListings.length === 0 ? (
-                        <EmptyState icon="fa-store-slash" accent="indigo" heading="No listings" description={listings.length === 0 ? 'Nothing on the market yet. Be the first to post a listing.' : 'No listings match these filters.'} />
+                        <EmptyState icon="fa-store-slash" accent="indigo" heading={t('No listings')} description={listings.length === 0 ? t('Nothing on the market yet. Be the first to post a listing.') : t('No listings match these filters.')} />
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {filteredListings.map((l) => <ListingCard key={l.id} listing={l} onClick={() => setSelectedListingId(l.id)} />)}
@@ -162,19 +164,19 @@ const MarketplaceView: React.FC = () => {
                 <div className="space-y-3">
                     <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                         <div className="px-4 py-3 bg-slate-800/50 border-b border-slate-700/50 flex items-center justify-between">
-                            <h3 className="text-xs font-black uppercase tracking-wider text-white"><i className="fa-solid fa-clipboard-list mr-2 text-indigo-400"></i>My Contracts</h3>
+                            <h3 className="text-xs font-black uppercase tracking-wider text-white"><i className="fa-solid fa-clipboard-list mr-2 text-indigo-400"></i>{t('My Contracts')}</h3>
                             <div className="flex gap-1">
-                                {(['active', 'history'] as const).map((t) => (
-                                    <button key={t} onClick={() => setQueueTab(t)}
-                                        className={`text-[10px] font-bold uppercase px-2 py-1 rounded-sm transition-colors ${queueTab === t ? 'bg-indigo-500/15 text-indigo-300' : 'text-slate-500 hover:text-white'}`}>
-                                        {t === 'active' ? `Active (${activeContracts.length})` : 'History'}
+                                {(['active', 'history'] as const).map((tab) => (
+                                    <button key={tab} onClick={() => setQueueTab(tab)}
+                                        className={`text-[10px] font-bold uppercase px-2 py-1 rounded-sm transition-colors ${queueTab === tab ? 'bg-indigo-500/15 text-indigo-300' : 'text-slate-500 hover:text-white'}`}>
+                                        {tab === 'active' ? t('Active ({count})', { count: activeContracts.length }) : t('History')}
                                     </button>
                                 ))}
                             </div>
                         </div>
                         <div className="p-3 space-y-2 max-h-[70vh] overflow-y-auto">
                             {(queueTab === 'active' ? activeContracts : historyContracts).length === 0 ? (
-                                <p className="text-center text-slate-600 text-xs py-8 italic">{queueTab === 'active' ? 'No active contracts.' : 'No past contracts.'}</p>
+                                <p className="text-center text-slate-600 text-xs py-8 italic">{queueTab === 'active' ? t('No active contracts.') : t('No past contracts.')}</p>
                             ) : (
                                 (queueTab === 'active' ? activeContracts : historyContracts).map((c) => (
                                     <ContractRow key={c.id} contract={c} meId={meId} onClick={() => setSelectedContractId(c.id)} />
@@ -190,16 +192,16 @@ const MarketplaceView: React.FC = () => {
                 <CreateListingModal
                     categories={categories}
                     onClose={() => setShowCreate(false)}
-                    onCreate={async (input) => { const ok = await runAction('marketplace:create_listing', input, 'Listing posted'); if (ok) setShowCreate(false); }}
+                    onCreate={async (input) => { const ok = await runAction('marketplace:create_listing', input, t('Listing posted')); if (ok) setShowCreate(false); }}
                 />
             )}
             {selectedListing && (
                 <ListingDetailModal
                     listing={selectedListing} meId={meId} canContract={canContract}
                     onClose={() => setSelectedListingId(null)}
-                    onPropose={async (payload) => { const ok = await runAction('marketplace:propose', payload, 'Contract proposed'); if (ok) setSelectedListingId(null); }}
-                    onDelete={async () => { const ok = await runAction('marketplace:delete_listing', { id: selectedListing.id }, 'Listing removed'); if (ok) setSelectedListingId(null); }}
-                    onReport={async (payload) => { await runAction('marketplace:report', { listingId: selectedListing.id, ...payload }, 'Report submitted'); }}
+                    onPropose={async (payload) => { const ok = await runAction('marketplace:propose', payload, t('Contract proposed')); if (ok) setSelectedListingId(null); }}
+                    onDelete={async () => { const ok = await runAction('marketplace:delete_listing', { id: selectedListing.id }, t('Listing removed')); if (ok) setSelectedListingId(null); }}
+                    onReport={async (payload) => { await runAction('marketplace:report', { listingId: selectedListing.id, ...payload }, t('Report submitted')); }}
                 />
             )}
             {selectedContract && (

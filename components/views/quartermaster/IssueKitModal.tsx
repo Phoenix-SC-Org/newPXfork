@@ -4,6 +4,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import type { QmInventoryItem, QmUserRef, User } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type MemberLike = Pick<User, 'id' | 'name' | 'avatarUrl'> & { rsiHandle?: string | null };
 
@@ -29,6 +30,7 @@ export default function IssueKitModal({
 }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [member, setMember] = useState<MemberLike | null>(seedMember ?? null);
     const [memberSearch, setMemberSearch] = useState('');
@@ -162,32 +164,34 @@ export default function IssueKitModal({
             });
             const issued = Array.isArray(res?.issuanceIds) ? res.issuanceIds.length : payload.length;
             addToast(
-                `Issued ${issued} ${issued === 1 ? 'item' : 'items'} to ${member.name}`,
+                issued === 1
+                    ? t('Issued {count} item to {name}', { count: issued, name: member.name })
+                    : t('Issued {count} items to {name}', { count: issued, name: member.name }),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
             );
             onSubmitted();
         } catch (err: any) {
             addToast(
-                'Issue failed — kit not applied',
+                t('Issue failed — kit not applied'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'The whole kit was rolled back.' },
+                { description: err?.message || t('The whole kit was rolled back.') },
             );
             setSubmitting(false);
         }
     };
 
     const titleSubtitle =
-        lines.length === 0 ? 'Build a kit' :
-        lines.length === 1 ? `1 item · ${totalItems}× total` :
-        `${lines.length} items · ${totalItems}× total`;
+        lines.length === 0 ? t('Build a kit') :
+        lines.length === 1 ? t('1 item · {total}× total', { total: totalItems }) :
+        t('{count} items · {total}× total', { count: lines.length, total: totalItems });
 
     return (
         <WindowFrame
             isOpen
             onClose={onClose}
-            title={lockMember && member ? `Issue Kit · ${member.name}` : 'Issue Kit'}
+            title={lockMember && member ? t('Issue Kit · {name}', { name: member.name }) : t('Issue Kit')}
             subtitle={titleSubtitle}
             icon="fa-solid fa-people-carry-box"
             color="amber"
@@ -206,23 +210,23 @@ export default function IssueKitModal({
                                 onClick={() => { setMember(null); setMemberSearch(''); }}
                                 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                             >
-                                Change
+                                {t('Change')}
                             </button>
                         )}
                     </div>
                 ) : (
                     <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Issue to</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Issue to')}</span>
                         <input
                             type="text"
                             value={memberSearch}
                             onChange={(e) => setMemberSearch(e.target.value)}
-                            placeholder="Search members…"
+                            placeholder={t('Search members…')}
                             className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                             autoFocus
                         />
                         <div className="mt-1 max-h-44 overflow-y-auto space-y-1 border border-white/5 rounded-lg bg-slate-950/60 p-1">
-                            {filteredMembers.length === 0 && <div className="text-xs text-slate-500 p-2">No matches.</div>}
+                            {filteredMembers.length === 0 && <div className="text-xs text-slate-500 p-2">{t('No matches.')}</div>}
                             {filteredMembers.map((u) => (
                                 <button
                                     key={u.id}
@@ -241,13 +245,13 @@ export default function IssueKitModal({
 
                 <div>
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Items in kit</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Items in kit')}</span>
                         {lines.length > 0 && !pickerOpen && (
                             <button
                                 onClick={() => setPickerOpen(true)}
                                 className="text-[10px] font-bold uppercase tracking-widest text-orange-300 hover:text-orange-200"
                             >
-                                <i className="fa-solid fa-plus mr-1" />Add item
+                                <i className="fa-solid fa-plus mr-1" />{t('Add item')}
                             </button>
                         )}
                     </div>
@@ -261,11 +265,11 @@ export default function IssueKitModal({
                                 return (
                                     <div key={line.inventoryId} className={`flex items-center gap-2 bg-slate-900/60 border rounded-lg px-3 py-2 ${invalid ? 'border-rose-500/50' : 'border-white/10'}`}>
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm text-white truncate font-bold">{inv?.catalog?.name || inv?.customName || `Item #${line.inventoryId}`}</div>
+                                            <div className="text-sm text-white truncate font-bold">{inv?.catalog?.name || inv?.customName || t('Item #{id}', { id: line.inventoryId })}</div>
                                             <div className="text-[10px] text-slate-500 font-mono truncate">
-                                                {inv?.catalog?.category || 'custom'}
-                                                {inv && ` · ${inv.quantityOnHand} on hand`}
-                                                {overStock && <span className="text-rose-400"> · exceeds stock</span>}
+                                                {t(inv?.catalog?.category || 'custom', { context: 'item category' })}
+                                                {inv && ` · ${t('{count} on hand', { count: inv.quantityOnHand })}`}
+                                                {overStock && <span className="text-rose-400"> · {t('exceeds stock')}</span>}
                                             </div>
                                         </div>
                                         <input
@@ -276,12 +280,12 @@ export default function IssueKitModal({
                                             value={line.quantity}
                                             onChange={(e) => updateQty(idx, e.target.value)}
                                             className={`w-16 bg-slate-950 border rounded-sm px-2 py-1 text-sm text-white font-mono text-right ${invalid ? 'border-rose-500/60 text-rose-200' : 'border-white/10'}`}
-                                            aria-label="Quantity"
+                                            aria-label={t('Quantity')}
                                         />
                                         <button
                                             onClick={() => removeLine(idx)}
                                             className="text-slate-500 hover:text-rose-400 w-7 h-7 rounded-sm flex items-center justify-center transition"
-                                            aria-label="Remove line"
+                                            aria-label={t('Remove line')}
                                         >
                                             <i className="fa-solid fa-xmark" />
                                         </button>
@@ -297,20 +301,20 @@ export default function IssueKitModal({
                                 type="text"
                                 value={pickerSearch}
                                 onChange={(e) => setPickerSearch(e.target.value)}
-                                placeholder={lines.length === 0 ? 'Search items to add…' : 'Add another item…'}
+                                placeholder={lines.length === 0 ? t('Search items to add…') : t('Add another item…')}
                                 className="w-full bg-slate-900 border border-white/10 rounded-sm px-3 py-1.5 text-sm text-white mb-1"
                             />
                             <div className="max-h-44 overflow-y-auto space-y-1">
                                 {pickerLoading && availableForPicker.length === 0 && (
-                                    <div className="text-xs text-slate-500 p-2"><i className="fa-solid fa-spinner animate-spin mr-2" />Searching…</div>
+                                    <div className="text-xs text-slate-500 p-2"><i className="fa-solid fa-spinner animate-spin mr-2" />{t('Searching…')}</div>
                                 )}
                                 {!pickerLoading && availableForPicker.length === 0 && (
                                     <div className="text-xs text-slate-500 p-2">
                                         {pickerSearch
-                                            ? 'No matches.'
+                                            ? t('No matches.')
                                             : lines.length > 0
-                                                ? 'No more items available.'
-                                                : 'No inventory matches. Type to search.'}
+                                                ? t('No more items available.')
+                                                : t('No inventory matches. Type to search.')}
                                     </div>
                                 )}
                                 {availableForPicker.map((it) => (
@@ -322,7 +326,7 @@ export default function IssueKitModal({
                                     >
                                         <span className="truncate flex-1">{it.catalog?.name || it.customName}</span>
                                         {it.catalog?.category && <span className="text-[9px] font-mono text-slate-500 uppercase">{it.catalog.category}</span>}
-                                        <span className="text-[10px] font-mono text-slate-500">{it.quantityOnHand} left</span>
+                                        <span className="text-[10px] font-mono text-slate-500">{t('{count} left', { count: it.quantityOnHand })}</span>
                                     </button>
                                 ))}
                             </div>
@@ -331,7 +335,7 @@ export default function IssueKitModal({
                                     onClick={() => { setPickerOpen(false); setPickerSearch(''); }}
                                     className="mt-1 w-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 py-1"
                                 >
-                                    Close picker
+                                    {t('Close picker')}
                                 </button>
                             )}
                         </div>
@@ -340,35 +344,37 @@ export default function IssueKitModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="block">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Due back (optional)</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Due back (optional)')}</span>
                         <input
                             type="datetime-local"
                             value={dueBackAt}
                             onChange={(e) => setDueBackAt(e.target.value)}
                             className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                         />
-                        <span className="text-[10px] text-slate-600 mt-1 block">Applies to every line</span>
+                        <span className="text-[10px] text-slate-600 mt-1 block">{t('Applies to every line')}</span>
                     </label>
                     <label className="block">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Notes (optional)</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Notes (optional)')}</span>
                         <input
                             type="text"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             maxLength={400}
                             className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
-                            placeholder="e.g. Op Nightstorm"
+                            placeholder={t('e.g. Op Nightstorm')}
                         />
                     </label>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2">
                     <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                        {lines.length > 0 && `${lines.length} ${lines.length === 1 ? 'line' : 'lines'} · ${totalItems}× total`}
+                        {lines.length > 0 && (lines.length === 1
+                            ? t('{count} line · {total}× total', { count: lines.length, total: totalItems })
+                            : t('{count} lines · {total}× total', { count: lines.length, total: totalItems }))}
                     </div>
                     <div className="flex gap-2">
                         <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                            Cancel
+                            {t('Cancel')}
                         </button>
                         <button
                             onClick={submit}
@@ -376,8 +382,8 @@ export default function IssueKitModal({
                             className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             {submitting
-                                ? 'Issuing…'
-                                : lines.length > 1 ? `Issue ${lines.length} items` : 'Issue'}
+                                ? t('Issuing…')
+                                : lines.length > 1 ? t('Issue {count} items', { count: lines.length }) : t('Issue')}
                         </button>
                     </div>
                 </div>

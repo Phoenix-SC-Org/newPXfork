@@ -4,6 +4,7 @@ import type { LedgerEntry, TreasuryAccount, LedgerEntryType, LedgerEntryStatus }
 import LedgerRow from './LedgerRow';
 import ReverseEntryModal from './ReverseEntryModal';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     accounts: TreasuryAccount[];
@@ -36,6 +37,7 @@ export default function FinancesLedgerTab({
 }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [typeFilter, setTypeFilter] = useState<'all' | LedgerEntryType>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | LedgerEntryStatus>('all');
@@ -65,10 +67,10 @@ export default function FinancesLedgerTab({
             link.click();
             link.remove();
             URL.revokeObjectURL(url);
-            addToast('Export ready', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Export ready'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
         } catch (err: any) {
-            addToast('Export failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
-                description: err?.message || 'Could not generate CSV.',
+            addToast(t('Export failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+                description: err?.message || t('Could not generate CSV.'),
             });
         }
     };
@@ -83,7 +85,7 @@ export default function FinancesLedgerTab({
                             selectedAccountId === null ? 'bg-amber-500/20 text-amber-200' : 'text-slate-400 hover:text-slate-200'
                         }`}
                     >
-                        All accounts
+                        {t('All accounts')}
                     </button>
                     {accounts.filter((a) => a.isActive).map((a) => (
                         <button
@@ -103,14 +105,14 @@ export default function FinancesLedgerTab({
                     onChange={(e) => setTypeFilter(e.target.value as any)}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300"
                 >
-                    {TYPE_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    {TYPE_FILTERS.map((f) => <option key={f.value} value={f.value}>{t(f.label, { context: 'finance' })}</option>)}
                 </select>
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300"
                 >
-                    {STATUS_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    {STATUS_FILTERS.map((f) => <option key={f.value} value={f.value}>{t(f.label)}</option>)}
                 </select>
 
                 <div className="flex-1" />
@@ -118,13 +120,13 @@ export default function FinancesLedgerTab({
                     onClick={handleExport}
                     className="inline-flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-amber-500/40 text-slate-300 hover:text-amber-200 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition"
                 >
-                    <i className="fa-solid fa-file-csv" /> Export CSV
+                    <i className="fa-solid fa-file-csv" /> {t('Export CSV')}
                 </button>
             </div>
 
             {filtered.length === 0 ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    No entries match the current filters.
+                    {t('No entries match the current filters.')}
                 </div>
             ) : (
                 <div className="space-y-2">

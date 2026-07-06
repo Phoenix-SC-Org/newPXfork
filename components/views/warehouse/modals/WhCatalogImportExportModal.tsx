@@ -5,6 +5,7 @@ import { useWarehouse } from '../../../../contexts/WarehouseContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import WindowFrame from '../../../layout/WindowFrame';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface WhCatalogImportExportModalProps {
     isOpen: boolean;
@@ -68,6 +69,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
     const { refreshWarehouse } = useWarehouse();
     const { hasPermission } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const canImport = hasPermission('warehouse:admin');
 
@@ -128,7 +130,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                 if (exportCancelRef.current) break;
                 const page: ExportPage = await rpcAction('warehouse:export_catalog', { offset, limit: EXPORT_PAGE_SIZE });
                 if (!page || !Array.isArray(page.items)) {
-                    throw new Error('Server returned an unexpected response.');
+                    throw new Error(t('Server returned an unexpected response.'));
                 }
                 if (offset === 0) {
                     envelopeMeta = {
@@ -145,14 +147,16 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
             }
 
             if (exportCancelRef.current) {
-                addToast('Export cancelled', <i className="fa-solid fa-ban" />,
+                addToast(t('Export cancelled'), <i className="fa-solid fa-ban" />,
                     'bg-amber-500/10 text-amber-400 border-amber-500/50',
-                    { description: `${collected.length} commodit${collected.length === 1 ? 'y' : 'ies'} fetched before cancel.` });
+                    { description: collected.length === 1
+                        ? t('{count} commodity fetched before cancel.', { count: collected.length })
+                        : t('{count} commodities fetched before cancel.', { count: collected.length }) });
                 return;
             }
 
             if (!envelopeMeta) {
-                throw new Error('Export envelope missing.');
+                throw new Error(t('Export envelope missing.'));
             }
 
             const envelope = {
@@ -173,13 +177,15 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            addToast('Catalog exported', <i className="fa-solid fa-check" />,
+            addToast(t('Catalog exported'), <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                { description: `${collected.length} commodit${collected.length === 1 ? 'y' : 'ies'} written to ${defaultName}.` });
+                { description: collected.length === 1
+                    ? t('{count} commodity written to {file}.', { count: collected.length, file: defaultName })
+                    : t('{count} commodities written to {file}.', { count: collected.length, file: defaultName }) });
         } catch (err: any) {
-            addToast('Export failed', <i className="fa-solid fa-xmark" />,
+            addToast(t('Export failed'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not export the catalog.' });
+                { description: err?.message || t('Could not export the catalog.') });
         } finally {
             setExporting(false);
         }
@@ -194,14 +200,14 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
             const result: PreviewResult = await rpcAction('warehouse:preview_import_catalog', { items: parsedItems });
             setPreview(result);
         } catch (err: any) {
-            addToast('Preview failed', <i className="fa-solid fa-xmark" />,
+            addToast(t('Preview failed'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not preview the import.' });
+                { description: err?.message || t('Could not preview the import.') });
             setPreview(null);
         } finally {
             setLoadingPreview(false);
         }
-    }, [rpcAction, addToast]);
+    }, [rpcAction, addToast, t]);
 
     const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -212,18 +218,18 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
             try {
                 const text = String(reader.result || '');
                 const parsed = JSON.parse(text);
-                if (!parsed || typeof parsed !== 'object') throw new Error('File is not a JSON object.');
+                if (!parsed || typeof parsed !== 'object') throw new Error(t('File is not a JSON object.'));
                 if (parsed.version !== undefined && parsed.version !== 1) {
-                    throw new Error(`Unsupported file version: ${parsed.version}. Expected 1.`);
+                    throw new Error(t('Unsupported file version: {version}. Expected 1.', { version: parsed.version }));
                 }
-                if (!Array.isArray(parsed.items)) throw new Error('File is missing an "items" array.');
+                if (!Array.isArray(parsed.items)) throw new Error(t('File is missing an "items" array.'));
                 setItems(parsed.items);
                 setImportProgress(null);
                 loadPreview(parsed.items);
             } catch (err: any) {
-                addToast('Invalid file', <i className="fa-solid fa-xmark" />,
+                addToast(t('Invalid file'), <i className="fa-solid fa-xmark" />,
                     'bg-red-500/10 text-red-400 border-red-500/50',
-                    { description: err?.message || 'Could not read JSON.' });
+                    { description: err?.message || t('Could not read JSON.') });
                 setItems(null);
                 setPreview(null);
             }
@@ -265,18 +271,23 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
             }
             await refreshWarehouse();
             onImported?.();
+            const errorsSuffix = totalErrors.length
+                ? (totalErrors.length === 1
+                    ? t(', {count} error', { count: totalErrors.length })
+                    : t(', {count} errors', { count: totalErrors.length }))
+                : '';
             addToast(
-                importCancelRef.current ? 'Import cancelled' : 'Import complete',
+                importCancelRef.current ? t('Import cancelled') : t('Import complete'),
                 <i className={`fa-solid ${importCancelRef.current ? 'fa-ban' : 'fa-check'}`} />,
                 importCancelRef.current
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/50'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                { description: `${totalInserted} added, ${totalUpdated} updated${totalErrors.length ? `, ${totalErrors.length} error${totalErrors.length === 1 ? '' : 's'}` : ''}.` },
+                { description: `${t('{inserted} added, {updated} updated', { inserted: totalInserted, updated: totalUpdated })}${errorsSuffix}.` },
             );
         } catch (err: any) {
-            addToast('Import failed', <i className="fa-solid fa-xmark" />,
+            addToast(t('Import failed'), <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Import aborted.' });
+                { description: err?.message || t('Import aborted.') });
         } finally {
             setImporting(false);
         }
@@ -295,8 +306,8 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Warehouse Catalog — Import / Export"
-            subtitle="Commodities only — stock and movements are not included."
+            title={t('Warehouse Catalog — Import / Export')}
+            subtitle={t('Commodities only — stock and movements are not included.')}
             icon="fa-solid fa-arrows-rotate"
             color="sky"
             width="max-w-2xl"
@@ -307,14 +318,14 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                         onClick={() => setTab('export')}
                         className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors ${tab === 'export' ? 'text-slate-100 border-b-2 border-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
                     >
-                        <i className="fa-solid fa-file-arrow-down mr-2" /> Export
+                        <i className="fa-solid fa-file-arrow-down mr-2" /> {t('Export')}
                     </button>
                     {canImport && (
                         <button
                             onClick={() => setTab('import')}
                             className={`px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors ${tab === 'import' ? 'text-slate-100 border-b-2 border-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
                         >
-                            <i className="fa-solid fa-file-arrow-up mr-2" /> Import
+                            <i className="fa-solid fa-file-arrow-up mr-2" /> {t('Import')}
                         </button>
                     )}
                 </div>
@@ -322,11 +333,10 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                 {tab === 'export' && (
                     <div className="p-5 space-y-4">
                         <p className="text-sm text-slate-300">
-                            Downloads a JSON file containing every commodity definition in this organisation's catalog.
-                            Server-managed fields (IDs, timestamps) are stripped so the file imports cleanly into another org.
+                            {t("Downloads a JSON file containing every commodity definition in this organisation's catalog. Server-managed fields (IDs, timestamps) are stripped so the file imports cleanly into another org.")}
                         </p>
                         <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30">
-                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-2">File contents</p>
+                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-2">{t('File contents')}</p>
                             <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
                                 <li>name, category, qualityLabel, unit, description, archived</li>
                                 <li>version, exportedAt, organizationId</li>
@@ -336,7 +346,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                         {exportProgress && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 space-y-2">
                                 <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest font-black">
-                                    <span>Fetching</span>
+                                    <span>{t('Fetching')}</span>
                                     <span>{exportProgress.fetched} / {exportProgress.total}</span>
                                 </div>
                                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -351,14 +361,14 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                                     onClick={handleCancelExport}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wider transition-colors"
                                 >
-                                    <i className="fa-solid fa-ban" /> Cancel
+                                    <i className="fa-solid fa-ban" /> {t('Cancel')}
                                 </button>
                             ) : (
                                 <button
                                     onClick={handleStartExport}
                                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-cyan-500/20 transition-colors"
                                 >
-                                    <i className="fa-solid fa-download" /> Download JSON
+                                    <i className="fa-solid fa-download" /> {t('Download JSON')}
                                 </button>
                             )}
                         </div>
@@ -368,7 +378,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                 {tab === 'import' && canImport && (
                     <div className="p-5 space-y-4">
                         <p className="text-sm text-slate-300">
-                            Upload a warehouse-catalog JSON file (exported from this or another org). Existing entries are matched by <strong>name + quality label</strong> — category, unit, description, and archived state update; missing entries are added. Nothing is deleted.
+                            {t('Upload a warehouse-catalog JSON file (exported from this or another org). Existing entries are matched by')} <strong>{t('name + quality label')}</strong> {t('— category, unit, description, and archived state update; missing entries are added. Nothing is deleted.')}
                         </p>
 
                         <div className="flex items-center gap-3">
@@ -378,38 +388,38 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                                 disabled={importing}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/60 text-slate-300 border border-slate-700 hover:text-white hover:border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
                             >
-                                <i className="fa-solid fa-folder-open" /> Pick JSON File
+                                <i className="fa-solid fa-folder-open" /> {t('Pick JSON File')}
                             </button>
                             {fileName && <span className="text-xs text-slate-400 truncate">{fileName}</span>}
                         </div>
 
                         {loadingPreview && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 flex items-center gap-2 text-xs text-slate-400">
-                                <i className="fa-solid fa-circle-notch animate-spin" /> Computing diff…
+                                <i className="fa-solid fa-circle-notch animate-spin" /> {t('Computing diff…')}
                             </div>
                         )}
 
                         {preview && !loadingPreview && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 space-y-3">
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <Stat label="Total" value={preview.total} color="text-slate-200" />
-                                    <Stat label="New" value={preview.newCount} color="text-emerald-400" />
-                                    <Stat label="Update" value={preview.updateCount} color="text-amber-400" />
-                                    <Stat label="Skip" value={preview.skipCount} color="text-slate-500" />
+                                    <Stat label={t('Total')} value={preview.total} color="text-slate-200" />
+                                    <Stat label={t('New')} value={preview.newCount} color="text-emerald-400" />
+                                    <Stat label={t('Update')} value={preview.updateCount} color="text-amber-400" />
+                                    <Stat label={t('Skip')} value={preview.skipCount} color="text-slate-500" />
                                 </div>
                                 {preview.invalid.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">{preview.invalid.length} invalid row{preview.invalid.length === 1 ? '' : 's'} (will be skipped)</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{preview.invalid.length === 1 ? t('{count} invalid row (will be skipped)', { count: preview.invalid.length }) : t('{count} invalid rows (will be skipped)', { count: preview.invalid.length })}</summary>
                                         <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar text-slate-400">
                                             {preview.invalid.map((bad) => (
-                                                <li key={bad.index}>Row {bad.index + 1}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
+                                                <li key={bad.index}>{t('Row {n}', { n: bad.index + 1 })}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
                                             ))}
                                         </ul>
                                     </details>
                                 )}
                                 {preview.conflicts.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">{preview.conflicts.length} change{preview.conflicts.length === 1 ? '' : 's'} to existing entries</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{preview.conflicts.length === 1 ? t('{count} change to existing entries', { count: preview.conflicts.length }) : t('{count} changes to existing entries', { count: preview.conflicts.length })}</summary>
                                         <ul className="mt-2 space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                                             {preview.conflicts.map((c) => (
                                                 <li key={`${c.name}::${c.qualityLabel ?? ''}`} className="bg-slate-900/60 rounded-md p-2 border border-slate-700/30">
@@ -435,21 +445,21 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                         {importProgress && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 space-y-2">
                                 <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest font-black">
-                                    <span>Progress</span>
+                                    <span>{t('Progress')}</span>
                                     <span>{importProgress.processed} / {importProgress.total}</span>
                                 </div>
                                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                                     <div className="h-full bg-cyan-400 transition-all" style={{ width: `${importPercent}%` }} />
                                 </div>
                                 <p className="text-[11px] text-slate-400">
-                                    {importProgress.inserted} added, {importProgress.updated} updated{importProgress.errors.length ? `, ${importProgress.errors.length} error${importProgress.errors.length === 1 ? '' : 's'}` : ''}.
+                                    {t('{inserted} added, {updated} updated', { inserted: importProgress.inserted, updated: importProgress.updated })}{importProgress.errors.length ? (importProgress.errors.length === 1 ? t(', {count} error', { count: importProgress.errors.length }) : t(', {count} errors', { count: importProgress.errors.length })) : ''}.
                                 </p>
                                 {importProgress.errors.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">View errors</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{t('View errors')}</summary>
                                         <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar text-slate-400">
                                             {importProgress.errors.map((bad) => (
-                                                <li key={bad.index}>Row {bad.index + 1}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
+                                                <li key={bad.index}>{t('Row {n}', { n: bad.index + 1 })}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
                                             ))}
                                         </ul>
                                     </details>
@@ -463,7 +473,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                                     onClick={handleCancelImport}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wider transition-colors"
                                 >
-                                    <i className="fa-solid fa-ban" /> Cancel
+                                    <i className="fa-solid fa-ban" /> {t('Cancel')}
                                 </button>
                             ) : (
                                 <button
@@ -471,7 +481,7 @@ const WhCatalogImportExportModal: React.FC<WhCatalogImportExportModalProps> = ({
                                     disabled={!items || !preview || importing || (preview.newCount + preview.updateCount === 0)}
                                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-cyan-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <i className="fa-solid fa-play" /> Start Import
+                                    <i className="fa-solid fa-play" /> {t('Start Import')}
                                 </button>
                             )}
                         </div>

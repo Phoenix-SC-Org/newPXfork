@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import type { QmInventoryItem, QmMovementReason } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type AdjustReasonKey = 'restock' | 'adjust' | 'loss' | 'destruction';
 
@@ -64,6 +65,7 @@ interface Props {
 export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [mode, setMode] = useState<'delta' | 'set'>('delta');
     const [reasonKey, setReasonKey] = useState<AdjustReasonKey>('restock');
@@ -110,7 +112,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
     if (!isOpen || !inventory) return null;
 
     const currentQty = inventory.quantityOnHand;
-    const itemName = inventory.catalog?.name || inventory.customName || 'Item';
+    const itemName = inventory.catalog?.name || inventory.customName || t('Item');
     const locationName = inventory.location?.name || '—';
 
     const computedDelta: number | null = (() => {
@@ -126,21 +128,21 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
     const projectedTotal = computedDelta == null ? null : currentQty + computedDelta;
 
     let validationError: string | null = null;
-    if (computedDelta == null) validationError = 'Enter a number.';
-    else if (computedDelta === 0) validationError = 'Delta must be non-zero.';
-    else if (reason.deltaSign === 'positive' && computedDelta < 0) validationError = 'Restock delta must be positive. Use "Adjust" or "Loss" to decrease.';
-    else if (reason.deltaSign === 'negative' && computedDelta > 0) validationError = `${reason.label} delta must be negative.`;
-    else if (projectedTotal != null && projectedTotal < 0) validationError = `Would take stock below zero (current ${currentQty}).`;
-    else if (reason.notesRequired && !notes.trim()) validationError = `Notes are required for ${reason.label.toLowerCase()}.`;
+    if (computedDelta == null) validationError = t('Enter a number.');
+    else if (computedDelta === 0) validationError = t('Delta must be non-zero.');
+    else if (reason.deltaSign === 'positive' && computedDelta < 0) validationError = t('Restock delta must be positive. Use "Adjust" or "Loss" to decrease.');
+    else if (reason.deltaSign === 'negative' && computedDelta > 0) validationError = t('{label} delta must be negative.', { label: t(reason.label) });
+    else if (projectedTotal != null && projectedTotal < 0) validationError = t('Would take stock below zero (current {count}).', { count: currentQty });
+    else if (reason.notesRequired && !notes.trim()) validationError = t('Notes are required for "{label}".', { label: t(reason.label) });
 
     const handleSubmit = async () => {
         if (validationError || computedDelta == null) return;
 
         if (reason.destructive) {
             const confirmed = await confirm({
-                title: `Confirm ${reason.label}`,
-                message: `Record ${Math.abs(computedDelta)} ${itemName} as ${reason.label.toLowerCase()}? This is logged to the movement ledger and cannot be reverted directly — you'd need an opposite restock.`,
-                confirmText: reason.label,
+                title: t('Confirm {label}', { label: t(reason.label) }),
+                message: t("Record {count} {item} as \"{label}\"? This is logged to the movement ledger and cannot be reverted directly — you'd need an opposite restock.", { count: Math.abs(computedDelta), item: itemName, label: t(reason.label) }),
+                confirmText: t(reason.label),
                 variant: 'danger',
             });
             if (!confirmed) return;
@@ -155,7 +157,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                 notes: notes.trim() || undefined,
             });
             addToast(
-                'Stock adjusted',
+                t('Stock adjusted'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
                 { description: `${itemName}: ${currentQty} → ${projectedTotal}` }
@@ -164,10 +166,10 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
             onClose();
         } catch (err: any) {
             addToast(
-                'Adjustment failed',
+                t('Adjustment failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not adjust stock.' }
+                { description: err?.message || t('Could not adjust stock.') }
             );
         } finally {
             setSubmitting(false);
@@ -180,14 +182,14 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
             <div className="relative w-full max-w-lg bg-slate-950/95 border border-white/10 rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
                     <div className="min-w-0">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Adjust Stock</p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">{t('Adjust Stock')}</p>
                         <h2 className="text-base font-bold text-white truncate">{itemName}</h2>
-                        <p className="text-[11px] text-slate-500 truncate">at {locationName}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{t('at {location}', { location: locationName })}</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="text-slate-500 hover:text-white text-sm w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-colors"
-                        aria-label="Close"
+                        aria-label={t('Close')}
                     >
                         <i className="fa-solid fa-xmark" />
                     </button>
@@ -195,7 +197,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
 
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar">
                     <div className="flex items-center justify-between rounded-lg bg-slate-900/60 border border-white/5 px-4 py-3">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Current on hand</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Current on hand')}</span>
                         <span className="text-2xl font-black font-mono text-white">{currentQty}</span>
                     </div>
 
@@ -206,7 +208,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                                 mode === 'delta' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                             }`}
                         >
-                            Delta (+/-)
+                            {t('Delta (+/-)')}
                         </button>
                         <button
                             onClick={() => setMode('set')}
@@ -214,20 +216,20 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                                 mode === 'set' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                             }`}
                         >
-                            Set new total
+                            {t('Set new total')}
                         </button>
                     </div>
 
                     {mode === 'delta' ? (
                         <div>
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                                Change by (use - to decrease)
+                                {t('Change by (use - to decrease)')}
                             </label>
                             <input
                                 type="number"
                                 value={deltaInput}
                                 onChange={(e) => setDeltaInput(e.target.value)}
-                                placeholder="e.g. 5 or -3"
+                                placeholder={t('e.g. 5 or -3')}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base font-mono text-white focus:ring-2 focus:ring-orange-500 outline-hidden"
                                 autoFocus
                             />
@@ -235,7 +237,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                     ) : (
                         <div>
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                                New total
+                                {t('New total')}
                             </label>
                             <input
                                 type="number"
@@ -249,7 +251,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                     )}
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Reason</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Reason')}</label>
                         <div className="space-y-1.5">
                             {REASON_OPTIONS.map((opt) => (
                                 <label
@@ -271,8 +273,8 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                                         className={`mt-0.5 ${opt.destructive ? 'accent-red-500' : 'accent-orange-500'}`}
                                     />
                                     <div className="flex-1">
-                                        <div className={`text-xs font-bold ${opt.destructive ? 'text-red-200' : 'text-white'}`}>{opt.label}</div>
-                                        <div className="text-[11px] text-slate-400">{opt.description}</div>
+                                        <div className={`text-xs font-bold ${opt.destructive ? 'text-red-200' : 'text-white'}`}>{t(opt.label)}</div>
+                                        <div className="text-[11px] text-slate-400">{t(opt.description)}</div>
                                     </div>
                                 </label>
                             ))}
@@ -281,13 +283,13 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
 
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                            Notes {reason.notesRequired && <span className="text-red-400">*</span>}
+                            {t('Notes')} {reason.notesRequired && <span className="text-red-400">*</span>}
                         </label>
                         <textarea
                             rows={2}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            placeholder={reason.notesRequired ? 'Required — what happened?' : 'Optional context for the audit log'}
+                            placeholder={reason.notesRequired ? t('Required — what happened?') : t('Optional context for the audit log')}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-orange-500 outline-hidden resize-none"
                         />
                     </div>
@@ -312,7 +314,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                         disabled={submitting}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors disabled:opacity-50"
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={handleSubmit}
@@ -321,7 +323,7 @@ export default function AdjustStockDialog({ isOpen, inventory, onClose, onSubmit
                             reason.destructive ? 'bg-red-600 hover:bg-red-500' : 'bg-orange-600 hover:bg-orange-500'
                         }`}
                     >
-                        {submitting ? <><i className="fa-solid fa-spinner fa-spin mr-1.5" />Saving…</> : <><i className="fa-solid fa-check mr-1.5" />Apply</>}
+                        {submitting ? <><i className="fa-solid fa-spinner fa-spin mr-1.5" />{t('Saving…')}</> : <><i className="fa-solid fa-check mr-1.5" />{t('Apply', { context: 'stock adjustment' })}</>}
                     </button>
                 </div>
             </div>

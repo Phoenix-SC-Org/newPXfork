@@ -15,6 +15,7 @@ import HeroStat from '../../shared/ui/HeroStat';
 import HeroActionButton from '../../shared/ui/HeroActionButton';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type FleetTab = 'hangar' | 'fleet' | 'organization';
 
@@ -51,6 +52,7 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
     toggleAssignOwner,
     onAssign,
 }) => {
+    const { t } = useI18n();
     const assignedIds = new Set((assigningGroup.assignedShips || []).map(a => a.id));
     const available = userShips.filter(s => !assignedIds.has(s.id));
     const term = assignSearch.trim().toLowerCase();
@@ -60,7 +62,7 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
     const bucketMap = new Map<number, OwnerBucket>();
     for (const s of available) {
         const userId = s.userId;
-        const userName = s.user?.name || 'Unknown';
+        const userName = s.user?.name || t('Unknown');
         const b = bucketMap.get(userId);
         const nameMatch = term ? (
             (s.customName || '').toLowerCase().includes(term)
@@ -111,20 +113,20 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
                             type="search"
                             value={assignSearch}
                             onChange={(e) => setAssignSearch(e.target.value)}
-                            placeholder="Search ships, owners, manufacturers…"
+                            placeholder={t('Search ships, owners, manufacturers…')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/40 outline-hidden"
                         />
                     </div>
                     <div className="flex items-center justify-between mt-2">
                         <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                            {filteredBuckets.reduce((sum, b) => sum + b.ships.length, 0)} ships · {filteredBuckets.length} owners
+                            {t('{ships} ships · {owners} owners', { ships: filteredBuckets.reduce((sum, b) => sum + b.ships.length, 0), owners: filteredBuckets.length })}
                         </span>
                         {!term && assignExpandedOwners.size > 0 && (
                             <button
                                 onClick={() => setAssignExpandedOwners(new Set())}
                                 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                             >
-                                Collapse all
+                                {t('Collapse all')}
                             </button>
                         )}
                         {!term && assignExpandedOwners.size === 0 && filteredBuckets.length > 0 && (
@@ -132,7 +134,7 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
                                 onClick={() => setAssignExpandedOwners(new Set(filteredBuckets.map(b => b.userId)))}
                                 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                             >
-                                Expand all
+                                {t('Expand all')}
                             </button>
                         )}
                     </div>
@@ -144,16 +146,16 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
                     <EmptyState
                         icon="fa-circle-check"
                         accent="emerald"
-                        heading="All ships assigned"
-                        description="Every ship in the org is already in a fleet group."
+                        heading={t('All ships assigned')}
+                        description={t('Every ship in the org is already in a fleet group.')}
                         compact
                     />
                 ) : filteredBuckets.length === 0 ? (
                     <EmptyState
                         icon="fa-filter"
                         accent="slate"
-                        heading="No matches"
-                        description="Try a different search term."
+                        heading={t('No matches')}
+                        description={t('Try a different search term.')}
                         compact
                     />
                 ) : filteredBuckets.map(b => {
@@ -169,7 +171,7 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
                                 )}
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-bold text-white truncate">{b.userName}</p>
-                                    <p className="text-[10px] text-slate-500 font-mono">{b.ships.length} {b.ships.length === 1 ? 'ship' : 'ships'}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">{b.ships.length === 1 ? t('{count} ship', { count: b.ships.length }) : t('{count} ships', { count: b.ships.length })}</p>
                                 </div>
                                 <i className={`fa-solid fa-chevron-${expanded ? 'up' : 'down'} text-slate-500 text-xs shrink-0`}></i>
                             </button>
@@ -191,7 +193,7 @@ const AssignShipsPicker: React.FC<AssignShipsPickerProps> = ({
                                             </div>
                                             <button onClick={() => onAssign(assigningGroup.id, us.id)}
                                                 className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-orange-300 bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 rounded-lg transition-colors shrink-0">
-                                                <i className="fa-solid fa-plus"></i>Assign
+                                                <i className="fa-solid fa-plus"></i>{t('Assign')}
                                             </button>
                                         </div>
                                     ))}
@@ -211,6 +213,7 @@ const FleetManagerView: React.FC = () => {
     const { allUsers } = useMembers();
     const { shipCatalog, userShips, fleetGroups, refreshFleet } = useFleet();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const [activeTab, setActiveTab] = useState<FleetTab>('hangar');
     const [showCatalog, setShowCatalog] = useState(false);
     const [editingShip, setEditingShip] = useState<UserShip | null>(null);
@@ -290,14 +293,14 @@ const FleetManagerView: React.FC = () => {
             }
             await refreshFleet();
             setShowCatalog(false);
-            const msg = ships.length === 1 ? `${ships[0].name} added to your hangar` : `${ships.length} ships added to your hangar`;
-            addToast('Ship Added', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: msg });
+            const msg = ships.length === 1 ? t('{name} added to your hangar', { name: ships[0].name }) : t('{count} ships added to your hangar', { count: ships.length });
+            addToast(t('Ship Added'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: msg });
         } catch (e: any) {
-            addToast('Add Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to add ships to your hangar.' });
+            addToast(t('Add Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to add ships to your hangar.') });
         } finally {
             setIsBusy(false);
         }
-    }, [isBusy, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, rpcAction, refreshFleet, addToast, t]);
 
     const handleUpdateShip = useCallback(async () => {
         if (!editingShip || isBusy) return;
@@ -306,10 +309,10 @@ const FleetManagerView: React.FC = () => {
             await rpcAction('fleet:update_ship', { userShipId: editingShip.id, updates: editForm });
             await refreshFleet();
             setEditingShip(null);
-            addToast('Ship Updated', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'Ship details have been saved.' });
-        } catch (e: any) { addToast('Update Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to update the ship.' }); }
+            addToast(t('Ship Updated'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('Ship details have been saved.') });
+        } catch (e: any) { addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to update the ship.') }); }
         finally { setIsBusy(false); }
-    }, [editingShip, editForm, isBusy, rpcAction, refreshFleet, addToast]);
+    }, [editingShip, editForm, isBusy, rpcAction, refreshFleet, addToast, t]);
 
     const handleRemoveShip = useCallback(async (id: number) => {
         if (isBusy) return;
@@ -317,10 +320,10 @@ const FleetManagerView: React.FC = () => {
         try {
             await rpcAction('fleet:remove_ship', { userShipId: id });
             await refreshFleet();
-            addToast('Ship Removed', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'The ship has been removed from your hangar.' });
-        } catch (e: any) { addToast('Remove Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to remove the ship.' }); }
+            addToast(t('Ship Removed'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('The ship has been removed from your hangar.') });
+        } catch (e: any) { addToast(t('Remove Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to remove the ship.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, rpcAction, refreshFleet, addToast, t]);
 
     const handleBulkRemoveShips = useCallback(async () => {
         if (isBusy || selectedShips.size === 0) return;
@@ -328,12 +331,12 @@ const FleetManagerView: React.FC = () => {
         try {
             await rpcAction('fleet:remove_ships', { userShipIds: Array.from(selectedShips) });
             await refreshFleet();
-            addToast('Ships Removed', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: `${selectedShips.size} ship${selectedShips.size > 1 ? 's' : ''} removed from your hangar.` });
+            addToast(t('Ships Removed'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: selectedShips.size === 1 ? t('{count} ship removed from your hangar.', { count: selectedShips.size }) : t('{count} ships removed from your hangar.', { count: selectedShips.size }) });
             setSelectedShips(new Set());
             setSelectMode(false);
-        } catch (e: any) { addToast('Remove Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to remove the selected ships.' }); }
+        } catch (e: any) { addToast(t('Remove Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to remove the selected ships.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, selectedShips, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, selectedShips, rpcAction, refreshFleet, addToast, t]);
 
     const toggleShipSelection = useCallback((id: number) => {
         setSelectedShips(prev => {
@@ -357,10 +360,10 @@ const FleetManagerView: React.FC = () => {
             await refreshFleet();
             setShowGroupModal(false);
             setEditingGroup(null);
-            addToast(editingGroup ? 'Group Updated' : 'Group Created', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: editingGroup ? 'Fleet group settings have been saved.' : 'A new fleet group has been created.' });
-        } catch (e: any) { addToast('Group Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to save fleet group.' }); }
+            addToast(editingGroup ? t('Group Updated') : t('Group Created'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: editingGroup ? t('Fleet group settings have been saved.') : t('A new fleet group has been created.') });
+        } catch (e: any) { addToast(t('Group Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to save fleet group.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, editingGroup, groupForm, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, editingGroup, groupForm, rpcAction, refreshFleet, addToast, t]);
 
     const handleDeleteGroup = useCallback(async (id: number) => {
         if (isBusy) return;
@@ -370,22 +373,26 @@ const FleetManagerView: React.FC = () => {
         // on fleet_group_ships; childCount covers the server's reparent step
         // (children get promoted to the deleted group's parent, not orphaned).
         const target = fleetGroups.find(g => g.id === id);
-        const groupName = target?.name || 'this group';
+        const groupName = target?.name || t('this group');
         const shipCount = target?.assignedShips?.length || 0;
         const childCount = fleetGroups.filter(g => g.parentId === id).length;
 
-        let message = `Permanently delete the fleet group "${groupName}"? This cannot be undone.`;
+        let message = t('Permanently delete the fleet group "{name}"? This cannot be undone.', { name: groupName });
         if (shipCount > 0 || childCount > 0) {
             const parts: string[] = [];
-            if (shipCount > 0) parts.push(`${shipCount} ship${shipCount === 1 ? '' : 's'} will be unassigned (they will remain in their owners' hangars)`);
-            if (childCount > 0) parts.push(`${childCount} sub-group${childCount === 1 ? '' : 's'} will be promoted to the parent level`);
-            message = `Delete the fleet group "${groupName}"? ${parts.join('; ')}. This cannot be undone.`;
+            if (shipCount > 0) parts.push(shipCount === 1
+                ? t("{count} ship will be unassigned (it will remain in its owner's hangar)", { count: shipCount })
+                : t("{count} ships will be unassigned (they will remain in their owners' hangars)", { count: shipCount }));
+            if (childCount > 0) parts.push(childCount === 1
+                ? t('{count} sub-group will be promoted to the parent level', { count: childCount })
+                : t('{count} sub-groups will be promoted to the parent level', { count: childCount }));
+            message = t('Delete the fleet group "{name}"? {details}. This cannot be undone.', { name: groupName, details: parts.join('; ') });
         }
 
         const confirmed = await confirm({
-            title: 'Delete Fleet Group',
+            title: t('Delete Fleet Group'),
             message,
-            confirmText: 'Delete',
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -394,10 +401,10 @@ const FleetManagerView: React.FC = () => {
         try {
             await rpcAction('fleet:delete_group', { groupId: id });
             await refreshFleet();
-            addToast('Group Deleted', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'The fleet group has been deleted.' });
-        } catch (e: any) { addToast('Delete Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to delete the fleet group.' }); }
+            addToast(t('Group Deleted'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('The fleet group has been deleted.') });
+        } catch (e: any) { addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to delete the fleet group.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, fleetGroups, confirm, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, fleetGroups, confirm, rpcAction, refreshFleet, addToast, t]);
 
     const handleAssignShip = useCallback(async (fleetGroupId: number, userShipId: number) => {
         if (isBusy) return;
@@ -405,10 +412,10 @@ const FleetManagerView: React.FC = () => {
         try {
             await rpcAction('fleet:assign_ship', { fleetGroupId, userShipId });
             await refreshFleet();
-            addToast('Ship Assigned', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'The ship has been assigned to the fleet group.' });
-        } catch (e: any) { addToast('Assign Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to assign the ship.' }); }
+            addToast(t('Ship Assigned'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('The ship has been assigned to the fleet group.') });
+        } catch (e: any) { addToast(t('Assign Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to assign the ship.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, rpcAction, refreshFleet, addToast, t]);
 
     const handleUnassignShip = useCallback(async (fleetGroupId: number, userShipId: number) => {
         if (isBusy) return;
@@ -416,10 +423,10 @@ const FleetManagerView: React.FC = () => {
         try {
             await rpcAction('fleet:unassign_ship', { fleetGroupId, userShipId });
             await refreshFleet();
-            addToast('Ship Unassigned', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'The ship has been removed from the fleet group.' });
-        } catch (e: any) { addToast('Unassign Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to unassign the ship.' }); }
+            addToast(t('Ship Unassigned'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('The ship has been removed from the fleet group.') });
+        } catch (e: any) { addToast(t('Unassign Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to unassign the ship.') }); }
         finally { setIsBusy(false); }
-    }, [isBusy, rpcAction, refreshFleet, addToast]);
+    }, [isBusy, rpcAction, refreshFleet, addToast, t]);
 
     // Drag-and-drop reorder/reparent for the org chart. Each handler is a thin
     // wrapper around the RPC + toast, mirroring the pattern above. The chart is
@@ -429,27 +436,27 @@ const FleetManagerView: React.FC = () => {
             await rpcAction('fleet:reorder_groups', { orderedIds });
             await refreshFleet();
         } catch (e: any) {
-            addToast('Reorder Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to save the new order.' });
+            addToast(t('Reorder Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to save the new order.') });
         }
-    }, [rpcAction, refreshFleet, addToast]);
+    }, [rpcAction, refreshFleet, addToast, t]);
 
     const handleReparentGroup = useCallback(async (groupId: number, newParentId: number | null, newSortOrder: number) => {
         try {
             await rpcAction('fleet:reparent_group', { groupId, newParentId, newSortOrder });
             await refreshFleet();
         } catch (e: any) {
-            addToast('Move Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to move the group.' });
+            addToast(t('Move Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to move the group.') });
         }
-    }, [rpcAction, refreshFleet, addToast]);
+    }, [rpcAction, refreshFleet, addToast, t]);
 
     const handleReorderGroupShips = useCallback(async (fleetGroupId: number, orderedAssignmentIds: number[]) => {
         try {
             await rpcAction('fleet:reorder_group_ships', { fleetGroupId, orderedAssignmentIds });
             await refreshFleet();
         } catch (e: any) {
-            addToast('Reorder Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to save the new ship order.' });
+            addToast(t('Reorder Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to save the new ship order.') });
         }
-    }, [rpcAction, refreshFleet, addToast]);
+    }, [rpcAction, refreshFleet, addToast, t]);
 
     // Move a ship from one group to another by remove+assign. Two RPCs each
     // emit a fleet_update; that's acceptable for an infrequent drag operation.
@@ -460,9 +467,9 @@ const FleetManagerView: React.FC = () => {
             await rpcAction('fleet:assign_ship', { fleetGroupId: toGroupId, userShipId });
             await refreshFleet();
         } catch (e: any) {
-            addToast('Move Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || 'Failed to move the ship.' });
+            addToast(t('Move Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e.message || t('Failed to move the ship.') });
         }
-    }, [rpcAction, refreshFleet, addToast]);
+    }, [rpcAction, refreshFleet, addToast, t]);
 
     const fleetStats = useMemo(() => {
         const byManufacturer: Record<string, number> = {};
@@ -510,25 +517,25 @@ const FleetManagerView: React.FC = () => {
         const groups: Record<string, UserShip[]> = {};
         for (const s of filteredFleet) {
             let key = '';
-            if (groupBy === 'member') key = s.user?.name || 'Unknown';
-            else if (groupBy === 'manufacturer') key = s.ship?.manufacturer || 'Unknown';
-            else if (groupBy === 'role') key = s.ship?.role || 'General';
+            if (groupBy === 'member') key = s.user?.name || t('Unknown');
+            else if (groupBy === 'manufacturer') key = s.ship?.manufacturer || t('Unknown');
+            else if (groupBy === 'role') key = s.ship?.role || t('General');
             if (!groups[key]) groups[key] = [];
             groups[key].push(s);
         }
         return groups;
-    }, [filteredFleet, groupBy]);
+    }, [filteredFleet, groupBy, t]);
 
     const tabs = useMemo(() => {
-        const t: { key: FleetTab; label: string; icon: string }[] = [
-            { key: 'hangar', label: 'My Hangar', icon: 'fa-solid fa-warehouse' },
+        const list: { key: FleetTab; label: string; icon: string }[] = [
+            { key: 'hangar', label: t('My Hangar'), icon: 'fa-solid fa-warehouse' },
         ];
         if (canViewFleet) {
-            t.push({ key: 'fleet', label: 'Org Fleet', icon: 'fa-solid fa-layer-group' });
-            t.push({ key: 'organization', label: 'Manage Fleet', icon: 'fa-solid fa-sitemap' });
+            list.push({ key: 'fleet', label: t('Org Fleet'), icon: 'fa-solid fa-layer-group' });
+            list.push({ key: 'organization', label: t('Manage Fleet'), icon: 'fa-solid fa-sitemap' });
         }
-        return t;
-    }, [canViewFleet]);
+        return list;
+    }, [canViewFleet, t]);
 
     const labelClass = 'block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5';
     const inputClass = 'w-full bg-slate-900/60 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-orange-500/40 focus:ring-1 focus:ring-orange-500/50 outline-hidden transition-all';
@@ -539,11 +546,11 @@ const FleetManagerView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · FLEET MANAGER"
+                chipLabel={t('MODULE · FLEET MANAGER')}
                 chipIcon="fa-rocket"
                 chipAccent="orange"
-                title="Fleet Manager"
-                subtitle="Hangar, org fleet, and fleet group management. Ship catalog synced from the Star Citizen Wiki."
+                title={t('Fleet Manager')}
+                subtitle={t('Hangar, org fleet, and fleet group management. Ship catalog synced from the Star Citizen Wiki.')}
                 actions={<>
                     {activeTab === 'hangar' && canManageOwn && (
                         selectMode ? (
@@ -561,7 +568,7 @@ const FleetManagerView: React.FC = () => {
                                     accent="slate"
                                     icon="fa-check-double"
                                 >
-                                    {selectedShips.size === myShips.length && myShips.length > 0 ? 'Deselect All' : 'Select All'}
+                                    {selectedShips.size === myShips.length && myShips.length > 0 ? t('Deselect All') : t('Select All')}
                                 </HeroActionButton>
                                 <HeroActionButton
                                     onClick={handleBulkRemoveShips}
@@ -569,22 +576,22 @@ const FleetManagerView: React.FC = () => {
                                     accent="red"
                                     icon="fa-trash"
                                 >
-                                    {isBusy ? 'Removing…' : `Delete${selectedShips.size > 0 ? ` (${selectedShips.size})` : ''}`}
+                                    {isBusy ? t('Removing…') : selectedShips.size > 0 ? t('Delete ({count})', { count: selectedShips.size }) : t('Delete')}
                                 </HeroActionButton>
                                 <button onClick={() => { setSelectMode(false); setSelectedShips(new Set()); }}
                                     className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition whitespace-nowrap">
-                                    Cancel
+                                    {t('Cancel')}
                                 </button>
                             </>
                         ) : (
                             <>
                                 {myShips.length > 0 && (
                                     <HeroActionButton onClick={() => setSelectMode(true)} accent="slate" icon="fa-check-square">
-                                        Select
+                                        {t('Select')}
                                     </HeroActionButton>
                                 )}
                                 <HeroActionButton onClick={() => setShowCatalog(true)} accent="orange" icon="fa-plus">
-                                    Add Ship
+                                    {t('Add Ship')}
                                 </HeroActionButton>
                             </>
                         )
@@ -595,15 +602,15 @@ const FleetManagerView: React.FC = () => {
                             accent="orange"
                             icon="fa-plus"
                         >
-                            Create Group
+                            {t('Create Group')}
                         </HeroActionButton>
                     )}
                 </>}
                 stats={<>
-                    <HeroStat icon="fa-warehouse" label="My Hangar" value={myShips.length} accent="orange" emphasize={myShips.length > 0} onClick={() => setActiveTab('hangar')} />
-                    <HeroStat icon="fa-rocket" label="Org Ships" value={fleetStats.total} accent="sky" emphasize={fleetStats.total > 0} onClick={canViewFleet ? () => setActiveTab('fleet') : undefined} />
-                    <HeroStat icon="fa-sitemap" label="Fleet Groups" value={fleetGroups.length} accent="indigo" emphasize={fleetGroups.length > 0} onClick={canViewFleet ? () => setActiveTab('organization') : undefined} />
-                    <HeroStat icon="fa-users" label="Members w/ Ships" value={ownersCount} accent="emerald" emphasize={ownersCount > 0} />
+                    <HeroStat icon="fa-warehouse" label={t('My Hangar')} value={myShips.length} accent="orange" emphasize={myShips.length > 0} onClick={() => setActiveTab('hangar')} />
+                    <HeroStat icon="fa-rocket" label={t('Org Ships')} value={fleetStats.total} accent="sky" emphasize={fleetStats.total > 0} onClick={canViewFleet ? () => setActiveTab('fleet') : undefined} />
+                    <HeroStat icon="fa-sitemap" label={t('Fleet Groups')} value={fleetGroups.length} accent="indigo" emphasize={fleetGroups.length > 0} onClick={canViewFleet ? () => setActiveTab('organization') : undefined} />
+                    <HeroStat icon="fa-users" label={t('Members w/ Ships')} value={ownersCount} accent="emerald" emphasize={ownersCount > 0} />
                 </>}
                 tabs={tabs.map(tab => (
                     <button
@@ -627,7 +634,7 @@ const FleetManagerView: React.FC = () => {
                             <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                             <input
                                 type="search"
-                                placeholder={activeTab === 'hangar' ? 'Search your hangar…' : 'Search fleet ships, owners, manufacturers…'}
+                                placeholder={activeTab === 'hangar' ? t('Search your hangar…') : t('Search fleet ships, owners, manufacturers…')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-500 font-mono text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/40 transition-all"
@@ -636,42 +643,42 @@ const FleetManagerView: React.FC = () => {
                         {activeTab === 'fleet' && (
                             <div className="flex flex-wrap gap-2 items-center">
                                 <select value={filterManufacturer} onChange={(e) => setFilterManufacturer(e.target.value)} className={selectClass}>
-                                    <option value="">All Manufacturers</option>
+                                    <option value="">{t('All Manufacturers')}</option>
                                     {Object.entries(fleetStats.byManufacturer).sort((a, b) => b[1] - a[1]).map(([m, c]) => (
                                         <option key={m} value={m}>{m} ({c})</option>
                                     ))}
                                 </select>
                                 <select value={filterSize} onChange={(e) => setFilterSize(e.target.value)} className={selectClass}>
-                                    <option value="">All Sizes</option>
+                                    <option value="">{t('All Sizes')}</option>
                                     {Object.entries(fleetStats.bySize).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
                                         <option key={s} value={s}>{s} ({c})</option>
                                     ))}
                                 </select>
                                 <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as any)} className={selectClass}>
-                                    <option value="none">No Grouping</option>
-                                    <option value="member">By Member</option>
-                                    <option value="manufacturer">By Manufacturer</option>
-                                    <option value="role">By Role</option>
+                                    <option value="none">{t('No Grouping')}</option>
+                                    <option value="member">{t('By Member')}</option>
+                                    <option value="manufacturer">{t('By Manufacturer')}</option>
+                                    <option value="role">{t('By Role')}</option>
                                 </select>
                                 {/* Stacked / Individual toggle — fixes the 20×Arrow wall of cards for bulk-ship orgs. */}
                                 <div className="flex items-center gap-0.5 bg-slate-900/60 border border-slate-700 rounded-lg p-0.5">
                                     <button
                                         onClick={() => setFleetViewMode('stacked')}
-                                        title="Group duplicate ship types with a count"
+                                        title={t('Group duplicate ship types with a count')}
                                         className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition ${
                                             fleetViewMode === 'stacked' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                                         }`}
                                     >
-                                        <i className="fa-solid fa-layer-group mr-1" />Stacked
+                                        <i className="fa-solid fa-layer-group mr-1" />{t('Stacked')}
                                     </button>
                                     <button
                                         onClick={() => setFleetViewMode('individual')}
-                                        title="Show every ship instance as its own card"
+                                        title={t('Show every ship instance as its own card')}
                                         className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition ${
                                             fleetViewMode === 'individual' ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                                         }`}
                                     >
-                                        <i className="fa-solid fa-grip mr-1" />Individual
+                                        <i className="fa-solid fa-grip mr-1" />{t('Individual')}
                                     </button>
                                 </div>
                             </div>
@@ -710,12 +717,12 @@ const FleetManagerView: React.FC = () => {
                                 <EmptyState
                                     icon="fa-rocket"
                                     accent="orange"
-                                    heading="Your hangar is empty"
-                                    description="Add ships from the catalog to build your fleet."
+                                    heading={t('Your hangar is empty')}
+                                    description={t('Add ships from the catalog to build your fleet.')}
                                     action={canManageOwn ? (
                                         <button onClick={() => setShowCatalog(true)}
                                             className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-orange-600 hover:bg-orange-500 border border-orange-500/40 rounded-lg shadow-lg shadow-orange-900/30 transition">
-                                            <i className="fa-solid fa-book-open"></i>Browse Catalog
+                                            <i className="fa-solid fa-book-open"></i>{t('Browse Catalog')}
                                         </button>
                                     ) : undefined}
                                 />
@@ -755,10 +762,10 @@ const FleetManagerView: React.FC = () => {
                 {activeTab === 'fleet' && (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <HeroStat icon="fa-rocket" label="Total Ships" value={fleetStats.total} accent="orange" />
-                            <HeroStat icon="fa-industry" label="Manufacturers" value={Object.keys(fleetStats.byManufacturer).length} accent="sky" />
-                            <HeroStat icon="fa-tags" label="Ship Roles" value={Object.keys(fleetStats.byRole).length} accent="amber" />
-                            <HeroStat icon="fa-users" label="Ship Owners" value={new Set(userShips.map(s => s.userId)).size} accent="emerald" />
+                            <HeroStat icon="fa-rocket" label={t('Total Ships')} value={fleetStats.total} accent="orange" />
+                            <HeroStat icon="fa-industry" label={t('Manufacturers')} value={Object.keys(fleetStats.byManufacturer).length} accent="sky" />
+                            <HeroStat icon="fa-tags" label={t('Ship Roles')} value={Object.keys(fleetStats.byRole).length} accent="amber" />
+                            <HeroStat icon="fa-users" label={t('Ship Owners')} value={new Set(userShips.map(s => s.userId)).size} accent="emerald" />
                         </div>
 
                         {/* Fleet Grid — Stacked or Individual */}
@@ -809,7 +816,7 @@ const FleetManagerView: React.FC = () => {
                                                             <div className="relative">
                                                                 <ShipCard ship={first.ship!} userShip={first} />
                                                                 <div className="absolute bottom-2 right-2 text-[9px] text-slate-300 bg-slate-900/80 border border-slate-700 px-2 py-0.5 rounded-sm backdrop-blur-xs">
-                                                                    <i className="fa-solid fa-user mr-1 text-slate-500"></i>{first.user?.name || 'Unknown'}
+                                                                    <i className="fa-solid fa-user mr-1 text-slate-500"></i>{first.user?.name || t('Unknown')}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -830,14 +837,14 @@ const FleetManagerView: React.FC = () => {
                                                                             <span className="text-[9px] font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded-full w-5 h-5 flex items-center justify-center">+{overflowCount}</span>
                                                                         )}
                                                                         <span className="text-[10px] text-slate-400 ml-1 truncate">
-                                                                            {owners.length} {owners.length === 1 ? 'owner' : 'owners'}
+                                                                            {owners.length === 1 ? t('{count} owner', { count: owners.length }) : t('{count} owners', { count: owners.length })}
                                                                         </span>
                                                                     </div>
                                                                     <button
                                                                         onClick={() => toggleStack(stackKey)}
                                                                         className="text-[10px] font-bold uppercase tracking-widest text-orange-300 hover:text-orange-200 flex items-center gap-1 shrink-0"
                                                                     >
-                                                                        {expanded ? 'Hide' : 'Details'}
+                                                                        {expanded ? t('Hide') : t('Details')}
                                                                         <i className={`fa-solid fa-chevron-${expanded ? 'up' : 'down'} text-[9px]`} />
                                                                     </button>
                                                                 </div>
@@ -850,10 +857,10 @@ const FleetManagerView: React.FC = () => {
                                                                                     {inst.customName ? (
                                                                                         <>
                                                                                             <span className="text-white font-bold">{inst.customName}</span>
-                                                                                            <span className="text-slate-500"> · {inst.user?.name || 'Unknown'}</span>
+                                                                                            <span className="text-slate-500"> · {inst.user?.name || t('Unknown')}</span>
                                                                                         </>
                                                                                     ) : (
-                                                                                        <span>{inst.user?.name || 'Unknown'}</span>
+                                                                                        <span>{inst.user?.name || t('Unknown')}</span>
                                                                                     )}
                                                                                 </span>
                                                                                 <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${
@@ -862,7 +869,7 @@ const FleetManagerView: React.FC = () => {
                                                                                     inst.status === 'Damaged' ? 'text-red-400 bg-red-500/10 border-red-500/30' :
                                                                                     inst.status === 'Lent' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' :
                                                                                     'text-slate-500 bg-slate-700/50 border-slate-600'
-                                                                                }`}>{inst.status}</span>
+                                                                                }`}>{t(inst.status)}</span>
                                                                             </li>
                                                                         ))}
                                                                     </ul>
@@ -885,7 +892,7 @@ const FleetManagerView: React.FC = () => {
                                             <div key={us.id} className="relative">
                                                 <ShipCard ship={us.ship!} userShip={us} />
                                                 <div className="absolute bottom-2 right-2 text-[9px] text-slate-300 bg-slate-900/80 border border-slate-700 px-2 py-0.5 rounded-sm backdrop-blur-xs">
-                                                    <i className="fa-solid fa-user mr-1 text-slate-500"></i>{us.user?.name || 'Unknown'}
+                                                    <i className="fa-solid fa-user mr-1 text-slate-500"></i>{us.user?.name || t('Unknown')}
                                                 </div>
                                             </div>
                                         ))}
@@ -898,8 +905,8 @@ const FleetManagerView: React.FC = () => {
                                 <EmptyState
                                     icon="fa-filter"
                                     accent="orange"
-                                    heading="No ships match your filters"
-                                    description={searchTerm ? 'Try a different search term or clear filters.' : 'Adjust manufacturer or size filters to see more.'}
+                                    heading={t('No ships match your filters')}
+                                    description={searchTerm ? t('Try a different search term or clear filters.') : t('Adjust manufacturer or size filters to see more.')}
                                     compact
                                 />
                             </div>
@@ -922,10 +929,10 @@ const FleetManagerView: React.FC = () => {
                                     <div className="flex items-center gap-2.5">
                                         <i className="fa-solid fa-triangle-exclamation text-amber-400 text-sm"></i>
                                         <span className="text-xs font-black uppercase tracking-widest text-amber-200">
-                                            Unassigned Ships ({unassignedShips.length})
+                                            {t('Unassigned Ships ({count})', { count: unassignedShips.length })}
                                         </span>
                                         <span className="text-[11px] text-amber-300/70 hidden sm:inline">
-                                            Not in any fleet group — assign or remove
+                                            {t('Not in any fleet group — assign or remove')}
                                         </span>
                                     </div>
                                     <i className={`fa-solid ${unassignedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-amber-300/70 text-xs`}></i>
@@ -940,7 +947,7 @@ const FleetManagerView: React.FC = () => {
                                                         onError={(e) => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }} />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-xs font-bold text-white truncate">{s.customName || s.ship?.name}</p>
-                                                        <p className="text-[10px] text-slate-500 truncate">{s.user?.name || 'Unknown owner'}</p>
+                                                        <p className="text-[10px] text-slate-500 truncate">{s.user?.name || t('Unknown owner')}</p>
                                                     </div>
                                                     <select
                                                         defaultValue=""
@@ -952,9 +959,9 @@ const FleetManagerView: React.FC = () => {
                                                             e.target.value = '';
                                                         }}
                                                         className="bg-slate-950/80 border border-slate-700 rounded-sm text-[10px] text-slate-300 px-1.5 py-1 max-w-[7.5rem] focus:border-amber-500/40 outline-hidden"
-                                                        title="Assign to fleet group"
+                                                        title={t('Assign to fleet group')}
                                                     >
-                                                        <option value="" disabled>Assign to…</option>
+                                                        <option value="" disabled>{t('Assign to…')}</option>
                                                         {fleetGroups.map(g => (
                                                             <option key={g.id} value={g.id}>{g.name}</option>
                                                         ))}
@@ -972,12 +979,12 @@ const FleetManagerView: React.FC = () => {
                                 <EmptyState
                                     icon="fa-sitemap"
                                     accent="orange"
-                                    heading="No fleet groups yet"
-                                    description="Create a division or squadron to start organizing ships."
+                                    heading={t('No fleet groups yet')}
+                                    description={t('Create a division or squadron to start organizing ships.')}
                                     action={canManageFleet ? (
                                         <button onClick={() => { setEditingGroup(null); setGroupForm({ name: '', type: FleetGroupType.Division, description: '', commanderId: '', parentId: '' }); setShowGroupModal(true); }}
                                             className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-orange-600 hover:bg-orange-500 border border-orange-500/40 rounded-lg shadow-lg shadow-orange-900/30 transition">
-                                            <i className="fa-solid fa-plus"></i>Create Group
+                                            <i className="fa-solid fa-plus"></i>{t('Create Group')}
                                         </button>
                                     ) : undefined}
                                 />
@@ -1006,8 +1013,8 @@ const FleetManagerView: React.FC = () => {
             <ShipCatalogBrowser isOpen={showCatalog} onSelect={handleAddShips} onClose={() => setShowCatalog(false)} />
 
             <WindowFrame
-                title="Edit Ship"
-                subtitle="Hangar Management"
+                title={t('Edit Ship')}
+                subtitle={t('Hangar Management')}
                 icon="fa-solid fa-pen"
                 color="orange"
                 width="max-w-md"
@@ -1016,36 +1023,36 @@ const FleetManagerView: React.FC = () => {
             >
                 <div className="p-5 space-y-4">
                     <div>
-                        <label className={labelClass}>Custom Name</label>
+                        <label className={labelClass}>{t('Custom Name')}</label>
                         <input type="text" value={editForm.customName} onChange={(e) => setEditForm(f => ({ ...f, customName: e.target.value }))}
                             placeholder={editingShip?.ship?.name} className={inputClass} />
                     </div>
                     <div>
-                        <label className={labelClass}>Loadout Notes</label>
+                        <label className={labelClass}>{t('Loadout Notes')}</label>
                         <textarea value={editForm.loadoutNotes} onChange={(e) => setEditForm(f => ({ ...f, loadoutNotes: e.target.value }))}
                             className={`${inputClass} resize-none`} rows={3} />
                     </div>
                     <div>
-                        <label className={labelClass}>Status</label>
+                        <label className={labelClass}>{t('Status')}</label>
                         <select value={editForm.status} onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value as ShipStatus }))}
                             className={inputClass}>
-                            {Object.values(ShipStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                            {Object.values(ShipStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                         </select>
                     </div>
                 </div>
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
                     <button onClick={() => setEditingShip(null)} disabled={isBusy}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cancel</button>
+                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">{t('Cancel')}</button>
                     <button onClick={handleUpdateShip} disabled={isBusy}
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-orange-600 hover:bg-orange-500 border border-orange-500/40 rounded-lg shadow-lg shadow-orange-900/30 transition disabled:opacity-50">
-                        {isBusy ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> Save</>}
+                        {isBusy ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> {t('Save')}</>}
                     </button>
                 </div>
             </WindowFrame>
 
             <WindowFrame
-                title={editingGroup ? 'Edit Group' : 'Create Group'}
-                subtitle="Fleet Organization"
+                title={editingGroup ? t('Edit Group') : t('Create Group')}
+                subtitle={t('Fleet Organization')}
                 icon="fa-solid fa-sitemap"
                 color="orange"
                 width="max-w-md"
@@ -1054,64 +1061,64 @@ const FleetManagerView: React.FC = () => {
             >
                 <div className="p-5 space-y-4">
                     <div>
-                        <label className={labelClass}>Name</label>
+                        <label className={labelClass}>{t('Name')}</label>
                         <input type="text" value={groupForm.name} onChange={(e) => setGroupForm(f => ({ ...f, name: e.target.value }))}
                             className={inputClass} />
                     </div>
                     <div>
-                        <label className={labelClass}>Type</label>
+                        <label className={labelClass}>{t('Type')}</label>
                         {Object.values(FleetGroupType).includes(groupForm.type as FleetGroupType) ? (
                             <div className="flex gap-2">
                                 <select value={groupForm.type} onChange={(e) => setGroupForm(f => ({ ...f, type: e.target.value === '__custom__' ? '' : e.target.value }))}
                                     className={`${inputClass} flex-1`}>
-                                    {Object.values(FleetGroupType).filter(t => t !== FleetGroupType.Custom).map(t => <option key={t} value={t}>{t}</option>)}
-                                    <option value="__custom__">Custom...</option>
+                                    {Object.values(FleetGroupType).filter(ty => ty !== FleetGroupType.Custom).map(ty => <option key={ty} value={ty}>{t(ty)}</option>)}
+                                    <option value="__custom__">{t('Custom...')}</option>
                                 </select>
                             </div>
                         ) : (
                             <div className="flex gap-2">
                                 <input type="text" value={groupForm.type} onChange={(e) => setGroupForm(f => ({ ...f, type: e.target.value }))}
-                                    placeholder="Enter custom type..."
+                                    placeholder={t('Enter custom type...')}
                                     className={`${inputClass} flex-1`}
                                     autoFocus />
                                 <button type="button" onClick={() => setGroupForm(f => ({ ...f, type: FleetGroupType.Division }))}
                                     className="px-3 py-2 text-slate-300 hover:text-orange-300 bg-slate-900/60 border border-slate-700 hover:border-orange-500/40 hover:bg-orange-500/10 rounded-lg text-xs transition-colors shrink-0"
-                                    title="Back to presets">
+                                    title={t('Back to presets')}>
                                     <i className="fa-solid fa-list"></i>
                                 </button>
                             </div>
                         )}
                     </div>
                     <div>
-                        <label className={labelClass}>Parent Group</label>
+                        <label className={labelClass}>{t('Parent Group')}</label>
                         <select value={groupForm.parentId} onChange={(e) => setGroupForm(f => ({ ...f, parentId: e.target.value }))}
                             className={inputClass}>
-                            <option value="">None (Top Level)</option>
+                            <option value="">{t('None (Top Level)')}</option>
                             {fleetGroups.filter(g => g.id !== editingGroup?.id).map(g => (
-                                <option key={g.id} value={g.id}>{g.name} ({g.type})</option>
+                                <option key={g.id} value={g.id}>{g.name} ({t(g.type)})</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className={labelClass}>Commander</label>
+                        <label className={labelClass}>{t('Commander')}</label>
                         <select value={groupForm.commanderId} onChange={(e) => setGroupForm(f => ({ ...f, commanderId: e.target.value }))}
                             className={inputClass}>
-                            <option value="">None</option>
+                            <option value="">{t('None')}</option>
                             {allUsers.filter(u => u.role !== UserRole.Client).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className={labelClass}>Description</label>
+                        <label className={labelClass}>{t('Description')}</label>
                         <textarea value={groupForm.description} onChange={(e) => setGroupForm(f => ({ ...f, description: e.target.value }))}
                             className={`${inputClass} resize-none`} rows={2} />
                     </div>
                 </div>
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
                     <button onClick={() => { setShowGroupModal(false); setEditingGroup(null); }} disabled={isBusy}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cancel</button>
+                        className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">{t('Cancel')}</button>
                     <button onClick={handleSaveGroup} disabled={!groupForm.name || isBusy}
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-orange-600 hover:bg-orange-500 border border-orange-500/40 rounded-lg shadow-lg shadow-orange-900/30 transition disabled:opacity-50">
-                        {isBusy ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> Save</>}
+                        {isBusy ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> {t('Save')}</>}
                     </button>
                 </div>
             </WindowFrame>
@@ -1119,7 +1126,7 @@ const FleetManagerView: React.FC = () => {
             {/* Assign Ship to Group Modal — owner-grouped + searchable. Prior version
                 was a flat list of every org ship, which at 100-ship orgs was a mile long. */}
             <WindowFrame
-                title="Assign Ships"
+                title={t('Assign Ships')}
                 subtitle={assigningGroup?.name || ''}
                 icon="fa-solid fa-link"
                 color="orange"

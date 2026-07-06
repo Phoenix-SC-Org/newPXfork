@@ -3,6 +3,7 @@ import { useData } from '../../../../contexts/DataContext';
 import WindowFrame from '../../../layout/WindowFrame';
 import type { WarehouseStock, WarehouseMovementReason } from '../../../../types';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 type AdjustReasonKey = 'restock' | 'adjust' | 'loss' | 'destruction';
 
@@ -33,6 +34,7 @@ interface Props {
 export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [mode, setMode] = useState<'delta' | 'set'>('delta');
     const [reasonKey, setReasonKey] = useState<AdjustReasonKey>('restock');
@@ -65,9 +67,9 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
     if (!isOpen || !stock) return null;
 
     const currentQty = stock.quantityOnHand;
-    const itemName = stock.catalog?.name || 'Commodity';
+    const itemName = stock.catalog?.name || t('Commodity');
     const quality = stock.catalog?.qualityLabel ? ` · ${stock.catalog.qualityLabel}` : '';
-    const unit = stock.catalog?.unit || 'units';
+    const unit = stock.catalog?.unit || t('units');
     const locationName = stock.location?.name || '—';
 
     const computedDelta: number | null = (() => {
@@ -83,20 +85,22 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
     const projectedTotal = computedDelta == null ? null : currentQty + computedDelta;
 
     let validationError: string | null = null;
-    if (computedDelta == null) validationError = 'Enter a number.';
-    else if (computedDelta === 0) validationError = 'Delta must be non-zero.';
-    else if (reason.deltaSign === 'positive' && computedDelta < 0) validationError = 'Restock delta must be positive.';
-    else if (reason.deltaSign === 'negative' && computedDelta > 0) validationError = `${reason.label} delta must be negative.`;
-    else if (projectedTotal != null && projectedTotal < 0) validationError = `Would take stock below zero (current ${currentQty}).`;
-    else if (reason.notesRequired && !notes.trim()) validationError = `Notes are required for ${reason.label.toLowerCase()}.`;
+    if (computedDelta == null) validationError = t('Enter a number.');
+    else if (computedDelta === 0) validationError = t('Delta must be non-zero.');
+    else if (reason.deltaSign === 'positive' && computedDelta < 0) validationError = t('Restock delta must be positive.');
+    else if (reason.deltaSign === 'negative' && computedDelta > 0) validationError = t('{reason} delta must be negative.', { reason: t(reason.label) });
+    else if (projectedTotal != null && projectedTotal < 0) validationError = t('Would take stock below zero (current {current}).', { current: currentQty });
+    else if (reason.notesRequired && !notes.trim()) validationError = t('Notes are required for {reason}.', { reason: t(reason.label) });
 
     const handleSubmit = async () => {
         if (validationError || computedDelta == null) return;
         if (reason.destructive) {
             const confirmed = await confirm({
-                title: `Confirm ${reason.label}`,
-                message: `Record ${Math.abs(computedDelta)} ${unit} of ${itemName}${quality} as ${reason.label.toLowerCase()}? This is logged to the movement ledger.`,
-                confirmText: reason.label,
+                title: t('Confirm {reason}', { reason: t(reason.label) }),
+                message: t('Record {qty} {unit} of {item} as {reason}? This is logged to the movement ledger.', {
+                    qty: Math.abs(computedDelta), unit, item: `${itemName}${quality}`, reason: t(reason.label),
+                }),
+                confirmText: t(reason.label),
                 variant: 'danger',
             });
             if (!confirmed) return;
@@ -109,17 +113,17 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
                 reason: reason.serverReason,
                 notes: notes.trim() || undefined,
             });
-            addToast('Stock adjusted',
+            addToast(t('Stock adjusted'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
                 { description: `${itemName}${quality}: ${currentQty} → ${projectedTotal}` });
             onSubmitted();
             onClose();
         } catch (err: any) {
-            addToast('Adjustment failed',
+            addToast(t('Adjustment failed'),
                 <i className="fa-solid fa-xmark" />,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not adjust stock.' });
+                { description: err?.message || t('Could not adjust stock.') });
         } finally {
             setSubmitting(false);
         }
@@ -130,7 +134,7 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
             isOpen={isOpen}
             onClose={onClose}
             title={`${itemName}${quality}`}
-            subtitle={`Adjust Stock · ${locationName}`}
+            subtitle={`${t('Adjust Stock')} · ${locationName}`}
             icon="fa-solid fa-scale-balanced"
             color={reason.destructive ? 'red' : 'sky'}
             width="max-w-lg"
@@ -138,37 +142,37 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                     <div className="flex items-center justify-between rounded-lg bg-slate-900/60 border border-white/5 px-4 py-3">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Current on hand</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Current on hand')}</span>
                         <span className="text-2xl font-black font-mono text-white">{currentQty} <span className="text-xs text-slate-500 font-normal">{unit}</span></span>
                     </div>
 
                     <div className="flex items-center gap-1 bg-slate-900 rounded-lg border border-white/10 p-1">
                         <button onClick={() => setMode('delta')}
                             className={`flex-1 px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-widest transition ${mode === 'delta' ? 'bg-sky-500/20 text-sky-200' : 'text-slate-400 hover:text-slate-200'}`}>
-                            Delta (+/-)
+                            {t('Delta (+/-)')}
                         </button>
                         <button onClick={() => setMode('set')}
                             className={`flex-1 px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-widest transition ${mode === 'set' ? 'bg-sky-500/20 text-sky-200' : 'text-slate-400 hover:text-slate-200'}`}>
-                            Set new total
+                            {t('Set new total')}
                         </button>
                     </div>
 
                     {mode === 'delta' ? (
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Change by (use - to decrease)</label>
-                            <input type="number" value={deltaInput} onChange={(e) => setDeltaInput(e.target.value)} placeholder="e.g. 1000 or -200"
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Change by (use - to decrease)')}</label>
+                            <input type="number" value={deltaInput} onChange={(e) => setDeltaInput(e.target.value)} placeholder={t('e.g. 1000 or -200')}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base font-mono text-white focus:ring-2 focus:ring-sky-500 outline-hidden" autoFocus />
                         </div>
                     ) : (
                         <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">New total</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('New total')}</label>
                             <input type="number" min={0} value={setTotalInput} onChange={(e) => setSetTotalInput(e.target.value)}
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base font-mono text-white focus:ring-2 focus:ring-sky-500 outline-hidden" autoFocus />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Reason</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Reason')}</label>
                         <div className="space-y-1.5">
                             {REASON_OPTIONS.map((opt) => (
                                 <label key={opt.key} className={`flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
@@ -179,8 +183,8 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
                                     <input type="radio" name="wh-adjust-reason" value={opt.key} checked={reasonKey === opt.key} onChange={() => setReasonKey(opt.key)}
                                         className={`mt-0.5 ${opt.destructive ? 'accent-red-500' : 'accent-sky-500'}`} />
                                     <div className="flex-1">
-                                        <div className={`text-xs font-bold ${opt.destructive ? 'text-red-200' : 'text-white'}`}>{opt.label}</div>
-                                        <div className="text-[11px] text-slate-400">{opt.description}</div>
+                                        <div className={`text-xs font-bold ${opt.destructive ? 'text-red-200' : 'text-white'}`}>{t(opt.label)}</div>
+                                        <div className="text-[11px] text-slate-400">{t(opt.description)}</div>
                                     </div>
                                 </label>
                             ))}
@@ -189,10 +193,10 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
 
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                            Notes {reason.notesRequired && <span className="text-red-400">*</span>}
+                            {t('Notes')} {reason.notesRequired && <span className="text-red-400">*</span>}
                         </label>
                         <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)}
-                            placeholder={reason.notesRequired ? 'Required — what happened?' : 'Optional context for the audit log'}
+                            placeholder={reason.notesRequired ? t('Required — what happened?') : t('Optional context for the audit log')}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:ring-2 focus:ring-sky-500 outline-hidden resize-none" />
                     </div>
 
@@ -213,7 +217,7 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
                     <button onClick={onClose} disabled={submitting}
                         className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors disabled:opacity-50">
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button onClick={handleSubmit} disabled={submitting || !!validationError}
                         className={`flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white border rounded-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -221,7 +225,7 @@ export default function WhAdjustStockDialog({ isOpen, stock, onClose, onSubmitte
                                 ? 'bg-red-600 hover:bg-red-500 border-red-500/40 shadow-red-900/30'
                                 : 'bg-sky-600 hover:bg-sky-500 border-sky-500/40 shadow-sky-900/30'
                         }`}>
-                        {submitting ? <><i className="fa-solid fa-spinner fa-spin" />Saving…</> : <><i className="fa-solid fa-check" />Apply</>}
+                        {submitting ? <><i className="fa-solid fa-spinner fa-spin" />{t('Saving…')}</> : <><i className="fa-solid fa-check" />{t('Apply')}</>}
                     </button>
                 </div>
             </div>

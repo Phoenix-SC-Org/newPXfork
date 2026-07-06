@@ -4,6 +4,7 @@ import { useData } from '../../../contexts/DataContext';
 import CatalogSearchCombobox, { ComboboxItem } from '../../ui/CatalogSearchCombobox';
 import type { QmLocation, QmCondition } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     /** True if the org has at least one custom catalog item — used only to
@@ -18,6 +19,7 @@ interface Props {
 export default function CreateInventoryModal({ hasOrgCatalogItems = true, locations, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [mode, setMode] = useState<'catalog' | 'custom'>(hasOrgCatalogItems ? 'catalog' : 'custom');
     const [selectedItem, setSelectedItem] = useState<ComboboxItem | null>(null);
@@ -45,10 +47,10 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
                 initialQuantity: qty,
                 notes: notes.trim() || undefined,
             });
-            addToast('Stock added', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Stock added'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onSubmitted();
         } catch (err: any) {
-            addToast('Failed to add stock', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Failed to add stock'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -60,8 +62,8 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
         <WindowFrame
             isOpen
             onClose={onClose}
-            title="Add Stock"
-            subtitle="Quartermaster"
+            title={t('Add Stock')}
+            subtitle={t('Quartermaster')}
             icon="fa-solid fa-boxes-stacked"
             color="amber"
             width="max-w-md"
@@ -77,7 +79,7 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
                                 : 'bg-slate-900 border-white/10 text-slate-400'
                         }`}
                     >
-                        From Catalog
+                        {t('From Catalog')}
                     </button>
                     <button
                         type="button"
@@ -88,33 +90,33 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
                                 : 'bg-slate-900 border-white/10 text-slate-400'
                         }`}
                     >
-                        Custom Name
+                        {t('Custom Name')}
                     </button>
                 </div>
 
                 {mode === 'catalog' ? (
                     <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Catalog item</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Catalog item')}</span>
                         <div className="mt-1">
                             <CatalogSearchCombobox
                                 rpcName="qm:search_catalog"
                                 value={selectedItem}
                                 onChange={setSelectedItem}
                                 initialScope="both"
-                                placeholder="Search org-custom and platform catalog…"
-                                helpText="Custom items are listed first; platform items below."
+                                placeholder={t('Search org-custom and platform catalog…')}
+                                helpText={t('Custom items are listed first; platform items below.')}
                             />
                         </div>
                     </div>
                 ) : (
                     <label className="block">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Custom name</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Custom name')}</span>
                         <input
                             type="text"
                             value={customName}
                             onChange={(e) => setCustomName(e.target.value)}
                             maxLength={100}
-                            placeholder="e.g. Salvaged helmet — Greycat Mk II"
+                            placeholder={t('e.g. Salvaged helmet — Greycat Mk II')}
                             className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                         />
                     </label>
@@ -122,7 +124,7 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
 
                 <div className="grid grid-cols-2 gap-3">
                     <label className="block">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Quantity</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Quantity')}</span>
                         <input
                             type="number"
                             inputMode="numeric"
@@ -133,34 +135,34 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
                         />
                     </label>
                     <label className="block">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Condition</span>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Condition')}</span>
                         <select
                             value={condition}
                             onChange={(e) => setCondition(e.target.value as QmCondition)}
                             className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                         >
-                            <option value="pristine">Pristine</option>
-                            <option value="used">Used</option>
-                            <option value="damaged">Damaged</option>
-                            <option value="broken">Broken</option>
+                            <option value="pristine">{t('Pristine')}</option>
+                            <option value="used">{t('Used')}</option>
+                            <option value="damaged">{t('Damaged')}</option>
+                            <option value="broken">{t('Broken')}</option>
                         </select>
                     </label>
                 </div>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Location</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Location')}</span>
                     <select
                         value={locationId ?? ''}
                         onChange={(e) => setLocationId(e.target.value ? Number(e.target.value) : null)}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                     >
-                        <option value="">— unassigned —</option>
+                        <option value="">{t('— unassigned —')}</option>
                         {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                     </select>
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Notes (optional)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Notes (optional)')}</span>
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
@@ -172,14 +174,14 @@ export default function CreateInventoryModal({ hasOrgCatalogItems = true, locati
 
                 <div className="flex justify-end gap-2 pt-2">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={submit}
                         disabled={!valid || submitting}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {submitting ? 'Adding…' : 'Add Stock'}
+                        {submitting ? t('Adding…') : t('Add Stock')}
                     </button>
                 </div>
             </div>

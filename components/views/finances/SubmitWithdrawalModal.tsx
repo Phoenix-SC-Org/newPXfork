@@ -3,6 +3,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import { useData } from '../../../contexts/DataContext';
 import type { TreasuryAccount } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     accounts: TreasuryAccount[];
@@ -13,6 +14,7 @@ interface Props {
 export default function SubmitWithdrawalModal({ accounts, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [accountId, setAccountId] = useState<number>(accounts[0]?.id ?? 0);
     const [amount, setAmount] = useState<string>('');
     const [reason, setReason] = useState<string>('');
@@ -33,14 +35,14 @@ export default function SubmitWithdrawalModal({ accounts, onClose, onSubmitted }
                 reason: reason.trim(),
             });
             addToast(
-                'Withdrawal requested',
+                t('Withdrawal requested'),
                 <i className="fa-solid fa-check" />,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
-                { description: 'An officer will review and execute the transfer.' },
+                { description: t('An officer will review and execute the transfer.') },
             );
             onSubmitted();
         } catch (err: any) {
-            addToast('Submission failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
+            addToast(t('Submission failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', {
                 description: err?.message,
             });
         } finally {
@@ -52,19 +54,19 @@ export default function SubmitWithdrawalModal({ accounts, onClose, onSubmitted }
         <WindowFrame
             isOpen
             onClose={onClose}
-            title="Request Withdrawal"
-            subtitle="Treasury ledger"
+            title={t('Request Withdrawal')}
+            subtitle={t('Treasury ledger')}
             icon="fa-solid fa-arrow-up-from-bracket"
             color="red"
             width="max-w-md"
         >
             <div className="p-5 space-y-4">
                 <p className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-sm border border-slate-800 leading-relaxed">
-                    Requests are held as <span className="text-rose-300 font-bold">pending</span> until an officer with <span className="font-mono">finance:approve</span> executes the transfer in-game and confirms.
+                    {t('Requests are held as')} <span className="text-rose-300 font-bold">{t('pending', { context: 'finance' })}</span> {t('until an officer with')} <span className="font-mono">finance:approve</span> {t('executes the transfer in-game and confirms.')}
                 </p>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Account</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Account')}</span>
                     <select
                         value={accountId}
                         onChange={(e) => setAccountId(Number(e.target.value))}
@@ -79,31 +81,31 @@ export default function SubmitWithdrawalModal({ accounts, onClose, onSubmitted }
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Amount (aUEC)</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Amount (aUEC)')}</span>
                     <input
                         type="number"
                         inputMode="numeric"
                         min={1}
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        placeholder="e.g. 20000"
+                        placeholder={t('e.g. 20000')}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono"
                     />
                     {overdrawn && (
                         <span className="text-[10px] text-rose-400 mt-1 block font-bold uppercase tracking-widest">
-                            Exceeds current balance · the officer may still partially fulfil
+                            {t('Exceeds current balance · the officer may still partially fulfil')}
                         </span>
                     )}
                 </label>
 
                 <label className="block">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Reason</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">{t('Reason')}</span>
                     <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         rows={3}
                         maxLength={500}
-                        placeholder="What's the payout for? (op reward, member payout, purchase, etc.)"
+                        placeholder={t("What's the payout for? (op reward, member payout, purchase, etc.)")}
                         className="mt-1 w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                     />
                 </label>
@@ -113,14 +115,14 @@ export default function SubmitWithdrawalModal({ accounts, onClose, onSubmitted }
                         onClick={onClose}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white"
                     >
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button
                         onClick={submit}
                         disabled={!valid || submitting}
                         className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        {submitting ? 'Submitting…' : 'Request Withdrawal'}
+                        {submitting ? t('Submitting…') : t('Request Withdrawal')}
                     </button>
                 </div>
             </div>

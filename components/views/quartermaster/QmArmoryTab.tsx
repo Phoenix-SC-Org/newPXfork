@@ -6,6 +6,7 @@ import { ACCENTS, AccentKey } from '../../shared/ui/accents';
 import { SkeletonCardGrid } from '../../shared/ui/Skeleton';
 import AdjustStockDialog from './AdjustStockDialog';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CATEGORY_ACCENT: Record<QmCatalogCategory, AccentKey> = {
     weapon: 'rose',
@@ -30,6 +31,7 @@ interface Props {
 export default function QmArmoryTab({ locations, canManage, canRequest, onIssue, onCreate, refreshKey }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [categoryFilter, setCategoryFilter] = useState<'all' | QmCatalogCategory>('all');
     const [locationFilter, setLocationFilter] = useState<'all' | number>('all');
@@ -75,11 +77,11 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
             setHasLoadedOnce(true);
         } catch (err: any) {
             if (seq !== requestSeqRef.current) return;
-            addToast('Failed to load inventory', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Failed to load inventory'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         } finally {
             if (seq === requestSeqRef.current) setLoading(false);
         }
-    }, [rpcAction, filterPayload, page, addToast]);
+    }, [rpcAction, filterPayload, page, addToast, t]);
 
     // Reset page when filter changes (skip first mount).
     const isFirstFilterChangeRef = useRef(true);
@@ -101,22 +103,22 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
     }, [loadCount, refreshKey]);
 
     const requestItem = async (item: QmInventoryItem) => {
-        const qtyStr = window.prompt(`Request how many of "${item.catalog?.name || item.customName}"?`, '1');
+        const qtyStr = window.prompt(t('Request how many of "{name}"?', { name: item.catalog?.name || item.customName || '' }), '1');
         if (qtyStr === null) return;
         const qty = parseInt(qtyStr, 10);
         if (!Number.isFinite(qty) || qty <= 0) {
-            addToast('Invalid quantity', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+            addToast(t('Invalid quantity'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50');
             return;
         }
-        const notes = window.prompt('Notes / reason for this request (optional):', '') || undefined;
+        const notes = window.prompt(t('Notes / reason for this request (optional):'), '') || undefined;
         try {
             await rpcAction('qm:request_issuance', { inventoryId: item.id, quantity: qty, notes });
-            addToast('Request submitted', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', {
-                description: 'An officer will fulfil the request.',
+            addToast(t('Request submitted'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', {
+                description: t('An officer will fulfil the request.'),
             });
             load();
         } catch (err: any) {
-            addToast('Request failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Request failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         }
     };
 
@@ -133,7 +135,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
             link.remove();
             URL.revokeObjectURL(url);
         } catch (err: any) {
-            addToast('Export failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Export failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         }
     };
 
@@ -158,7 +160,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                 categoryFilter === cat ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'
                             }`}
                         >
-                            {cat}
+                            {t(cat, { context: 'item category' })}
                         </button>
                     ))}
                 </div>
@@ -168,32 +170,32 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                     onChange={(e) => setLocationFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-300"
                 >
-                    <option value="all">All locations</option>
+                    <option value="all">{t('All locations')}</option>
                     {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
 
                 <input
                     type="text"
-                    placeholder="Search…"
+                    placeholder={t('Search…')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500"
                 />
 
                 <div className="flex-1" />
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{totalCount} total · page {page + 1}/{totalPages}</span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('{count} total · page {page}/{pages}', { count: totalCount, page: page + 1, pages: totalPages })}</span>
                 <button
                     onClick={exportCsv}
                     className="inline-flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-orange-500/40 text-slate-300 hover:text-orange-200 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition"
                 >
-                    <i className="fa-solid fa-file-csv" /> Export CSV
+                    <i className="fa-solid fa-file-csv" /> {t('Export CSV')}
                 </button>
                 {onCreate && (
                     <button
                         onClick={onCreate}
                         className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition"
                     >
-                        <i className="fa-solid fa-plus" /> Add Stock
+                        <i className="fa-solid fa-plus" /> {t('Add Stock')}
                     </button>
                 )}
             </div>
@@ -202,14 +204,14 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                 <SkeletonCardGrid count={9} accent="orange" />
             ) : visible.length === 0 ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    {totalCount === 0 ? 'No inventory yet. Use "Add Stock" to record some.' : 'No items match the current filters.'}
+                    {totalCount === 0 ? t('No inventory yet. Use "Add Stock" to record some.') : t('No items match the current filters.')}
                 </div>
             ) : (
                 <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ${loading ? 'opacity-60 transition-opacity' : ''}`}>
                     {visible.map((it) => {
                         const cat: QmCatalogCategory = (it.catalog?.category as QmCatalogCategory) || 'misc';
                         const a = ACCENTS[CATEGORY_ACCENT[cat]];
-                        const name = it.catalog?.name || it.customName || 'Unnamed';
+                        const name = it.catalog?.name || it.customName || t('Unnamed');
                         const lowStock = it.quantityOnHand === 0;
                         return (
                             <div
@@ -220,7 +222,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                 <div className="flex-1 p-4 flex flex-col min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className={`text-[10px] font-bold uppercase tracking-widest ${a.text}`}>
-                                            {cat}
+                                            {t(cat, { context: 'item category' })}
                                         </span>
                                         {it.catalog?.subcategory && (
                                             <span className="text-[10px] font-mono text-slate-500">· {it.catalog.subcategory}</span>
@@ -237,12 +239,12 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                             <div className={`text-2xl font-black font-mono ${lowStock ? 'text-rose-300' : 'text-white'}`}>
                                                 {it.quantityOnHand}
                                             </div>
-                                            <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">On hand</div>
+                                            <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('On hand')}</div>
                                         </div>
                                         {it.quantityOnIssue > 0 && (
                                             <div>
                                                 <div className="text-lg font-bold font-mono text-sky-300">{it.quantityOnIssue}</div>
-                                                <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">On issue</div>
+                                                <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('On issue')}</div>
                                             </div>
                                         )}
                                     </div>
@@ -250,7 +252,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                     <div className="flex items-center gap-2 pt-3 mt-3 border-t border-white/5">
                                         {it.condition !== 'pristine' && (
                                             <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">
-                                                {it.condition}
+                                                {t(it.condition, { context: 'item condition' })}
                                             </span>
                                         )}
                                         <div className="flex-1" />
@@ -258,9 +260,9 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                             <button
                                                 onClick={() => setAdjustTarget(it)}
                                                 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-orange-200"
-                                                title="Adjust stock"
+                                                title={t('Adjust stock')}
                                             >
-                                                <i className="fa-solid fa-sliders mr-1" />Adjust
+                                                <i className="fa-solid fa-sliders mr-1" />{t('Adjust', { context: 'action' })}
                                             </button>
                                         )}
                                         {canManage && onIssue && it.quantityOnHand > 0 && (
@@ -268,7 +270,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                                 onClick={() => onIssue(it)}
                                                 className="text-[10px] font-bold uppercase tracking-widest text-orange-300 hover:text-orange-200"
                                             >
-                                                Issue →
+                                                {t('Issue')} →
                                             </button>
                                         )}
                                         {!canManage && canRequest && it.quantityOnHand > 0 && (
@@ -276,7 +278,7 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                                                 onClick={() => requestItem(it)}
                                                 className="text-[10px] font-bold uppercase tracking-widest text-orange-300 hover:text-orange-200"
                                             >
-                                                Request →
+                                                {t('Request')} →
                                             </button>
                                         )}
                                     </div>
@@ -291,12 +293,12 @@ export default function QmArmoryTab({ locations, canManage, canRequest, onIssue,
                 <div className="flex justify-end items-center gap-2 text-xs text-slate-400">
                     <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}
                         className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        <i className="fa-solid fa-chevron-left mr-1" /> Prev
+                        <i className="fa-solid fa-chevron-left mr-1" /> {t('Prev')}
                     </button>
-                    <span>Page {page + 1} / {totalPages}</span>
+                    <span>{t('Page {page} / {pages}', { page: page + 1, pages: totalPages })}</span>
                     <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}
                         className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        Next <i className="fa-solid fa-chevron-right ml-1" />
+                        {t('Next')} <i className="fa-solid fa-chevron-right ml-1" />
                     </button>
                 </div>
             )}

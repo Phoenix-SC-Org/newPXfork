@@ -3,6 +3,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import type { QmCatalogItem, QmCatalogCategory } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CATEGORY_OPTIONS: QmCatalogCategory[] = ['weapon', 'armor', 'component', 'consumable', 'misc'];
 
@@ -17,6 +18,7 @@ interface Props {
 export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [showAddForm, setShowAddForm] = useState(false);
     const [newName, setNewName] = useState('');
@@ -65,13 +67,13 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
             })
             .catch((err: any) => {
                 if (seq !== requestSeqRef.current) return;
-                setSearchError(err?.message || 'Search failed');
+                setSearchError(err?.message || t('Search failed'));
                 setPlatformResults([]);
             })
             .finally(() => {
                 if (seq === requestSeqRef.current) setSearchLoading(false);
             });
-    }, [debouncedSearch, includePlatform, rpcAction]);
+    }, [debouncedSearch, includePlatform, rpcAction, t]);
 
     const customFiltered = useMemo(() => {
         const q = debouncedSearch.toLowerCase();
@@ -97,10 +99,10 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
             setNewName('');
             setNewSubcategory('');
             setShowAddForm(false);
-            addToast('Catalog item added', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Catalog item added'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onRefresh();
         } catch (err: any) {
-            addToast('Create failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Create failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         } finally {
             setSubmitting(false);
         }
@@ -108,18 +110,18 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
 
     const removeItem = async (item: QmCatalogItem) => {
         const ok = await confirm({
-            title: `Delete "${item.name}"?`,
-            message: 'Existing inventory rows referencing this item will have their catalog link cleared but will keep their custom name and history.',
-            confirmText: 'Delete',
+            title: t('Delete "{name}"?', { name: item.name }),
+            message: t('Existing inventory rows referencing this item will have their catalog link cleared but will keep their custom name and history.'),
+            confirmText: t('Delete'),
             variant: 'warning',
         });
         if (!ok) return;
         try {
             await rpcAction('qm:delete_catalog_item', { catalogId: item.id });
-            addToast('Catalog item deleted', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Catalog item deleted'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             onRefresh();
         } catch (err: any) {
-            addToast('Delete failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Delete failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         }
     };
 
@@ -129,9 +131,9 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
         <div className="space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
-                    <h2 className="text-sm font-bold text-white uppercase tracking-widest">Catalog</h2>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-widest">{t('Catalog')}</h2>
                     <p className="text-[11px] text-slate-500 font-mono uppercase tracking-widest mt-0.5">
-                        {customCount} custom · platform: search to browse
+                        {t('{count} custom · platform: search to browse', { count: customCount })}
                     </p>
                 </div>
                 {canAdmin && (
@@ -139,7 +141,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                         onClick={() => setShowAddForm((v) => !v)}
                         className="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-bold uppercase tracking-widest text-[11px] transition-all"
                     >
-                        <i className={`fa-solid ${showAddForm ? 'fa-xmark' : 'fa-plus'}`} /> {showAddForm ? 'Cancel' : 'New Item'}
+                        <i className={`fa-solid ${showAddForm ? 'fa-xmark' : 'fa-plus'}`} /> {showAddForm ? t('Cancel') : t('New Item')}
                     </button>
                 )}
             </div>
@@ -151,7 +153,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                             type="text"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            placeholder="Item name (e.g. P4-AR Rifle)"
+                            placeholder={t('Item name (e.g. P4-AR Rifle)')}
                             maxLength={100}
                             className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white sm:col-span-2"
                         />
@@ -161,7 +163,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                             className="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                         >
                             {CATEGORY_OPTIONS.map((c) => (
-                                <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>
+                                <option key={c} value={c}>{t(c, { context: 'qmCategory' })}</option>
                             ))}
                         </select>
                     </div>
@@ -169,7 +171,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                         type="text"
                         value={newSubcategory}
                         onChange={(e) => setNewSubcategory(e.target.value)}
-                        placeholder="Subcategory (optional, e.g. Rifle, Heavy Armor)"
+                        placeholder={t('Subcategory (optional, e.g. Rifle, Heavy Armor)')}
                         maxLength={80}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
                     />
@@ -179,7 +181,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                             disabled={!newName.trim() || submitting}
                             className="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {submitting ? 'Adding…' : 'Add to Catalog'}
+                            {submitting ? t('Adding…') : t('Add to Catalog')}
                         </button>
                     </div>
                 </div>
@@ -191,7 +193,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search catalog by name or subcategory…"
+                        placeholder={t('Search catalog by name or subcategory…')}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-hidden focus:border-orange-500/40"
                     />
                     <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs" />
@@ -203,45 +205,47 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                         onChange={(e) => setIncludePlatform(e.target.checked)}
                         className="accent-orange-500"
                     />
-                    Include platform catalog
+                    {t('Include platform catalog')}
                 </label>
             </div>
 
             {catalog.length === 0 && !debouncedSearch ? (
                 <div className="rounded-xl border border-white/5 bg-slate-900/30 p-10 text-center text-slate-500 text-sm">
-                    No org-custom catalog items yet. {canAdmin && 'Click "New Item" to add one, or use the search above with "Include platform catalog" to browse the platform-wide catalog.'}
+                    {t('No org-custom catalog items yet.')} {canAdmin && t('Click "New Item" to add one, or use the search above with "Include platform catalog" to browse the platform-wide catalog.')}
                 </div>
             ) : (
                 <div className="rounded-xl border border-white/10 bg-slate-900/40 overflow-hidden">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-black/30 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                             <tr>
-                                <th className="px-3 py-2">Name</th>
-                                <th className="px-3 py-2">Category</th>
-                                <th className="px-3 py-2">Subcategory</th>
-                                <th className="px-3 py-2">Source</th>
-                                <th className="px-3 py-2 w-16 text-right">Actions</th>
+                                <th className="px-3 py-2">{t('Name')}</th>
+                                <th className="px-3 py-2">{t('Category')}</th>
+                                <th className="px-3 py-2">{t('Subcategory')}</th>
+                                <th className="px-3 py-2">{t('Source')}</th>
+                                <th className="px-3 py-2 w-16 text-right">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {customFiltered.length === 0 && debouncedSearch && (
                                 <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-500 italic">
-                                    No org-custom matches{includePlatform ? ' — see platform results below.' : '. Tick "Include platform catalog" to also search the platform-wide catalog.'}
+                                    {includePlatform
+                                        ? t('No org-custom matches — see platform results below.')
+                                        : t('No org-custom matches. Tick "Include platform catalog" to also search the platform-wide catalog.')}
                                 </td></tr>
                             )}
                             {customFiltered.length === 0 && !debouncedSearch && catalog.length === 0 && (
                                 <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-500 italic">
-                                    No org-custom items.
+                                    {t('No org-custom items.')}
                                 </td></tr>
                             )}
                             {customFiltered.map((item) => (
                                 <tr key={`custom-${item.id}`} className="hover:bg-white/5">
                                     <td className="px-3 py-2 text-white truncate max-w-xs">{item.name}</td>
-                                    <td className="px-3 py-2 text-slate-400 text-xs uppercase">{item.category}</td>
+                                    <td className="px-3 py-2 text-slate-400 text-xs uppercase">{t(item.category, { context: 'qmCategory' })}</td>
                                     <td className="px-3 py-2 text-slate-500 text-xs truncate max-w-xs">{item.subcategory || '—'}</td>
                                     <td className="px-3 py-2">
                                         <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-orange-500/10 text-orange-300 border-orange-500/30">
-                                            custom
+                                            {t('custom', { context: 'qmSource' })}
                                         </span>
                                     </td>
                                     <td className="px-3 py-2 text-right">
@@ -249,7 +253,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                                             <button
                                                 onClick={() => removeItem(item)}
                                                 className="text-slate-500 hover:text-rose-400 text-xs"
-                                                aria-label="Delete"
+                                                aria-label={t('Delete')}
                                             >
                                                 <i className="fa-solid fa-trash" />
                                             </button>
@@ -264,7 +268,7 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                         <>
                             <div className="px-3 py-2 bg-black/20 border-t border-white/5 text-[10px] font-mono uppercase tracking-widest text-slate-500 flex items-center gap-2">
                                 <i className="fa-solid fa-globe text-slate-600" />
-                                From platform catalog
+                                {t('From platform catalog')}
                                 {searchLoading && <i className="fa-solid fa-spinner animate-spin text-slate-500" />}
                             </div>
                             <table className="w-full text-left text-sm">
@@ -273,16 +277,16 @@ export default function QmCatalogTab({ catalog, canAdmin, onRefresh }: Props) {
                                         <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-rose-400">{searchError}</td></tr>
                                     )}
                                     {!searchLoading && !searchError && platformResults.length === 0 && (
-                                        <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-500 italic">No platform matches.</td></tr>
+                                        <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-500 italic">{t('No platform matches.')}</td></tr>
                                     )}
                                     {platformResults.map((item) => (
                                         <tr key={`platform-${item.id}`} className="hover:bg-white/5">
                                             <td className="px-3 py-2 text-white truncate max-w-xs">{item.name}</td>
-                                            <td className="px-3 py-2 text-slate-400 text-xs uppercase">{item.category}</td>
+                                            <td className="px-3 py-2 text-slate-400 text-xs uppercase">{t(item.category, { context: 'qmCategory' })}</td>
                                             <td className="px-3 py-2 text-slate-500 text-xs truncate max-w-xs">{item.subcategory || '—'}</td>
                                             <td className="px-3 py-2">
                                                 <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-slate-700/40 text-slate-300 border-slate-500/30">
-                                                    platform
+                                                    {t('platform', { context: 'qmSource' })}
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-right text-slate-700">

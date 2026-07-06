@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { FleetGroup, UserShip } from '../../../types';
 import { usePersistentState } from '../../../hooks/usePersistentState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // localStorage key scoped by hostname so expansion state doesn't bleed between
 // separate deployments opened in different tabs.
@@ -215,6 +216,7 @@ const ShipCountBadge: React.FC<{
     isExpanded: boolean;
     onToggle: (groupId: number) => void;
 }> = ({ group, isExpanded, onToggle }) => {
+    const { t } = useI18n();
     const shipCount = group.assignedShips?.length || 0;
     if (shipCount === 0) return null;
     const isOverflowed = shipCount > COLLAPSED_VISIBLE;
@@ -225,7 +227,7 @@ const ShipCountBadge: React.FC<{
         <button
             onClick={(e) => { e.stopPropagation(); onToggle(group.id); }}
             className="inline-flex items-center gap-1 text-orange-300/80 hover:text-orange-200 transition-colors"
-            title={isExpanded ? 'Collapse ship list' : 'Expand all ships'}
+            title={isExpanded ? t('Collapse ship list') : t('Expand all ships')}
         >
             <i className="fa-solid fa-rocket text-slate-600"></i>
             <span>{shipCount}</span>
@@ -238,6 +240,7 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
     groups, allShips, canManage, onEditGroup, onDeleteGroup, onAssignGroup, onUnassignShip,
     onReorderGroups, onReparentGroup, onReorderGroupShips, onMoveShipToGroup,
 }) => {
+    const { t } = useI18n();
     const containerRef = useRef<HTMLDivElement>(null);
     const [panX, setPanX] = useState(0);
     const [panY, setPanY] = useState(0);
@@ -557,7 +560,7 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                                         <h4 className="text-xs font-black text-white uppercase tracking-wider truncate">{n.group!.name}</h4>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${typeColors[n.group!.type] || typeColors.Custom}`}>
-                                                {n.group!.type}
+                                                {t(n.group!.type)}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
@@ -575,15 +578,15 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                                 {canManage && (
                                     <div className="flex gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity shrink-0">
                                         <button onClick={(e) => { e.stopPropagation(); onAssignGroup(n.group!); }}
-                                            className="w-6 h-6 flex items-center justify-center text-orange-300 hover:text-orange-200 hover:bg-orange-500/10 rounded-sm transition-colors text-[10px]" title="Assign Ships">
+                                            className="w-6 h-6 flex items-center justify-center text-orange-300 hover:text-orange-200 hover:bg-orange-500/10 rounded-sm transition-colors text-[10px]" title={t('Assign Ships')}>
                                             <i className="fa-solid fa-plus"></i>
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); onEditGroup(n.group!); }}
-                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[10px]" title="Edit">
+                                            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors text-[10px]" title={t('Edit')}>
                                             <i className="fa-solid fa-pen"></i>
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); onDeleteGroup(n.group!.id); }}
-                                            className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-sm transition-colors text-[10px]" title="Delete">
+                                            className="w-6 h-6 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-sm transition-colors text-[10px]" title={t('Delete')}>
                                             <i className="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
@@ -629,12 +632,12 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                                 {n.ship!.customName ? (
                                     <>
                                         <p className="text-[10px] font-bold text-white truncate">{n.ship!.customName}</p>
-                                        <p className="text-[9px] text-orange-300/80 truncate font-mono">{n.ship!.ship?.name || 'Unknown'}</p>
+                                        <p className="text-[9px] text-orange-300/80 truncate font-mono">{n.ship!.ship?.name || t('Unknown')}</p>
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-[10px] font-bold text-white truncate">{n.ship!.ship?.name || 'Unknown'}</p>
-                                        <p className="text-[9px] text-slate-500 truncate uppercase tracking-widest">{n.ship!.user?.name || 'Unknown'}</p>
+                                        <p className="text-[10px] font-bold text-white truncate">{n.ship!.ship?.name || t('Unknown')}</p>
+                                        <p className="text-[9px] text-slate-500 truncate uppercase tracking-widest">{n.ship!.user?.name || t('Unknown')}</p>
                                     </>
                                 )}
                             </div>
@@ -644,7 +647,7 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                                 n.ship!.status === 'Damaged' ? 'text-red-400 bg-red-500/10 border-red-500/30' :
                                 n.ship!.status === 'Lent' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' :
                                 'text-slate-500 bg-slate-700/50 border-slate-600'
-                            }`}>{n.ship!.status}</span>
+                            }`}>{t(n.ship!.status)}</span>
                             {canManage && n.parentGroupId && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onUnassignShip(n.parentGroupId!, n.ship!.id); }}
@@ -664,10 +667,10 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                             onClick={(e) => { e.stopPropagation(); toggleExpanded(n.parentGroupId!); }}
                             className="absolute bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 hover:border-orange-500/50 rounded-lg flex items-center justify-center gap-2 px-3 transition-colors text-orange-300 hover:text-orange-200"
                             style={{ left: n.x, top: n.y, width: SHIP_W, height: SHIP_H }}
-                            title="Show all ships in this group"
+                            title={t('Show all ships in this group')}
                         >
                             <i className="fa-solid fa-plus text-xs"></i>
-                            <span className="text-xs font-black uppercase tracking-wider">{n.overflowCount} more</span>
+                            <span className="text-xs font-black uppercase tracking-wider">{t('{count} more', { count: n.overflowCount })}</span>
                         </button>
                     ))}
                 </div>
@@ -677,14 +680,14 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                 <button
                     onClick={() => setZoom(z => Math.min(z * 1.2, 2.0))}
                     className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition-colors text-sm"
-                    title="Zoom In"
+                    title={t('Zoom In')}
                 >
                     <i className="fa-solid fa-plus"></i>
                 </button>
                 <button
                     onClick={() => setZoom(z => Math.max(z * 0.8, 0.3))}
                     className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition-colors text-sm"
-                    title="Zoom Out"
+                    title={t('Zoom Out')}
                 >
                     <i className="fa-solid fa-minus"></i>
                 </button>
@@ -692,7 +695,7 @@ const FleetOrgChart: React.FC<FleetOrgChartProps> = ({
                 <button
                     onClick={fitToView}
                     className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition-colors text-sm"
-                    title="Fit to View"
+                    title={t('Fit to View')}
                 >
                     <i className="fa-solid fa-expand"></i>
                 </button>
