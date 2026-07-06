@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { BrandingConfig, Announcement } from '../../../types';
 import Notice from '../../ui/Notice';
 import CallsignChip from '../../shared/ui/CallsignChip';
+import LanguageSwitcher from '../../common/LanguageSwitcher';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface LoginViewProps {
     onLoginClick: () => void;
@@ -20,6 +22,7 @@ const formatUTC = (d: Date) => {
 };
 
 const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, announcements, authError, onDismissAuthError }) => {
+    const { t } = useI18n();
     const [now, setNow] = useState(() => new Date());
     useEffect(() => {
         const id = setInterval(() => setNow(new Date()), 1000);
@@ -66,7 +69,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
                     <h1 className="text-3xl sm:text-4xl font-black text-white tracking-[0.15em] uppercase mb-1 leading-tight">
                         {brandingConfig.name}
                     </h1>
-                    <p className="text-[11px] text-sky-300/70 font-mono uppercase tracking-[0.3em] mb-5">Operations Terminal</p>
+                    <p className="text-[11px] text-sky-300/70 font-mono uppercase tracking-[0.3em] mb-5">{t('Operations Terminal')}</p>
                     <div className="h-px w-20 bg-linear-to-r from-transparent via-sky-500 to-transparent opacity-60 mb-6" />
 
                     {(brandingConfig.loginTitle || brandingConfig.loginSubtitle) && (
@@ -86,14 +89,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
                             <div className="flex items-start gap-2">
                                 <i className="fa-solid fa-triangle-exclamation text-amber-400 text-sm mt-0.5 shrink-0"></i>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest mb-1">Login failed</p>
+                                    <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest mb-1">{t('Login failed')}</p>
                                     <p className="text-xs text-amber-100/90 leading-relaxed">{authError}</p>
                                 </div>
                                 {onDismissAuthError && (
                                     <button
                                         onClick={onDismissAuthError}
                                         className="text-amber-400/60 hover:text-amber-200 shrink-0"
-                                        aria-label="Dismiss"
+                                        aria-label={t('Dismiss')}
                                     >
                                         <i className="fa-solid fa-xmark text-xs"></i>
                                     </button>
@@ -108,11 +111,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
                     >
                         <span className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
                         <i className="fa-brands fa-discord h-5 w-5 mr-3" aria-hidden />
-                        <span className="relative z-10 uppercase tracking-wider">{authError ? 'Try Again' : 'Continue with Discord'}</span>
+                        <span className="relative z-10 uppercase tracking-wider">{authError ? t('Try Again') : t('Continue with Discord')}</span>
                     </button>
 
                     <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
-                        First time? After Discord auth you&rsquo;ll link your RSI handle.
+                        {t('First time? After Discord auth you’ll link your RSI handle.')}
                     </p>
                 </div>
             </div>
@@ -120,9 +123,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
             <div className="relative z-10 px-5 sm:px-8 pb-5 sm:pb-6 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500">
                 <span className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    System Online
+                    {t('System Online')}
                 </span>
-                <span className="text-slate-400">UTC {formatUTC(now)}</span>
+                <span className="flex items-center gap-4">
+                    <LanguageSwitcher />
+                    <span className="text-slate-400">UTC {formatUTC(now)}</span>
+                </span>
             </div>
 
             <style>{`

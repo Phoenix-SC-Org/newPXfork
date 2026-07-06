@@ -7,6 +7,8 @@ import { useRadio } from '../../contexts/RadioContext';
 import HeaderNotificationsBell from './HeaderNotificationsBell';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigation } from '../../contexts/NavigationContext';
+import LanguageSwitcher from '../common/LanguageSwitcher';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface HeaderProps {
     setActiveView: (view: string) => void;
@@ -20,6 +22,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
     const { volume, setVolume, addToast, playSound } = useNotification();
     const { globalSearchQuery, setGlobalSearchQuery, isRadioOpen, setIsRadioOpen } = useNavigation();
     const { isConnected, isTransmitting, activeSpeakers } = useRadio();
+    const { t } = useI18n();
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                 <button
                     onClick={toggleMobileSidebar}
                     className="text-slate-400 hover:text-white p-2 rounded-md hover:bg-white/10 transition-colors"
-                    aria-label={isMobileSidebarOpen ? "Close menu" : "Open menu"}
+                    aria-label={isMobileSidebarOpen ? t('Close menu') : t('Open menu')}
                 >
                     <i className={`fa-solid ${isMobileSidebarOpen ? 'fa-xmark' : 'fa-bars'} h-6 w-6`}></i>
                 </button>
@@ -80,7 +83,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                     <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-500 transition-colors"></i>
                     <input
                         type="text"
-                        placeholder="Global Search..."
+                        placeholder={t('Global Search...')}
                         className="w-full bg-slate-900/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:ring-1 focus:ring-sky-500/50 focus:border-sky-500/50 outline-hidden transition-all hover:bg-slate-900"
                         value={globalSearchQuery}
                         onChange={(e) => setGlobalSearchQuery(e.target.value)}
@@ -89,6 +92,11 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
             </div>
 
             <div className="flex items-stretch h-full">
+
+                {/* Language toggle — unobtrusive, always reachable post-login */}
+                <div className="hidden sm:flex items-center px-4 border-l border-white/5">
+                    <LanguageSwitcher />
+                </div>
 
                 {/* Radio Toggle Element - Accessible by All Authenticated Users */}
                 <button
@@ -100,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                             ? 'text-slate-500 cursor-default'
                             : isRadioOpen ? 'bg-sky-500/10 text-sky-400 border-l-sky-500/30' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}
                     `}
-                    title={radioConfig.configured ? 'Toggle Radio' : 'Radio unavailable — LiveKit not configured by your organization admin'}
+                    title={radioConfig.configured ? t('Toggle Radio') : t('Radio unavailable — LiveKit not configured by your organization admin')}
                 >
                     {radioConfig.configured && isConnected && (
                         <span className="absolute top-3.5 right-3 flex h-2 w-2">
@@ -111,10 +119,10 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                     <span className="relative inline-flex items-center justify-center">
                         <i className={`fa-solid fa-walkie-talkie text-lg ${!radioConfig.configured ? 'text-slate-500' : isTransmitting ? 'text-red-400' : ''}`}></i>
                     </span>
-                    <span className={`ml-3 font-bold text-xs uppercase tracking-wider hidden md:block ${!radioConfig.configured ? 'text-slate-500' : ''}`}>Radio</span>
+                    <span className={`ml-3 font-bold text-xs uppercase tracking-wider hidden md:block ${!radioConfig.configured ? 'text-slate-500' : ''}`}>{t('Radio')}</span>
                     {!radioConfig.configured && (
                         <span className="ml-2 px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest bg-slate-700/40 text-slate-400 border border-slate-600/40 hidden lg:inline-block">
-                            Unavailable
+                            {t('Unavailable')}
                         </span>
                     )}
                 </button>
@@ -152,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                         <div className="absolute right-2 top-full mt-2 w-64 bg-slate-950/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl z-50 animate-fade-in-down overflow-hidden origin-top-right">
                             <div className="flex flex-col divide-y divide-white/5">
                                 <div className="p-4 bg-white/5">
-                                    <p className="text-xs text-slate-500 font-bold uppercase mb-1">Signed in as</p>
+                                    <p className="text-xs text-slate-500 font-bold uppercase mb-1">{t('Signed in as')}</p>
                                     <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <div className="flex items-center text-amber-400 text-xs">
@@ -171,7 +179,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                         className="w-full text-left flex items-center px-3 py-2.5 rounded-md hover:bg-white/5 transition-colors text-xs font-medium text-slate-300 group"
                                     >
                                         <i className="fa-solid fa-id-card w-5 text-slate-500 group-hover:text-sky-400 text-center"></i>
-                                        My Account
+                                        {t('My Account')}
                                     </button>
 
                                     {hasPermission('admin:access') && (
@@ -183,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                             className="w-full text-left flex items-center px-3 py-2.5 rounded-md hover:bg-white/5 transition-colors text-xs font-medium text-slate-300 group"
                                         >
                                             <i className="fa-solid fa-screwdriver-wrench w-5 text-slate-500 group-hover:text-red-400 text-center"></i>
-                                            Admin Console
+                                            {t('Admin Console')}
                                         </button>
                                     )}
 
@@ -196,7 +204,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                             className="w-full text-left flex items-center px-3 py-2.5 rounded-md hover:bg-white/5 transition-colors text-xs font-medium text-slate-300 group"
                                         >
                                             <i className="fa-solid fa-file-contract w-5 text-slate-500 group-hover:text-amber-400 text-center"></i>
-                                            My Service Record
+                                            {t('My Service Record')}
                                         </button>
                                     )}
 
@@ -211,14 +219,14 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                             className="w-full text-left flex items-center px-3 py-2.5 rounded-md hover:bg-white/5 transition-colors text-xs font-medium text-slate-300 group"
                                         >
                                             <i className="fa-solid fa-briefcase w-5 text-slate-500 group-hover:text-green-400 text-center"></i>
-                                            Job Gazette
+                                            {t('Job Gazette')}
                                         </button>
                                     )}
                                 </div>
 
                                 <div className="p-4 text-slate-300 space-y-3">
                                     <div className="flex justify-between items-center text-xs">
-                                        <span className="text-slate-500 font-bold uppercase">Audio Volume</span>
+                                        <span className="text-slate-500 font-bold uppercase">{t('Audio Volume')}</span>
                                         <span className="font-mono text-sky-400">{volume}%</span>
                                     </div>
                                     <input
@@ -233,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                         onClick={handleTestSound}
                                         className="w-full text-center text-[10px] font-bold text-slate-400 hover:text-white bg-slate-800 border border-slate-700 hover:border-slate-600 px-2 py-1.5 rounded-sm transition-all"
                                     >
-                                        <i className="fa-solid fa-play mr-1"></i> Test Audio
+                                        <i className="fa-solid fa-play mr-1"></i> {t('Test Audio')}
                                     </button>
                                 </div>
 
@@ -246,7 +254,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
                                         className="w-full text-left flex items-center px-3 py-2.5 rounded-md hover:bg-red-500/10 transition-colors text-xs font-bold text-red-400 group"
                                     >
                                         <i className="fa-solid fa-power-off w-5 text-center group-hover:text-red-500"></i>
-                                        Disconnect
+                                        {t('Disconnect')}
                                     </button>
                                 </div>
                             </div>

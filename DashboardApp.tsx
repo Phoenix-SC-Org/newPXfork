@@ -83,6 +83,7 @@ import WindowTaskbar from './components/layout/WindowTaskbar';
 import NotificationListener from './components/utility/NotificationListener';
 import { initializeSupabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/utility/ErrorBoundary';
+import { I18nProvider } from './i18n/I18nContext';
 
 // Retry wrapper for lazy view imports — handles transient preload failures
 // (e.g. Safari module preload quirks) and stale-chunk errors after deploys.
@@ -807,6 +808,7 @@ const RequestDetailViewWrapper = () => {
 }
 
 const DashboardApp: React.FC = () => (
+    <I18nProvider>
     <UIProvider>
         <DataCoreProvider>
             <MembersProvider>
@@ -840,6 +842,7 @@ const DashboardApp: React.FC = () => (
             </MembersProvider>
         </DataCoreProvider>
     </UIProvider>
+    </I18nProvider>
 );
 
 export default DashboardApp;
