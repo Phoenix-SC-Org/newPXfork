@@ -1,6 +1,5 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { Agent } from 'undici';
 import { log as baseLog } from './log.js';
 
 const log = baseLog.child({ module: 'lib.supabaseServer' });
@@ -12,24 +11,12 @@ if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase environment variables SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set.");
 }
 
-// Custom HTTP agent with connection pooling to prevent connection exhaustion
-// under concurrent Supabase queries (default undici limits are too low).
-const fetchAgent = new Agent({
-    keepAliveTimeout: 30_000,
-    keepAliveMaxTimeout: 60_000,
-    connections: 50,
-    pipelining: 1,
-    // undici 8 defaults allowH2 to true; pin this pool to HTTP/1.1 so the tuned
-    // keep-alive / connection-pool behavior stays identical to the undici 7 setup.
-    allowH2: false,
-});
-
-const customFetch: typeof globalThis.fetch = (input, init) =>
-    fetch(input, { ...init, dispatcher: fetchAgent } as any);
-
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-    global: { fetch: customFetch },
-});
+// Use the runtime's global fetch (Node's built-in undici) directly — no custom
+// dispatcher/Agent. A dispatcher built from the project's own `undici` package
+// version is not guaranteed to be compatible with the Node runtime's internal
+// undici (mismatched internals throw "invalid onRequestStart method" /
+// UND_ERR_INVALID_ARG on some Node versions), which broke all Supabase calls.
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const handleSupabaseError = ({ error, message }: { error: any, message: string }) => {
     if (error) {
