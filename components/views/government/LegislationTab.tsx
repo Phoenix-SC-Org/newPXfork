@@ -7,6 +7,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import WikiEditor from '../wiki/WikiEditor';
 import { GovernmentLegislation, LegislationStatus } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface LegislationTabProps {
     onViewLegislation: (legislation: GovernmentLegislation) => void;
@@ -29,6 +30,7 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
     const { rpcAction } = useData();
     const { governmentLegislation, governmentPositions, governmentPositionHolders, refreshGovernment } = useGovernment();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -74,10 +76,10 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
             });
             setShowCreateModal(false);
             setFormTitle(''); setFormSummary(''); formBodyRef.current = {}; setFormSponsorPositionId('');
-            addToast('Bill Created', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Your bill has been created as a draft.' });
+            addToast(t('Bill Created'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Your bill has been created as a draft.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Create Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to create legislation.' });
+            addToast(t('Create Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to create legislation.') });
         } finally {
             setIsCreating(false);
         }
@@ -92,21 +94,21 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
             <div className="flex items-start justify-between mb-1.5">
                 <h3 className="text-sm font-bold text-white flex-1">{leg.title}</h3>
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-sm ml-2 shrink-0 ${statusColors[leg.status] || statusColors.Draft}`}>
-                    {leg.status}
+                    {t(leg.status)}
                 </span>
             </div>
             {leg.summary && <p className="text-xs text-slate-400 mb-2 line-clamp-2">{leg.summary}</p>}
             <div className="flex items-center gap-3 text-[10px] text-slate-500">
-                <span>by {leg.author?.name || 'Unknown'}</span>
-                {leg.sponsorPosition && <span>via {leg.sponsorPosition.name}</span>}
-                {leg.isConstitutionalAmendment && <span className="text-amber-400 font-bold">AMENDMENT</span>}
+                <span>{t('by {name}', { name: leg.author?.name || t('Unknown') })}</span>
+                {leg.sponsorPosition && <span>{t('via {name}', { name: leg.sponsorPosition.name })}</span>}
+                {leg.isConstitutionalAmendment && <span className="text-amber-400 font-bold">{t('AMENDMENT')}</span>}
                 {leg.status === LegislationStatus.Voting && (
                     <span className="text-emerald-400">
-                        {leg.votesFor} for / {leg.votesAgainst} against / {leg.votesAbstain} abstain
+                        {t('{for} for / {against} against / {abstain} abstain', { for: leg.votesFor, against: leg.votesAgainst, abstain: leg.votesAbstain })}
                     </span>
                 )}
-                {leg.status === LegislationStatus.Passed && <span className="text-sky-400">Enacted</span>}
-                {leg.vetoedAt && <span className="text-red-400">Vetoed</span>}
+                {leg.status === LegislationStatus.Passed && <span className="text-sky-400">{t('Enacted')}</span>}
+                {leg.vetoedAt && <span className="text-red-400">{t('Vetoed')}</span>}
                 {leg.comments && leg.comments.length > 0 && (
                     <span><i className="fa-solid fa-comment mr-0.5"></i>{leg.comments.length}</span>
                 )}
@@ -118,40 +120,40 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-sm font-bold text-white">Legislation</h2>
+                    <h2 className="text-sm font-bold text-white">{t('Legislation')}</h2>
                     <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value)}
                         className="text-[10px] bg-slate-800 border border-slate-700 rounded-sm px-2 py-1 text-slate-300"
                     >
-                        <option value="all">All</option>
-                        {Object.values(LegislationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="all">{t('All')}</option>
+                        {Object.values(LegislationStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                     </select>
                 </div>
                 {canCreateLegislation && myProposingPositions.length > 0 && (
                     <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 rounded-md hover:bg-sky-500/20 transition-colors">
-                        <i className="fa-solid fa-pen-nib"></i> Draft Bill
+                        <i className="fa-solid fa-pen-nib"></i> {t('Draft Bill')}
                     </button>
                 )}
             </div>
 
             {activeLegislation.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Active</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Active')}</h3>
                     <div className="space-y-2">{activeLegislation.map(renderLegislationCard)}</div>
                 </div>
             )}
 
             {passedLaws.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Enacted Laws</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Enacted Laws')}</h3>
                     <div className="space-y-2">{passedLaws.map(renderLegislationCard)}</div>
                 </div>
             )}
 
             {archivedLegislation.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Archived</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Archived')}</h3>
                     <div className="space-y-2">{archivedLegislation.map(renderLegislationCard)}</div>
                 </div>
             )}
@@ -159,15 +161,15 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
             {governmentLegislation.length === 0 && (
                 <div className="text-center py-12">
                     <i className="fa-solid fa-scroll text-3xl text-slate-600 mb-3"></i>
-                    <p className="text-sm text-slate-400">No legislation has been drafted yet.</p>
+                    <p className="text-sm text-slate-400">{t('No legislation has been drafted yet.')}</p>
                 </div>
             )}
 
             <WindowFrame
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="Draft New Bill"
-                subtitle="Legislation"
+                title={t('Draft New Bill')}
+                subtitle={t('Legislation')}
                 icon="fa-solid fa-scroll"
                 color="sky"
                 width="max-w-2xl"
@@ -175,22 +177,22 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
                 <div className="flex flex-col h-full">
                     <div className="p-6 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Title</label>
-                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all" placeholder="e.g. Trade Regulation Act" disabled={isCreating} />
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Title')}</label>
+                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all" placeholder={t('e.g. Trade Regulation Act')} disabled={isCreating} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sponsoring Position</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Sponsoring Position')}</label>
                             <select value={formSponsorPositionId} onChange={e => setFormSponsorPositionId(e.target.value ? parseInt(e.target.value) : '')} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all" disabled={isCreating}>
-                                <option value="">Select position...</option>
+                                <option value="">{t('Select position...')}</option>
                                 {myProposingPositions.map(p => p && <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Summary</label>
-                            <textarea value={formSummary} onChange={e => setFormSummary(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all resize-none" rows={2} placeholder="Brief summary of the bill..." disabled={isCreating} />
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Summary')}</label>
+                            <textarea value={formSummary} onChange={e => setFormSummary(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all resize-none" rows={2} placeholder={t('Brief summary of the bill...')} disabled={isCreating} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Body</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Body')}</label>
                             <WikiEditor
                                 content={emptyContent}
                                 editable={true}
@@ -199,18 +201,18 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
                         </div>
                         <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                             <input type="checkbox" checked={formIsAmendment} onChange={e => setFormIsAmendment(e.target.checked)} className="rounded-sm bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500" disabled={isCreating} />
-                            Constitutional Amendment
+                            {t('Constitutional Amendment')}
                         </label>
                     </div>
                     <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 shrink-0 gap-3">
-                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isCreating} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">Cancel</button>
+                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isCreating} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleCreate}
                             disabled={isCreating || !formTitle.trim()}
                             className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-sky-500/50"
                         >
-                            {isCreating ? <i className="fa-solid fa-spinner animate-spin" /> : 'Create Draft'}
+                            {isCreating ? <i className="fa-solid fa-spinner animate-spin" /> : t('Create Draft')}
                         </button>
                     </div>
                 </div>

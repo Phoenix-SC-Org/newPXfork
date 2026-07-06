@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { WikiPage } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     page: WikiPage | null;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const WikiBreadcrumb: React.FC<Props> = ({ page, allPages, onSelect, showHome = true, className = '' }) => {
+    const { t } = useI18n();
     const trail = useMemo(() => {
         if (!page) return [];
         const byId = new Map(allPages.map((p) => [p.id, p]));
@@ -45,7 +47,7 @@ const WikiBreadcrumb: React.FC<Props> = ({ page, allPages, onSelect, showHome = 
                     }`}
                 >
                     <i className="fa-solid fa-house text-[10px]" />
-                    <span>Home</span>
+                    <span>{t('Home')}</span>
                 </button>
             )}
             {trail.map((p, idx) => {

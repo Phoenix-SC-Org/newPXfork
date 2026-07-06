@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { GovernmentType } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface GovernmentSetupWizardProps {
     onComplete: () => void;
@@ -55,6 +56,7 @@ const iconColorMap: Record<string, string> = {
 const GovernmentSetupWizard: React.FC<GovernmentSetupWizardProps> = ({ onComplete }) => {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [selectedType, setSelectedType] = useState<GovernmentType | null>(null);
     const [isApplying, setIsApplying] = useState(false);
@@ -70,10 +72,10 @@ const GovernmentSetupWizard: React.FC<GovernmentSetupWizardProps> = ({ onComplet
             } else {
                 await rpcAction('gov:apply_template', { templateType: selectedType });
             }
-            addToast('Government Established', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Your government structure has been created. You can customise it further from the admin panel.' });
+            addToast(t('Government Established'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Your government structure has been created. You can customise it further from the admin panel.') });
             onComplete();
         } catch (err: any) {
-            addToast('Setup Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to create government structure.' });
+            addToast(t('Setup Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to create government structure.') });
         } finally {
             setIsApplying(false);
         }
@@ -85,9 +87,9 @@ const GovernmentSetupWizard: React.FC<GovernmentSetupWizardProps> = ({ onComplet
                 <div className="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-3">
                     <i className="fa-solid fa-landmark text-2xl text-amber-400"></i>
                 </div>
-                <h2 className="text-xl font-bold text-white">Establish Government</h2>
+                <h2 className="text-xl font-bold text-white">{t('Establish Government')}</h2>
                 <p className="text-sm text-slate-400 mt-1">
-                    Choose a governance template to get started. Everything can be customised after creation.
+                    {t('Choose a governance template to get started. Everything can be customised after creation.')}
                 </p>
             </div>
 
@@ -104,8 +106,8 @@ const GovernmentSetupWizard: React.FC<GovernmentSetupWizardProps> = ({ onComplet
                             } ${isSelected ? 'ring-1 ring-white/10' : ''}`}
                         >
                             <i className={`${opt.icon} text-lg ${iconColorMap[opt.color]} mb-2 block`}></i>
-                            <h3 className="text-sm font-bold text-white mb-1">{opt.name}</h3>
-                            <p className="text-[11px] text-slate-400 leading-relaxed">{opt.description}</p>
+                            <h3 className="text-sm font-bold text-white mb-1">{t(opt.name)}</h3>
+                            <p className="text-[11px] text-slate-400 leading-relaxed">{t(opt.description)}</p>
                         </button>
                     );
                 })}
@@ -121,12 +123,12 @@ const GovernmentSetupWizard: React.FC<GovernmentSetupWizardProps> = ({ onComplet
                     {isApplying ? (
                         <>
                             <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                            Establishing...
+                            {t('Establishing...')}
                         </>
                     ) : (
                         <>
                             <i className="fa-solid fa-gavel"></i>
-                            Establish Government
+                            {t('Establish Government')}
                         </>
                     )}
                 </button>

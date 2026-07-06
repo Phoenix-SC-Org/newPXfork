@@ -5,6 +5,7 @@ import { useFormatDate } from '../../../contexts/AuthContext';
 import WikiEditor from './WikiEditor';
 import WikiPageSettings from './WikiPageSettings';
 import WikiBreadcrumb from './WikiBreadcrumb';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiPageContentProps {
     page: WikiPage;
@@ -19,6 +20,7 @@ interface WikiPageContentProps {
 const WikiPageContent: React.FC<WikiPageContentProps> = ({
     page, allPages, canEdit, canDelete, onSave, onDelete, onSelectPage,
 }) => {
+    const { t } = useI18n();
     const { securityClearances } = useMembers();
     const fmt = useFormatDate();
     const [isEditing, setIsEditing] = useState(false);
@@ -72,12 +74,12 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
     };
 
     const classificationName = securityClearances.find(c => c.level === page.classificationLevel)?.name
-        || (page.classificationLevel === 0 ? 'Unclassified' : `Level ${page.classificationLevel}`);
+        || (page.classificationLevel === 0 ? t('Unclassified') : t('Level {level}', { level: page.classificationLevel }));
 
     const markerCodes = page.limitingMarkers?.map(m => m.code || m.name).join(' / ') || '';
 
     const handleDelete = async () => {
-        if (!window.confirm(`Delete "${page.title}"? Children will be moved to the root level.`)) return;
+        if (!window.confirm(t('Delete "{title}"? Children will be moved to the root level.', { title: page.title }))) return;
         setIsDeleting(true);
         try {
             await onDelete(page.id);
@@ -109,10 +111,10 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                                 type="text"
                                 value={editTitle}
                                 onChange={(e) => setEditTitle(e.target.value)}
-                                placeholder="Page title..."
+                                placeholder={t('Page title...')}
                                 className="w-full bg-transparent text-xl md:text-2xl font-bold text-white placeholder-slate-600 outline-hidden border-b border-transparent focus:border-sky-500/50 transition-colors pb-0.5"
                             />
-                            <p className="text-[10px] text-slate-500 mt-1">Title, content, and settings save together.</p>
+                            <p className="text-[10px] text-slate-500 mt-1">{t('Title, content, and settings save together.')}</p>
                         </div>
                     </div>
                     <button
@@ -124,7 +126,7 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                         }`}
                     >
                         <i className="fa-solid fa-gear md:mr-1.5" />
-                        <span className="hidden md:inline">{showSettings ? 'Hide Settings' : 'Settings'}</span>
+                        <span className="hidden md:inline">{showSettings ? t('Hide Settings') : t('Settings')}</span>
                     </button>
                 </div>
 
@@ -185,7 +187,7 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                                     ? 'bg-orange-900/30 text-orange-400 border border-orange-500/20'
                                     : 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/20'
                             }`}>
-                                Level {page.classificationLevel}
+                                {t('Level {level}', { level: page.classificationLevel })}
                             </span>
                         )}
                         {page.limitingMarkers?.map((m) => (
@@ -203,7 +205,7 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                                 onClick={() => setIsEditing(true)}
                                 className="px-3 py-1.5 text-xs font-bold text-sky-400 hover:text-white bg-sky-600/10 hover:bg-sky-600 border border-sky-500/30 rounded-lg transition-colors"
                             >
-                                <i className="fa-solid fa-pen mr-1.5" />Edit
+                                <i className="fa-solid fa-pen mr-1.5" />{t('Edit')}
                             </button>
                         )}
                         {canDelete && (
@@ -212,7 +214,7 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                                 disabled={isDeleting}
                                 className="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-white bg-red-600/10 hover:bg-red-600 border border-red-500/30 rounded-lg transition-colors disabled:opacity-50"
                             >
-                                <i className={`fa-solid ${isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'} mr-1.5`} />Delete
+                                <i className={`fa-solid ${isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'} mr-1.5`} />{t('Delete')}
                             </button>
                         )}
                     </div>

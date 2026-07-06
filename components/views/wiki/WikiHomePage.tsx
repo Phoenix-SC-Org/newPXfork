@@ -6,6 +6,7 @@ import WikiEditor from './WikiEditor';
 import PortalCard from '../../shared/ui/PortalCard';
 import SectionLabel from '../../shared/ui/SectionLabel';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const EMPTY_CONTENT: Record<string, never> = {};
 const RECENTLY_UPDATED_LIMIT = 6;
@@ -74,6 +75,7 @@ const PageCard: React.FC<{ page: WikiPage; classLabel: string; onClick: () => vo
 };
 
 const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEdit, onSelectPage, onSaveConfig }) => {
+    const { t } = useI18n();
     const { securityClearances } = useMembers();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -149,7 +151,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
 
     const getClassificationName = (level: number) => {
         return securityClearances.find(c => c.level === level)?.name
-            || (level === 0 ? '' : `Level ${level}`);
+            || (level === 0 ? '' : t('Level {level}', { level }));
     };
 
     if (isEditing) {
@@ -162,13 +164,13 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                         </button>
                         <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                             <i className="fa-solid fa-house-chimney text-sky-500" />
-                            Edit Wiki Home
+                            {t('Edit Wiki Home')}
                         </h1>
                     </div>
                 </div>
 
                 <div className="space-y-3">
-                    <SectionLabel label="Welcome Content" icon="fa-message" />
+                    <SectionLabel label={t('Welcome Content')} icon="fa-message" />
                     <WikiEditor
                         content={config.welcomeContent || EMPTY_CONTENT}
                         editable={true}
@@ -178,7 +180,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-slate-700/50">
-                    <SectionLabel label="Featured Articles" icon="fa-star" />
+                    <SectionLabel label={t('Featured Articles')} icon="fa-star" />
 
                     {editFeaturedPages.length > 0 ? (
                         <div className="space-y-2">
@@ -188,7 +190,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                                     <button
                                         onClick={() => handleRemoveFeatured(page.id)}
                                         className="text-slate-500 hover:text-red-400 transition-colors text-xs"
-                                        title="Remove from featured"
+                                        title={t('Remove from featured')}
                                     >
                                         <i className="fa-solid fa-xmark" />
                                     </button>
@@ -196,7 +198,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                             ))}
                         </div>
                     ) : (
-                        <p className="text-xs text-slate-600 italic">No featured articles selected.</p>
+                        <p className="text-xs text-slate-600 italic">{t('No featured articles selected.')}</p>
                     )}
 
                     {availableToFeature.length > 0 && (
@@ -206,7 +208,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                                 onChange={e => setAddPageId(e.target.value)}
                                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden"
                             >
-                                <option value="">Select a page to feature...</option>
+                                <option value="">{t('Select a page to feature...')}</option>
                                 {availableToFeature.map(p => (
                                     <option key={p.id} value={p.id}>{p.title}</option>
                                 ))}
@@ -216,7 +218,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                                 disabled={!addPageId}
                                 className="px-3 py-2 text-sm font-bold text-sky-400 hover:text-white bg-sky-600/10 hover:bg-sky-600 border border-sky-500/30 rounded-lg transition-colors disabled:opacity-40 disabled:pointer-events-none"
                             >
-                                <i className="fa-solid fa-plus mr-1" />Add
+                                <i className="fa-solid fa-plus mr-1" />{t('Add')}
                             </button>
                         </div>
                     )}
@@ -226,21 +228,21 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                             onClick={handleCancel}
                             className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors"
                         >
-                            Cancel
+                            {t('Cancel')}
                         </button>
                         <button
                             onClick={handleSaveFeatured}
                             disabled={isSaving}
                             className="px-4 py-2 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors disabled:opacity-50"
                         >
-                            <i className="fa-solid fa-floppy-disk mr-2" />{isSaving ? 'Saving...' : 'Save Featured'}
+                            <i className="fa-solid fa-floppy-disk mr-2" />{isSaving ? t('Saving...') : t('Save Featured')}
                         </button>
                     </div>
                 </div>
 
                 {/* Display Options — kept simple inline so we don't need a third edit-screen section. */}
                 <div className="space-y-3 pt-4 border-t border-slate-700/50">
-                    <SectionLabel label="Display Options" icon="fa-eye" />
+                    <SectionLabel label={t('Display Options')} icon="fa-eye" />
                     <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-slate-800/40 border border-slate-700/40 hover:border-sky-500/30 transition-colors">
                         <input
                             type="checkbox"
@@ -256,8 +258,8 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                             className="h-4 w-4 rounded-sm bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
                         />
                         <div>
-                            <span className="text-xs font-bold text-white block">Hide "Recently Updated"</span>
-                            <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">Don't show recent edits on the wiki home page.</span>
+                            <span className="text-xs font-bold text-white block">{t('Hide "Recently Updated"')}</span>
+                            <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">{t("Don't show recent edits on the wiki home page.")}</span>
                         </div>
                     </label>
                 </div>
@@ -275,7 +277,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                     <i className="fa-solid fa-book text-sky-500" />
-                    Org Wiki
+                    {t('Org Wiki')}
                 </h1>
                 {canEdit && (
                     <button
@@ -283,7 +285,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                         className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
                     >
                         <i className="fa-solid fa-pen-to-square" />
-                        <span className="hidden md:inline">Edit Home</span>
+                        <span className="hidden md:inline">{t('Edit Home')}</span>
                     </button>
                 )}
             </div>
@@ -296,15 +298,15 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                 <PortalCard variant="dashed" padding="lg">
                     <p className="text-sm text-slate-500 text-center">
                         {canEdit
-                            ? 'No welcome content yet. Click "Edit Home" to add a welcome message.'
-                            : 'Welcome to the wiki. Pick a page from the tree or use the search to begin.'}
+                            ? t('No welcome content yet. Click "Edit Home" to add a welcome message.')
+                            : t('Welcome to the wiki. Pick a page from the tree or use the search to begin.')}
                     </p>
                 </PortalCard>
             )}
 
             {hasFeatured && (
                 <div>
-                    <SectionLabel label="Featured Articles" icon="fa-star" count={featuredPages.length} />
+                    <SectionLabel label={t('Featured Articles')} icon="fa-star" count={featuredPages.length} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {featuredPages.map(page => (
                             <PageCard
@@ -320,7 +322,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
 
             {hasRecent && (
                 <div>
-                    <SectionLabel label="Recently Updated" icon="fa-clock-rotate-left" count={recentlyUpdated.length} />
+                    <SectionLabel label={t('Recently Updated')} icon="fa-clock-rotate-left" count={recentlyUpdated.length} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {recentlyUpdated.map(page => (
                             <PageCard
@@ -337,10 +339,10 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
             {isCompletelyEmpty && (
                 <EmptyState
                     icon="fa-book-open"
-                    heading="The wiki is empty"
+                    heading={t('The wiki is empty')}
                     description={canEdit
-                        ? 'Create your first page from the sidebar or top bar to get started.'
-                        : 'No pages have been published yet. Check back soon.'}
+                        ? t('Create your first page from the sidebar or top bar to get started.')
+                        : t('No pages have been published yet. Check back soon.')}
                     accent="sky"
                 />
             )}

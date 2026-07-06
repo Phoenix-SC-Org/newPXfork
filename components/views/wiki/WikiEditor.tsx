@@ -13,6 +13,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { IframeExtension } from './extensions/IframeExtension';
 import WikiToolbar from './WikiToolbar';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiEditorProps {
     content: any;
@@ -23,6 +24,7 @@ interface WikiEditorProps {
 }
 
 const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCancel, onChange }) => {
+    const { t } = useI18n();
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {
@@ -43,7 +45,7 @@ const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCa
                 underline: false,
             }),
             Placeholder.configure({
-                placeholder: 'Start writing...',
+                placeholder: t('Start writing...'),
             }),
             Image.configure({ inline: false }),
             Link.configure({
@@ -106,7 +108,7 @@ const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCa
                             disabled={isSaving}
                             className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                         >
-                            Cancel
+                            {t('Cancel')}
                         </button>
                     )}
                     <button
@@ -114,7 +116,7 @@ const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCa
                         disabled={isSaving}
                         className="px-4 py-2 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none"
                     >
-                        <i className={`fa-solid ${isSaving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'} mr-2`}></i>{isSaving ? 'Saving...' : 'Save'}
+                        <i className={`fa-solid ${isSaving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'} mr-2`}></i>{isSaving ? t('Saving...') : t('Save')}
                     </button>
                 </div>
             )}

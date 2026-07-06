@@ -18,6 +18,7 @@ import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import HeroActionButton from '../../shared/ui/HeroActionButton';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type GovernmentTab = 'overview' | 'elections' | 'legislation' | 'motions' | 'orders' | 'constitution';
 
@@ -26,6 +27,7 @@ const GovernmentView: React.FC = () => {
     const { isFetching } = useData();
     const { governmentConfig, governmentBranches, governmentPositions, governmentPositionHolders, governmentElections, governmentLegislation, governmentMotions, refreshGovernment } = useGovernment();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [activeTab, setActiveTab] = useState<GovernmentTab>('overview');
     const [showSetupWizard, setShowSetupWizard] = useState(false);
@@ -49,10 +51,9 @@ const GovernmentView: React.FC = () => {
             <div className="h-full flex items-center justify-center">
                 <div className="text-center max-w-md">
                     <i className="fa-solid fa-landmark text-4xl text-slate-600 mb-4"></i>
-                    <h2 className="text-xl font-bold text-white mb-2">No Government Established</h2>
+                    <h2 className="text-xl font-bold text-white mb-2">{t('No Government Established')}</h2>
                     <p className="text-sm text-slate-400">
-                        This organisation has not yet established a government structure.
-                        An administrator can set one up from the admin panel.
+                        {t('This organisation has not yet established a government structure. An administrator can set one up from the admin panel.')}
                     </p>
                 </div>
             </div>
@@ -81,13 +82,13 @@ const GovernmentView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             <HeroShell
-                chipLabel="MODULE · GOVERNMENT"
+                chipLabel={t('MODULE · GOVERNMENT')}
                 chipIcon="fa-landmark"
                 chipAccent="indigo"
-                title={governmentConfig?.name || 'Government'}
+                title={governmentConfig?.name || t('Government')}
                 subtitle={<>
                     <span className="block text-[10px] font-black text-indigo-300 uppercase tracking-[0.25em] mb-1">
-                        {formatGovernmentType(governmentConfig?.governmentType || '')}
+                        {t(formatGovernmentType(governmentConfig?.governmentType || ''))}
                     </span>
                     {governmentConfig?.description && (
                         <span className="italic">{governmentConfig.description}</span>
@@ -95,16 +96,16 @@ const GovernmentView: React.FC = () => {
                 </>}
                 actions={canAdmin && (
                     <HeroActionButton onClick={() => setShowSetupWizard(true)} accent="slate" icon="fa-gear">
-                        Restructure
+                        {t('Restructure')}
                     </HeroActionButton>
                 )}
                 stats={<>
-                    <HeroStat icon="fa-sitemap" label="Branches" value={governmentBranches.length} accent="indigo" />
-                    <HeroStat icon="fa-user-tie" label="Positions" value={governmentPositions.length} accent="indigo" />
-                    <HeroStat icon="fa-people-group" label="Officials" value={governmentPositionHolders.filter((h: any) => !h.endDate && !h.end_date).length} accent="indigo" />
+                    <HeroStat icon="fa-sitemap" label={t('Branches')} value={governmentBranches.length} accent="indigo" />
+                    <HeroStat icon="fa-user-tie" label={t('Positions')} value={governmentPositions.length} accent="indigo" />
+                    <HeroStat icon="fa-people-group" label={t('Officials')} value={governmentPositionHolders.filter((h: any) => !h.endDate && !h.end_date).length} accent="indigo" />
                     <HeroStat
                         icon="fa-bolt"
-                        label="Active"
+                        label={t('Active')}
                         value={activeElectionCount + activeLegislationCount + activeMotionCount}
                         accent="amber"
                         emphasize={activeElectionCount + activeLegislationCount + activeMotionCount > 0}
@@ -121,7 +122,7 @@ const GovernmentView: React.FC = () => {
                         }`}
                     >
                         <i className={tab.icon}></i>
-                        {tab.label}
+                        {t(tab.label, { context: 'government' })}
                         {tab.badge && (
                             <span className="ml-1 min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center">{tab.badge}</span>
                         )}
@@ -212,6 +213,7 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
     const { rpcAction } = useData();
     const { refreshGovernment } = useGovernment();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [isEditing, setIsEditing] = useState(false);
 
     const hasConstitution = governmentConfig?.constitutionContent
@@ -221,10 +223,10 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
         try {
             await rpcAction('gov:update_constitution', { content: json });
             setIsEditing(false);
-            addToast('Constitution Saved', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Constitution updated.' });
+            addToast(t('Constitution Saved'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Constitution updated.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to update constitution.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to update constitution.') });
         }
     };
 
@@ -234,7 +236,7 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-6">
                     <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <i className="fa-solid fa-scroll text-amber-400"></i>
-                        {hasConstitution ? 'Edit Constitution' : 'Draft Constitution'}
+                        {hasConstitution ? t('Edit Constitution') : t('Draft Constitution')}
                     </h2>
                     <WikiEditor
                         content={governmentConfig?.constitutionContent || EMPTY_CONSTITUTION}
@@ -248,12 +250,12 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                             <i className="fa-solid fa-scroll text-amber-400"></i>
-                            Constitution
+                            {t('Constitution', { context: 'government' })}
                         </h2>
                         {canAdmin && (
                             <button onClick={() => setIsEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-md hover:bg-slate-700 transition-colors">
                                 <i className="fa-solid fa-pen text-xs"></i>
-                                Edit
+                                {t('Edit')}
                             </button>
                         )}
                     </div>
@@ -265,11 +267,11 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
             ) : (
                 <div className="text-center py-12">
                     <i className="fa-solid fa-scroll text-3xl text-slate-600 mb-3"></i>
-                    <p className="text-sm text-slate-400">No constitution has been drafted yet.</p>
+                    <p className="text-sm text-slate-400">{t('No constitution has been drafted yet.')}</p>
                     {canAdmin && (
                         <button onClick={() => setIsEditing(true)} className="mt-3 flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md hover:bg-amber-500/20 transition-colors mx-auto">
                             <i className="fa-solid fa-plus"></i>
-                            Draft Constitution
+                            {t('Draft Constitution')}
                         </button>
                     )}
                 </div>

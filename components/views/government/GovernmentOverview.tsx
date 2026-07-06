@@ -2,6 +2,7 @@
 import React from 'react';
 import { GovernmentBranch, GovernmentPosition, GovernmentPositionHolder } from '../../../types';
 import GovernmentBranchCard from './GovernmentBranchCard';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface GovernmentOverviewProps {
     branches: GovernmentBranch[];
@@ -11,6 +12,7 @@ interface GovernmentOverviewProps {
 }
 
 const GovernmentOverview: React.FC<GovernmentOverviewProps> = ({ branches, positions, holders, canManage }) => {
+    const { t } = useI18n();
     // Positions not assigned to any branch
     const unbranchedPositions = positions.filter(p => !p.branchId);
 
@@ -18,8 +20,8 @@ const GovernmentOverview: React.FC<GovernmentOverviewProps> = ({ branches, posit
         return (
             <div className="text-center py-12">
                 <i className="fa-solid fa-sitemap text-3xl text-slate-600 mb-3"></i>
-                <p className="text-sm text-slate-400">No government structure has been defined yet.</p>
-                <p className="text-xs text-slate-500 mt-1">Set up branches and positions from the admin panel.</p>
+                <p className="text-sm text-slate-400">{t('No government structure has been defined yet.')}</p>
+                <p className="text-xs text-slate-500 mt-1">{t('Set up branches and positions from the admin panel.')}</p>
             </div>
         );
     }
@@ -41,7 +43,7 @@ const GovernmentOverview: React.FC<GovernmentOverviewProps> = ({ branches, posit
             {unbranchedPositions.length > 0 && (
                 <div>
                     <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                        Independent Positions
+                        {t('Independent Positions')}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {unbranchedPositions.map(pos => (
@@ -53,10 +55,10 @@ const GovernmentOverview: React.FC<GovernmentOverviewProps> = ({ branches, posit
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard icon="fa-solid fa-building-columns" label="Branches" value={branches.length} color="amber" />
-                <StatCard icon="fa-solid fa-chair" label="Positions" value={positions.length} color="sky" />
-                <StatCard icon="fa-solid fa-user-tie" label="Active Holders" value={holders.length} color="emerald" />
-                <StatCard icon="fa-solid fa-chair" label="Vacant" value={positions.reduce((acc, p) => acc + Math.max(0, p.maxHolders - (p.currentHolders?.length || 0)), 0)} color="orange" />
+                <StatCard icon="fa-solid fa-building-columns" label={t('Branches')} value={branches.length} color="amber" />
+                <StatCard icon="fa-solid fa-chair" label={t('Positions')} value={positions.length} color="sky" />
+                <StatCard icon="fa-solid fa-user-tie" label={t('Active Holders')} value={holders.length} color="emerald" />
+                <StatCard icon="fa-solid fa-chair" label={t('Vacant')} value={positions.reduce((acc, p) => acc + Math.max(0, p.maxHolders - (p.currentHolders?.length || 0)), 0)} color="orange" />
             </div>
         </div>
     );
@@ -64,6 +66,7 @@ const GovernmentOverview: React.FC<GovernmentOverviewProps> = ({ branches, posit
 
 // Inline PositionCard for unbranched positions
 const PositionCard: React.FC<{ position: GovernmentPosition }> = ({ position }) => {
+    const { t } = useI18n();
     const filledCount = position.currentHolders?.length || 0;
     const isFull = filledCount >= position.maxHolders;
 
@@ -83,19 +86,19 @@ const PositionCard: React.FC<{ position: GovernmentPosition }> = ({ position }) 
                             {holder.user?.avatarUrl && (
                                 <img src={holder.user.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
                             )}
-                            <span>{holder.user?.name || 'Unknown'}</span>
+                            <span>{holder.user?.name || t('Unknown')}</span>
                         </div>
                     ))}
                 </div>
             ) : (
-                <p className="text-xs text-slate-500 italic">Vacant</p>
+                <p className="text-xs text-slate-500 italic">{t('Vacant')}</p>
             )}
             <div className="mt-2 flex items-center gap-2">
                 <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700/50 text-slate-400">
-                    {position.fillMethod}
+                    {t(position.fillMethod)}
                 </span>
                 {position.termLengthDays && (
-                    <span className="text-[10px] text-slate-500">{position.termLengthDays}d term</span>
+                    <span className="text-[10px] text-slate-500">{t('{days}d term', { days: position.termLengthDays })}</span>
                 )}
             </div>
         </div>

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { GovernmentBranch } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface GovernmentBranchCardProps {
     branch: GovernmentBranch;
@@ -15,6 +16,7 @@ const branchTypeColors: Record<string, { bg: string; border: string; text: strin
 };
 
 const GovernmentBranchCard: React.FC<GovernmentBranchCardProps> = ({ branch, canManage }) => {
+    const { t } = useI18n();
     const colors = branchTypeColors[branch.branchType] || branchTypeColors.Custom;
     const positions = branch.positions || [];
 
@@ -26,7 +28,7 @@ const GovernmentBranchCard: React.FC<GovernmentBranchCardProps> = ({ branch, can
                     <i className={`${branch.icon || 'fa-solid fa-building-columns'} ${colors.text}`}></i>
                     <h3 className="text-sm font-bold text-white">{branch.name}</h3>
                     <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full ${colors.accent} ${colors.text} font-medium uppercase tracking-wider`}>
-                        {branch.branchType}
+                        {t(branch.branchType, { context: 'branch' })}
                     </span>
                 </div>
                 {branch.description && (
@@ -71,44 +73,44 @@ const GovernmentBranchCard: React.FC<GovernmentBranchCardProps> = ({ branch, can
                                                         <i className="fa-solid fa-user text-[8px] text-slate-500"></i>
                                                     </div>
                                                 )}
-                                                <span className="text-xs text-slate-300">{holder.user?.name || 'Unknown'}</span>
+                                                <span className="text-xs text-slate-300">{holder.user?.name || t('Unknown')}</span>
                                                 {holder.appointedBy && (
                                                     <span className="text-[10px] text-slate-500">
-                                                        appointed by {holder.appointedBy.name}
+                                                        {t('appointed by {name}', { name: holder.appointedBy.name })}
                                                     </span>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-slate-500 italic ml-5">Vacant</p>
+                                    <p className="text-xs text-slate-500 italic ml-5">{t('Vacant')}</p>
                                 )}
 
                                 {/* Position Meta */}
                                 <div className="flex items-center gap-2 mt-1.5 ml-5">
                                     <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700/50 text-slate-400">
-                                        {pos.fillMethod}
+                                        {t(pos.fillMethod)}
                                     </span>
                                     {pos.termLengthDays && (
-                                        <span className="text-[10px] text-slate-500">{pos.termLengthDays}d term</span>
+                                        <span className="text-[10px] text-slate-500">{t('{days}d term', { days: pos.termLengthDays })}</span>
                                     )}
                                     {pos.canProposeLegislation && (
-                                        <span className="text-[10px] text-sky-500" title="Can propose legislation">
+                                        <span className="text-[10px] text-sky-500" title={t('Can propose legislation')}>
                                             <i className="fa-solid fa-pen-nib"></i>
                                         </span>
                                     )}
                                     {pos.canVoteLegislation && (
-                                        <span className="text-[10px] text-emerald-500" title="Can vote on legislation">
+                                        <span className="text-[10px] text-emerald-500" title={t('Can vote on legislation')}>
                                             <i className="fa-solid fa-check-to-slot"></i>
                                         </span>
                                     )}
                                     {pos.canVetoLegislation && (
-                                        <span className="text-[10px] text-red-500" title="Has veto power">
+                                        <span className="text-[10px] text-red-500" title={t('Has veto power')}>
                                             <i className="fa-solid fa-ban"></i>
                                         </span>
                                     )}
                                     {pos.canCallElections && (
-                                        <span className="text-[10px] text-amber-500" title="Can call elections">
+                                        <span className="text-[10px] text-amber-500" title={t('Can call elections')}>
                                             <i className="fa-solid fa-bullhorn"></i>
                                         </span>
                                     )}
@@ -117,7 +119,7 @@ const GovernmentBranchCard: React.FC<GovernmentBranchCardProps> = ({ branch, can
                         );
                     })
                 ) : (
-                    <p className="text-xs text-slate-500 text-center py-2">No positions defined</p>
+                    <p className="text-xs text-slate-500 text-center py-2">{t('No positions defined')}</p>
                 )}
             </div>
         </div>

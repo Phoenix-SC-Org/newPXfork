@@ -3,6 +3,7 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // A constrained Tiptap editor used on surfaces where the full WikiEditor
 // is overkill (Public Landing Page blurb is the first caller). Extension set
@@ -49,8 +50,9 @@ const ToolbarButton: React.FC<{
 const Divider = () => <div className="shrink-0 w-px h-5 bg-slate-700 mx-0.5" />;
 
 const MinimalToolbar: React.FC<{ editor: Editor }> = ({ editor }) => {
+    const { t } = useI18n();
     const promptLink = () => {
-        const url = window.prompt('Enter URL (https:// or mailto:):', editor.getAttributes('link').href || '');
+        const url = window.prompt(t('Enter URL (https:// or mailto:):'), editor.getAttributes('link').href || '');
         if (url === null) return;
         if (url === '') {
             editor.chain().focus().unsetLink().run();
@@ -65,52 +67,53 @@ const MinimalToolbar: React.FC<{ editor: Editor }> = ({ editor }) => {
                 onClick={() => editor.chain().focus().toggleBold().run()}
                 isActive={editor.isActive('bold')}
                 icon="fa-solid fa-bold"
-                title="Bold"
+                title={t('Bold')}
             />
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleItalic().run()}
                 isActive={editor.isActive('italic')}
                 icon="fa-solid fa-italic"
-                title="Italic"
+                title={t('Italic')}
             />
             <Divider />
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                 isActive={editor.isActive('heading', { level: 2 })}
                 icon="fa-solid fa-heading"
-                title="Heading"
+                title={t('Heading')}
             />
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                 isActive={editor.isActive('heading', { level: 3 })}
                 icon="fa-solid fa-h fa-sm"
-                title="Subheading"
+                title={t('Subheading')}
             />
             <Divider />
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
                 isActive={editor.isActive('bulletList')}
                 icon="fa-solid fa-list-ul"
-                title="Bullet list"
+                title={t('Bullet list')}
             />
             <ToolbarButton
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
                 isActive={editor.isActive('orderedList')}
                 icon="fa-solid fa-list-ol"
-                title="Ordered list"
+                title={t('Ordered list')}
             />
             <Divider />
             <ToolbarButton
                 onClick={promptLink}
                 isActive={editor.isActive('link')}
                 icon="fa-solid fa-link"
-                title="Link"
+                title={t('Link')}
             />
         </div>
     );
 };
 
 const MinimalRichEditor: React.FC<MinimalRichEditorProps> = ({ content, editable, onChange, placeholder }) => {
+    const { t } = useI18n();
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -126,7 +129,7 @@ const MinimalRichEditor: React.FC<MinimalRichEditorProps> = ({ content, editable
                 link: false,
             }),
             Placeholder.configure({
-                placeholder: placeholder || 'Write a brief introduction…',
+                placeholder: placeholder || t('Write a brief introduction…'),
             }),
             Link.configure({
                 openOnClick: !editable,

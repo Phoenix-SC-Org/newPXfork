@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiToolbarProps {
     editor: Editor;
@@ -57,6 +58,7 @@ const TableButton: React.FC<{
 );
 
 const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
+    const { t } = useI18n();
     const [isOverflowOpen, setIsOverflowOpen] = useState(false);
     const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -88,24 +90,24 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
         return () => document.removeEventListener('mousedown', handler);
     }, [isOverflowOpen]);
 
-    const promptAndInsert = (label: string, callback: (url: string) => void) => {
-        const url = window.prompt(`Enter ${label} URL:`);
+    const promptAndInsert = (message: string, callback: (url: string) => void) => {
+        const url = window.prompt(message);
         if (url) callback(url);
     };
 
     // Essential group — always visible on every breakpoint
     const essentialGroup = (
         <>
-            <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} icon="fa-solid fa-bold" title="Bold" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} icon="fa-solid fa-italic" title="Italic" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} icon="fa-solid fa-heading" title="Heading" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} icon="fa-solid fa-list-ul" title="Bullet List" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} icon="fa-solid fa-list-ol" title="Ordered List" />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} icon="fa-solid fa-bold" title={t('Bold')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} icon="fa-solid fa-italic" title={t('Italic')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} icon="fa-solid fa-heading" title={t('Heading')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} icon="fa-solid fa-list-ul" title={t('Bullet List')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} icon="fa-solid fa-list-ol" title={t('Ordered List')} />
             <ToolbarButton
-                onClick={() => promptAndInsert('link', (url) => editor.chain().focus().setLink({ href: url }).run())}
+                onClick={() => promptAndInsert(t('Enter link URL:'), (url) => editor.chain().focus().setLink({ href: url }).run())}
                 isActive={editor.isActive('link')}
                 icon="fa-solid fa-link"
-                title="Insert Link"
+                title={t('Insert Link')}
             />
         </>
     );
@@ -114,53 +116,53 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
     const secondaryGroups = (
         <>
             <Divider />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} icon="fa-solid fa-underline" title="Underline" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} icon="fa-solid fa-strikethrough" title="Strikethrough" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} icon="fa-solid fa-heading fa-lg" title="Heading 1" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} icon="fa-solid fa-h fa-sm" title="Heading 3" />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} icon="fa-solid fa-underline" title={t('Underline')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} icon="fa-solid fa-strikethrough" title={t('Strikethrough')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} icon="fa-solid fa-heading fa-lg" title={t('Heading 1')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} icon="fa-solid fa-h fa-sm" title={t('Heading 3')} />
 
             <Divider />
 
-            <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} icon="fa-solid fa-quote-left" title="Blockquote" />
-            <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} icon="fa-solid fa-code" title="Code Block" />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} icon="fa-solid fa-quote-left" title={t('Blockquote')} />
+            <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} icon="fa-solid fa-code" title={t('Code Block')} />
 
             <Divider />
 
-            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} icon="fa-solid fa-align-left" title="Align Left" />
-            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} icon="fa-solid fa-align-center" title="Align Center" />
-            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} icon="fa-solid fa-align-right" title="Align Right" />
+            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} icon="fa-solid fa-align-left" title={t('Align Left')} />
+            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} icon="fa-solid fa-align-center" title={t('Align Center')} />
+            <ToolbarButton onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} icon="fa-solid fa-align-right" title={t('Align Right')} />
 
             <Divider />
 
             <ToolbarButton
-                onClick={() => promptAndInsert('image', (url) => editor.chain().focus().setImage({ src: url }).run())}
+                onClick={() => promptAndInsert(t('Enter image URL:'), (url) => editor.chain().focus().setImage({ src: url }).run())}
                 icon="fa-solid fa-image"
-                title="Insert Image (URL)"
+                title={t('Insert Image (URL)')}
             />
             <ToolbarButton
-                onClick={() => promptAndInsert('YouTube', (url) => editor.chain().focus().setYoutubeVideo({ src: url }).run())}
+                onClick={() => promptAndInsert(t('Enter YouTube URL:'), (url) => editor.chain().focus().setYoutubeVideo({ src: url }).run())}
                 icon="fa-brands fa-youtube"
-                title="Embed YouTube"
+                title={t('Embed YouTube')}
             />
             <ToolbarButton
-                onClick={() => promptAndInsert('iframe (YouTube, Vimeo, Google Docs, Spotify, CodePen, StackBlitz)', (url) => {
+                onClick={() => promptAndInsert(t('Enter iframe URL (YouTube, Vimeo, Google Docs, Spotify, CodePen, StackBlitz):'), (url) => {
                     const result = (editor.commands as any).setIframe({ src: url });
-                    if (!result) alert('Embed blocked: Only YouTube, Vimeo, Google Docs/Drive, Spotify, CodePen, and StackBlitz URLs are allowed.');
+                    if (!result) alert(t('Embed blocked: Only YouTube, Vimeo, Google Docs/Drive, Spotify, CodePen, and StackBlitz URLs are allowed.'));
                 })}
                 icon="fa-solid fa-window-maximize"
-                title="Embed Iframe"
+                title={t('Embed Iframe')}
             />
             <ToolbarButton
                 onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
                 icon="fa-solid fa-table"
-                title="Insert Table"
+                title={t('Insert Table')}
             />
 
             <Divider />
 
-            <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} icon="fa-solid fa-minus" title="Horizontal Rule" />
-            <ToolbarButton onClick={() => editor.chain().focus().undo().run()} icon="fa-solid fa-rotate-left" title="Undo" />
-            <ToolbarButton onClick={() => editor.chain().focus().redo().run()} icon="fa-solid fa-rotate-right" title="Redo" />
+            <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} icon="fa-solid fa-minus" title={t('Horizontal Rule')} />
+            <ToolbarButton onClick={() => editor.chain().focus().undo().run()} icon="fa-solid fa-rotate-left" title={t('Undo')} />
+            <ToolbarButton onClick={() => editor.chain().focus().redo().run()} icon="fa-solid fa-rotate-right" title={t('Redo')} />
         </>
     );
 
@@ -171,45 +173,45 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
     const tableToolbar = showTableToolbar && (
         <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 border-t border-amber-500/20 bg-amber-500/4 min-w-0">
             <span className="shrink-0 text-[9px] font-black text-amber-400/80 uppercase tracking-widest mr-2 hidden sm:inline">
-                <i className="fa-solid fa-table mr-1"></i>Table
+                <i className="fa-solid fa-table mr-1"></i>{t('Table')}
             </span>
             <TableButton
                 onClick={() => editor.chain().focus().addColumnBefore().run()}
                 icon="fa-solid fa-arrow-left"
-                label="+ Col Left"
-                title="Insert a new column to the left of the current cell"
+                label={t('+ Col Left')}
+                title={t('Insert a new column to the left of the current cell')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().addColumnAfter().run()}
                 icon="fa-solid fa-arrow-right"
-                label="+ Col Right"
-                title="Insert a new column to the right of the current cell"
+                label={t('+ Col Right')}
+                title={t('Insert a new column to the right of the current cell')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().deleteColumn().run()}
                 icon="fa-solid fa-xmark"
-                label="Del Col"
-                title="Delete the column containing the current cell"
+                label={t('Del Col')}
+                title={t('Delete the column containing the current cell')}
                 danger
             />
             <Divider />
             <TableButton
                 onClick={() => editor.chain().focus().addRowBefore().run()}
                 icon="fa-solid fa-arrow-up"
-                label="+ Row Above"
-                title="Insert a new row above the current cell"
+                label={t('+ Row Above')}
+                title={t('Insert a new row above the current cell')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().addRowAfter().run()}
                 icon="fa-solid fa-arrow-down"
-                label="+ Row Below"
-                title="Insert a new row below the current cell"
+                label={t('+ Row Below')}
+                title={t('Insert a new row below the current cell')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().deleteRow().run()}
                 icon="fa-solid fa-xmark"
-                label="Del Row"
-                title="Delete the row containing the current cell"
+                label={t('Del Row')}
+                title={t('Delete the row containing the current cell')}
                 danger
             />
             <Divider />
@@ -217,27 +219,27 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
                 onClick={() => editor.chain().focus().toggleHeaderRow().run()}
                 isActive={editor.isActive('tableHeader')}
                 icon="fa-solid fa-heading"
-                label="Header"
-                title="Toggle the first row as a header (bold, separator)"
+                label={t('Header')}
+                title={t('Toggle the first row as a header (bold, separator)')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().mergeCells().run()}
                 icon="fa-solid fa-object-group"
-                label="Merge"
-                title="Merge the selected cells (drag across cells first to select them)"
+                label={t('Merge')}
+                title={t('Merge the selected cells (drag across cells first to select them)')}
             />
             <TableButton
                 onClick={() => editor.chain().focus().splitCell().run()}
                 icon="fa-solid fa-object-ungroup"
-                label="Split"
-                title="Split a previously-merged cell back into individual cells"
+                label={t('Split')}
+                title={t('Split a previously-merged cell back into individual cells')}
             />
             <Divider />
             <TableButton
                 onClick={() => editor.chain().focus().deleteTable().run()}
                 icon="fa-solid fa-trash"
-                label="Delete Table"
-                title="Remove the entire table"
+                label={t('Delete Table')}
+                title={t('Remove the entire table')}
                 danger
             />
         </div>
@@ -257,7 +259,7 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
                                 ? 'bg-slate-700 text-white'
                                 : 'text-slate-300 hover:text-white hover:bg-slate-700'
                         }`}
-                        title="More tools"
+                        title={t('More tools')}
                     >
                         <i className="fa-solid fa-ellipsis" />
                     </button>

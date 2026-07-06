@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { WikiPage } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     isOpen: boolean;
@@ -33,7 +34,7 @@ function scorePage(query: string, page: WikiPage): number {
     return 0;
 }
 
-function pagePath(page: WikiPage, allPages: WikiPage[]): string {
+function pagePath(page: WikiPage, allPages: WikiPage[], rootLabel: string): string {
     const byId = new Map(allPages.map((p) => [p.id, p]));
     const chain: string[] = [];
     let current: WikiPage | undefined = page;
@@ -45,10 +46,11 @@ function pagePath(page: WikiPage, allPages: WikiPage[]): string {
         chain.unshift(parent.title);
         current = parent;
     }
-    return chain.length > 0 ? chain.join(' › ') : 'Root';
+    return chain.length > 0 ? chain.join(' › ') : rootLabel;
 }
 
 const WikiQuickJump: React.FC<Props> = ({ isOpen, onClose, pages, onSelect }) => {
+    const { t } = useI18n();
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -153,13 +155,13 @@ const WikiQuickJump: React.FC<Props> = ({ isOpen, onClose, pages, onSelect }) =>
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Jump to page…"
+                        placeholder={t('Jump to page…')}
                         className="flex-1 bg-transparent outline-hidden text-sm text-white placeholder-slate-500"
                     />
                     <button
                         onClick={onClose}
                         className="text-[10px] text-slate-500 font-mono uppercase tracking-widest hover:text-slate-300 px-2 py-1 rounded-sm border border-slate-700"
-                        title="Close"
+                        title={t('Close')}
                     >
                         Esc
                     </button>
@@ -168,7 +170,7 @@ const WikiQuickJump: React.FC<Props> = ({ isOpen, onClose, pages, onSelect }) =>
                 <div ref={listRef} className="flex-1 overflow-y-auto custom-scrollbar p-2">
                     {results.length === 0 ? (
                         <div className="text-center py-10 text-slate-500 text-xs">
-                            No matches for &ldquo;{query}&rdquo;
+                            {t('No matches for “{query}”', { query })}
                         </div>
                     ) : (
                         results.map((r, idx) => {
@@ -187,7 +189,7 @@ const WikiQuickJump: React.FC<Props> = ({ isOpen, onClose, pages, onSelect }) =>
                                 >
                                     <span className="text-sm font-medium truncate">{r.page.title}</span>
                                     <span className="text-[10px] text-slate-500 truncate">
-                                        {pagePath(r.page, pages)}
+                                        {pagePath(r.page, pages, t('Root'))}
                                     </span>
                                 </button>
                             );
@@ -196,8 +198,8 @@ const WikiQuickJump: React.FC<Props> = ({ isOpen, onClose, pages, onSelect }) =>
                 </div>
 
                 <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                    <span>↑ ↓ navigate · ↵ open</span>
-                    <span>{results.length} {results.length === 1 ? 'page' : 'pages'}</span>
+                    <span>{t('↑ ↓ navigate · ↵ open')}</span>
+                    <span>{results.length === 1 ? t('{count} page', { count: results.length }) : t('{count} pages', { count: results.length })}</span>
                 </div>
             </div>
         </div>

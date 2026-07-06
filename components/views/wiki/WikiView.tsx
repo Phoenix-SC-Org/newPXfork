@@ -11,6 +11,7 @@ import WikiHomePage from './WikiHomePage';
 import WikiTopBar from './WikiTopBar';
 import WikiQuickJump from './WikiQuickJump';
 import BottomSheet from '../../shared/ui/BottomSheet';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const EMPTY_CONTENT = {};
 
@@ -22,6 +23,7 @@ const isInputFocused = () => {
 };
 
 const WikiView: React.FC = () => {
+    const { t } = useI18n();
     const { wikiPages, rpcAction, refreshWiki, reorderWikiPages } = useData();
     const { wikiHomeConfig, updateWikiHomeConfig } = useConfig();
     const { currentUser, hasPermission } = useAuth();
@@ -188,7 +190,7 @@ const WikiView: React.FC = () => {
                 <aside className="hidden md:flex md:w-64 lg:w-72 shrink-0 flex-col bg-slate-900/60 border-r border-slate-800">
                     <div className="flex items-center gap-2 p-3 border-b border-slate-800">
                         <i className="fa-solid fa-book text-sky-500 text-sm" />
-                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Org Wiki</h2>
+                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">{t('Org Wiki')}</h2>
                     </div>
                     <button
                         onClick={() => { setSelectedPageId(null); setIsCreating(false); }}
@@ -199,7 +201,7 @@ const WikiView: React.FC = () => {
                         }`}
                     >
                         <i className="fa-solid fa-house text-[10px]" />
-                        Wiki Home
+                        {t('Wiki Home')}
                     </button>
                     <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
                         {treeNode}
@@ -239,18 +241,18 @@ const WikiView: React.FC = () => {
                                     >
                                         <i className="fa-solid fa-arrow-left" />
                                     </button>
-                                    <h1 className="text-xl md:text-2xl font-bold text-white">Create New Page</h1>
+                                    <h1 className="text-xl md:text-2xl font-bold text-white">{t('Create New Page')}</h1>
                                 </div>
 
                                 <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">
-                                        Page Title
+                                        {t('Page Title')}
                                     </label>
                                     <input
                                         type="text"
                                         value={newPageTitle}
                                         onChange={(e) => setNewPageTitle(e.target.value)}
-                                        placeholder="Enter page title..."
+                                        placeholder={t('Enter page title...')}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white text-base md:text-lg font-bold placeholder-slate-600 focus:ring-2 focus:ring-sky-500 outline-hidden"
                                         autoFocus
                                     />
@@ -301,7 +303,7 @@ const WikiView: React.FC = () => {
             <BottomSheet
                 isOpen={isMobileTreeOpen}
                 onClose={() => setIsMobileTreeOpen(false)}
-                title="Org Wiki"
+                title={t('Org Wiki')}
             >
                 <div className="px-2 pb-4 pt-2">
                     <button
@@ -313,7 +315,7 @@ const WikiView: React.FC = () => {
                         }`}
                     >
                         <i className="fa-solid fa-house text-[10px]" />
-                        Wiki Home
+                        {t('Wiki Home')}
                     </button>
                     {canCreate && (
                         <button
@@ -321,7 +323,7 @@ const WikiView: React.FC = () => {
                             className="w-full flex items-center justify-center gap-2 px-3 py-2 mb-2 text-xs font-bold text-sky-400 hover:text-white bg-sky-600/10 hover:bg-sky-600 border border-sky-500/30 rounded-lg transition-colors"
                         >
                             <i className="fa-solid fa-plus" />
-                            New Page
+                            {t('New Page')}
                         </button>
                     )}
                     {treeNode}

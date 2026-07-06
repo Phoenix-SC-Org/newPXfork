@@ -6,6 +6,7 @@ import { useGovernment } from '../../../contexts/GovernmentContext';
 import WindowFrame from '../../layout/WindowFrame';
 import { GovernmentElection, ElectionStatus } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ElectionsTabProps {
     onViewElection: (election: GovernmentElection) => void;
@@ -33,6 +34,7 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
     const { rpcAction } = useData();
     const { governmentElections, governmentPositions, refreshGovernment } = useGovernment();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -75,10 +77,10 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
             setShowCreateModal(false);
             setFormTitle('');
             setFormPositionId('');
-            addToast('Election Created', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'The election has been created in Draft status.' });
+            addToast(t('Election Created'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('The election has been created in Draft status.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Create Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to create election.' });
+            addToast(t('Create Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to create election.') });
         } finally {
             setIsCreating(false);
         }
@@ -105,27 +107,27 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
                         )}
                     </div>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-sm border ${statusCls}`}>
-                        {election.status}
+                        {t(election.status)}
                     </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs text-slate-400">
-                    <span><i className="fa-solid fa-check-to-slot mr-1"></i>{electionTypeLabels[election.electionType] || election.electionType}</span>
-                    <span><i className="fa-solid fa-users mr-1"></i>{candidateCount} candidate{candidateCount !== 1 ? 's' : ''}</span>
+                    <span><i className="fa-solid fa-check-to-slot mr-1"></i>{t(electionTypeLabels[election.electionType] || election.electionType)}</span>
+                    <span><i className="fa-solid fa-users mr-1"></i>{candidateCount === 1 ? t('{count} candidate', { count: candidateCount }) : t('{count} candidates', { count: candidateCount })}</span>
                     {election.totalVotesCast !== undefined && (
-                        <span><i className="fa-solid fa-box-ballot mr-1"></i>{election.totalVotesCast} votes</span>
+                        <span><i className="fa-solid fa-box-ballot mr-1"></i>{election.totalVotesCast === 1 ? t('{count} vote', { count: election.totalVotesCast }) : t('{count} votes', { count: election.totalVotesCast })}</span>
                     )}
                     {election.isByElection && (
-                        <span className="text-amber-400"><i className="fa-solid fa-rotate mr-1"></i>By-election</span>
+                        <span className="text-amber-400"><i className="fa-solid fa-rotate mr-1"></i>{t('By-election')}</span>
                     )}
                 </div>
 
                 {election.status === ElectionStatus.Voting && election.hasVoted !== undefined && (
                     <div className="mt-2">
                         {election.hasVoted ? (
-                            <span className="text-[10px] text-emerald-400"><i className="fa-solid fa-check mr-1"></i>You have voted</span>
+                            <span className="text-[10px] text-emerald-400"><i className="fa-solid fa-check mr-1"></i>{t('You have voted')}</span>
                         ) : (
-                            <span className="text-[10px] text-amber-400 font-medium"><i className="fa-solid fa-exclamation-triangle mr-1"></i>You haven't voted yet</span>
+                            <span className="text-[10px] text-amber-400 font-medium"><i className="fa-solid fa-exclamation-triangle mr-1"></i>{t("You haven't voted yet")}</span>
                         )}
                     </div>
                 )}
@@ -141,14 +143,14 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-white">Elections</h2>
+                <h2 className="text-sm font-bold text-white">{t('Elections')}</h2>
                 {canManageElections && (
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md hover:bg-amber-500/20 transition-colors"
                     >
                         <i className="fa-solid fa-plus"></i>
-                        Call Election
+                        {t('Call Election')}
                     </button>
                 )}
             </div>
@@ -156,7 +158,7 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
             {/* Active Elections */}
             {activeElections.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Active</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Active')}</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                         {activeElections.map(renderElectionCard)}
                     </div>
@@ -166,7 +168,7 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
             {/* Past Elections */}
             {pastElections.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Past Elections</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Past Elections')}</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                         {pastElections.map(renderElectionCard)}
                     </div>
@@ -176,15 +178,15 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
             {governmentElections.length === 0 && (
                 <div className="text-center py-12">
                     <i className="fa-solid fa-box-ballot text-3xl text-slate-600 mb-3"></i>
-                    <p className="text-sm text-slate-400">No elections have been called yet.</p>
+                    <p className="text-sm text-slate-400">{t('No elections have been called yet.')}</p>
                 </div>
             )}
 
             <WindowFrame
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="Call New Election"
-                subtitle="Electoral System"
+                title={t('Call New Election')}
+                subtitle={t('Electoral System')}
                 icon="fa-solid fa-box-ballot"
                 color="amber"
                 width="max-w-xl"
@@ -192,64 +194,64 @@ const ElectionsTab: React.FC<ElectionsTabProps> = ({ onViewElection }) => {
                 <div className="flex flex-col h-full">
                     <div className="p-6 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Title</label>
-                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder="e.g. Presidential Election 2954" disabled={isCreating} />
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Title')}</label>
+                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder={t('e.g. Presidential Election 2954')} disabled={isCreating} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Position</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Position')}</label>
                             <select value={formPositionId} onChange={e => setFormPositionId(e.target.value ? parseInt(e.target.value) : '')} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" disabled={isCreating}>
-                                <option value="">Select position...</option>
+                                <option value="">{t('Select position...')}</option>
                                 {governmentPositions.filter(p => p.fillMethod === 'Elected').map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} (max {p.maxHolders})</option>
+                                    <option key={p.id} value={p.id}>{t('{name} (max {max})', { name: p.name, max: p.maxHolders })}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Election Type</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Election Type')}</label>
                                 <select value={formElectionType} onChange={e => setFormElectionType(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" disabled={isCreating}>
                                     {Object.entries(electionTypeLabels).map(([val, label]) => (
-                                        <option key={val} value={val}>{label}</option>
+                                        <option key={val} value={val}>{t(label)}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Winners</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Winners')}</label>
                                 <input type="number" min="1" value={formMaxWinners} onChange={e => setFormMaxWinners(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" disabled={isCreating} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Min Candidates</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Min Candidates')}</label>
                                 <input type="number" min="1" value={formMinCandidates} onChange={e => setFormMinCandidates(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" disabled={isCreating} />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Min Turnout %</label>
-                                <input type="number" min="0" max="100" step="0.1" value={formTurnoutPct} onChange={e => setFormTurnoutPct(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder="Optional" disabled={isCreating} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Min Turnout %')}</label>
+                                <input type="number" min="0" max="100" step="0.1" value={formTurnoutPct} onChange={e => setFormTurnoutPct(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder={t('Optional')} disabled={isCreating} />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Win Threshold %</label>
-                                <input type="number" min="0" max="100" step="0.1" value={formThresholdPct} onChange={e => setFormThresholdPct(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder="Optional" disabled={isCreating} />
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Win Threshold %')}</label>
+                                <input type="number" min="0" max="100" step="0.1" value={formThresholdPct} onChange={e => setFormThresholdPct(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all" placeholder={t('Optional')} disabled={isCreating} />
                             </div>
                             <div className="flex items-end pb-2">
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={formAllowRunoff} onChange={e => setFormAllowRunoff(e.target.checked)} className="rounded-sm bg-slate-800 border-slate-600 text-amber-500 focus:ring-amber-500" disabled={isCreating} />
-                                    Allow runoff
+                                    {t('Allow runoff')}
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 shrink-0 gap-3">
-                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isCreating} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">Cancel</button>
+                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isCreating} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleCreate}
                             disabled={isCreating || !formTitle.trim() || !formPositionId}
                             className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-amber-600 rounded-lg hover:bg-amber-500 transition-all shadow-lg shadow-amber-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-amber-500/50"
                         >
-                            {isCreating ? <i className="fa-solid fa-spinner animate-spin" /> : 'Create Election'}
+                            {isCreating ? <i className="fa-solid fa-spinner animate-spin" /> : t('Create Election')}
                         </button>
                     </div>
                 </div>

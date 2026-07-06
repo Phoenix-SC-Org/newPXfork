@@ -3,6 +3,7 @@ import { useMembers } from '../../../contexts/MembersContext';
 import { WikiPage } from '../../../types';
 import PortalCard from '../../shared/ui/PortalCard';
 import SectionLabel from '../../shared/ui/SectionLabel';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiPageSettingsProps {
     page?: WikiPage | null;
@@ -31,6 +32,7 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
     setMenuStructureLocked,
     allPages,
 }) => {
+    const { t } = useI18n();
     const { securityClearances, limitingMarkers } = useMembers();
 
     const toggleMarker = (markerId: number) => {
@@ -56,11 +58,11 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
 
     return (
         <PortalCard variant="dashed" padding="md" className="space-y-5">
-            <SectionLabel label="Page Settings" icon="fa-gear" className="mb-0" />
+            <SectionLabel label={t('Page Settings')} icon="fa-gear" className="mb-0" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Classification Level</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Classification Level')}</label>
                     <select
                         value={classificationLevel}
                         onChange={(e) => setClassificationLevel(Number(e.target.value))}
@@ -69,30 +71,30 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
                         {securityClearances.length > 0 ? (
                             securityClearances.map((c: any) => (
                                 <option key={c.level} value={c.level}>
-                                    Level {c.level} — {c.name}
+                                    {t('Level {level} — {name}', { level: c.level, name: c.name })}
                                 </option>
                             ))
                         ) : (
                             <>
-                                <option value={0}>Level 0 — Unclassified</option>
-                                <option value={1}>Level 1 — Restricted</option>
-                                <option value={2}>Level 2 — Confidential</option>
-                                <option value={3}>Level 3 — Secret</option>
-                                <option value={4}>Level 4 — Top Secret</option>
+                                <option value={0}>{t('Level 0 — Unclassified')}</option>
+                                <option value={1}>{t('Level 1 — Restricted')}</option>
+                                <option value={2}>{t('Level 2 — Confidential')}</option>
+                                <option value={3}>{t('Level 3 — Secret')}</option>
+                                <option value={4}>{t('Level 4 — Top Secret')}</option>
                             </>
                         )}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Parent Page</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Parent Page')}</label>
                     <select
                         value={parentPageId || ''}
                         onChange={(e) => setParentPageId(e.target.value || null)}
                         disabled={!!menuStructureLocked}
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-sky-500 outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <option value="">Root (No Parent)</option>
+                        <option value="">{t('Root (No Parent)')}</option>
                         {validParents.map((p) => (
                             <option key={p.id} value={p.id}>
                                 {p.title}
@@ -101,7 +103,7 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
                     </select>
                     {menuStructureLocked && (
                         <p className="text-[10px] text-amber-400/80 mt-1.5">
-                            <i className="fa-solid fa-lock mr-1"></i>Menu position locked. Unlock below to re-parent.
+                            <i className="fa-solid fa-lock mr-1"></i>{t('Menu position locked. Unlock below to re-parent.')}
                         </p>
                     )}
                 </div>
@@ -117,10 +119,10 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
                     />
                     <div className="min-w-0">
                         <span className="text-xs font-bold text-white block">
-                            <i className="fa-solid fa-lock mr-1.5 text-amber-400/80"></i>Lock menu position
+                            <i className="fa-solid fa-lock mr-1.5 text-amber-400/80"></i>{t('Lock menu position')}
                         </span>
                         <span className="text-[10px] text-slate-500 block leading-tight mt-0.5">
-                            Prevents this page from being moved to a different parent. Page can still be reordered alongside its current siblings.
+                            {t('Prevents this page from being moved to a different parent. Page can still be reordered alongside its current siblings.')}
                         </span>
                     </div>
                 </label>
@@ -128,7 +130,7 @@ const WikiPageSettings: React.FC<WikiPageSettingsProps> = ({
 
             {limitingMarkers.length > 0 && (
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">Limiting Markers</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-2">{t('Limiting Markers')}</label>
                     <div className="flex flex-wrap gap-2">
                         {limitingMarkers.map((marker) => (
                             <button

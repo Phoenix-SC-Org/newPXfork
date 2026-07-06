@@ -7,6 +7,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import WikiEditor from '../wiki/WikiEditor';
 import { GovernmentMotion, MotionStatus } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const statusColors: Record<string, string> = {
     Open: 'bg-amber-500/10 text-amber-400',
@@ -21,6 +22,7 @@ const MotionsTab: React.FC = () => {
     const { rpcAction } = useData();
     const { governmentMotions, governmentPositions, refreshGovernment } = useGovernment();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -52,10 +54,10 @@ const MotionsTab: React.FC = () => {
             });
             setShowCreateModal(false);
             setFormTitle(''); formDescriptionRef.current = {}; setFormSecretBallot(false); setFormRestrictedPositions([]);
-            addToast('Motion Created', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Motion has been created.' });
+            addToast(t('Motion Created'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Motion has been created.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Create Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to create motion.' });
+            addToast(t('Create Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to create motion.') });
         } finally {
             setIsLoading(false);
         }
@@ -65,9 +67,9 @@ const MotionsTab: React.FC = () => {
         setIsLoading(true);
         try {
             await rpcAction('gov:start_motion_vote', { motionId });
-            addToast('Voting Started', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Voting Started'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             await refreshGovernment();
-        } catch (err: any) { addToast('Start Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to start voting.' }); }
+        } catch (err: any) { addToast(t('Start Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to start voting.') }); }
         finally { setIsLoading(false); }
     };
 
@@ -75,9 +77,9 @@ const MotionsTab: React.FC = () => {
         setIsLoading(true);
         try {
             await rpcAction('gov:cast_motion_vote', { motionId, vote });
-            addToast('Vote Cast', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Vote Cast'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             await refreshGovernment();
-        } catch (err: any) { addToast('Vote Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to cast vote.' }); }
+        } catch (err: any) { addToast(t('Vote Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to cast vote.') }); }
         finally { setIsLoading(false); }
     };
 
@@ -85,21 +87,21 @@ const MotionsTab: React.FC = () => {
         setIsLoading(true);
         try {
             await rpcAction('gov:conclude_motion', { motionId });
-            addToast('Motion Concluded', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+            addToast(t('Motion Concluded'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
             await refreshGovernment();
-        } catch (err: any) { addToast('Conclude Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to conclude motion.' }); }
+        } catch (err: any) { addToast(t('Conclude Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to conclude motion.') }); }
         finally { setIsLoading(false); }
     };
 
     const handleCancel = async (motionId: number) => {
-        const confirmed = await confirm({ title: 'Cancel Motion', message: 'Cancel this motion?', confirmText: 'Cancel Motion', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Cancel Motion'), message: t('Cancel this motion?'), confirmText: t('Cancel Motion'), variant: 'danger' });
         if (!confirmed) return;
         setIsLoading(true);
         try {
             await rpcAction('gov:cancel_motion', { motionId });
-            addToast('Motion Cancelled', <i className="fa-solid fa-ban" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
+            addToast(t('Motion Cancelled'), <i className="fa-solid fa-ban" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
             await refreshGovernment();
-        } catch (err: any) { addToast('Cancel Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to cancel motion.' }); }
+        } catch (err: any) { addToast(t('Cancel Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to cancel motion.') }); }
         finally { setIsLoading(false); }
     };
 
@@ -127,15 +129,15 @@ const MotionsTab: React.FC = () => {
                         )}
                     </div>
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-sm ml-2 shrink-0 ${statusColors[motion.status] || statusColors.Open}`}>
-                        {motion.status}
+                        {t(motion.status, { context: 'status' })}
                     </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-3">
-                    <span>by {motion.createdBy?.name || 'Unknown'}</span>
-                    {motion.isSecretBallot && <span className="text-purple-400"><i className="fa-solid fa-mask mr-0.5"></i>Secret</span>}
+                    <span>{t('by {name}', { name: motion.createdBy?.name || t('Unknown') })}</span>
+                    {motion.isSecretBallot && <span className="text-purple-400"><i className="fa-solid fa-mask mr-0.5"></i>{t('Secret')}</span>}
                     {motion.restrictedToPositionIds && motion.restrictedToPositionIds.length > 0 && (
-                        <span className="text-amber-400"><i className="fa-solid fa-lock mr-0.5"></i>Restricted</span>
+                        <span className="text-amber-400"><i className="fa-solid fa-lock mr-0.5"></i>{t('Restricted')}</span>
                     )}
                 </div>
 
@@ -143,9 +145,9 @@ const MotionsTab: React.FC = () => {
                 {total > 0 && (
                     <div className="mb-3">
                         <div className="flex items-center gap-4 text-xs mb-1">
-                            <span className="text-emerald-400">{motion.votesFor} for</span>
-                            <span className="text-red-400">{motion.votesAgainst} against</span>
-                            <span className="text-slate-400">{motion.votesAbstain} abstain</span>
+                            <span className="text-emerald-400">{t('{count} for', { count: motion.votesFor })}</span>
+                            <span className="text-red-400">{t('{count} against', { count: motion.votesAgainst })}</span>
+                            <span className="text-slate-400">{t('{count} abstain', { count: motion.votesAbstain })}</span>
                         </div>
                         <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden flex">
                             <div className="bg-emerald-500 h-full" style={{ width: `${(motion.votesFor / total) * 100}%` }}></div>
@@ -158,15 +160,15 @@ const MotionsTab: React.FC = () => {
                 {/* Quick vote */}
                 {isVoting && canParticipate && !motion.hasVoted && (
                     <div className="flex gap-1.5">
-                        <button onClick={() => handleCastVote(motion.id, 'for')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-sm hover:bg-emerald-500/20 transition-colors disabled:opacity-40">For</button>
-                        <button onClick={() => handleCastVote(motion.id, 'against')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 rounded-sm hover:bg-red-500/20 transition-colors disabled:opacity-40">Against</button>
-                        <button onClick={() => handleCastVote(motion.id, 'abstain')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-slate-400 bg-slate-500/10 border border-slate-500/20 rounded-sm hover:bg-slate-500/20 transition-colors disabled:opacity-40">Abstain</button>
+                        <button onClick={() => handleCastVote(motion.id, 'for')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-sm hover:bg-emerald-500/20 transition-colors disabled:opacity-40">{t('For', { context: 'vote' })}</button>
+                        <button onClick={() => handleCastVote(motion.id, 'against')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 rounded-sm hover:bg-red-500/20 transition-colors disabled:opacity-40">{t('Against', { context: 'vote' })}</button>
+                        <button onClick={() => handleCastVote(motion.id, 'abstain')} disabled={isLoading} className="flex-1 py-1.5 text-[10px] font-bold text-slate-400 bg-slate-500/10 border border-slate-500/20 rounded-sm hover:bg-slate-500/20 transition-colors disabled:opacity-40">{t('Abstain', { context: 'vote' })}</button>
                     </div>
                 )}
 
                 {isVoting && motion.hasVoted && (
                     <p className="text-[10px] text-emerald-400"><i className="fa-solid fa-check mr-0.5"></i>
-                        Voted{motion.myVote && !motion.isSecretBallot ? ` "${motion.myVote}"` : ''}
+                        {t('Voted')}{motion.myVote && !motion.isSecretBallot ? ` "${t(motion.myVote, { context: 'vote' })}"` : ''}
                     </p>
                 )}
 
@@ -174,13 +176,13 @@ const MotionsTab: React.FC = () => {
                 {canManage && (
                     <div className="flex gap-1.5 mt-2">
                         {motion.status === 'Open' && (
-                            <button onClick={() => handleStartVote(motion.id)} disabled={isLoading} className="text-[10px] text-emerald-400 hover:underline disabled:opacity-40">Start Vote</button>
+                            <button onClick={() => handleStartVote(motion.id)} disabled={isLoading} className="text-[10px] text-emerald-400 hover:underline disabled:opacity-40">{t('Start Vote')}</button>
                         )}
                         {isVoting && (
-                            <button onClick={() => handleConclude(motion.id)} disabled={isLoading} className="text-[10px] text-sky-400 hover:underline disabled:opacity-40">Conclude</button>
+                            <button onClick={() => handleConclude(motion.id)} disabled={isLoading} className="text-[10px] text-sky-400 hover:underline disabled:opacity-40">{t('Conclude')}</button>
                         )}
                         {['Open', 'Voting'].includes(motion.status) && (
-                            <button onClick={() => handleCancel(motion.id)} disabled={isLoading} className="text-[10px] text-red-400 hover:underline disabled:opacity-40">Cancel</button>
+                            <button onClick={() => handleCancel(motion.id)} disabled={isLoading} className="text-[10px] text-red-400 hover:underline disabled:opacity-40">{t('Cancel')}</button>
                         )}
                     </div>
                 )}
@@ -191,24 +193,24 @@ const MotionsTab: React.FC = () => {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-white">Motions</h2>
+                <h2 className="text-sm font-bold text-white">{t('Motions')}</h2>
                 {canManage && (
                     <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors">
-                        <i className="fa-solid fa-plus"></i> New Motion
+                        <i className="fa-solid fa-plus"></i> {t('New Motion')}
                     </button>
                 )}
             </div>
 
             {activeMotions.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Active</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Active')}</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{activeMotions.map(renderMotionCard)}</div>
                 </div>
             )}
 
             {pastMotions.length > 0 && (
                 <div>
-                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Past</h3>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t('Past')}</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{pastMotions.map(renderMotionCard)}</div>
                 </div>
             )}
@@ -216,15 +218,15 @@ const MotionsTab: React.FC = () => {
             {governmentMotions.length === 0 && (
                 <div className="text-center py-12">
                     <i className="fa-solid fa-scale-balanced text-3xl text-slate-600 mb-3"></i>
-                    <p className="text-sm text-slate-400">No motions have been raised yet.</p>
+                    <p className="text-sm text-slate-400">{t('No motions have been raised yet.')}</p>
                 </div>
             )}
 
             <WindowFrame
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="New Motion"
-                subtitle="Government"
+                title={t('New Motion')}
+                subtitle={t('Government')}
                 icon="fa-solid fa-scale-balanced"
                 color="purple"
                 width="max-w-2xl"
@@ -232,11 +234,11 @@ const MotionsTab: React.FC = () => {
                 <div className="flex flex-col h-full">
                     <div className="p-6 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Title</label>
-                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-hidden transition-all" placeholder="e.g. Increase Patrol Routes" disabled={isLoading} />
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Title')}</label>
+                            <input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-hidden transition-all" placeholder={t('e.g. Increase Patrol Routes')} disabled={isLoading} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Description')}</label>
                             <WikiEditor
                                 content={emptyContent}
                                 editable={true}
@@ -245,11 +247,11 @@ const MotionsTab: React.FC = () => {
                         </div>
                         <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                             <input type="checkbox" checked={formSecretBallot} onChange={e => setFormSecretBallot(e.target.checked)} className="rounded-sm bg-slate-800 border-slate-600 text-purple-500 focus:ring-purple-500" disabled={isLoading} />
-                            Secret ballot (votes are anonymous)
+                            {t('Secret ballot (votes are anonymous)')}
                         </label>
                         {governmentPositions.length > 0 && (
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Restrict voting to positions (optional)</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Restrict voting to positions (optional)')}</label>
                                 <div className="space-y-1 max-h-40 overflow-y-auto bg-slate-950/40 border border-slate-800 rounded-lg p-3">
                                     {governmentPositions.map(p => (
                                         <label key={p.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
@@ -262,14 +264,14 @@ const MotionsTab: React.FC = () => {
                         )}
                     </div>
                     <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 shrink-0 gap-3">
-                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isLoading} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">Cancel</button>
+                        <button type="button" onClick={() => setShowCreateModal(false)} disabled={isLoading} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleCreate}
                             disabled={isLoading || !formTitle.trim()}
                             className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-purple-600 rounded-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-purple-500/50"
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin" /> : 'Create Motion'}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin" /> : t('Create Motion')}
                         </button>
                     </div>
                 </div>

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { GovernmentElection, ElectionType } from '../../../types';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface VotingBoothProps {
     election: GovernmentElection;
@@ -13,6 +14,7 @@ interface VotingBoothProps {
 const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel }) => {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const candidates = election.candidates || [];
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +87,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
             });
             onSubmit();
         } catch (err: any) {
-            addToast('Vote Failed', err.message || 'Failed to cast your vote.', 'error');
+            addToast(t('Vote Failed'), err.message || t('Failed to cast your vote.'), 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -93,7 +95,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
 
     const getCandidateName = (candidateId: number) => {
         const c = candidates.find(c => c.id === candidateId);
-        return c?.user?.name || 'Unknown';
+        return c?.user?.name || t('Unknown');
     };
 
     return (
@@ -102,17 +104,17 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3">
                     <i className="fa-solid fa-box-ballot text-xl text-emerald-400"></i>
                 </div>
-                <h2 className="text-lg font-bold text-white">Voting Booth</h2>
+                <h2 className="text-lg font-bold text-white">{t('Voting Booth')}</h2>
                 <p className="text-xs text-slate-400 mt-1">{election.title}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                    Your vote is secret and cannot be traced back to you.
+                    {t('Your vote is secret and cannot be traced back to you.')}
                 </p>
             </div>
 
             {/* Simple Majority / Plurality / Proportional — Radio selection */}
             {!isPreferential && !isApproval && (
                 <div className="space-y-2 mb-6">
-                    <p className="text-xs text-slate-400 mb-2">Select your preferred candidate:</p>
+                    <p className="text-xs text-slate-400 mb-2">{t('Select your preferred candidate:')}</p>
                     {candidates.map(c => (
                         <button
                             key={c.id}
@@ -130,7 +132,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
                             </div>
                             {c.user?.avatarUrl && <img src={c.user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />}
                             <div className="flex-1">
-                                <span className="text-sm font-medium text-white">{c.user?.name || 'Unknown'}</span>
+                                <span className="text-sm font-medium text-white">{c.user?.name || t('Unknown')}</span>
                                 {c.platformStatement && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{c.platformStatement}</p>}
                             </div>
                         </button>
@@ -141,7 +143,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
             {/* Approval — Checkbox selection */}
             {isApproval && (
                 <div className="space-y-2 mb-6">
-                    <p className="text-xs text-slate-400 mb-2">Select all candidates you approve of:</p>
+                    <p className="text-xs text-slate-400 mb-2">{t('Select all candidates you approve of:')}</p>
                     {candidates.map(c => (
                         <button
                             key={c.id}
@@ -158,7 +160,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
                                 {approvedCandidateIds.has(c.id) && <i className="fa-solid fa-check text-[10px] text-white"></i>}
                             </div>
                             {c.user?.avatarUrl && <img src={c.user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />}
-                            <span className="text-sm font-medium text-white">{c.user?.name || 'Unknown'}</span>
+                            <span className="text-sm font-medium text-white">{c.user?.name || t('Unknown')}</span>
                         </button>
                     ))}
                 </div>
@@ -167,7 +169,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
             {/* Preferential — Rank candidates */}
             {isPreferential && (
                 <div className="mb-6">
-                    <p className="text-xs text-slate-400 mb-2">Rank candidates in order of preference (1st = most preferred):</p>
+                    <p className="text-xs text-slate-400 mb-2">{t('Rank candidates in order of preference (1st = most preferred):')}</p>
 
                     {/* Ranked list */}
                     {rankedCandidates.length > 0 && (
@@ -197,7 +199,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
                     {/* Unranked candidates */}
                     {candidates.filter(c => !rankedCandidates.includes(c.id)).length > 0 && (
                         <div className="space-y-1">
-                            <p className="text-[10px] text-slate-500 mb-1">Click to add to ranking:</p>
+                            <p className="text-[10px] text-slate-500 mb-1">{t('Click to add to ranking:')}</p>
                             {candidates.filter(c => !rankedCandidates.includes(c.id)).map(c => (
                                 <button
                                     key={c.id}
@@ -205,7 +207,7 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
                                     className="w-full flex items-center gap-3 p-2.5 rounded-lg border border-slate-700/50 bg-slate-800/40 hover:border-slate-600 transition-colors text-left"
                                 >
                                     {c.user?.avatarUrl && <img src={c.user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />}
-                                    <span className="text-sm text-slate-300">{c.user?.name || 'Unknown'}</span>
+                                    <span className="text-sm text-slate-300">{c.user?.name || t('Unknown')}</span>
                                     <i className="fa-solid fa-plus text-[10px] text-slate-500 ml-auto"></i>
                                 </button>
                             ))}
@@ -216,16 +218,16 @@ const VotingBooth: React.FC<VotingBoothProps> = ({ election, onSubmit, onCancel 
 
             {/* Submit / Cancel */}
             <div className="flex justify-end gap-2 border-t border-slate-700/50 pt-4">
-                <button onClick={onCancel} className="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancel</button>
+                <button onClick={onCancel} className="px-4 py-2 text-xs text-slate-400 hover:text-white">{t('Cancel')}</button>
                 <button
                     onClick={handleSubmit}
                     disabled={!canSubmit() || isSubmitting}
                     className="flex items-center gap-2 px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? (
-                        <><div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full"></div>Submitting...</>
+                        <><div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full"></div>{t('Submitting...')}</>
                     ) : (
-                        <><i className="fa-solid fa-check"></i>Submit Vote</>
+                        <><i className="fa-solid fa-check"></i>{t('Submit Vote')}</>
                     )}
                 </button>
             </div>

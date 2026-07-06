@@ -7,6 +7,7 @@ import WindowFrame from '../../layout/WindowFrame';
 import { GovernmentElection, ElectionStatus } from '../../../types';
 import VotingBooth from './VotingBooth';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ElectionDetailViewProps {
     election: GovernmentElection;
@@ -27,6 +28,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
     const { rpcAction } = useData();
     const { refreshGovernment } = useGovernment();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
 
     const [showVotingBooth, setShowVotingBooth] = useState(false);
     const [showCandidacyForm, setShowCandidacyForm] = useState(false);
@@ -46,19 +48,19 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
     const handleAdvance = async () => {
         const nextPhase = election.status === 'Draft' ? 'Candidacy' : election.status === 'Candidacy' ? 'Voting' : 'Concluded';
         const confirmed = await confirm({
-            title: `Advance to ${nextPhase}`,
-            message: `Move this election to the ${nextPhase} phase?`,
-            confirmText: `Advance`,
+            title: t('Advance to {phase}', { phase: t(nextPhase) }),
+            message: t('Move this election to the {phase} phase?', { phase: t(nextPhase) }),
+            confirmText: t('Advance'),
             variant: 'info'
         });
         if (!confirmed) return;
         setIsLoading(true);
         try {
             await rpcAction('gov:advance_election', { electionId: election.id });
-            addToast('Election Advanced', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: `Election moved to ${nextPhase} phase.` });
+            addToast(t('Election Advanced'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Election moved to {phase} phase.', { phase: t(nextPhase) }) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Advance Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to advance election.' });
+            addToast(t('Advance Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to advance election.') });
         } finally {
             setIsLoading(false);
         }
@@ -66,20 +68,20 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
 
     const handleCancel = async () => {
         const confirmed = await confirm({
-            title: 'Cancel Election',
-            message: 'This will permanently cancel the election. Continue?',
-            confirmText: 'Cancel Election',
+            title: t('Cancel Election'),
+            message: t('This will permanently cancel the election. Continue?'),
+            confirmText: t('Cancel Election'),
             variant: 'danger'
         });
         if (!confirmed) return;
         setIsLoading(true);
         try {
             await rpcAction('gov:cancel_election', { electionId: election.id, reason: 'Cancelled by electoral officer' });
-            addToast('Election Cancelled', <i className="fa-solid fa-ban" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
+            addToast(t('Election Cancelled'), <i className="fa-solid fa-ban" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
             await refreshGovernment();
             onBack();
         } catch (err: any) {
-            addToast('Cancel Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to cancel.' });
+            addToast(t('Cancel Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to cancel.') });
         } finally {
             setIsLoading(false);
         }
@@ -94,10 +96,10 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
             });
             setShowCandidacyForm(false);
             setCandidacyStatement('');
-            addToast('Candidacy Declared', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'You are now a candidate.' });
+            addToast(t('Candidacy Declared'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('You are now a candidate.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Declaration Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to declare candidacy.' });
+            addToast(t('Declaration Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to declare candidacy.') });
         } finally {
             setIsLoading(false);
         }
@@ -105,19 +107,19 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
 
     const handleWithdraw = async () => {
         const confirmed = await confirm({
-            title: 'Withdraw Candidacy',
-            message: 'Are you sure you want to withdraw?',
-            confirmText: 'Withdraw',
+            title: t('Withdraw Candidacy'),
+            message: t('Are you sure you want to withdraw?'),
+            confirmText: t('Withdraw'),
             variant: 'warning'
         });
         if (!confirmed) return;
         setIsLoading(true);
         try {
             await rpcAction('gov:withdraw_candidacy', { electionId: election.id });
-            addToast('Candidacy Withdrawn', <i className="fa-solid fa-check" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: 'Your candidacy has been withdrawn.' });
+            addToast(t('Candidacy Withdrawn'), <i className="fa-solid fa-check" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: t('Your candidacy has been withdrawn.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Withdrawal Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to withdraw.' });
+            addToast(t('Withdrawal Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to withdraw.') });
         } finally {
             setIsLoading(false);
         }
@@ -127,10 +129,10 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
         setIsLoading(true);
         try {
             await rpcAction('gov:certify_results', { electionId: election.id });
-            addToast('Results Certified', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Election results are now official.' });
+            addToast(t('Results Certified'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Election results are now official.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Certify Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to certify.' });
+            addToast(t('Certify Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to certify.') });
         } finally {
             setIsLoading(false);
         }
@@ -138,7 +140,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
 
     const handleVoteSubmitted = async () => {
         setShowVotingBooth(false);
-        addToast('Vote Cast', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Your vote has been recorded securely.' });
+        addToast(t('Vote Cast'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Your vote has been recorded securely.') });
         await refreshGovernment();
     };
 
@@ -146,7 +148,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
         <div className="space-y-6">
             {/* Back button */}
             <button onClick={onBack} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors">
-                <i className="fa-solid fa-arrow-left"></i> Back to Elections
+                <i className="fa-solid fa-arrow-left"></i> {t('Back to Elections')}
             </button>
 
             {/* Election Header */}
@@ -158,12 +160,12 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                             <p className="text-sm text-slate-400 mt-0.5">
                                 <i className={`${election.position.icon || 'fa-solid fa-user'} mr-1`}></i>
                                 {election.position.name}
-                                {election.isByElection && <span className="text-amber-400 ml-2">(By-election)</span>}
+                                {election.isByElection && <span className="text-amber-400 ml-2">{t('(By-election)')}</span>}
                             </p>
                         )}
                     </div>
                     <span className={`text-xs font-medium px-3 py-1 rounded-sm ${colors.bg} ${colors.text}`}>
-                        {election.status}
+                        {t(election.status)}
                     </span>
                 </div>
 
@@ -173,12 +175,12 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
 
                 {/* Meta info */}
                 <div className="flex flex-wrap gap-4 text-xs text-slate-400">
-                    <span><i className="fa-solid fa-check-to-slot mr-1"></i>{election.electionType}</span>
-                    <span><i className="fa-solid fa-trophy mr-1"></i>{election.maxWinners} seat{election.maxWinners !== 1 ? 's' : ''}</span>
-                    {election.minVoterTurnoutPct && <span>Min turnout: {election.minVoterTurnoutPct}%</span>}
-                    {election.minVoteThresholdPct && <span>Win threshold: {election.minVoteThresholdPct}%</span>}
-                    {election.allowRunoff && <span className="text-purple-400">Runoff enabled</span>}
-                    {election.totalVotesCast !== undefined && <span>{election.totalVotesCast} total votes</span>}
+                    <span><i className="fa-solid fa-check-to-slot mr-1"></i>{t(election.electionType)}</span>
+                    <span><i className="fa-solid fa-trophy mr-1"></i>{election.maxWinners === 1 ? t('{count} seat', { count: election.maxWinners }) : t('{count} seats', { count: election.maxWinners })}</span>
+                    {election.minVoterTurnoutPct && <span>{t('Min turnout: {pct}%', { pct: election.minVoterTurnoutPct })}</span>}
+                    {election.minVoteThresholdPct && <span>{t('Win threshold: {pct}%', { pct: election.minVoteThresholdPct })}</span>}
+                    {election.allowRunoff && <span className="text-purple-400">{t('Runoff enabled')}</span>}
+                    {election.totalVotesCast !== undefined && <span>{t('{count} total votes', { count: election.totalVotesCast })}</span>}
                 </div>
 
                 {election.conclusionReason && (
@@ -186,7 +188,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                 )}
 
                 {election.certifiedAt && (
-                    <p className="text-xs text-emerald-400 mt-1"><i className="fa-solid fa-certificate mr-1"></i>Certified</p>
+                    <p className="text-xs text-emerald-400 mt-1"><i className="fa-solid fa-certificate mr-1"></i>{t('Certified')}</p>
                 )}
 
                 {/* Action buttons */}
@@ -194,17 +196,17 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                     {canManageElections && ['Draft', 'Candidacy', 'Voting'].includes(election.status) && (
                         <button onClick={handleAdvance} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-md hover:bg-emerald-500/20 transition-colors disabled:opacity-40">
                             <i className="fa-solid fa-forward"></i>
-                            {election.status === 'Draft' ? 'Open Candidacy' : election.status === 'Candidacy' ? 'Start Voting' : 'Conclude'}
+                            {election.status === 'Draft' ? t('Open Candidacy') : election.status === 'Candidacy' ? t('Start Voting') : t('Conclude')}
                         </button>
                     )}
                     {canManageElections && ['Draft', 'Candidacy', 'Voting'].includes(election.status) && (
                         <button onClick={handleCancel} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors disabled:opacity-40">
-                            <i className="fa-solid fa-xmark"></i> Cancel
+                            <i className="fa-solid fa-xmark"></i> {t('Cancel')}
                         </button>
                     )}
                     {canManageElections && isConcluded && !election.certifiedAt && (
                         <button onClick={handleCertify} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 rounded-md hover:bg-sky-500/20 transition-colors disabled:opacity-40">
-                            <i className="fa-solid fa-certificate"></i> Certify Results
+                            <i className="fa-solid fa-certificate"></i> {t('Certify Results')}
                         </button>
                     )}
                 </div>
@@ -213,15 +215,15 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
             {/* Candidates */}
             <div>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-white">Candidates ({candidates.length})</h3>
+                    <h3 className="text-sm font-bold text-white">{t('Candidates ({count})', { count: candidates.length })}</h3>
                     {isCandidacyPhase && canParticipate && !myCandidate && (
                         <button onClick={() => setShowCandidacyForm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md hover:bg-amber-500/20 transition-colors">
-                            <i className="fa-solid fa-hand"></i> Declare Candidacy
+                            <i className="fa-solid fa-hand"></i> {t('Declare Candidacy')}
                         </button>
                     )}
                     {isCandidacyPhase && myCandidate && (
                         <button onClick={handleWithdraw} disabled={isLoading} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors disabled:opacity-40">
-                            <i className="fa-solid fa-ban"></i> Withdraw
+                            <i className="fa-solid fa-ban"></i> {t('Withdraw')}
                         </button>
                     )}
                 </div>
@@ -242,10 +244,10 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                                     )}
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium text-white">{candidate.user?.name || 'Unknown'}</span>
+                                            <span className="text-sm font-medium text-white">{candidate.user?.name || t('Unknown')}</span>
                                             {candidate.isWinner && (
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-amber-500/20 text-amber-400 font-bold">
-                                                    <i className="fa-solid fa-crown mr-1"></i>ELECTED
+                                                    <i className="fa-solid fa-crown mr-1"></i>{t('ELECTED')}
                                                 </span>
                                             )}
                                         </div>
@@ -277,7 +279,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                         ))}
                     </div>
                 ) : (
-                    <p className="text-sm text-slate-500 text-center py-6">No candidates have declared yet.</p>
+                    <p className="text-sm text-slate-500 text-center py-6">{t('No candidates have declared yet.')}</p>
                 )}
             </div>
 
@@ -289,21 +291,21 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                         className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors"
                     >
                         <i className="fa-solid fa-box-ballot"></i>
-                        Cast Your Vote
+                        {t('Cast Your Vote')}
                     </button>
                 </div>
             )}
 
             {isVotingPhase && hasVoted && (
                 <div className="text-center py-4">
-                    <span className="text-sm text-emerald-400"><i className="fa-solid fa-check-circle mr-1"></i>You have already voted in this election.</span>
+                    <span className="text-sm text-emerald-400"><i className="fa-solid fa-check-circle mr-1"></i>{t('You have already voted in this election.')}</span>
                 </div>
             )}
 
             <WindowFrame
                 isOpen={showVotingBooth}
                 onClose={() => setShowVotingBooth(false)}
-                title="Voting Booth"
+                title={t('Voting Booth')}
                 subtitle={election.title}
                 icon="fa-solid fa-box-ballot"
                 color="emerald"
@@ -319,7 +321,7 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
             <WindowFrame
                 isOpen={showCandidacyForm}
                 onClose={() => setShowCandidacyForm(false)}
-                title="Declare Candidacy"
+                title={t('Declare Candidacy')}
                 subtitle={election.title}
                 icon="fa-solid fa-user-tie"
                 color="amber"
@@ -328,26 +330,26 @@ const ElectionDetailView: React.FC<ElectionDetailViewProps> = ({ election, onBac
                 <div className="flex flex-col h-full">
                     <div className="p-6 space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Platform Statement (optional)</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Platform Statement (optional)')}</label>
                             <textarea
                                 value={candidacyStatement}
                                 onChange={e => setCandidacyStatement(e.target.value)}
                                 className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all resize-none"
                                 rows={5}
-                                placeholder="Tell voters why they should vote for you..."
+                                placeholder={t('Tell voters why they should vote for you...')}
                                 disabled={isLoading}
                             />
                         </div>
                     </div>
                     <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 shrink-0 gap-3">
-                        <button type="button" onClick={() => setShowCandidacyForm(false)} disabled={isLoading} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">Cancel</button>
+                        <button type="button" onClick={() => setShowCandidacyForm(false)} disabled={isLoading} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleDeclareCandidacy}
                             disabled={isLoading}
                             className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-amber-600 rounded-lg hover:bg-amber-500 transition-all shadow-lg shadow-amber-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-amber-500/50"
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin" /> : 'Declare Candidacy'}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin" /> : t('Declare Candidacy')}
                         </button>
                     </div>
                 </div>

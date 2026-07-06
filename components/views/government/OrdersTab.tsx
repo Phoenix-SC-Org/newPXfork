@@ -3,6 +3,7 @@ import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { useData } from '../../../contexts/DataContext';
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 /**
  * Orders tab — executive-style orders issued by position holders with
@@ -45,6 +46,7 @@ const OrdersTab: React.FC = () => {
     const { currentUser } = useAuth();
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [myPositions, setMyPositions] = useState<IssuingPosition[]>([]);
@@ -105,24 +107,24 @@ const OrdersTab: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-white">Executive Orders</h2>
-                    <p className="text-sm text-slate-400 mt-0.5">Binding directives issued by authorized position holders.</p>
+                    <h2 className="text-xl font-bold text-white">{t('Executive Orders')}</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">{t('Binding directives issued by authorized position holders.')}</p>
                 </div>
                 {canIssue && (
                     <button onClick={() => setShowCreate(true)}
                         className="px-4 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 whitespace-nowrap">
-                        <i className="fa-solid fa-gavel mr-2"></i>Issue Order
+                        <i className="fa-solid fa-gavel mr-2"></i>{t('Issue Order')}
                     </button>
                 )}
             </div>
 
             {/* Filter chips */}
             <div className="flex flex-wrap gap-2">
-                <FilterChip active={filter === 'active'} onClick={() => setFilter('active')} label="In Force" count={counts.active} dot="bg-emerald-500" />
+                <FilterChip active={filter === 'active'} onClick={() => setFilter('active')} label={t('In Force')} count={counts.active} dot="bg-emerald-500" />
                 {counts.drafts > 0 && (
-                    <FilterChip active={filter === 'drafts'} onClick={() => setFilter('drafts')} label="My Drafts" count={counts.drafts} dot="bg-slate-500" />
+                    <FilterChip active={filter === 'drafts'} onClick={() => setFilter('drafts')} label={t('My Drafts')} count={counts.drafts} dot="bg-slate-500" />
                 )}
-                <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label="All" count={counts.all} />
+                <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} label={t('All')} count={counts.all} />
             </div>
 
             {/* List */}
@@ -173,6 +175,7 @@ const OrdersTab: React.FC = () => {
 
 const OrderCard: React.FC<{ order: Order; onClick: () => void }> = ({ order, onClick }) => {
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const s = STATUS_STYLES[order.status];
     return (
         <button onClick={onClick}
@@ -184,7 +187,7 @@ const OrderCard: React.FC<{ order: Order; onClick: () => void }> = ({ order, onC
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${s.pill}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>{s.label}
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>{t(s.label)}
                         </span>
                         {order.number && (
                             <span className="text-[10px] text-slate-500 font-mono">{order.number}</span>
@@ -212,7 +215,7 @@ const OrderCard: React.FC<{ order: Order; onClick: () => void }> = ({ order, onC
                         {order.issued_at && (
                             <>
                                 <span className="text-slate-700">·</span>
-                                <span>Issued {fmt.date(order.issued_at)}</span>
+                                <span>{t('Issued {date}', { date: fmt.date(order.issued_at) })}</span>
                             </>
                         )}
                     </div>
@@ -224,25 +227,28 @@ const OrderCard: React.FC<{ order: Order; onClick: () => void }> = ({ order, onC
 
 // Empty state
 
-const EmptyState: React.FC<{ canIssue: boolean; onCreate: () => void; filter: string }> = ({ canIssue, onCreate, filter }) => (
-    <div className="bg-slate-900/30 border border-dashed border-slate-700 rounded-xl p-12 text-center">
-        <i className="fa-solid fa-gavel text-4xl text-slate-600 mb-4"></i>
-        <h3 className="text-lg font-bold text-white mb-2">
-            {filter === 'active' ? 'No Active Orders' : filter === 'drafts' ? 'No Drafts' : 'No Orders Yet'}
-        </h3>
-        <p className="text-sm text-slate-400 max-w-md mx-auto">
-            {canIssue
-                ? 'As a position holder authorized to issue orders, you can draft and publish executive directives here.'
-                : 'Only position holders granted Issue Orders authority can author new orders.'}
-        </p>
-        {canIssue && (
-            <button onClick={onCreate}
-                className="mt-4 px-5 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-indigo-600 hover:bg-indigo-500">
-                <i className="fa-solid fa-plus mr-2"></i>Draft an Order
-            </button>
-        )}
-    </div>
-);
+const EmptyState: React.FC<{ canIssue: boolean; onCreate: () => void; filter: string }> = ({ canIssue, onCreate, filter }) => {
+    const { t } = useI18n();
+    return (
+        <div className="bg-slate-900/30 border border-dashed border-slate-700 rounded-xl p-12 text-center">
+            <i className="fa-solid fa-gavel text-4xl text-slate-600 mb-4"></i>
+            <h3 className="text-lg font-bold text-white mb-2">
+                {filter === 'active' ? t('No Active Orders') : filter === 'drafts' ? t('No Drafts') : t('No Orders Yet')}
+            </h3>
+            <p className="text-sm text-slate-400 max-w-md mx-auto">
+                {canIssue
+                    ? t('As a position holder authorized to issue orders, you can draft and publish executive directives here.')
+                    : t('Only position holders granted Issue Orders authority can author new orders.')}
+            </p>
+            {canIssue && (
+                <button onClick={onCreate}
+                    className="mt-4 px-5 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-indigo-600 hover:bg-indigo-500">
+                    <i className="fa-solid fa-plus mr-2"></i>{t('Draft an Order')}
+                </button>
+            )}
+        </div>
+    );
+};
 
 // Editor modal (create + edit drafts)
 
@@ -254,6 +260,7 @@ const OrderEditorModal: React.FC<{
 }> = ({ positions, editing, onClose, onSaved }) => {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [positionId, setPositionId] = useState<number>(
         editing?.issuer_position?.id || positions[0]?.id || 0
@@ -287,12 +294,12 @@ const OrderEditorModal: React.FC<{
             } else {
                 await rpcAction('gov:create_order', { input: payload });
             }
-            addToast(status === 'active' ? 'Order Issued' : 'Draft Saved',
+            addToast(status === 'active' ? t('Order Issued') : t('Draft Saved'),
                 <i className={`fa-solid ${status === 'active' ? 'fa-gavel' : 'fa-floppy-disk'}`}></i>,
                 'bg-indigo-500/10 text-indigo-300 border-indigo-500/50');
             onSaved();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-xmark"></i>,
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
                 { description: err?.message });
         } finally {
@@ -304,18 +311,18 @@ const OrderEditorModal: React.FC<{
         <WindowFrame
             isOpen={true}
             onClose={onClose}
-            title={editing ? 'Edit Draft Order' : 'New Executive Order'}
-            subtitle="Executive Authority"
+            title={editing ? t('Edit Draft Order') : t('New Executive Order')}
+            subtitle={t('Executive Authority')}
             icon="fa-solid fa-gavel"
             color="indigo"
             width="max-w-3xl"
         >
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-5">
-                    <p className="text-xs text-slate-400 italic">Orders bind the organization until revoked or expired. Document compliance in the rationale.</p>
+                    <p className="text-xs text-slate-400 italic">{t('Orders bind the organization until revoked or expired. Document compliance in the rationale.')}</p>
                     {/* Position */}
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Issuing Position</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('Issuing Position')}</label>
                         <select value={positionId} onChange={e => setPositionId(Number(e.target.value))} disabled={!!editing}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden">
                             {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -325,71 +332,71 @@ const OrderEditorModal: React.FC<{
                     {/* Number + Title */}
                     <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-3">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Number (Optional)</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('Number (Optional)')}</label>
                             <input value={orderNumber} onChange={e => setOrderNumber(e.target.value.slice(0, 40))}
-                                placeholder="e.g. EO-2026-04"
+                                placeholder={t('e.g. EO-2026-04')}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-hidden" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Title</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('Title')}</label>
                             <input value={title} onChange={e => setTitle(e.target.value.slice(0, 180))}
-                                placeholder="Order title"
+                                placeholder={t('Order title')}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden" />
                         </div>
                     </div>
 
                     {/* Preamble */}
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Preamble (Optional)</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('Preamble (Optional)')}</label>
                         <textarea value={preamble} onChange={e => setPreamble(e.target.value.slice(0, 600))} rows={2}
-                            placeholder='"Whereas the organization faces…"'
+                            placeholder={t('"Whereas the organization faces…"')}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm italic focus:ring-2 focus:ring-indigo-500 outline-hidden" />
                     </div>
 
                     {/* Body */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operative Body</label>
-                            <span className="text-[10px] text-slate-500">{body.length} chars</span>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Operative Body')}</label>
+                            <span className="text-[10px] text-slate-500">{t('{count} chars', { count: body.length })}</span>
                         </div>
                         <textarea value={body} onChange={e => setBody(e.target.value.slice(0, 10000))} rows={10}
-                            placeholder="The binding directive. Be clear and specific."
+                            placeholder={t('The binding directive. Be clear and specific.')}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden" />
                     </div>
 
                     {/* Rationale */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rationale (Compliance)</label>
-                            <span className="text-[10px] text-slate-500">{rationale.length} chars</span>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Rationale (Compliance)')}</label>
+                            <span className="text-[10px] text-slate-500">{t('{count} chars', { count: rationale.length })}</span>
                         </div>
                         <textarea value={rationale} onChange={e => setRationale(e.target.value.slice(0, 2000))} rows={4}
-                            placeholder="Cite the constitutional and/or legislative basis. This is a public explanation of lawfulness — essential for accountability."
+                            placeholder={t('Cite the constitutional and/or legislative basis. This is a public explanation of lawfulness — essential for accountability.')}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden" />
-                        <p className="text-[11px] text-slate-500 mt-2 italic">Compliance is documented here, not algorithmically enforced. A poorly-reasoned order can be revoked.</p>
+                        <p className="text-[11px] text-slate-500 mt-2 italic">{t('Compliance is documented here, not algorithmically enforced. A poorly-reasoned order can be revoked.')}</p>
                     </div>
 
                     {/* Expiry */}
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Expiry Date (Optional)</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t('Expiry Date (Optional)')}</label>
                         <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
                             className="w-full md:w-60 bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-hidden" />
-                        <p className="text-[11px] text-slate-500 mt-1">Leave blank for indefinite. Expired orders are automatically marked inactive.</p>
+                        <p className="text-[11px] text-slate-500 mt-1">{t('Leave blank for indefinite. Expired orders are automatically marked inactive.')}</p>
                     </div>
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 shrink-0 flex items-center justify-end gap-2">
                     <button onClick={onClose}
                         className="px-5 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                        Cancel
+                        {t('Cancel')}
                     </button>
                     <button onClick={() => submit('draft')} disabled={!canSubmit || saving}
                         className="px-5 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                        {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Draft'}
+                        {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Draft')}
                     </button>
                     <button onClick={() => submit('active')} disabled={!canSubmit || saving}
                         className="px-6 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/30 disabled:bg-slate-700 disabled:cursor-not-allowed">
-                        {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : (editing?.status === 'active' ? 'Save' : 'Issue Order')}
+                        {saving ? <i className="fa-solid fa-spinner animate-spin"></i> : (editing?.status === 'active' ? t('Save') : t('Issue Order'))}
                     </button>
                 </div>
             </div>
@@ -409,6 +416,7 @@ const OrderDetailModal: React.FC<{
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const s = STATUS_STYLES[order.status];
     const [revoking, setRevoking] = useState(false);
     const [showRevoke, setShowRevoke] = useState(false);
@@ -420,19 +428,19 @@ const OrderDetailModal: React.FC<{
 
     const handleDelete = async () => {
         const ok = await confirm({
-            title: 'Delete Draft?',
-            message: 'Discard this draft permanently.',
-            confirmText: 'Delete',
+            title: t('Delete Draft?'),
+            message: t('Discard this draft permanently.'),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!ok) return;
         try {
             await rpcAction('gov:delete_order', { orderId: order.id });
-            addToast('Draft Deleted', <i className="fa-solid fa-trash"></i>, 'bg-slate-500/10 text-slate-400 border-slate-500/50');
+            addToast(t('Draft Deleted'), <i className="fa-solid fa-trash"></i>, 'bg-slate-500/10 text-slate-400 border-slate-500/50');
             onRefresh();
             onClose();
         } catch (err: any) {
-            addToast('Delete Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         }
     };
 
@@ -440,11 +448,11 @@ const OrderDetailModal: React.FC<{
         setRevoking(true);
         try {
             await rpcAction('gov:revoke_order', { orderId: order.id, reason: revokeReason.trim() || null });
-            addToast('Order Revoked', <i className="fa-solid fa-ban"></i>, 'bg-red-500/10 text-red-400 border-red-500/50');
+            addToast(t('Order Revoked'), <i className="fa-solid fa-ban"></i>, 'bg-red-500/10 text-red-400 border-red-500/50');
             onRefresh();
             onClose();
         } catch (err: any) {
-            addToast('Revoke Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
+            addToast(t('Revoke Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message });
         } finally {
             setRevoking(false);
         }
@@ -455,7 +463,7 @@ const OrderDetailModal: React.FC<{
             isOpen={true}
             onClose={onClose}
             title={order.title}
-            subtitle={order.issuer_position ? `By ${order.issuer_position.name}` : 'Executive Order'}
+            subtitle={order.issuer_position ? t('By {name}', { name: order.issuer_position.name }) : t('Executive Order')}
             icon="fa-solid fa-gavel"
             color="indigo"
             width="max-w-3xl"
@@ -467,7 +475,7 @@ const OrderDetailModal: React.FC<{
                     <div className="relative">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-widest border ${s.pill}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>{s.label}
+                                <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}></span>{t(s.label)}
                             </span>
                             {order.number && (
                                 <span className="text-[10px] text-slate-500 font-mono bg-slate-800/50 px-2 py-0.5 rounded-sm">{order.number}</span>
@@ -484,23 +492,23 @@ const OrderDetailModal: React.FC<{
                 {/* Body */}
                 <div className="p-6 space-y-5">
                     <div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Operative Text</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{t('Operative Text')}</p>
                         <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">{order.body}</p>
                     </div>
 
                     {order.rationale && (
                         <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Rationale &amp; Compliance</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{t('Rationale & Compliance')}</p>
                             <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{order.rationale}</p>
                         </div>
                     )}
 
                     {/* Meta grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-800">
-                        {order.issued_at && <MetaCell label="Issued" value={fmt.date(order.issued_at)} />}
-                        {order.effective_at && <MetaCell label="Effective" value={fmt.date(order.effective_at)} />}
-                        {order.expires_at && <MetaCell label="Expires" value={fmt.date(order.expires_at)} />}
-                        {order.revoked_at && <MetaCell label="Revoked" value={fmt.date(order.revoked_at)} />}
+                        {order.issued_at && <MetaCell label={t('Issued')} value={fmt.date(order.issued_at)} />}
+                        {order.effective_at && <MetaCell label={t('Effective')} value={fmt.date(order.effective_at)} />}
+                        {order.expires_at && <MetaCell label={t('Expires')} value={fmt.date(order.expires_at)} />}
+                        {order.revoked_at && <MetaCell label={t('Revoked')} value={fmt.date(order.revoked_at)} />}
                     </div>
 
                     {/* Issuer */}
@@ -508,7 +516,7 @@ const OrderDetailModal: React.FC<{
                         <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
                             {order.issuer.avatar_url && <img src={order.issuer.avatar_url} className="w-10 h-10 rounded-full" alt="" />}
                             <div>
-                                <p className="text-xs text-slate-500">Issued by</p>
+                                <p className="text-xs text-slate-500">{t('Issued by')}</p>
                                 <p className="text-sm font-bold text-white">{order.issuer.name}</p>
                                 {order.issuer.rsi_handle && <p className="text-[10px] text-slate-500">@{order.issuer.rsi_handle}</p>}
                             </div>
@@ -518,13 +526,13 @@ const OrderDetailModal: React.FC<{
                     {/* Revocation */}
                     {order.status === 'revoked' && (
                         <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-4">
-                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Revocation</p>
+                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">{t('Revocation')}</p>
                             {order.revoked_reason && (
                                 <p className="text-sm text-slate-300 whitespace-pre-wrap mb-2">{order.revoked_reason}</p>
                             )}
                             {order.revoked_by && (
                                 <p className="text-xs text-slate-500">
-                                    By {order.revoked_by.name} on {order.revoked_at && fmt.date(order.revoked_at)}
+                                    {t('By {name} on {date}', { name: order.revoked_by.name, date: order.revoked_at ? fmt.date(order.revoked_at) : '' })}
                                 </p>
                             )}
                         </div>
@@ -534,18 +542,18 @@ const OrderDetailModal: React.FC<{
                 {/* Revoke inline form */}
                 {showRevoke && (
                     <div className="p-6 border-t border-slate-800 bg-red-500/5">
-                        <label className="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Revocation Reason (Optional)</label>
+                        <label className="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">{t('Revocation Reason (Optional)')}</label>
                         <textarea value={revokeReason} onChange={e => setRevokeReason(e.target.value.slice(0, 500))} rows={3}
-                            placeholder="Explain why this order is being rescinded."
+                            placeholder={t('Explain why this order is being rescinded.')}
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-2 focus:ring-red-500 outline-hidden" />
                         <div className="flex items-center justify-end gap-2 mt-3">
                             <button onClick={() => setShowRevoke(false)}
                                 className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                                Cancel
+                                {t('Cancel')}
                             </button>
                             <button onClick={handleRevoke} disabled={revoking}
                                 className="px-5 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-red-600 hover:bg-red-500">
-                                {revoking ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Confirm Revocation'}
+                                {revoking ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Confirm Revocation')}
                             </button>
                         </div>
                     </div>
@@ -557,25 +565,25 @@ const OrderDetailModal: React.FC<{
                         {canDelete && (
                             <button onClick={handleDelete}
                                 className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg">
-                                <i className="fa-solid fa-trash mr-2"></i>Delete Draft
+                                <i className="fa-solid fa-trash mr-2"></i>{t('Delete Draft')}
                             </button>
                         )}
                         {canRevoke && !showRevoke && (
                             <button onClick={() => setShowRevoke(true)}
                                 className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg">
-                                <i className="fa-solid fa-ban mr-2"></i>Revoke Order
+                                <i className="fa-solid fa-ban mr-2"></i>{t('Revoke Order')}
                             </button>
                         )}
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={onClose}
                             className="px-5 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white">
-                            Close
+                            {t('Close')}
                         </button>
                         {canEdit && (
                             <button onClick={onEdit}
                                 className="px-5 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-indigo-600 hover:bg-indigo-500">
-                                <i className="fa-solid fa-pen mr-2"></i>Edit
+                                <i className="fa-solid fa-pen mr-2"></i>{t('Edit')}
                             </button>
                         )}
                     </div>

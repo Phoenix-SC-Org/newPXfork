@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { WikiPage } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiPageTreeProps {
     pages: WikiPage[];
@@ -45,6 +46,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     dragState, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
     expandedIds, onToggleExpanded,
 }) => {
+    const { t } = useI18n();
     const isExpanded = expandedIds.has(page.id);
     const isSelected = selectedPageId === page.id;
     const hasChildren = childPages.length > 0;
@@ -113,7 +115,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 {/* Menu lock indicator. Visual only — sibling reordering is
                     still permitted; only re-parenting is blocked. */}
                 {page.menuStructureLocked && (
-                    <i className="fa-solid fa-lock text-[9px] text-amber-400/70" title="Menu position locked"></i>
+                    <i className="fa-solid fa-lock text-[9px] text-amber-400/70" title={t('Menu position locked')}></i>
                 )}
 
                 {page.classificationLevel > 0 && (
@@ -135,7 +137,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                             onAddChild(page.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[10px] text-slate-500 hover:text-sky-400 transition-all"
-                        title="Add child page"
+                        title={t('Add child page')}
                     >
                         <i className="fa-solid fa-plus"></i>
                     </button>
@@ -176,6 +178,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
 };
 
 const WikiPageTree: React.FC<WikiPageTreeProps> = ({ pages, selectedPageId, onSelect, onAddChild, onReorder, canEdit }) => {
+    const { t } = useI18n();
     const canReorder = !!onReorder;
     const [dragState, setDragState] = useState<DragState>({ draggedId: null, targetId: null, position: null });
 
@@ -295,7 +298,7 @@ const WikiPageTree: React.FC<WikiPageTreeProps> = ({ pages, selectedPageId, onSe
         return (
             <div className="text-center py-8 text-slate-500">
                 <i className="fa-solid fa-book text-2xl mb-2 block"></i>
-                <p className="text-xs">No pages yet</p>
+                <p className="text-xs">{t('No pages yet')}</p>
             </div>
         );
     }
@@ -312,19 +315,19 @@ const WikiPageTree: React.FC<WikiPageTreeProps> = ({ pages, selectedPageId, onSe
                         type="button"
                         onClick={expandAll}
                         disabled={allExpanded}
-                        title="Expand all"
+                        title={t('Expand all')}
                         className="text-[10px] font-bold text-slate-500 hover:text-sky-300 px-1.5 py-0.5 rounded-sm hover:bg-slate-800/60 uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <i className="fa-solid fa-angles-down mr-1"></i>Expand
+                        <i className="fa-solid fa-angles-down mr-1"></i>{t('Expand')}
                     </button>
                     <button
                         type="button"
                         onClick={collapseAll}
                         disabled={allCollapsed}
-                        title="Collapse all"
+                        title={t('Collapse all')}
                         className="text-[10px] font-bold text-slate-500 hover:text-sky-300 px-1.5 py-0.5 rounded-sm hover:bg-slate-800/60 uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        <i className="fa-solid fa-angles-up mr-1"></i>Collapse
+                        <i className="fa-solid fa-angles-up mr-1"></i>{t('Collapse')}
                     </button>
                 </div>
             )}
