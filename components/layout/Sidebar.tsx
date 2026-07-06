@@ -11,6 +11,7 @@ import { useSidebarGroups } from '../../hooks/useSidebarGroups';
 import SidebarGroup from './SidebarGroup';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useModalRegistry } from '../../contexts/ModalRegistryContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface SidebarProps {
     activeView: string;
@@ -72,6 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const { openIssueEamModal } = useModalRegistry();
     const { canInstall, isInstalled, promptInstall } = usePWAInstall();
     const { isExpanded, toggle, ensureExpanded } = useSidebarGroups();
+    const { t } = useI18n();
 
     // Map active views → group ids so we can auto-expand the group housing
     // the current view on mount (stops users from hunting for "where am I?").
@@ -126,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const dashboard = (
             <NavItem
                 icon={<i className="fa-solid fa-house fa-fw"></i>}
-                label="Dashboard"
+                label={t('Dashboard')}
                 isActive={activeView === 'dashboard'}
                 onClick={() => handleNavClick('dashboard')}
                 isCollapsed={isSidebarCollapsed}
@@ -136,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const serviceRequests = (
             <NavItem
                 icon={<i className="fa-solid fa-list-ul fa-fw"></i>}
-                label="Service Requests"
+                label={t('Service Requests')}
                 isActive={activeView === 'requests' || activeView === 'request-detail'}
                 onClick={() => handleNavClick('requests')}
                 isCollapsed={isSidebarCollapsed}
@@ -146,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const dispatchConsole = hasPermission('request:dispatch') ? (
             <NavItem
                 icon={<i className="fa-solid fa-headset fa-fw"></i>}
-                label="Dispatch Console"
+                label={t('Dispatch Console')}
                 isActive={activeView === 'dispatch'}
                 onClick={() => handleNavClick('dispatch')}
                 isCollapsed={isSidebarCollapsed}
@@ -156,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const operations = hasPermission('operations:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-sitemap fa-fw"></i>}
-                label="Operations Center"
+                label={t('Operations Center')}
                 isActive={activeView === 'operations' || activeView === 'operation-detail'}
                 onClick={() => handleNavClick('operations')}
                 isCollapsed={isSidebarCollapsed}
@@ -166,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const warrants = hasPermission('warrant:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-bullseye fa-fw"></i>}
-                label="Caution Notes"
+                label={t('Caution Notes')}
                 isActive={activeView === 'warrants'}
                 onClick={() => handleNavClick('warrants')}
                 isCollapsed={isSidebarCollapsed}
@@ -176,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const intel = (hasPermission('intel:view') || hasPermission('intel:create')) ? (
             <NavItem
                 icon={<i className="fa-solid fa-eye fa-fw"></i>}
-                label="Intelligence Hub"
+                label={t('Intelligence Hub')}
                 isActive={activeView === 'intel'}
                 onClick={() => handleNavClick('intel')}
                 isCollapsed={isSidebarCollapsed}
@@ -186,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const alliances = hasPermission('alliance:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-handshake fa-fw"></i>}
-                label="Alliances"
+                label={t('Alliances')}
                 isActive={activeView === 'alliances'}
                 onClick={() => handleNavClick('alliances')}
                 isCollapsed={isSidebarCollapsed}
@@ -196,7 +198,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const dutyRoster = hasPermission('user:toggle_duty') ? (
             <NavItem
                 icon={<i className="fa-solid fa-users fa-fw"></i>}
-                label="Duty Roster"
+                label={t('Duty Roster')}
                 isActive={activeView === 'roster' || activeView === 'member-record'}
                 onClick={() => handleNavClick('roster')}
                 isCollapsed={isSidebarCollapsed}
@@ -209,7 +211,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const orgChart = hasPermission('user:view:roster') ? (
             <NavItem
                 icon={<i className="fa-solid fa-sitemap fa-fw"></i>}
-                label="Org Chart"
+                label={t('Org Chart')}
                 isActive={activeView === 'org-chart' || activeView === 'unit-detail'}
                 onClick={() => handleNavClick('org-chart')}
                 isCollapsed={isSidebarCollapsed}
@@ -219,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const leaderboard = (hasPermission('user:toggle_duty') && leaderboardEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-trophy fa-fw"></i>}
-                label="Leaderboard"
+                label={t('Leaderboard')}
                 isActive={activeView === 'leaderboard'}
                 onClick={() => handleNavClick('leaderboard')}
                 isCollapsed={isSidebarCollapsed}
@@ -229,7 +231,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const hr = hasPermission('hr:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-people-group fa-fw"></i>}
-                label="HR Hub"
+                label={t('HR Hub')}
                 isActive={activeView === 'hr' || activeView === 'applicant-detail' || activeView === 'security-vetting' || activeView === 'case-file-detail'}
                 onClick={() => handleNavClick('hr')}
                 isCollapsed={isSidebarCollapsed}
@@ -239,7 +241,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const fleet = hasPermission('fleet:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-rocket fa-fw"></i>}
-                label="Fleet Manager"
+                label={t('Fleet Manager')}
                 isActive={activeView === 'fleet'}
                 onClick={() => handleNavClick('fleet')}
                 isCollapsed={isSidebarCollapsed}
@@ -249,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const government = (hasPermission('gov:view') && governmentsEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-landmark fa-fw"></i>}
-                label="Government"
+                label={t('Government')}
                 isActive={activeView === 'government'}
                 onClick={() => handleNavClick('government')}
                 isCollapsed={isSidebarCollapsed}
@@ -259,7 +261,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const finances = (hasPermission('finance:view') && financesEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-vault fa-fw"></i>}
-                label="Finances"
+                label={t('Finances')}
                 isActive={activeView === 'finances'}
                 onClick={() => handleNavClick('finances')}
                 isCollapsed={isSidebarCollapsed}
@@ -269,7 +271,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const quartermaster = (hasPermission('qm:view') && quartermasterEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-warehouse fa-fw"></i>}
-                label="Quartermaster"
+                label={t('Quartermaster')}
                 isActive={activeView === 'quartermaster'}
                 onClick={() => handleNavClick('quartermaster')}
                 isCollapsed={isSidebarCollapsed}
@@ -279,7 +281,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const warehouse = (hasPermission('warehouse:view') && warehouseEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-boxes-stacked fa-fw"></i>}
-                label="Warehouse"
+                label={t('Warehouse')}
                 isActive={activeView === 'warehouse'}
                 onClick={() => handleNavClick('warehouse')}
                 isCollapsed={isSidebarCollapsed}
@@ -289,7 +291,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const marketplace = (hasPermission('marketplace:view') && marketplaceEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-store fa-fw"></i>}
-                label="Marketplace"
+                label={t('Marketplace')}
                 isActive={activeView === 'marketplace'}
                 onClick={() => handleNavClick('marketplace')}
                 isCollapsed={isSidebarCollapsed}
@@ -299,7 +301,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const wiki = hasPermission('wiki:view') ? (
             <NavItem
                 icon={<i className="fa-solid fa-book fa-fw"></i>}
-                label="Org Wiki"
+                label={t('Org Wiki')}
                 isActive={activeView === 'wiki'}
                 onClick={() => handleNavClick('wiki')}
                 isCollapsed={isSidebarCollapsed}
@@ -309,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const externalTools = (hasPermission('user:toggle_duty') && externalToolsEnabled) ? (
             <NavItem
                 icon={<i className="fa-solid fa-toolbox fa-fw"></i>}
-                label="External Tools"
+                label={t('External Tools')}
                 isActive={activeView === 'external-tools'}
                 onClick={() => handleNavClick('external-tools')}
                 isCollapsed={isSidebarCollapsed}
@@ -319,7 +321,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const radio = hasPermission('radio:manage') ? (
             <NavItem
                 icon={<i className="fa-solid fa-tower-broadcast fa-fw"></i>}
-                label="Radio Control"
+                label={t('Radio Control')}
                 isActive={activeView === 'radio-control'}
                 onClick={() => handleNavClick('radio-control')}
                 isCollapsed={isSidebarCollapsed}
@@ -329,7 +331,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const profile = (
             <NavItem
                 icon={<i className="fa-solid fa-id-card fa-fw"></i>}
-                label="My Account"
+                label={t('My Account')}
                 isActive={activeView === 'profile'}
                 onClick={() => handleNavClick('profile')}
                 isCollapsed={isSidebarCollapsed}
@@ -339,7 +341,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const help = (
             <NavItem
                 icon={<i className="fa-solid fa-circle-question fa-fw"></i>}
-                label="Help & Docs"
+                label={t('Help & Docs')}
                 isActive={activeView === 'help'}
                 onClick={() => handleNavClick('help')}
                 isCollapsed={isSidebarCollapsed}
@@ -349,7 +351,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const admin = hasPermission('admin:access') ? (
             <NavItem
                 icon={<i className="fa-solid fa-screwdriver-wrench fa-fw"></i>}
-                label="Admin Console"
+                label={t('Admin Console')}
                 isActive={activeView === 'admin'}
                 onClick={() => handleNavClick('admin')}
                 isCollapsed={isSidebarCollapsed}
@@ -385,7 +387,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         return (
             <nav className="px-2">
                 <SidebarGroup
-                    id="command" label="Command & Ops" icon="fa-satellite-dish" accent="sky"
+                    id="command" label={t('Command & Ops')} icon="fa-satellite-dish" accent="sky"
                     expanded={isExpanded('command', DEFAULT_EXPAND.command)}
                     onToggle={() => toggle('command', DEFAULT_EXPAND.command)}
                     hidden={commandItems.length === 0}
@@ -393,7 +395,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {commandItems}
                 </SidebarGroup>
                 <SidebarGroup
-                    id="org" label="Org Management" icon="fa-people-group" accent="indigo"
+                    id="org" label={t('Org Management')} icon="fa-people-group" accent="indigo"
                     expanded={isExpanded('org', DEFAULT_EXPAND.org)}
                     onToggle={() => toggle('org', DEFAULT_EXPAND.org)}
                     hidden={orgItems.length === 0}
@@ -401,7 +403,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {orgItems}
                 </SidebarGroup>
                 <SidebarGroup
-                    id="economy" label="Economy" icon="fa-coins" accent="amber"
+                    id="economy" label={t('Economy')} icon="fa-coins" accent="amber"
                     expanded={isExpanded('economy', DEFAULT_EXPAND.economy)}
                     onToggle={() => toggle('economy', DEFAULT_EXPAND.economy)}
                     hidden={economyItems.length === 0}
@@ -409,7 +411,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {economyItems}
                 </SidebarGroup>
                 <SidebarGroup
-                    id="resources" label="Resources" icon="fa-toolbox" accent="slate"
+                    id="resources" label={t('Resources')} icon="fa-toolbox" accent="slate"
                     expanded={isExpanded('resources', DEFAULT_EXPAND.resources)}
                     onToggle={() => toggle('resources', DEFAULT_EXPAND.resources)}
                     hidden={resourcesItems.length === 0}
@@ -417,7 +419,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {resourcesItems}
                 </SidebarGroup>
                 <SidebarGroup
-                    id="system" label="System" icon="fa-gear" accent="slate"
+                    id="system" label={t('System')} icon="fa-gear" accent="slate"
                     expanded={isExpanded('system', DEFAULT_EXPAND.system)}
                     onToggle={() => toggle('system', DEFAULT_EXPAND.system)}
                     hidden={systemItems.length === 0}
@@ -468,7 +470,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                             className={`hidden lg:flex text-slate-500 hover:text-white transition-colors mt-4 p-1 rounded-sm hover:bg-slate-800 ${isSidebarCollapsed ? 'self-center' : 'self-end absolute bottom-2 right-4'}`}
-                            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                            title={isSidebarCollapsed ? t('Expand Sidebar') : t('Collapse Sidebar')}
                         >
                             <i className={`fa-solid ${isSidebarCollapsed ? 'fa-angles-right' : 'fa-angles-left'}`}></i>
                         </button>
@@ -494,11 +496,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                             bg-red-900/20 text-red-500 border border-red-500/30 hover:bg-red-900/40 hover:border-red-500
                             ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 rounded-xl flex items-center justify-center mx-auto' : 'py-3 px-4 rounded-lg text-[10px]'}
                         `}
-                                title="ISSUE EAM"
+                                title={t('ISSUE EAM')}
                             >
                                 <span className="relative z-10 flex items-center justify-center gap-2">
                                     <i className="fa-solid fa-radiation"></i>
-                                    {(!isSidebarCollapsed || isMobileOpen) && 'ISSUE EAM'}
+                                    {(!isSidebarCollapsed || isMobileOpen) && t('ISSUE EAM')}
                                 </span>
                             </button>
                         )}
@@ -506,7 +508,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {hasPermission('user:toggle_duty') && (
                             <div className="">
                                 {(!isSidebarCollapsed || isMobileOpen) && (
-                                    <p className="text-[10px] uppercase font-black text-slate-500 mb-2 tracking-wider text-center">Status Control</p>
+                                    <p className="text-[10px] uppercase font-black text-slate-500 mb-2 tracking-wider text-center">{t('Status Control')}</p>
                                 )}
                                 <button
                                     onClick={() => toggleDutyStatus(currentUser.id)}
@@ -517,18 +519,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             : 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40'
                                         } 
                             ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 rounded-xl flex items-center justify-center mx-auto' : 'py-3 px-4 rounded-lg text-xs uppercase tracking-widest'}`}
-                                    title={liveUser.isDuty ? "Go Off Duty" : "Go On Duty"}
+                                    title={liveUser.isDuty ? t('Go Off Duty') : t('Go On Duty')}
                                 >
                                     <span className="relative z-10 flex items-center justify-center gap-2 text-center">
                                         {isTogglingDuty ? (
                                             <>
                                                 <i className="fa-solid fa-circle-notch animate-spin"></i>
-                                                {(!isSidebarCollapsed || isMobileOpen) && 'UPDATING...'}
+                                                {(!isSidebarCollapsed || isMobileOpen) && t('UPDATING...')}
                                             </>
                                         ) : (
                                             <>
                                                 <i className="fa-solid fa-power-off"></i>
-                                                {(!isSidebarCollapsed || isMobileOpen) && (liveUser.isDuty ? 'ON DUTY' : 'OFF DUTY')}
+                                                {(!isSidebarCollapsed || isMobileOpen) && (liveUser.isDuty ? t('ON DUTY') : t('OFF DUTY'))}
                                             </>
                                         )}
                                     </span>
@@ -538,7 +540,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </button>
                                 {showIdleWarning && (!isSidebarCollapsed || isMobileOpen) && (
                                     <p className="text-[9px] text-amber-500 text-center mt-2 font-mono uppercase animate-pulse">
-                                        Idle Timeout: {minsRemaining}m
+                                        {t('Idle Timeout: {mins}m', { mins: minsRemaining })}
                                     </p>
                                 )}
                             </div>
@@ -550,11 +552,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 className={`w-full relative overflow-hidden font-bold transition-all duration-300
                                     bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 hover:border-sky-500/40
                                     ${isSidebarCollapsed && !isMobileOpen ? 'h-10 w-10 rounded-xl flex items-center justify-center mx-auto' : 'py-2.5 px-4 rounded-lg text-[10px] uppercase tracking-widest'}`}
-                                title="Install App"
+                                title={t('Install App')}
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     <i className="fa-solid fa-download"></i>
-                                    {(!isSidebarCollapsed || isMobileOpen) && 'Install App'}
+                                    {(!isSidebarCollapsed || isMobileOpen) && t('Install App')}
                                 </span>
                             </button>
                         )}

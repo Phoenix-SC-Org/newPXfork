@@ -83,7 +83,7 @@ import WindowTaskbar from './components/layout/WindowTaskbar';
 import NotificationListener from './components/utility/NotificationListener';
 import { initializeSupabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/utility/ErrorBoundary';
-import { I18nProvider } from './i18n/I18nContext';
+import { I18nProvider, useI18n } from './i18n/I18nContext';
 
 // Retry wrapper for lazy view imports — handles transient preload failures
 // (e.g. Safari module preload quirks) and stale-chunk errors after deploys.
@@ -144,7 +144,9 @@ const QuartermasterView = lazyWithRetry(() => import('./components/views/quarter
 const WarehouseView = lazyWithRetry(() => import('./components/views/warehouse/WarehouseView'));
 const MarketplaceView = lazyWithRetry(() => import('./components/views/marketplace/MarketplaceView'));
 
-const LoadingFallback = () => (
+const LoadingFallback = () => {
+    const { t } = useI18n();
+    return (
     <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-4">
             <div className="relative inline-block">
@@ -152,16 +154,18 @@ const LoadingFallback = () => (
                 <i className="fa-solid fa-circle-notch animate-spin text-sky-500 text-3xl relative z-10"></i>
             </div>
             <div>
-                <p className="text-slate-400 text-sm font-mono uppercase tracking-widest">Loading Module</p>
+                <p className="text-slate-400 text-sm font-mono uppercase tracking-widest">{t('Loading Module')}</p>
                 <div className="w-24 h-0.5 bg-slate-800 rounded-full mx-auto mt-3 overflow-hidden">
                     <div className="h-full bg-sky-500/50 rounded-full animate-pulse" style={{ width: '60%' }}></div>
                 </div>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 const PushNotificationBanner = () => {
+    const { t } = useI18n();
     const { subscribeToPush, isPushActive } = useAuth();
     const [dismissed, setDismissed] = useState(() => {
         return localStorage.getItem('push_banner_dismissed') === 'true';
@@ -186,14 +190,14 @@ const PushNotificationBanner = () => {
                     <i className="fa-solid fa-satellite-dish"></i>
                 </div>
                 <div>
-                    <h3 className="font-bold text-white text-sm uppercase tracking-wide">Secure Comms Available</h3>
-                    <p className="text-xs text-sky-200/70">Enable push notifications to receive mission alerts while off-duty.</p>
+                    <h3 className="font-bold text-white text-sm uppercase tracking-wide">{t('Secure Comms Available')}</h3>
+                    <p className="text-xs text-sky-200/70">{t('Enable push notifications to receive mission alerts while off-duty.')}</p>
                 </div>
             </div>
             <div className="flex gap-3">
-                <button onClick={handleDismiss} className="text-xs font-bold text-slate-400 hover:text-white px-4 py-2 uppercase tracking-wider">Dismiss</button>
+                <button onClick={handleDismiss} className="text-xs font-bold text-slate-400 hover:text-white px-4 py-2 uppercase tracking-wider">{t('Dismiss')}</button>
                 <button onClick={handleSubscribe} className="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-white px-5 py-2 rounded-sm shadow-lg shadow-sky-900/20 transition-all active:scale-95 uppercase tracking-wider">
-                    Enable Uplink
+                    {t('Enable Uplink')}
                 </button>
             </div>
         </div>
@@ -211,6 +215,7 @@ const AppContent: React.FC = () => {
         slug,
     } = useAuth();
     const { deleteIntelReport } = useIntel();
+    const { t } = useI18n();
 
     const [showExtendedWait, setShowExtendedWait] = useState(false);
 
@@ -501,7 +506,7 @@ const AppContent: React.FC = () => {
     // Maintenance Mode — block all non-admin members (toggled by an Admin in the
     // Admin Console → Database Tools; enforced server-side in services.ts/query.ts).
     if (platformSettings?.maintenance_mode === true && currentUser?.role !== 'Admin') {
-        const maintenanceMessage = platformSettings?.maintenance_message || 'The dashboard is currently undergoing scheduled maintenance. Please check back shortly.';
+        const maintenanceMessage = platformSettings?.maintenance_message || t('The dashboard is currently undergoing scheduled maintenance. Please check back shortly.');
         return (
             <div className="fixed inset-0 h-dvh w-screen bg-slate-950 flex flex-col items-center justify-center overflow-hidden relative z-9999">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-slate-800/20 via-slate-950 to-slate-950"></div>
@@ -512,12 +517,12 @@ const AppContent: React.FC = () => {
                             <i className="fa-solid fa-wrench text-amber-400 text-3xl"></i>
                         </div>
                     </div>
-                    <h1 className="text-2xl font-black text-white tracking-wider uppercase mb-2">Maintenance Mode</h1>
+                    <h1 className="text-2xl font-black text-white tracking-wider uppercase mb-2">{t('Maintenance Mode')}</h1>
                     <div className="h-px w-24 bg-linear-to-r from-transparent via-amber-500 to-transparent mb-6 opacity-50"></div>
                     <p className="text-slate-300 text-sm leading-relaxed mb-8 max-w-md">{maintenanceMessage}</p>
                     <div className="flex items-center gap-2 text-xs text-slate-500 font-mono uppercase tracking-widest">
                         <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                        <span>System Offline</span>
+                        <span>{t('System Offline')}</span>
                     </div>
                     {/* Admin escape hatch: lets a signed-out admin authenticate from
                         the maintenance screen. Maintenance mode is still enforced
@@ -528,7 +533,7 @@ const AppContent: React.FC = () => {
                         className="mt-10 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-slate-600 hover:text-amber-400 transition-colors"
                     >
                         <i className="fa-brands fa-discord"></i>
-                        <span>Admin Access</span>
+                        <span>{t('Admin Access')}</span>
                     </button>
                 </div>
                 <div className="absolute bottom-8 text-[10px] text-slate-600 font-mono uppercase tracking-[0.3em]">
@@ -640,14 +645,14 @@ const AppContent: React.FC = () => {
                                 {toast.description && <p className="text-xs text-slate-400 mt-1 leading-snug">{toast.description}</p>}
                                 {toast.requestId && (
                                     <div className="text-xs text-sky-300 hover:text-sky-200 mt-1.5 font-semibold">
-                                        View details <i className="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
+                                        {t('View details')} <i className="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
                                     </div>
                                 )}
                             </div>
                             <button
                                 onClick={(e) => { e.stopPropagation(); removeToast(toast.id); }}
                                 className="absolute top-2 right-2 text-slate-500 hover:text-white transition-colors p-1.5"
-                                title="Dismiss"
+                                title={t('Dismiss')}
                             >
                                 <i className="fa-solid fa-xmark text-xs"></i>
                             </button>

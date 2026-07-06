@@ -1,5 +1,6 @@
 import React from 'react';
 import WindowFrame from '../layout/WindowFrame';
+import { useI18n } from '../../i18n/I18nContext';
 
 export interface ConfirmDialogOptions {
     title: string;
@@ -18,11 +19,12 @@ interface ConfirmDialogProps {
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, options, onConfirm, onCancel }) => {
+    const { t } = useI18n();
     const {
         title,
         message,
-        confirmText = 'Confirm',
-        cancelText = 'Cancel',
+        confirmText = t('Confirm'),
+        cancelText = t('Cancel'),
         variant = 'info',
         icon
     } = options;

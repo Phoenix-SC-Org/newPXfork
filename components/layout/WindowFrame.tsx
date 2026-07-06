@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useI18n } from '../../i18n/I18nContext';
 
 export type WindowColor = 'sky' | 'red' | 'amber' | 'green' | 'emerald' | 'indigo' | 'purple' | 'orange' | 'slate';
 
@@ -99,6 +100,7 @@ const WindowFrame: React.FC<WindowFrameProps> = ({
     initialX,
     initialY
 }) => {
+    const { t } = useI18n();
     // Detect mobile state for conditional logic
     const [isMobile, setIsMobile] = useState(false);
     // Captured viewport dimensions. Read from state during render (never live
@@ -324,7 +326,7 @@ const WindowFrame: React.FC<WindowFrameProps> = ({
                         <button
                             onClick={onMinimize}
                             className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-500 hover:text-amber-400 transition-colors"
-                            title="Minimize"
+                            title={t('Minimize')}
                         >
                             <i className="fa-solid fa-window-minimize text-xs"></i>
                         </button>
@@ -332,6 +334,7 @@ const WindowFrame: React.FC<WindowFrameProps> = ({
                     <button
                         onClick={onClose}
                         className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                        title={t('Close')}
                     >
                         <i className="fa-solid fa-xmark text-lg"></i>
                     </button>

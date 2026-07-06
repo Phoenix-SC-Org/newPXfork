@@ -2,6 +2,7 @@ import React from 'react';
 import { Announcement, AnnouncementType } from '../../types';
 import { ACCENTS, AccentKey } from '../shared/ui/accents';
 import { timeAgoShort } from '../views/intel/intelStyles';
+import { useI18n } from '../../i18n/I18nContext';
 
 const typeAccent = (type: AnnouncementType): AccentKey => {
     switch (type) {
@@ -30,17 +31,18 @@ const formatRemaining = (ms: number): string => {
     return `${days}d`;
 };
 
-const formatExpiry = (iso: string | undefined): { label: string; isSoon: boolean } | null => {
+const formatExpiry = (iso: string | undefined): { remaining: string | null; isSoon: boolean } | null => {
     if (!iso) return null;
-    const t = Date.parse(iso);
-    if (!Number.isFinite(t)) return null;
-    const remainingMs = t - Date.now();
-    if (remainingMs <= 0) return { label: 'EXPIRED', isSoon: true };
+    const ts = Date.parse(iso);
+    if (!Number.isFinite(ts)) return null;
+    const remainingMs = ts - Date.now();
+    if (remainingMs <= 0) return { remaining: null, isSoon: true };
     const hours = remainingMs / 3_600_000;
-    return { label: `EXPIRES IN ${formatRemaining(remainingMs)}`.toUpperCase(), isSoon: hours < 24 };
+    return { remaining: formatRemaining(remainingMs), isSoon: hours < 24 };
 };
 
 const Notice: React.FC<{ announcement: Announcement }> = ({ announcement }) => {
+    const { t } = useI18n();
     const accentKey = typeAccent(announcement.type);
     const a = ACCENTS[accentKey];
     const icon = typeIcon(announcement.type);
@@ -84,7 +86,7 @@ const Notice: React.FC<{ announcement: Announcement }> = ({ announcement }) => {
                 <span
                     className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest shrink-0 ${a.bg} ${a.border} ${a.text}`}
                 >
-                    {announcement.type}
+                    {t(announcement.type, { context: 'announcement' })}
                 </span>
             </div>
 
@@ -109,7 +111,7 @@ const Notice: React.FC<{ announcement: Announcement }> = ({ announcement }) => {
                         }`}
                     >
                         <i className="fa-regular fa-hourglass-half" aria-hidden />
-                        {expiry.label}
+                        {expiry.remaining === null ? t('EXPIRED') : t('EXPIRES IN {time}', { time: expiry.remaining })}
                     </span>
                 )}
             </div>

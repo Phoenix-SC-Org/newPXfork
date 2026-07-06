@@ -5,6 +5,7 @@ import { useIntel } from '../../contexts/IntelContext';
 import { useActionRequired, ActionItem, ActionItemAccent } from '../../hooks/useActionRequired';
 import { ACCENTS } from '../shared/ui/accents';
 import { useNavigation } from '../../contexts/NavigationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 const SAFE_ACCENT: Record<ActionItemAccent, keyof typeof ACCENTS> = {
     amber: 'amber',
@@ -22,6 +23,7 @@ export default function HeaderNotificationsBell() {
     const { activeBulletins } = useIntel();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const { t } = useI18n();
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -72,7 +74,7 @@ export default function HeaderNotificationsBell() {
             <button
                 onClick={() => setOpen((v) => !v)}
                 className={`relative flex items-center gap-3 px-5 h-full border-l border-white/5 transition-all duration-200 ${accentCls}`}
-                aria-label="Notifications"
+                aria-label={t('Notifications')}
             >
                 <div className="relative">
                     <i className={`fa-solid fa-bell text-lg ${criticalCount > 0 ? 'animate-pulse' : ''}`} />
@@ -82,17 +84,17 @@ export default function HeaderNotificationsBell() {
                         </span>
                     )}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wide hidden md:block">Alerts</span>
+                <span className="text-xs font-bold uppercase tracking-wide hidden md:block">{t('Alerts')}</span>
             </button>
 
             {open && (
                 <div className="absolute top-full right-0 mt-1 w-80 max-w-[calc(100vw-1rem)] bg-slate-900 border border-white/10 rounded-xl shadow-2xl shadow-black/60 z-50 overflow-hidden animate-fade-in">
                     <div className="px-4 py-3 border-b border-white/5 bg-slate-950/50 flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Attention Required</p>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Attention Required')}</p>
                             <p className="text-sm font-bold text-white">
-                                {count === 0 ? 'All clear' : `${count} ${count === 1 ? 'item' : 'items'}`}
-                                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {criticalCount} critical</span>}
+                                {count === 0 ? t('All clear') : (count === 1 ? t('{count} item', { count }) : t('{count} items', { count }))}
+                                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
                             </p>
                         </div>
                         {criticalCount > 0 && (
@@ -102,7 +104,7 @@ export default function HeaderNotificationsBell() {
                     {count === 0 ? (
                         <div className="px-4 py-8 text-center">
                             <i className="fa-solid fa-check-circle text-2xl text-slate-600 mb-2" />
-                            <p className="text-xs text-slate-500">Nothing requires your attention.</p>
+                            <p className="text-xs text-slate-500">{t('Nothing requires your attention.')}</p>
                         </div>
                     ) : (
                         <ul className="max-h-96 overflow-y-auto divide-y divide-white/5">

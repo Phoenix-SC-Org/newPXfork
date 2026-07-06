@@ -64,6 +64,14 @@ function suspicionReason(key) {
     return null;
 }
 
+// Keys resolved through DYNAMIC t() calls (e.g. t(announcement.type) rendering
+// an enum value). The static scan cannot see these — list them here so they
+// don't show up as orphans. Keep this list short and documented.
+const DYNAMIC_KEYS = new Set([
+    // components/ui/Notice.tsx: t(announcement.type, { context: 'announcement' })
+    'Information', 'Warning', 'Danger',
+]);
+
 const usedKeys = new Map(); // key -> first "file:line"
 const errors = [];
 
@@ -96,7 +104,7 @@ try {
 }
 
 const deKeys = new Set(Object.keys(de));
-const orphans = [...deKeys].filter((k) => !usedKeys.has(k));
+const orphans = [...deKeys].filter((k) => !usedKeys.has(k) && !DYNAMIC_KEYS.has(k));
 const missing = [...usedKeys.keys()].filter((k) => !deKeys.has(k));
 
 console.log(`i18n-check: scanned ${files.length} files, found ${usedKeys.size} t() keys, ${deKeys.size} de entries.`);

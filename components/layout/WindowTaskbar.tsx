@@ -3,6 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 
 import { useModalRegistry } from '../../contexts/ModalRegistryContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 const colorMap: Record<string, { bg: string; border: string; text: string; hoverBg: string }> = {
     sky: { bg: 'bg-sky-950/60', border: 'border-sky-500/30', text: 'text-sky-400', hoverBg: 'hover:bg-sky-900/60' },
@@ -15,6 +16,7 @@ const colorMap: Record<string, { bg: string; border: string; text: string; hover
 
 const WindowTaskbar: React.FC = () => {
     const { minimizedWindows, restoreWindow, closeMinimizedWindow } = useModalRegistry();
+    const { t } = useI18n();
 
     if (minimizedWindows.length === 0) return null;
 
@@ -42,7 +44,7 @@ const WindowTaskbar: React.FC = () => {
                                     <button
                                         onClick={() => restoreWindow(win.id)}
                                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${colors.bg} ${colors.border} ${colors.hoverBg}`}
-                                        title={`Restore: ${win.title}`}
+                                        title={t('Restore: {title}', { title: win.title })}
                                     >
                                         <i className={`${win.icon} text-xs ${colors.text}`}></i>
                                         <span className="text-[10px] font-bold text-slate-300 max-w-[120px] truncate">
@@ -52,7 +54,7 @@ const WindowTaskbar: React.FC = () => {
                                     <button
                                         onClick={() => closeMinimizedWindow(win.id)}
                                         className="w-5 h-5 flex items-center justify-center rounded-full text-slate-600 hover:text-red-400 hover:bg-red-950/40 transition-all opacity-0 group-hover:opacity-100 -ml-1"
-                                        title="Close"
+                                        title={t('Close')}
                                     >
                                         <i className="fa-solid fa-xmark text-[8px]"></i>
                                     </button>
