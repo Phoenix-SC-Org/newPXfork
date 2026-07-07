@@ -66,6 +66,11 @@ async function uexFetch<T = unknown>(path: string): Promise<T> {
         headers: {
             'Authorization': `Bearer ${key}`,
             'Accept': 'application/json',
+            // Cloudflare in front of the UEX API challenges requests without a
+            // meaningful User-Agent (Node's fetch sends a generic undici UA),
+            // returning a 403 "Just a moment…" HTML page instead of JSON. A
+            // descriptive UA identifies us as a legitimate API client.
+            'User-Agent': 'OpenMyRSIOrg/15.2 (self-hosted org tool; +https://myrsi.org)',
         },
     });
     if (!res.ok) {
