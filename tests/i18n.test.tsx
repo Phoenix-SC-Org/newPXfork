@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { translate, translateEnglish, Dictionary } from '../i18n/index';
 import { de } from '../i18n/de';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
@@ -97,13 +97,14 @@ describe('I18nProvider', () => {
         expect(document.documentElement.lang).toBe('en');
     });
 
-    it('switches to German, translates, sets <html lang> and persists to localStorage', () => {
+    it('switches to German, translates, sets <html lang> and persists to localStorage', async () => {
         render(<I18nProvider><Probe /></I18nProvider>);
         fireEvent.click(screen.getByText('to-de'));
         expect(screen.getByTestId('lang').textContent).toBe('de');
-        expect(screen.getByTestId('radio').textContent).toBe('Funk');
         expect(document.documentElement.lang).toBe('de');
         expect(localStorage.getItem('ui.language')).toBe('"de"');
+        // The dictionary is lazy-loaded; until it arrives t() falls back to English.
+        await waitFor(() => expect(screen.getByTestId('radio').textContent).toBe('Funk'));
     });
 
     it('derives the Intl locale from the language', () => {
@@ -113,11 +114,12 @@ describe('I18nProvider', () => {
         expect(screen.getByTestId('locale').textContent).toBe('de-DE');
     });
 
-    it('restores the persisted language on mount', () => {
+    it('restores the persisted language on mount and loads the dictionary', async () => {
         localStorage.setItem('ui.language', '"de"');
         render(<I18nProvider><Probe /></I18nProvider>);
         expect(screen.getByTestId('lang').textContent).toBe('de');
         expect(document.documentElement.lang).toBe('de');
+        await waitFor(() => expect(screen.getByTestId('radio').textContent).toBe('Funk'));
     });
 
     it('treats a corrupted stored value as English', () => {

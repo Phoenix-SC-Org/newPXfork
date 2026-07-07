@@ -1,6 +1,5 @@
-import React, { createContext, use, useEffect, useMemo, useCallback } from 'react';
-import { Language, TranslateParams, translate, translateEnglish } from './index';
-import { de } from './de';
+import React, { createContext, use, useEffect, useMemo, useCallback, useState } from 'react';
+import { Language, TranslateParams, Dictionary, translate, translateEnglish } from './index';
 import { usePersistentState } from '../hooks/usePersistentState';
 
 interface I18nContextValue {
@@ -22,6 +21,47 @@ function detectDefaultLanguage(): Language {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Lazy German dictionary. de.ts is ~120 KB gzip / 5,600 entries — statically
+// importing it put it on the critical load path for EVERY user (also English
+// ones). It is now a separate async chunk, fetched only when German is active.
+// Until it arrives, t() falls back to English (the keys ARE the English text),
+// which is the same guarantee the dictionary itself provides for missing keys.
+// ---------------------------------------------------------------------------
+
+let deCache: Dictionary | null = null;
+let dePromise: Promise<Dictionary> | null = null;
+
+function loadGermanDictionary(): Promise<Dictionary> {
+    if (!dePromise) {
+        dePromise = import('./de').then((mod) => {
+            deCache = mod.de;
+            return mod.de;
+        });
+    }
+    return dePromise;
+}
+
+function storedLanguage(): Language | null {
+    try {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('ui.language') : null;
+        const value = raw ? JSON.parse(raw) : null;
+        return value === 'de' || value === 'en' ? value : null;
+    } catch {
+        return null;
+    }
+}
+
+// Pre-warm at module-import time (before React renders): if the session will
+// start in German, kick off the dictionary fetch now so it downloads in
+// parallel with app bootstrap instead of after the first render. Also stamp
+// <html lang> pre-mount so the first paint carries the right language.
+if (typeof document !== 'undefined') {
+    const initial = storedLanguage() ?? detectDefaultLanguage();
+    document.documentElement.lang = initial;
+    if (initial === 'de') void loadGermanDictionary();
+}
+
 // English defaults so components render sensibly even without a provider
 // (e.g. isolated component tests).
 const I18nContext = createContext<I18nContextValue>({
@@ -32,21 +72,34 @@ const I18nContext = createContext<I18nContextValue>({
 });
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [storedLanguage, setStoredLanguage] = usePersistentState<Language>('ui.language', detectDefaultLanguage());
+    const [storedLang, setStoredLanguage] = usePersistentState<Language>('ui.language', detectDefaultLanguage());
     // Guard against a corrupted/legacy stored value — anything unknown is 'en'.
-    const language: Language = storedLanguage === 'de' ? 'de' : 'en';
+    const language: Language = storedLang === 'de' ? 'de' : 'en';
+
+    // The German dictionary, once loaded. Seeded from the module cache so a
+    // pre-warmed (or previously loaded) dictionary is available on first render.
+    const [deDict, setDeDict] = useState<Dictionary | null>(deCache);
 
     useEffect(() => {
         document.documentElement.lang = language;
     }, [language]);
+
+    useEffect(() => {
+        if (language !== 'de' || deDict) return;
+        let cancelled = false;
+        void loadGermanDictionary().then((dict) => {
+            if (!cancelled) setDeDict(dict);
+        });
+        return () => { cancelled = true; };
+    }, [language, deDict]);
 
     const setLanguage = useCallback((lang: Language) => {
         setStoredLanguage(lang === 'de' ? 'de' : 'en');
     }, [setStoredLanguage]);
 
     const t = useCallback((key: string, params?: TranslateParams) => (
-        language === 'de' ? translate(de, key, params) : translateEnglish(key, params)
-    ), [language]);
+        language === 'de' && deDict ? translate(deDict, key, params) : translateEnglish(key, params)
+    ), [language, deDict]);
 
     const value = useMemo(
         () => ({ language, locale: LOCALE_BY_LANGUAGE[language], setLanguage, t }),
