@@ -30,6 +30,7 @@ import { marketplaceActions } from './actions/marketplace.js';
 import { catalogActions } from './actions/catalog.js';
 import { allianceActions } from './actions/alliances.js';
 import { operationsFederationActions } from './actions/operations-federation.js';
+import { starcommsActions } from './actions/starcomms.js';
 
 type ActionHandler = (payload: any, token?: string) => Promise<unknown>;
 
@@ -700,6 +701,10 @@ export const fullPermissionMap: Record<string, string> = {
     'marketplace:admin:seed_categories': 'marketplace:admin',
     'marketplace:admin:list_reports': 'marketplace:admin',
     'marketplace:admin:review_report': 'marketplace:admin',
+
+    // StarComms integration (optional, read-only V1) — admin console only.
+    'admin:starcomms_status': 'admin:access',
+    'admin:starcomms_test': 'admin:access',
 };
 
 export const actions: Record<string, ActionHandler> = {
@@ -721,6 +726,7 @@ export const actions: Record<string, ActionHandler> = {
     ...catalogActions,
     ...allianceActions,
     ...operationsFederationActions,
+    ...starcommsActions,
 };
 
 // Validate permission-map coverage against the actions registry.

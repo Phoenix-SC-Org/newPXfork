@@ -5728,4 +5728,28 @@ export const de: Record<string, string | Record<string, string>> = {
     'Classic (Blue)': 'Classic (Blau)',
     'Black': 'Schwarz',
 
+    // StarComms integration (admin tab)
+    "StarComms": "StarComms",
+    "External voice comms integration (read-only status).": "Externe Sprachkommunikations-Integration (nur Statusanzeige).",
+    "Test Connection": "Verbindung testen",
+    "Testing…": "Test läuft…",
+    "Enabled": "Aktiviert",
+    "Configured": "Konfiguriert",
+    "Base URL": "Basis-URL",
+    "Timeout": "Timeout",
+    "Integration disabled. Set STARCOMMS_ENABLED=true and restart the app to enable.": "Integration deaktiviert. Setze STARCOMMS_ENABLED=true und starte die App neu, um sie zu aktivieren.",
+    "Not fully configured. Set STARCOMMS_BASE_URL and STARCOMMS_OWNER_API_KEY, then restart.": "Nicht vollständig konfiguriert. Setze STARCOMMS_BASE_URL und STARCOMMS_OWNER_API_KEY und starte dann neu.",
+    "Connection OK": "Verbindung OK",
+    "Connection failed": "Verbindung fehlgeschlagen",
+    "Guild ID": "Guild-ID",
+    "Guild Name": "Guild-Name",
+    "Connected Operators": "Verbundene Operatoren",
+    "Shard URL": "Shard-URL",
+    "Shard Version": "Shard-Version",
+    "Operation Open": "Einsatz offen",
+    "Nets": "Netze",
+    "No nets reported.": "Keine Netze gemeldet.",
+    "Feature Flags": "Feature-Flags",
+    "No feature flags reported.": "Keine Feature-Flags gemeldet.",
+
 };

@@ -48,8 +48,51 @@ Copy `.env.example` to `.env` and fill it in (or set them in your host's environ
 | `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` | Optional — bot features |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web push |
 | `GEMINI_API_KEY`, `LIVEKIT_*`, `UEX_API_KEY` | Optional |
+| `STARCOMMS_*` | Optional — external voice-comms integration (see below) |
 
 The server fails fast on boot if `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing in production.
+
+### StarComms integration (optional)
+
+A read-only integration that reports the status of an external StarComms shard
+in **Admin → Integrations → StarComms**. It is fully optional and inert unless
+enabled — the rest of the app is unaffected when it is off.
+
+| Variable | Notes |
+| :--- | :--- |
+| `STARCOMMS_ENABLED` | `true` to enable. Anything else (or unset) = off |
+| `STARCOMMS_BASE_URL` | Shard base URL, e.g. `https://comms.your-org.space` (no trailing slash needed). The client calls `GET {BASE_URL}/api/v1/status` |
+| `STARCOMMS_OWNER_API_KEY` | **Owner-scoped secret.** Sent only as `Authorization: Bearer …` server-side — never exposed to the browser. Rotate if leaked |
+| `STARCOMMS_TIMEOUT_MS` | Request timeout in ms (default `5000`) |
+
+> **Security:** `STARCOMMS_OWNER_API_KEY` grants owner-level access to your
+> StarComms shard. Keep it server-only (Coolify env), never commit it, and
+> rotate it if it is ever exposed. The admin panel and all API responses are
+> secret-free — only a `configured: true/false` flag and the shard's own status
+> reach the client.
+
+Set the vars in Coolify's environment UI (not as build variables) and restart
+the container — env is read at startup. Then open **Admin → Integrations →
+StarComms** and use **Test Connection**.
+
+Verify the shard directly from the server/container:
+
+```bash
+# curl
+curl -s -H "Authorization: Bearer $STARCOMMS_OWNER_API_KEY" \
+     -H "Accept: application/json" \
+     "$STARCOMMS_BASE_URL/api/v1/status"
+```
+
+```powershell
+# PowerShell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:STARCOMMS_OWNER_API_KEY"; Accept = "application/json" } `
+  -Uri "$env:STARCOMMS_BASE_URL/api/v1/status"
+```
+
+A `200` with a JSON status body means the shard and key are good. A `401`/`403`
+means the key is wrong; an HTML `Just a moment…` page means a Cloudflare/WAF in
+front of the shard is challenging the request.
 
 ---
 

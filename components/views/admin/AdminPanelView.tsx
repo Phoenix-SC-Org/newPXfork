@@ -34,6 +34,7 @@ const DiscordSettingsTab = React.lazy(() => import('./DiscordSettingsTab'));
 const RadioSettingsTab = React.lazy(() => import('./RadioSettingsTab'));
 const AIConfigTab = React.lazy(() => import('./AIConfigTab'));
 const IntelligenceManagementTab = React.lazy(() => import('./IntelligenceManagementTab'));
+const StarCommsTab = React.lazy(() => import('./StarCommsTab'));
 const AllianceManagementTab = React.lazy(() => import('./AllianceManagementTab'));
 const OrganizationIdentityTab = React.lazy(() => import('./OrganizationIdentityTab'));
 const OrgPublicPageTab = React.lazy(() => import('./OrgPublicPageTab'));
@@ -100,6 +101,7 @@ const tabGroups = {
         { id: 'radio', label: 'Radio', icon: 'fa-solid fa-walkie-talkie', permission: 'admin:config:branding' },
         { id: 'ai', label: 'AI', icon: 'fa-solid fa-microchip', permission: 'admin:config:ai' },
         { id: 'intel_mgmt', label: 'Intel Feeds', icon: 'fa-solid fa-filter', permission: 'intel:manage' },
+        { id: 'starcomms', label: 'StarComms', icon: 'fa-solid fa-satellite-dish', permission: 'admin:access' },
     ],
     "Appearance": [
         { id: 'identity', label: 'Organization Identity', icon: 'fa-solid fa-palette', permission: 'admin:config:branding' },
@@ -223,6 +225,7 @@ const AdminPanelView: React.FC = () => {
             case 'radio': return hasPermission('admin:config:branding') ? <RadioSettingsTab /> : null;
             case 'ai': return hasPermission('admin:config:ai') ? <AIConfigTab /> : null;
             case 'intel_mgmt': return hasPermission('intel:manage') ? <IntelligenceManagementTab /> : null;
+            case 'starcomms': return hasPermission('admin:access') ? <StarCommsTab /> : null;
             case 'alliances': return hasPermission('alliance:manage') ? <AllianceManagementTab /> : null;
             case 'marketplace_admin': return hasPermission('marketplace:admin') ? <MarketplaceAdminTab /> : null;
             case 'government': return hasPermission('gov:admin') ? <GovernmentSettingsTab /> : null;
