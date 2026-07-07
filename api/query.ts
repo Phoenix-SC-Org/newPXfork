@@ -155,13 +155,27 @@ export function stripSecrets(state: any): any {
         };
     }
 
-    // Radio config: strip LiveKit API key and secret, expose configured flag
+    // Radio config: strip LiveKit API key and secret, expose configured flag.
+    // Env vars take PER-KEY precedence over the admin-entered DB values — the
+    // same order lib/secrets.ts getOrgSecret uses when minting tokens. Without
+    // this, a LiveKit setup done only via environment variables reports
+    // configured=false and the client hides a radio that would actually work.
+    // Only the boolean leaves the server; the values themselves never do.
+    const envRadioConfigured = !!(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL);
     if (cleaned.radioConfig) {
         const { apiKey, apiSecret, url, ...safeRadioConfig } = cleaned.radioConfig;
         cleaned.radioConfig = {
             ...safeRadioConfig,
-            configured: !!(apiKey && apiSecret && url),
+            configured: !!(
+                (process.env.LIVEKIT_API_KEY || apiKey) &&
+                (process.env.LIVEKIT_API_SECRET || apiSecret) &&
+                (process.env.LIVEKIT_URL || url)
+            ),
         };
+    } else if (envRadioConfigured) {
+        // No radioConfig settings row at all (fresh install, env-only setup):
+        // still surface the flag so the client shows the radio UI.
+        cleaned.radioConfig = { configured: true };
     }
 
     // Remove raw geminiKey if present (from getAllSettings)

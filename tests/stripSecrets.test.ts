@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { stripSecrets } from '../api/query';
 
 // Guards the secret-stripping on the client-facing state payload — including the
@@ -95,6 +95,54 @@ describe('stripSecrets', () => {
         expect(out.webhook_endpoints).toEqual([{ id: 1 }, { id: 2 }]);
         expect(out.api_key_rotation).toEqual({ enabled: true });
         expect(out.token_count).toBe(5);
+    });
+
+    // Env precedence mirrors lib/secrets.ts getOrgSecret: env wins per key,
+    // the DB value is the fallback. Regression guard for "LiveKit configured
+    // only via env still shows 'radio unavailable'".
+    describe('radioConfig configured flag honours env vars', () => {
+        afterEach(() => { vi.unstubAllEnvs(); });
+
+        it('is true when LiveKit is configured ONLY via env (DB config empty)', () => {
+            vi.stubEnv('LIVEKIT_API_KEY', 'env-key');
+            vi.stubEnv('LIVEKIT_API_SECRET', 'env-secret');
+            vi.stubEnv('LIVEKIT_URL', 'wss://env');
+            const out = stripSecrets({ radioConfig: { apiKey: '', apiSecret: '', url: '' } });
+            expect(out.radioConfig.configured).toBe(true);
+            // Only the boolean leaves the server — never the values.
+            expect(out.radioConfig.apiKey).toBeUndefined();
+            expect(out.radioConfig.apiSecret).toBeUndefined();
+            expect(out.radioConfig.url).toBeUndefined();
+            expect(JSON.stringify(out)).not.toContain('env-key');
+            expect(JSON.stringify(out)).not.toContain('env-secret');
+        });
+
+        it('is true when env fills the gaps of a partial DB config (per-key precedence)', () => {
+            vi.stubEnv('LIVEKIT_API_KEY', 'env-key');
+            vi.stubEnv('LIVEKIT_API_SECRET', 'env-secret');
+            const out = stripSecrets({ radioConfig: { apiKey: '', apiSecret: '', url: 'wss://db' } });
+            expect(out.radioConfig.configured).toBe(true);
+        });
+
+        it('is false when neither env nor DB provide all three values', () => {
+            vi.stubEnv('LIVEKIT_API_KEY', 'env-key');
+            const out = stripSecrets({ radioConfig: { apiKey: '', apiSecret: '', url: '' } });
+            expect(out.radioConfig.configured).toBe(false);
+        });
+
+        it('synthesizes radioConfig when the settings row is missing but env is fully set', () => {
+            vi.stubEnv('LIVEKIT_API_KEY', 'env-key');
+            vi.stubEnv('LIVEKIT_API_SECRET', 'env-secret');
+            vi.stubEnv('LIVEKIT_URL', 'wss://env');
+            const out = stripSecrets({ foo: 1 });
+            expect(out.radioConfig).toEqual({ configured: true });
+            expect(out.foo).toBe(1);
+        });
+
+        it('does not synthesize radioConfig when env is absent and no row exists', () => {
+            const out = stripSecrets({ foo: 1 });
+            expect(out.radioConfig).toBeUndefined();
+        });
     });
 
     it('recursively drops secret-named scalar values at any depth, keeping safe siblings (G6)', () => {
