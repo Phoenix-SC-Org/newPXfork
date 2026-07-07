@@ -5752,4 +5752,12 @@ export const de: Record<string, string | Record<string, string>> = {
     "Feature Flags": "Feature-Flags",
     "No feature flags reported.": "Keine Feature-Flags gemeldet.",
 
+    // StarComms operational widget (V2)
+    "Not configured": "Nicht konfiguriert",
+    "StarComms is enabled but not fully configured.": "StarComms ist aktiviert, aber nicht vollständig konfiguriert.",
+    "Last good refresh: {time}": "Letzte erfolgreiche Aktualisierung: {time}",
+    "Last Refresh": "Letzte Aktualisierung",
+    "No status available.": "Kein Status verfügbar.",
+    "This status is also shown to Operations and Dispatch users via a read-only widget.": "Dieser Status wird Operations- und Dispatch-Nutzern zusätzlich über ein schreibgeschütztes Widget angezeigt.",
+
 };

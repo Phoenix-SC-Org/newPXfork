@@ -16,6 +16,7 @@ import OperationCard from './operations/OperationCard';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
 import { useI18n } from '../../../i18n/I18nContext';
+import StarCommsStatusWidget from '../../shared/StarCommsStatusWidget';
 import {
     operationTypeAccent,
     operationTypeIcon,
@@ -269,6 +270,8 @@ const OperationsCenterView: React.FC = () => {
                         className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-purple-500/50 focus:border-purple-500/40 transition-all"
                     />
                 </div>
+
+                <StarCommsStatusWidget />
 
                 {/* Allied joint operations mirrored from host instances. */}
                 {(acceptedMirrors.length > 0 || pendingMirrors.length > 0) && !searchTerm && (

@@ -16,6 +16,7 @@ import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
 import { useNow } from '../../../hooks/useNow';
 import { useI18n } from '../../../i18n/I18nContext';
+import StarCommsStatusWidget from '../../shared/StarCommsStatusWidget';
 
 interface ActiveRoom {
     roomName: string;
@@ -467,6 +468,7 @@ const DispatchCenterView: React.FC = () => {
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+                        <StarCommsStatusWidget />
                         {!radioConfig.configured && (
                             <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2.5">
                                 <i className="fa-solid fa-triangle-exclamation text-amber-500 text-[10px] mt-0.5"></i>

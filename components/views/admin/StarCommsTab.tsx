@@ -98,6 +98,7 @@ const StarCommsTab: React.FC = () => {
                         <i className="fa-solid fa-satellite-dish text-sky-400" /> {t('StarComms')}
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">{t('External voice comms integration (read-only status).')}</p>
+                    <p className="text-xs text-slate-500 mt-1"><i className="fa-solid fa-circle-info mr-1.5" />{t('This status is also shown to Operations and Dispatch users via a read-only widget.')}</p>
                 </div>
                 <button
                     onClick={runTest}

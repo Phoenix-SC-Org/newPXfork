@@ -702,9 +702,13 @@ export const fullPermissionMap: Record<string, string> = {
     'marketplace:admin:list_reports': 'marketplace:admin',
     'marketplace:admin:review_report': 'marketplace:admin',
 
-    // StarComms integration (optional, read-only V1) — admin console only.
+    // StarComms integration (optional, read-only) — admin console panel (V1).
     'admin:starcomms_status': 'admin:access',
     'admin:starcomms_test': 'admin:access',
+    // Operational widget read (V2). Base perm operations:view; the dispatcher
+    // additionally admits request:dispatch / admin:access via the OR check below
+    // (isStarCommsReader), so Dispatch and Admin users also get live data.
+    'operation:starcomms_status': 'operations:view',
 };
 
 export const actions: Record<string, ActionHandler> = {
@@ -1052,7 +1056,14 @@ export default async function handler(req: Request, res: Response) {
                     isRequestLead = req?.lead_responder_id === user.id;
                 }
 
-                if (!hasPerm && !hasClearanceView && !isOpOwner && !isUnitLeader && !isBulletinAuthor && !isRequestLead) {
+                // StarComms operational widget (read-only): visible to anyone who
+                // can see Dispatch or is an Admin, in addition to the base
+                // operations:view perm — so dispatchers without operations:view
+                // still get live status. No secrets, no writes.
+                const isStarCommsReader = action === 'operation:starcomms_status'
+                    && (user?.permissions?.includes('request:dispatch') || user?.permissions?.includes('admin:access'));
+
+                if (!hasPerm && !hasClearanceView && !isOpOwner && !isUnitLeader && !isBulletinAuthor && !isRequestLead && !isStarCommsReader) {
                     log.warn('permission denied', { userId: user?.id, action, requiredPerm });
                     return res.status(403).json({ message: 'Insufficient permissions' });
                 }
