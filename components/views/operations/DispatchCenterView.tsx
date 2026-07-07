@@ -190,7 +190,11 @@ const DispatchCenterView: React.FC = () => {
     const pollKey = radioConfig.configured ? fetchRadioStatusCore : null;
     const [prevPollKey, setPrevPollKey] = useState<typeof pollKey>(null);
     if (pollKey !== prevPollKey) {
-        setPrevPollKey(pollKey);
+        // pollKey is a FUNCTION — it must be wrapped, or setState treats it as
+        // an updater, calls it, and stores the returned Promise. That made
+        // pollKey !== prevPollKey true forever and looped render-phase updates
+        // into React error #301 the moment radioConfig.configured was true.
+        setPrevPollKey(() => pollKey);
         if (pollKey) setIsRefreshingComms(true);
     }
 
