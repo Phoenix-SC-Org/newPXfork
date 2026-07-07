@@ -1,0 +1,11 @@
+/* ==========================================================================
+   Theme: BLUE (Classic) — der unveränderte Upstream-Look.
+
+   Bewusst OHNE Overrides: Classic ist die Abwesenheit von Theme-Variablen,
+   d. h. die Tailwind-Default-Skalen (sky/slate) aus dem Upstream-Code greifen
+   direkt. Das garantiert, dass Classic nach jedem Upstream-Merge pixelgenau
+   dem Original entspricht — und hält diese Datei konfliktfrei.
+
+   Sollte Classic später eigene Abweichungen brauchen, hier analog zu
+   red.css/black.css unter `:root[data-theme='blue']` ergänzen.
+   ========================================================================== */

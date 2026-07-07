@@ -8,6 +8,7 @@ import HeaderNotificationsBell from './HeaderNotificationsBell';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useNavigation } from '../../contexts/NavigationContext';
 import LanguageSwitcher from '../common/LanguageSwitcher';
+import ThemeSwitcher from '../common/ThemeSwitcher';
 import { useI18n } from '../../i18n/I18nContext';
 
 interface HeaderProps {
@@ -93,8 +94,10 @@ const Header: React.FC<HeaderProps> = ({ setActiveView, toggleMobileSidebar, isM
 
             <div className="flex items-stretch h-full">
 
-                {/* Language toggle — unobtrusive, always reachable post-login */}
-                <div className="hidden sm:flex items-center px-4 border-l border-white/5">
+                {/* Theme + language toggles — unobtrusive, always reachable post-login */}
+                <div className="hidden sm:flex items-center gap-4 px-4 border-l border-white/5">
+                    <ThemeSwitcher />
+                    <span className="w-px h-4 bg-white/10" aria-hidden />
                     <LanguageSwitcher />
                 </div>
 

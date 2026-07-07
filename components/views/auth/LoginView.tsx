@@ -3,6 +3,7 @@ import { BrandingConfig, Announcement } from '../../../types';
 import Notice from '../../ui/Notice';
 import CallsignChip from '../../shared/ui/CallsignChip';
 import LanguageSwitcher from '../../common/LanguageSwitcher';
+import ThemeSwitcher from '../../common/ThemeSwitcher';
 import { useI18n } from '../../../i18n/I18nContext';
 
 interface LoginViewProps {
@@ -128,6 +129,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
                     {t('System Online')}
                 </span>
                 <span className="flex items-center gap-4">
+                    <ThemeSwitcher />
                     <LanguageSwitcher />
                     <span className="text-slate-400">UTC {formatUTC(now)}</span>
                 </span>

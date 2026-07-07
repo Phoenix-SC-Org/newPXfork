@@ -5721,4 +5721,10 @@ export const de: Record<string, string | Record<string, string>> = {
     'in {hours}h': 'in {hours} h',
     'in {days}d': 'in {days} T.',
 
+    // ThemeSwitcher
+    'Switch theme': 'Theme wechseln',
+    'Red': 'Rot',
+    'Classic (Blue)': 'Classic (Blau)',
+    'Black': 'Schwarz',
+
 };

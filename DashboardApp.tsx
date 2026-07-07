@@ -84,6 +84,7 @@ import NotificationListener from './components/utility/NotificationListener';
 import { initializeSupabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/utility/ErrorBoundary';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
+import { ThemeProvider } from './theme/ThemeContext';
 
 // Retry wrapper for lazy view imports — handles transient preload failures
 // (e.g. Safari module preload quirks) and stale-chunk errors after deploys.
@@ -814,6 +815,7 @@ const RequestDetailViewWrapper = () => {
 
 const DashboardApp: React.FC = () => (
     <I18nProvider>
+    <ThemeProvider>
     <UIProvider>
         <DataCoreProvider>
             <MembersProvider>
@@ -847,6 +849,7 @@ const DashboardApp: React.FC = () => (
             </MembersProvider>
         </DataCoreProvider>
     </UIProvider>
+    </ThemeProvider>
     </I18nProvider>
 );
 

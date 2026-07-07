@@ -1,0 +1,71 @@
+/* ==========================================================================
+   Theme: RED (Standard-Auswahl) — taktisches, dunkles Rot/Schwarz.
+
+   Architektur: Zwei semantische Token-Rampen (Akzent + Fläche) werden auf die
+   Tailwind-v4-Farbvariablen der im Code durchgängig verwendeten Skalen
+   gemappt: `sky-*` (Akzent) und `slate-*` (Flächen/Neutral). Tailwind v4
+   kompiliert jede Utility zu `var(--color-…)` — dieses Mapping retintet
+   dadurch die gesamte App zur Laufzeit, ohne Komponenten-Änderungen.
+
+   Status-Farben (red = Gefahr, amber = Warnung, emerald = OK) bleiben
+   bewusst unangetastet. Der Akzent liegt deshalb im Crimson-Bereich
+   (~350°, kälter/dunkler) statt beim Signalrot (~0°), damit Alarme
+   weiterhin klar erkennbar sind.
+
+   Farbanpassungen: NUR die semantischen --theme-*-Werte ändern.
+   ========================================================================== */
+
+:root[data-theme='red'] {
+    /* --- Semantische Tokens: Akzent (Crimson-Rampe) --- */
+    --theme-accent-50:  #fff1f2;
+    --theme-accent-100: #ffe1e4;
+    --theme-accent-200: #ffc8cd;
+    --theme-accent-300: #ff9aa5;
+    --theme-accent-400: #fa5f72;
+    --theme-accent-500: #ef2a4d;
+    --theme-accent-600: #d31538;
+    --theme-accent-700: #b20e2e;
+    --theme-accent-800: #950f2b;
+    --theme-accent-900: #7f1129;
+    --theme-accent-950: #470713;
+
+    /* --- Semantische Tokens: Fläche/Neutral (warmes Rot-Schwarz) ---
+       300–500 sind Textabstufungen: entsättigt warm-grau mit leichtem
+       Rotstich, damit Fließtext lesbar bleibt. */
+    --theme-surface-50:  #faf6f6;
+    --theme-surface-100: #f2eaeb;
+    --theme-surface-200: #e2d3d5;
+    --theme-surface-300: #c4adb0;
+    --theme-surface-400: #9d8286;
+    --theme-surface-500: #74595d;
+    --theme-surface-600: #55393e;
+    --theme-surface-700: #3d2429;
+    --theme-surface-800: #2a151a;
+    --theme-surface-900: #1c0c10;
+    --theme-surface-950: #100508;
+
+    /* --- Tailwind-Skalen-Mapping (nicht direkt editieren) --- */
+    --color-sky-50:  var(--theme-accent-50);
+    --color-sky-100: var(--theme-accent-100);
+    --color-sky-200: var(--theme-accent-200);
+    --color-sky-300: var(--theme-accent-300);
+    --color-sky-400: var(--theme-accent-400);
+    --color-sky-500: var(--theme-accent-500);
+    --color-sky-600: var(--theme-accent-600);
+    --color-sky-700: var(--theme-accent-700);
+    --color-sky-800: var(--theme-accent-800);
+    --color-sky-900: var(--theme-accent-900);
+    --color-sky-950: var(--theme-accent-950);
+
+    --color-slate-50:  var(--theme-surface-50);
+    --color-slate-100: var(--theme-surface-100);
+    --color-slate-200: var(--theme-surface-200);
+    --color-slate-300: var(--theme-surface-300);
+    --color-slate-400: var(--theme-surface-400);
+    --color-slate-500: var(--theme-surface-500);
+    --color-slate-600: var(--theme-surface-600);
+    --color-slate-700: var(--theme-surface-700);
+    --color-slate-800: var(--theme-surface-800);
+    --color-slate-900: var(--theme-surface-900);
+    --color-slate-950: var(--theme-surface-950);
+}

@@ -223,7 +223,7 @@ const ClientMissionTracker: React.FC<{ request: HydratedServiceRequest }> = ({ r
 
                             return (
                                 <div key={step.label} className="flex flex-col items-center gap-2">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isActive ? 'bg-sky-900 border-sky-500 text-sky-400' : 'bg-slate-900 border-slate-700 text-slate-600'} ${isCurrent ? 'animate-pulse shadow-[0_0_15px_rgba(14,165,233,0.5)]' : ''}`}>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isActive ? 'bg-sky-900 border-sky-500 text-sky-400' : 'bg-slate-900 border-slate-700 text-slate-600'} ${isCurrent ? 'animate-pulse shadow-[0_0_15px_color-mix(in_oklab,var(--color-sky-500)_50%,transparent)]' : ''}`}>
                                         <i className={`fa-solid ${step.icon}`}></i>
                                     </div>
                                     <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white' : 'text-slate-600'}`}>{t(step.label, { context: 'mission-step' })}</span>

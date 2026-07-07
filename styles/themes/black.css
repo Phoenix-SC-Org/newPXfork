@@ -1,0 +1,57 @@
+/* ==========================================================================
+   Theme: BLACK — neutral dunkel (reine Grautöne, kein Blaustich).
+   Architektur siehe red.css. Farbanpassungen: nur --theme-*-Werte ändern.
+   ========================================================================== */
+
+:root[data-theme='black'] {
+    /* --- Semantische Tokens: Akzent (helles Neutral) --- */
+    --theme-accent-50:  #fafafa;
+    --theme-accent-100: #f4f4f5;
+    --theme-accent-200: #e4e4e7;
+    --theme-accent-300: #d4d4d8;
+    --theme-accent-400: #c0c0c6;
+    --theme-accent-500: #a6a6ad;
+    --theme-accent-600: #82828a;
+    --theme-accent-700: #5f5f66;
+    --theme-accent-800: #46464c;
+    --theme-accent-900: #303034;
+    --theme-accent-950: #1b1b1e;
+
+    /* --- Semantische Tokens: Fläche/Neutral (echtes Grau) --- */
+    --theme-surface-50:  #fafafa;
+    --theme-surface-100: #f5f5f5;
+    --theme-surface-200: #e5e5e5;
+    --theme-surface-300: #d4d4d4;
+    --theme-surface-400: #a3a3a3;
+    --theme-surface-500: #737373;
+    --theme-surface-600: #525252;
+    --theme-surface-700: #404040;
+    --theme-surface-800: #262626;
+    --theme-surface-900: #171717;
+    --theme-surface-950: #0a0a0a;
+
+    /* --- Tailwind-Skalen-Mapping (nicht direkt editieren) --- */
+    --color-sky-50:  var(--theme-accent-50);
+    --color-sky-100: var(--theme-accent-100);
+    --color-sky-200: var(--theme-accent-200);
+    --color-sky-300: var(--theme-accent-300);
+    --color-sky-400: var(--theme-accent-400);
+    --color-sky-500: var(--theme-accent-500);
+    --color-sky-600: var(--theme-accent-600);
+    --color-sky-700: var(--theme-accent-700);
+    --color-sky-800: var(--theme-accent-800);
+    --color-sky-900: var(--theme-accent-900);
+    --color-sky-950: var(--theme-accent-950);
+
+    --color-slate-50:  var(--theme-surface-50);
+    --color-slate-100: var(--theme-surface-100);
+    --color-slate-200: var(--theme-surface-200);
+    --color-slate-300: var(--theme-surface-300);
+    --color-slate-400: var(--theme-surface-400);
+    --color-slate-500: var(--theme-surface-500);
+    --color-slate-600: var(--theme-surface-600);
+    --color-slate-700: var(--theme-surface-700);
+    --color-slate-800: var(--theme-surface-800);
+    --color-slate-900: var(--theme-surface-900);
+    --color-slate-950: var(--theme-surface-950);
+}
