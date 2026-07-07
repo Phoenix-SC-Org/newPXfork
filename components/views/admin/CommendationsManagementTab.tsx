@@ -9,10 +9,12 @@ import { useTableControls } from '../../../hooks/useTableControls';
 import AwardIcon from '../../common/AwardIcon';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CommendationsManagementTab: React.FC = () => {
     const { commendations, allUsers, deleteCommendation } = useMembers();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
     const [editingCommend, setEditingCommend] = useState<Commendation | undefined>(undefined);
@@ -64,10 +66,10 @@ const CommendationsManagementTab: React.FC = () => {
 
     const handleDelete = async (commend: Commendation & { awardCount: number }) => {
         if (commend.awardCount > 0) {
-            await confirm({ title: 'Cannot Delete', message: `Cannot delete "${commend.name}" as it has been awarded ${commend.awardCount} time(s).`, confirmText: 'OK', variant: 'info' });
+            await confirm({ title: t('Cannot Delete'), message: t('Cannot delete "{name}" as it has been awarded {count} time(s).', { name: commend.name, count: commend.awardCount }), confirmText: t('OK'), variant: 'info' });
             return;
         }
-        if (await confirm({ title: 'Delete Commendation', message: `Are you sure you want to permanently delete the commendation "${commend.name}"? This action cannot be undone.`, confirmText: 'Delete', variant: 'danger' })) {
+        if (await confirm({ title: t('Delete Commendation'), message: t('Are you sure you want to permanently delete the commendation "{name}"? This action cannot be undone.', { name: commend.name }), confirmText: t('Delete'), variant: 'danger' })) {
             deleteCommendation(commend.id);
         }
     };
@@ -75,17 +77,17 @@ const CommendationsManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Commendations"
+                title={t("Commendations")}
                 icon="fa-solid fa-medal"
                 accent="amber"
-                subtitle="Manage medals and awards."
+                subtitle={t("Manage medals and awards.")}
                 actions={
                     <div className="flex gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search commendations..."
+                                placeholder={t("Search commendations...")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -96,7 +98,7 @@ const CommendationsManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Award
+                            {t('Create Award')}
                         </button>
                     </div>
                 }
@@ -104,10 +106,10 @@ const CommendationsManagementTab: React.FC = () => {
 
             <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                  <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
-                    <div className="flex-1 md:w-1/4 md:flex-none">Award Name</div>
-                    <div className="flex-1 hidden md:block">Description</div>
-                    <div className="w-32 text-center hidden md:block">Awarded</div>
-                    <div className="w-32 text-right">Actions</div>
+                    <div className="flex-1 md:w-1/4 md:flex-none">{t('Award Name')}</div>
+                    <div className="flex-1 hidden md:block">{t('Description')}</div>
+                    <div className="w-32 text-center hidden md:block">{t('Awarded')}</div>
+                    <div className="w-32 text-right">{t('Actions')}</div>
                 </div>
 
                 <div className="divide-y divide-slate-700/50">
@@ -120,7 +122,7 @@ const CommendationsManagementTab: React.FC = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="font-bold text-white text-sm truncate block">{commend.name}</span>
-                                        <span className="text-xs text-slate-500 md:hidden">{commend.awardCount} awarded</span>
+                                        <span className="text-xs text-slate-500 md:hidden">{t('{count} awarded', { count: commend.awardCount })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -133,16 +135,16 @@ const CommendationsManagementTab: React.FC = () => {
                                 </span>
                             </div>
                             <div className="w-32 text-right flex justify-end gap-2">
-                                <button onClick={() => openAwardModal(commend)} className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-green-900/20 rounded-sm transition-colors" title="Award to User">
+                                <button onClick={() => openAwardModal(commend)} className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-green-900/20 rounded-sm transition-colors" title={t("Award to User")}>
                                     <i className="fa-solid fa-user-plus"></i>
                                 </button>
-                                <button onClick={() => openModal(commend)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                <button onClick={() => openModal(commend)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t("Edit")}>
                                     <i className="fa-solid fa-pencil"></i>
                                 </button>
                                 <button 
                                     onClick={() => handleDelete(commend)} 
                                     className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors disabled:opacity-30" 
-                                    title="Delete"
+                                    title={t("Delete")}
                                     disabled={commend.awardCount > 0}
                                 >
                                     <i className="fa-solid fa-trash-can"></i>
@@ -152,7 +154,7 @@ const CommendationsManagementTab: React.FC = () => {
                     ))}
                     {sortedAndFilteredItems.length === 0 && (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No commendations found.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No commendations found.')}</p>
                         </div>
                     )}
                 </div>

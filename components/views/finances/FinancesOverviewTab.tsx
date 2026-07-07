@@ -12,19 +12,19 @@ interface Props {
 }
 
 export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, onOpenRequests }: Props) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const activeAccounts = accounts.filter((a) => a.isActive);
     const pendingTotal = overview.pendingDepositsCount + overview.pendingWithdrawalsCount;
     const netFormatted = overview.thirtyDayNet >= 0
-        ? `+${overview.thirtyDayNet.toLocaleString()}`
-        : overview.thirtyDayNet.toLocaleString();
+        ? `+${overview.thirtyDayNet.toLocaleString(locale)}`
+        : overview.thirtyDayNet.toLocaleString(locale);
 
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
                     label={t('Total Balance')}
-                    value={overview.totalBalance.toLocaleString()}
+                    value={overview.totalBalance.toLocaleString(locale)}
                     sub={activeAccounts.length === 1
                         ? t('{count} active account · aUEC', { count: activeAccounts.length })
                         : t('{count} active accounts · aUEC', { count: activeAccounts.length })}
@@ -35,7 +35,7 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
                 <MetricCard
                     label={t('Pending Deposits')}
                     value={overview.pendingDepositsCount}
-                    sub={t('{amount} aUEC awaiting confirmation', { amount: overview.pendingDepositsAmount.toLocaleString() })}
+                    sub={t('{amount} aUEC awaiting confirmation', { amount: overview.pendingDepositsAmount.toLocaleString(locale) })}
                     icon="fa-arrow-down-to-bracket"
                     accent="emerald"
                     onClick={pendingTotal > 0 ? onOpenRequests : undefined}
@@ -43,7 +43,7 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
                 <MetricCard
                     label={t('Pending Withdrawals')}
                     value={overview.pendingWithdrawalsCount}
-                    sub={t('{amount} aUEC requested', { amount: overview.pendingWithdrawalsAmount.toLocaleString() })}
+                    sub={t('{amount} aUEC requested', { amount: overview.pendingWithdrawalsAmount.toLocaleString(locale) })}
                     icon="fa-arrow-up-from-bracket"
                     accent="rose"
                     onClick={pendingTotal > 0 ? onOpenRequests : undefined}
@@ -79,7 +79,7 @@ export default function FinancesOverviewTab({ overview, accounts, onOpenLedger, 
                                 <i className="fa-solid fa-vault text-amber-300/70" />
                             </div>
                             <div className="text-2xl font-black font-mono text-white">
-                                {a.balanceCached.toLocaleString()} <span className="text-xs text-slate-500 font-normal">aUEC</span>
+                                {a.balanceCached.toLocaleString(locale)} <span className="text-xs text-slate-500 font-normal">aUEC</span>
                             </div>
                             {a.description && <div className="text-[11px] text-slate-500 mt-2 line-clamp-2">{a.description}</div>}
                         </div>

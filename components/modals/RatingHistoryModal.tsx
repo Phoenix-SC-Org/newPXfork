@@ -4,6 +4,7 @@ import { User, RatingHistoryEntry } from '../../types';
 import { useData } from '../../contexts/DataContext';
 import { useFormatDate } from '../../contexts/AuthContext';
 import WindowFrame from '../layout/WindowFrame';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface RatingHistoryModalProps {
     isOpen: boolean;
@@ -25,6 +26,7 @@ const StarRatingDisplay: React.FC<{ rating: number }> = ({ rating }) => (
 const RatingHistoryModal: React.FC<RatingHistoryModalProps> = ({ isOpen, onClose, user }) => {
     const { getRatingHistory } = useData();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const [history, setHistory] = useState<RatingHistoryEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -54,7 +56,7 @@ const RatingHistoryModal: React.FC<RatingHistoryModalProps> = ({ isOpen, onClose
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={`Client Rating History`}
+            title={t('Client Rating History')}
             subtitle={user.name}
             icon="fa-solid fa-star-half-stroke"
             color="amber"
@@ -66,25 +68,25 @@ const RatingHistoryModal: React.FC<RatingHistoryModalProps> = ({ isOpen, onClose
                         <i className="fa-solid fa-chart-line text-2xl text-amber-500"></i>
                     </div>
                     <div className="text-3xl font-black text-white">{history.length}</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-widest font-bold">Total Reviews</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-widest font-bold">{t('Total Reviews')}</div>
                 </div>
 
                 <div className="p-0 overflow-y-auto custom-scrollbar flex-1 max-h-[60vh]">
                     {isLoading ? (
                         <div className="text-center text-slate-400 p-12 flex flex-col items-center gap-3">
                             <i className="fa-solid fa-spinner animate-spin text-2xl text-amber-500"></i>
-                            <span className="text-xs uppercase tracking-widest">Retrieving Records...</span>
+                            <span className="text-xs uppercase tracking-widest">{t('Retrieving Records...')}</span>
                         </div>
                     ) : history.length === 0 ? (
-                        <div className="text-center text-slate-500 p-12 italic">No rated missions found for this member.</div>
+                        <div className="text-center text-slate-500 p-12 italic">{t('No rated missions found for this member.')}</div>
                     ) : (
                         <table className="w-full text-left border-collapse">
                             <thead className="sticky top-0 bg-slate-900 z-10 shadow-xs">
                                 <tr className="border-b border-slate-800">
-                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">Date</th>
-                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">Service Request</th>
-                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">Client</th>
-                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900 text-right">Rating</th>
+                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">{t('Date')}</th>
+                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">{t('Service Request')}</th>
+                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900">{t('Client')}</th>
+                                    <th className="p-4 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-slate-900 text-right">{t('Rating')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -122,7 +124,7 @@ const RatingHistoryModal: React.FC<RatingHistoryModalProps> = ({ isOpen, onClose
                     )}
                 </div>
                 <div className="flex justify-end p-4 bg-slate-900/80 border-t border-white/5 rounded-b-xl backdrop-blur-sm">
-                    <button type="button" onClick={onClose} className="px-6 py-2 text-xs font-bold uppercase text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-lg transition-colors border border-slate-700">Close Record</button>
+                    <button type="button" onClick={onClose} className="px-6 py-2 text-xs font-bold uppercase text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-lg transition-colors border border-slate-700">{t('Close Record')}</button>
                 </div>
             </div>
         </WindowFrame>

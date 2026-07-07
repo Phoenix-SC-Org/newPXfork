@@ -5,6 +5,7 @@ import { useHR } from '../contexts/HRContext';
 import { useIntel } from '../contexts/IntelContext';
 import { useGovernment } from '../contexts/GovernmentContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../i18n/I18nContext';
 import { ServiceRequestStatus } from '../types';
 
 const NEW_ORDER_WINDOW_MS = 48 * 60 * 60 * 1000;  // 48h
@@ -51,6 +52,7 @@ export function useActionRequired(): UseActionRequiredResult {
     const { activeBulletins } = useIntel();
     const { governmentElections, governmentsFeatureConfig } = useGovernment();
     const { currentUser, hasPermission } = useAuth();
+    const { t } = useI18n();
 
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const now = useNow();
@@ -92,8 +94,10 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'hr',
                     id: 'hr-unassigned',
-                    title: `${unassignedCount} unassigned ${unassignedCount === 1 ? 'application' : 'applications'}`,
-                    subtitle: 'Awaiting recruiter pickup',
+                    title: unassignedCount === 1
+                        ? t('{count} unassigned application', { count: unassignedCount })
+                        : t('{count} unassigned applications', { count: unassignedCount }),
+                    subtitle: t('Awaiting recruiter pickup'),
                     icon: 'fa-inbox',
                     accent: 'purple',
                     priority: 2,
@@ -111,8 +115,10 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'hr',
                     id: 'hr-assigned-to-me',
-                    title: `${assignedToMe} ${assignedToMe === 1 ? 'case' : 'cases'} assigned to you`,
-                    subtitle: 'Your active HR caseload',
+                    title: assignedToMe === 1
+                        ? t('{count} case assigned to you', { count: assignedToMe })
+                        : t('{count} cases assigned to you', { count: assignedToMe }),
+                    subtitle: t('Your active HR caseload'),
                     icon: 'fa-briefcase',
                     accent: 'purple',
                     priority: 2,
@@ -130,8 +136,10 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'hr',
                     id: 'hr-my-applications',
-                    title: `${myAppsCount} ${myAppsCount === 1 ? 'application' : 'applications'} in progress`,
-                    subtitle: 'Your applications under review',
+                    title: myAppsCount === 1
+                        ? t('{count} application in progress', { count: myAppsCount })
+                        : t('{count} applications in progress', { count: myAppsCount }),
+                    subtitle: t('Your applications under review'),
                     icon: 'fa-briefcase',
                     accent: 'purple',
                     priority: 3,
@@ -151,8 +159,8 @@ export function useActionRequired(): UseActionRequiredResult {
             out.push({
                 type: 'request',
                 id: `req-${r.id}`,
-                title: `${r.serviceType} · ${r.status}`,
-                subtitle: r.location || 'Unassigned location',
+                title: `${r.serviceType} · ${t(r.status)}`,
+                subtitle: r.location || t('Unassigned location'),
                 icon: 'fa-clipboard-list',
                 accent: r.urgency === 'Critical' ? 'rose' : 'sky',
                 priority: r.urgency === 'Critical' ? 1 : 2,
@@ -171,7 +179,7 @@ export function useActionRequired(): UseActionRequiredResult {
             out.push({
                 type: 'request',
                 id: `rate-${r.id}`,
-                title: 'Rate completed request',
+                title: t('Rate completed request'),
                 subtitle: `${r.serviceType} · ${r.location || ''}`,
                 icon: 'fa-star',
                 accent: 'amber',
@@ -192,8 +200,8 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'government',
                     id: `election-${e.id}`,
-                    title: 'Cast your vote',
-                    subtitle: e.title || e.position?.name || 'Open election',
+                    title: t('Cast your vote'),
+                    subtitle: e.title || e.position?.name || t('Open election'),
                     icon: 'fa-check-to-slot',
                     accent: 'indigo',
                     priority: 2,
@@ -217,8 +225,8 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'government',
                     id: `order-${o.id}`,
-                    title: 'New executive order',
-                    subtitle: o.title || 'Executive order issued',
+                    title: t('New executive order'),
+                    subtitle: o.title || t('Executive order issued'),
                     icon: 'fa-stamp',
                     accent: 'indigo',
                     priority: 3,
@@ -243,8 +251,8 @@ export function useActionRequired(): UseActionRequiredResult {
                 out.push({
                     type: 'intel',
                     id: `bulletin-${b.id}`,
-                    title: 'Critical intel bulletin',
-                    subtitle: b.title || 'New bulletin',
+                    title: t('Critical intel bulletin'),
+                    subtitle: b.title || t('New bulletin'),
                     icon: 'fa-satellite-dish',
                     accent: 'rose',
                     priority: 1,
@@ -265,7 +273,7 @@ export function useActionRequired(): UseActionRequiredResult {
         });
 
         return out;
-    }, [currentUser, hasPermission, hrApplicants, hydratedServiceRequests, governmentEnabled, canSeeGovernment, governmentElections, recentOrders, activeBulletins, now]);
+    }, [currentUser, hasPermission, hrApplicants, hydratedServiceRequests, governmentEnabled, canSeeGovernment, governmentElections, recentOrders, activeBulletins, now, t]);
 
     return {
         items,

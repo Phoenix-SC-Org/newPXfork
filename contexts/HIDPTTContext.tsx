@@ -1,6 +1,7 @@
 
 import React, { createContext, use, useState, useCallback, useEffect, useRef } from 'react';
 import { debugLog } from '../lib/debugLog';
+import { useI18n } from '../i18n/I18nContext';
 
 // ── Types ──
 
@@ -78,6 +79,7 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const hasGamepadAPI = typeof navigator !== 'undefined' && 'getGamepads' in navigator;
     const hasWebHID = typeof navigator !== 'undefined' && 'hid' in navigator;
     const isSupported = hasGamepadAPI || hasWebHID;
+    const { t } = useI18n();
 
     const [isPTTActive, setIsPTTActive] = useState(false);
     // PTT edge pub/sub: consumers register a handler that runs on each press/
@@ -292,13 +294,13 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsBinding(true);
         setBindingError(null);
         setBoundButtonLabel(null);
-        setBindingPrompt('Press any button on your controller...');
+        setBindingPrompt(t('Press any button on your controller...'));
 
         // Check if any gamepads are connected
         const gamepads = navigator.getGamepads();
         const hasConnected = Array.from(gamepads).some(g => g !== null);
         if (!hasConnected) {
-            setBindingError('No controller detected. Press a button on your controller to wake it up, then try again.');
+            setBindingError(t('No controller detected. Press a button on your controller to wake it up, then try again.'));
         }
 
         // Start binding poll
@@ -313,11 +315,11 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 gamepadBaselineRef.current = null;
                 setIsBinding(false);
                 setBindingPrompt(null);
-                setBindingError('Binding timed out. Make sure your controller is connected and try again.');
+                setBindingError(t('Binding timed out. Make sure your controller is connected and try again.'));
             }
             gamepadBindTimeoutRef.current = null;
         }, 20000);
-    }, [hasGamepadAPI, stopGamepadPoll, startGamepadBindingPoll, cleanupHIDDevice]);
+    }, [hasGamepadAPI, stopGamepadPoll, startGamepadBindingPoll, cleanupHIDDevice, t]);
 
     const openHIDDevice = useCallback(async (device: HIDDevice, binding: HIDBinding | null) => {
         if (!device.opened) {
@@ -354,14 +356,14 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             hidSnapshotRef.current = null;
             setIsBinding(true);
             setBoundButtonLabel(null);
-            setBindingPrompt('Press the button you want to use for PTT...');
+            setBindingPrompt(t('Press the button you want to use for PTT...'));
 
             await new Promise<void>((resolve) => {
                 hidBindResolveRef.current = resolve;
 
                 const warningTimer = setTimeout(() => {
                     if (bindingModeRef.current === 'hid') {
-                        setBindingError('No input received. Chrome blocks keyboards, mice, and game controllers from WebHID. For controllers, use "Bind Controller" instead.');
+                        setBindingError(t('No input received. Chrome blocks keyboards, mice, and game controllers from WebHID. For controllers, use "Bind Controller" instead.'));
                     }
                 }, 5000);
 
@@ -371,7 +373,7 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         hidSnapshotRef.current = null;
                         setIsBinding(false);
                         setBindingPrompt(null);
-                        setBindingError('Binding timed out. This device may be blocked by Chrome. For game controllers, use "Bind Controller" instead.');
+                        setBindingError(t('Binding timed out. This device may be blocked by Chrome. For game controllers, use "Bind Controller" instead.'));
                         resolve();
                     }
                 }, 20000);
@@ -386,12 +388,12 @@ export const HIDPTTProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch (e: any) {
             if (e.name !== 'NotAllowedError') {
                 console.error('[Device PTT] HID pairing failed:', e);
-                setBindingError(`Pairing failed: ${e.message}`);
+                setBindingError(t('Pairing failed: {message}', { message: e.message }));
             }
             setIsBinding(false);
             setBindingPrompt(null);
         }
-    }, [hasWebHID, stopGamepadPoll, cleanupHIDDevice, openHIDDevice]);
+    }, [hasWebHID, stopGamepadPoll, cleanupHIDDevice, openHIDDevice, t]);
 
     // ── Restore saved binding on mount ──
     useEffect(() => {

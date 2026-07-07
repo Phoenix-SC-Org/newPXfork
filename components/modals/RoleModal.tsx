@@ -5,6 +5,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface RoleModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface RoleModalProps {
 const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
     const { addRole, updateRole, roles } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -70,10 +72,10 @@ const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
             onClose();
         } catch (err) {
             console.error("Failed to save role:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the role. Please try again." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while saving the role. Please try again.") });
             setIsLoading(false);
         }
-    }, [name, description, isEditing, role, addRole, updateRole, onClose, addToast]);
+    }, [name, description, isEditing, role, addRole, updateRole, onClose, addToast, t]);
 
     if (!isOpen) return null;
 
@@ -81,8 +83,8 @@ const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit System Role' : 'Create System Role'}
-            subtitle="Permission Level Configuration"
+            title={isEditing ? t('Edit System Role') : t('Create System Role')}
+            subtitle={t('Permission Level Configuration')}
             icon="fa-solid fa-shield-halved"
             color="sky"
             width="max-w-lg"
@@ -91,7 +93,7 @@ const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     <div>
-                        <label htmlFor="roleName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">System Role Name</label>
+                        <label htmlFor="roleName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('System Role Name')}</label>
                         <input
                             type="text"
                             id="roleName"
@@ -101,10 +103,10 @@ const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
                             required
                             disabled={isLoading || isDefaultRole}
                         />
-                        {isDefaultRole && <p className="text-[10px] text-slate-500 mt-1 font-bold flex items-center"><i className="fa-solid fa-lock mr-1"></i> Default system roles cannot be renamed.</p>}
+                        {isDefaultRole && <p className="text-[10px] text-slate-500 mt-1 font-bold flex items-center"><i className="fa-solid fa-lock mr-1"></i> {t('Default system roles cannot be renamed.')}</p>}
                     </div>
                     <div>
-                        <label htmlFor="roleDescription" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</label>
+                        <label htmlFor="roleDescription" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Description')}</label>
                         <textarea
                             id="roleDescription"
                             value={description}
@@ -118,13 +120,13 @@ const RoleModal: React.FC<RoleModalProps> = ({ isOpen, onClose, role }) => {
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Role')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Role'))}
                     </button>
                 </div>
             </form>

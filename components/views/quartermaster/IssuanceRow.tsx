@@ -30,7 +30,7 @@ export default function IssuanceRow({ issuance, onFulfil, onReturn, onWriteOff }
     const { t } = useI18n();
     const fmt = useFormatDate();
     const formatRelative = (iso: string | null): string =>
-        iso ? formatRelativeTime(iso, fmt.prefs) : '—';
+        iso ? formatRelativeTime(iso, fmt.prefs, t) : '—';
     const accent = issuance.isOverdue ? 'rose' : STATUS_ACCENT[issuance.status];
     const a = ACCENTS[accent];
     const itemName = issuance.inventory?.catalog?.name || issuance.inventory?.customName || t('Item #{id}', { id: issuance.inventoryId });

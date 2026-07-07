@@ -10,6 +10,7 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { HeroStat, SectionPanel } from '../../shared/ui';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CHART_COLORS = {
     success: '#10b981', active: '#3b82f6',
@@ -26,6 +27,7 @@ const tooltipStyle = {
 };
 
 const AnalyticsDashboard: React.FC = () => {
+    const { t, locale } = useI18n();
     const { hydratedServiceRequests } = useData();
     const { allUsers } = useMembers();
     const { hrApplicants } = useHR();
@@ -51,7 +53,7 @@ const AnalyticsDashboard: React.FC = () => {
             const d = new Date(now);
             d.setDate(d.getDate() - i);
             const dateKey = d.toISOString().split('T')[0];
-            const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+            const label = d.toLocaleDateString(locale, { weekday: 'short' });
             const entry = { name: label, dateKey, success: 0, active: 0, cancelled: 0, failed: 0, aborted: 0 };
 
             hydratedServiceRequests.forEach(r => {
@@ -91,13 +93,13 @@ const AnalyticsDashboard: React.FC = () => {
         const months: { name: string; count: number }[] = [];
         for (let i = 5; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            months.push({ name: d.toLocaleString('default', { month: 'short' }), count: 0 });
+            months.push({ name: d.toLocaleString(locale, { month: 'short' }), count: 0 });
         }
         allUsers.forEach(u => {
             const joined = new Date(u.createdAt || now.getTime());
             const diffDays = Math.ceil(Math.abs(now.getTime() - joined.getTime()) / (1000 * 60 * 60 * 24));
             if (diffDays <= 180) {
-                const key = joined.toLocaleString('default', { month: 'short' });
+                const key = joined.toLocaleString(locale, { month: 'short' });
                 const entry = months.find(m => m.name === key);
                 if (entry) entry.count++;
             }
@@ -108,7 +110,7 @@ const AnalyticsDashboard: React.FC = () => {
             totalApplications, newApplications, activeOps,
             timelineData, pieData, demandData, userGrowth: months
         };
-    }, [allUsers, hydratedServiceRequests, hrApplicants, operations]);
+    }, [allUsers, hydratedServiceRequests, hrApplicants, operations, locale]);
 
     const totalMissions = stats.pieData.reduce((s, d) => s + d.value, 0);
 
@@ -116,23 +118,23 @@ const AnalyticsDashboard: React.FC = () => {
         <div className="p-4 md:p-8 space-y-6 animate-fade-in overflow-x-hidden">
             {/* Secondary stats row (complements shell hero) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <HeroStat icon="fa-crosshairs" label="Success Rate" value={`${stats.successRate}%`} sub={`${stats.totalRequests} missions`} accent="emerald" />
-                <HeroStat icon="fa-file-signature" label="Pending Applications" value={stats.newApplications} sub={`${stats.totalApplications} total`} accent="purple" emphasize={stats.newApplications > 0} />
-                <HeroStat icon="fa-jet-fighter" label="Active Operations" value={stats.activeOps} accent="rose" emphasize={stats.activeOps > 0} />
-                <HeroStat icon="fa-address-book" label="Registered Clients" value={stats.clients} accent="sky" />
+                <HeroStat icon="fa-crosshairs" label={t('Success Rate')} value={`${stats.successRate}%`} sub={t('{count} missions', { count: stats.totalRequests })} accent="emerald" />
+                <HeroStat icon="fa-file-signature" label={t('Pending Applications')} value={stats.newApplications} sub={t('{count} total', { count: stats.totalApplications })} accent="purple" emphasize={stats.newApplications > 0} />
+                <HeroStat icon="fa-jet-fighter" label={t('Active Operations')} value={stats.activeOps} accent="rose" emphasize={stats.activeOps > 0} />
+                <HeroStat icon="fa-address-book" label={t('Registered Clients')} value={stats.clients} accent="sky" />
             </div>
 
             {/* 7-Day Activity Stream */}
             <SectionPanel
                 icon="fa-solid fa-timeline"
-                title="7-Day Activity Stream"
+                title={t('7-Day Activity Stream')}
                 actions={
                     <div className="hidden md:flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5 text-emerald-300"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>Success</span>
-                        <span className="flex items-center gap-1.5 text-blue-300"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Active</span>
-                        <span className="flex items-center gap-1.5 text-amber-300"><span className="w-2 h-2 rounded-full bg-amber-500"></span>Cancelled</span>
-                        <span className="flex items-center gap-1.5 text-orange-300"><span className="w-2 h-2 rounded-full bg-orange-500"></span>Aborted</span>
-                        <span className="flex items-center gap-1.5 text-red-300"><span className="w-2 h-2 rounded-full bg-red-500"></span>Failed</span>
+                        <span className="flex items-center gap-1.5 text-emerald-300"><span className="w-2 h-2 rounded-full bg-emerald-500"></span>{t('Success')}</span>
+                        <span className="flex items-center gap-1.5 text-blue-300"><span className="w-2 h-2 rounded-full bg-blue-500"></span>{t('Active')}</span>
+                        <span className="flex items-center gap-1.5 text-amber-300"><span className="w-2 h-2 rounded-full bg-amber-500"></span>{t('Cancelled')}</span>
+                        <span className="flex items-center gap-1.5 text-orange-300"><span className="w-2 h-2 rounded-full bg-orange-500"></span>{t('Aborted')}</span>
+                        <span className="flex items-center gap-1.5 text-red-300"><span className="w-2 h-2 rounded-full bg-red-500"></span>{t('Failed')}</span>
                     </div>
                 }
             >
@@ -153,7 +155,7 @@ const AnalyticsDashboard: React.FC = () => {
 
             {/* Middle Row: Pie + Horizontal Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SectionPanel icon="fa-solid fa-chart-pie" title="Mission Outcomes">
+                <SectionPanel icon="fa-solid fa-chart-pie" title={t('Mission Outcomes')}>
                     <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                             <Pie
@@ -182,13 +184,13 @@ const AnalyticsDashboard: React.FC = () => {
                         {stats.pieData.map(d => (
                             <span key={d.name} className="flex items-center gap-1.5" style={{ color: d.color }}>
                                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></span>
-                                {d.name} ({d.value})
+                                {t(d.name)} ({d.value})
                             </span>
                         ))}
                     </div>
                 </SectionPanel>
 
-                <SectionPanel icon="fa-solid fa-list-check" title="Service Demand">
+                <SectionPanel icon="fa-solid fa-list-check" title={t('Service Demand')}>
                     <ResponsiveContainer width="100%" height={280}>
                         <BarChart data={stats.demandData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
@@ -202,7 +204,7 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Recruitment Velocity */}
-            <SectionPanel icon="fa-solid fa-chart-line" title="Recruitment Velocity (Last 6 Months)">
+            <SectionPanel icon="fa-solid fa-chart-line" title={t('Recruitment Velocity (Last 6 Months)')}>
                 <ResponsiveContainer width="100%" height={220}>
                     <AreaChart data={stats.userGrowth} margin={{ top: 10, right: 5, left: -15, bottom: 0 }}>
                         <defs>

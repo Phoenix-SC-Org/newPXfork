@@ -7,6 +7,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AddParticipantModalProps {
     isOpen: boolean;
@@ -19,6 +20,7 @@ const AddParticipantModal: React.FC<AddParticipantModalProps> = ({ isOpen, onClo
     const { members } = useMembers();
     const { addOperationParticipant } = useOperations();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(() => new Set());
     const [isLoading, setIsLoading] = useState(false);
 
@@ -53,7 +55,7 @@ const AddParticipantModal: React.FC<AddParticipantModalProps> = ({ isOpen, onClo
             onClose();
         } catch (err) {
             console.error("Failed to add participants:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while adding participants. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while adding participants. Please try again.') });
         } finally {
             setIsLoading(false);
         }
@@ -63,7 +65,7 @@ const AddParticipantModal: React.FC<AddParticipantModalProps> = ({ isOpen, onClo
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Add Personnel"
+            title={t('Add Personnel')}
             subtitle={operation.name}
             icon="fa-solid fa-user-plus"
             color="purple"
@@ -72,7 +74,7 @@ const AddParticipantModal: React.FC<AddParticipantModalProps> = ({ isOpen, onClo
             <div className="flex flex-col h-full">
                 <div className="p-4">
                     <p className="text-xs text-slate-400 mb-3 bg-slate-900/50 p-2 rounded-sm border border-slate-800">
-                        Select members to add to this operation. Only members not already active are listed.
+                        {t('Select members to add to this operation. Only members not already active are listed.')}
                     </p>
                     <div className="max-h-[50vh] overflow-y-auto custom-scrollbar space-y-2 pr-1">
                         {availableMembers.map(member => {
@@ -97,23 +99,23 @@ const AddParticipantModal: React.FC<AddParticipantModalProps> = ({ isOpen, onClo
                             )
                         })}
                         {availableMembers.length === 0 && (
-                            <p className="text-center text-slate-500 text-xs italic py-8">No available members found.</p>
+                            <p className="text-center text-slate-500 text-xs italic py-8">{t('No available members found.')}</p>
                         )}
                     </div>
                 </div>
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-between items-center rounded-b-xl">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        {selectedUserIds.size} Selected
+                        {t('{count} Selected', { count: selectedUserIds.size })}
                     </p>
                     <div className="flex gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleSave}
                             className="flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white border border-purple-500/40 shadow-lg shadow-purple-900/30 rounded-lg text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50"
                             disabled={isLoading || selectedUserIds.size === 0}
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Add Selected'}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Add Selected')}
                         </button>
                     </div>
                 </div>

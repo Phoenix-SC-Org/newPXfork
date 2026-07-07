@@ -1,6 +1,7 @@
 import React from 'react';
 import AwardIcon from './AwardIcon';
 import { isSafeImageUrl } from '../../lib/imageUrl';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AwardIconInputProps {
     icon: string;
@@ -27,8 +28,9 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
     fallbackIcon,
     accentClass = 'text-sky-400',
     disabled,
-    iconPlaceholder = 'e.g., fa-solid fa-star',
+    iconPlaceholder,
 }) => {
+    const { t } = useI18n();
     const urlValid = !imageUrl.trim() || isSafeImageUrl(imageUrl);
     const tabBase = 'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors';
     const tabActive = 'bg-sky-500/20 text-sky-300 border border-sky-500/40';
@@ -52,7 +54,7 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                     className={`${tabBase} ${mode === 'url' ? tabActive : tabInactive}`}
                     disabled={disabled}
                 >
-                    <i className="fa-solid fa-image mr-1.5"></i>Image URL
+                    <i className="fa-solid fa-image mr-1.5"></i>{t('Image URL')}
                 </button>
             </div>
 
@@ -63,7 +65,7 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                             type="text"
                             value={icon}
                             onChange={(e) => onIconChange(e.target.value)}
-                            placeholder={iconPlaceholder}
+                            placeholder={iconPlaceholder ?? t('e.g., fa-solid fa-star')}
                             className={`${inputClass} font-mono text-xs`}
                             disabled={disabled}
                         />
@@ -80,11 +82,11 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                             {imageUrl.trim() && !urlValid && (
                                 <p className="text-[10px] text-red-400 mt-1.5">
                                     <i className="fa-solid fa-triangle-exclamation mr-1"></i>
-                                    URL must be https and end in .png, .jpg, .jpeg, .gif, .webp, or .avif. Colors are not tinted on uploaded images.
+                                    {t('URL must be https and end in .png, .jpg, .jpeg, .gif, .webp, or .avif. Colors are not tinted on uploaded images.')}
                                 </p>
                             )}
                             {imageUrl.trim() && urlValid && (
-                                <p className="text-[10px] text-slate-500 mt-1.5">Image colors are not tinted by the UI.</p>
+                                <p className="text-[10px] text-slate-500 mt-1.5">{t('Image colors are not tinted by the UI.')}</p>
                             )}
                         </>
                     )}
@@ -95,7 +97,7 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                         icon={mode === 'fa' ? icon : undefined}
                         fallbackIcon={fallbackIcon}
                         className={`${accentClass} text-xl max-w-full max-h-full`}
-                        alt="preview"
+                        alt={t('preview')}
                     />
                 </div>
             </div>

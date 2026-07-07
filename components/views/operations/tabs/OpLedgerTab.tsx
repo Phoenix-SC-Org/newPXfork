@@ -29,7 +29,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
     const fmt = useFormatDate();
     const { setOperationPayoutMode, setOperationPayoutSplits, toggleParticipantPayoutPaid } = useOperations();
     const { addToast } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     // No such field exists on the UI context; consumers fall through to their `|| []` fallback.
     const allUsers: any = undefined;
 
@@ -232,7 +232,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                             </div>
                                             <div className="col-span-3 text-right">
                                                 <span className={`text-sm font-mono font-black ${amount >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                                                    {amount.toLocaleString()}
+                                                    {amount.toLocaleString(locale)}
                                                 </span>
                                             </div>
                                             <div className="col-span-2 text-right flex items-center justify-end gap-2">
@@ -318,7 +318,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className={`text-sm font-mono font-black ${isCost ? 'text-red-300' : 'text-emerald-300'}`}>
-                                                {isCost ? '−' : '+'}{(log.uecAmount ?? 0).toLocaleString()}
+                                                {isCost ? '−' : '+'}{(log.uecAmount ?? 0).toLocaleString(locale)}
                                             </span>
                                             {cat && (
                                                 <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-red-200 bg-red-500/10 border border-red-500/30 px-1.5 py-0.5 rounded-sm">
@@ -340,6 +340,7 @@ const OpLedgerTab: React.FC<OpLedgerTabProps> = ({ operation, canManage, onOpenA
 };
 
 const MetricTile: React.FC<{ label: string; value: number | string; suffix?: string; tone: 'emerald' | 'red' | 'sky'; icon: string }> = ({ label, value, suffix, tone, icon }) => {
+    const { locale } = useI18n();
     const palette = {
         emerald: { text: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
         red:     { text: 'text-red-300',     bg: 'bg-red-500/10',     border: 'border-red-500/30' },
@@ -353,7 +354,7 @@ const MetricTile: React.FC<{ label: string; value: number | string; suffix?: str
             <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
                 <p className={`text-lg font-black font-mono leading-tight ${palette.text}`}>
-                    {typeof value === 'number' ? value.toLocaleString() : value}
+                    {typeof value === 'number' ? value.toLocaleString(locale) : value}
                     {suffix && <span className="text-[10px] text-slate-500 ml-1">{suffix}</span>}
                 </p>
             </div>

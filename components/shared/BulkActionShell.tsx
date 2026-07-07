@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../../types';
 import WindowFrame, { WindowColor } from '../layout/WindowFrame';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface Props {
     title: string;
@@ -33,7 +34,7 @@ const BulkActionShell: React.FC<Props> = ({
     selectedUsers,
     onClose,
     onConfirm,
-    confirmLabel = 'Apply',
+    confirmLabel,
     confirmDisabled,
     busy,
     children,
@@ -42,7 +43,10 @@ const BulkActionShell: React.FC<Props> = ({
     icon = 'fa-solid fa-users-gear',
     color = 'sky',
 }) => {
-    const userCountLabel = `${selectedUsers.length} ${selectedUsers.length === 1 ? 'user' : 'users'} selected`;
+    const { t } = useI18n();
+    const userCountLabel = selectedUsers.length === 1
+        ? t('{count} user selected', { count: selectedUsers.length })
+        : t('{count} users selected', { count: selectedUsers.length });
 
     return (
         <WindowFrame
@@ -68,7 +72,7 @@ const BulkActionShell: React.FC<Props> = ({
                     {selectedUsers.length > 0 && (
                         <details className="rounded-md border border-white/5 bg-slate-950/30">
                             <summary className="px-3 py-2 cursor-pointer text-xs font-bold text-slate-300 hover:text-white">
-                                Selected users ({selectedUsers.length})
+                                {t('Selected users ({count})', { count: selectedUsers.length })}
                             </summary>
                             <ul className="divide-y divide-white/5 max-h-48 overflow-y-auto">
                                 {selectedUsers.map((u) => (
@@ -82,7 +86,7 @@ const BulkActionShell: React.FC<Props> = ({
                                             className="w-5 h-5 rounded-full bg-slate-800"
                                         />
                                         <span className="text-white truncate flex-1">{u.name}</span>
-                                        <span className="text-slate-500 text-[10px]">{u.role}</span>
+                                        <span className="text-slate-500 text-[10px]">{t(u.role)}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -102,7 +106,7 @@ const BulkActionShell: React.FC<Props> = ({
                                 disabled={busy}
                                 className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                             >
-                                Cancel
+                                {t('Cancel')}
                             </button>
                             <button
                                 onClick={onConfirm}
@@ -112,10 +116,10 @@ const BulkActionShell: React.FC<Props> = ({
                                 {busy ? (
                                     <>
                                         <i className="fa-solid fa-circle-notch animate-spin mr-2" />
-                                        Working…
+                                        {t('Working…')}
                                     </>
                                 ) : (
-                                    confirmLabel
+                                    confirmLabel ?? t('Apply', { context: 'bulk action' })
                                 )}
                             </button>
                         </div>

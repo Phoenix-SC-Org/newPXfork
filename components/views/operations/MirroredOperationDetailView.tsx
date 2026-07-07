@@ -35,7 +35,7 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
     const { rpcAction } = useData();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [mirror, setMirror] = useState<MirroredOperation>(initialMirror);
     const [rsvping, setRsvping] = useState(false);
 
@@ -116,7 +116,7 @@ const MirroredOperationDetailView: React.FC<Props> = ({ mirror: initialMirror, o
                 {op.description && <p className="text-slate-400 text-sm mt-3">{op.description}</p>}
                 {(op.scheduledStart || op.locationText) && (
                     <div className="flex flex-wrap gap-4 mt-3 text-xs text-slate-500">
-                        {op.scheduledStart && <span><i className="fa-solid fa-clock mr-1.5"></i>{new Date(op.scheduledStart).toLocaleString()}</span>}
+                        {op.scheduledStart && <span><i className="fa-solid fa-clock mr-1.5"></i>{new Date(op.scheduledStart).toLocaleString(locale)}</span>}
                         {op.locationText && <span><i className="fa-solid fa-location-dot mr-1.5"></i>{op.locationText}</span>}
                     </div>
                 )}

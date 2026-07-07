@@ -5,6 +5,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AwardCommendationModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface AwardCommendationModalProps {
 const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen, onClose, commendation }) => {
     const { members, awardCommendation } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(() => new Set());
     const [reason, setReason] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +44,7 @@ const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen,
             onClose();
         } catch (err) {
             console.error("Failed to bulk award commendations:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while awarding commendations. Please try again." });
+            addToast(t("Error"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while awarding commendations. Please try again.") });
         } finally {
             setIsLoading(false);
         }
@@ -54,8 +56,8 @@ const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen,
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={`Award: ${commendation.name}`}
-            subtitle="Commendation"
+            title={t('Award: {name}', { name: commendation.name })}
+            subtitle={t('Commendation')}
             icon="fa-solid fa-medal"
             color="amber"
             width="max-w-lg"
@@ -64,20 +66,20 @@ const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen,
                 {/* Body */}
                 <div className="p-4 flex-1 overflow-hidden flex flex-col space-y-4">
                     <div>
-                        <label htmlFor="reason" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Reason for Award</label>
+                        <label htmlFor="reason" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Reason for Award')}</label>
                         <textarea
                             id="reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={3}
-                            placeholder="e.g., For exceptional leadership during Operation Nightingale."
+                            placeholder={t('e.g., For exceptional leadership during Operation Nightingale.')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-hidden transition-all resize-none"
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                        <p className="text-xs text-slate-400 mb-2">Select members to award this commendation to.</p>
+                        <p className="text-xs text-slate-400 mb-2">{t('Select members to award this commendation to.')}</p>
                         {members.map(member => {
                             const isChecked = selectedUserIds.has(member.id);
                             return (
@@ -95,7 +97,7 @@ const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen,
                                         <img src={member.avatarUrl} alt={member.name} className="h-8 w-8 rounded-full" />
                                         <div>
                                             <div className="font-bold text-sm text-white">{member.name}</div>
-                                            <div className="text-[10px] text-slate-500 uppercase">{member.rank?.name || 'Member'}</div>
+                                            <div className="text-[10px] text-slate-500 uppercase">{member.rank?.name || t('Member')}</div>
                                         </div>
                                     </div>
                                 </label>
@@ -107,17 +109,17 @@ const AwardCommendationModal: React.FC<AwardCommendationModalProps> = ({ isOpen,
                 {/* Footer */}
                 <div className="flex justify-between items-center p-4 bg-slate-900/50 border-t border-white/5 rounded-b-xl shrink-0">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        {selectedUserIds.size} selected
+                        {t('{count} selected', { count: selectedUserIds.size })}
                     </p>
                     <div className="flex gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleSave}
                             className="px-6 py-2 bg-amber-600/10 text-amber-400 border border-amber-600/30 hover:bg-amber-600/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             disabled={isLoading || selectedUserIds.size === 0 || !reason.trim()}
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : `Award Selected`}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Award Selected')}
                         </button>
                     </div>
                 </div>

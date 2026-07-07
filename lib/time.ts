@@ -31,6 +31,12 @@ export interface FormatPrefs {
     timezone?: string | null;
     /** Preset key. Empty/null/undefined falls back to `compact_12h`. */
     dateFormat?: DateFormatPreset | string | null;
+    /**
+     * BCP-47 UI locale (from the i18n language switcher, e.g. 'de-DE').
+     * Only affects presets that render month NAMES (`compact_12h`, `us_12h`) —
+     * the numeric presets are language-neutral by design. Unset = English.
+     */
+    locale?: string | null;
 }
 
 const DEFAULT_PRESET: DateFormatPreset = 'compact_12h';
@@ -74,17 +80,20 @@ interface CachedFormatters {
 
 const formatterCache = new Map<string, CachedFormatters>();
 
-function buildOptions(preset: DateFormatPreset, timezone: string | undefined, kind: 'dateTime' | 'date' | 'time'): { locale: string | undefined; options: Intl.DateTimeFormatOptions } {
+function buildOptions(preset: DateFormatPreset, timezone: string | undefined, kind: 'dateTime' | 'date' | 'time', uiLocale?: string | null): { locale: string | undefined; options: Intl.DateTimeFormatOptions } {
     // For each preset, return:
     //   - locale: undefined for browser default, or 'en-GB' / 'en-US' to force formatting style
     //   - options: Intl options for the requested kind
     switch (preset) {
         case 'compact_12h': {
             // "01 Apr 26 10:00 AM" — 'en-GB' yields day-first ordering with 2-digit year.
+            // A non-English UI locale replaces it so month names localize
+            // ("01. Dez. 26"); the numeric presets below stay language-neutral.
+            const loc = uiLocale && !uiLocale.startsWith('en') ? uiLocale : 'en-GB';
             const base: Intl.DateTimeFormatOptions = { timeZone: timezone };
-            if (kind === 'dateTime') return { locale: 'en-GB', options: { ...base, day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true } };
-            if (kind === 'date')     return { locale: 'en-GB', options: { ...base, day: '2-digit', month: 'short', year: '2-digit' } };
-            return                          { locale: 'en-GB', options: { ...base, hour: '2-digit', minute: '2-digit', hour12: true } };
+            if (kind === 'dateTime') return { locale: loc, options: { ...base, day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true } };
+            if (kind === 'date')     return { locale: loc, options: { ...base, day: '2-digit', month: 'short', year: '2-digit' } };
+            return                          { locale: loc, options: { ...base, hour: '2-digit', minute: '2-digit', hour12: true } };
         }
         case 'iso_24h': {
             // "2026-04-01 10:00" — sv-SE renders ISO-like with space separator and 24h time.
@@ -114,13 +123,13 @@ function buildOptions(preset: DateFormatPreset, timezone: string | undefined, ki
     }
 }
 
-function getCachedFormatters(preset: DateFormatPreset, timezone: string | undefined): CachedFormatters {
-    const key = `${preset}|${timezone ?? ''}`;
+function getCachedFormatters(preset: DateFormatPreset, timezone: string | undefined, uiLocale?: string | null): CachedFormatters {
+    const key = `${preset}|${timezone ?? ''}|${uiLocale ?? ''}`;
     let entry = formatterCache.get(key);
     if (entry) return entry;
-    const dt = buildOptions(preset, timezone, 'dateTime');
-    const d  = buildOptions(preset, timezone, 'date');
-    const t  = buildOptions(preset, timezone, 'time');
+    const dt = buildOptions(preset, timezone, 'dateTime', uiLocale);
+    const d  = buildOptions(preset, timezone, 'date', uiLocale);
+    const t  = buildOptions(preset, timezone, 'time', uiLocale);
     entry = {
         dateTime: new Intl.DateTimeFormat(dt.locale, dt.options),
         date:     new Intl.DateTimeFormat(d.locale, d.options),
@@ -153,7 +162,7 @@ export function formatUserDateTime(iso?: string | null, prefs?: FormatPrefs): st
     if (!d) return '—';
     const preset = resolvePreset(prefs?.dateFormat);
     const tz = resolveTimezone(prefs?.timezone);
-    return postProcess(getCachedFormatters(preset, tz).dateTime.format(d), preset);
+    return postProcess(getCachedFormatters(preset, tz, prefs?.locale).dateTime.format(d), preset);
 }
 
 /** Date-only variant of `formatUserDateTime`. */
@@ -162,7 +171,7 @@ export function formatUserDate(iso?: string | null, prefs?: FormatPrefs): string
     if (!d) return '—';
     const preset = resolvePreset(prefs?.dateFormat);
     const tz = resolveTimezone(prefs?.timezone);
-    return postProcess(getCachedFormatters(preset, tz).date.format(d), preset);
+    return postProcess(getCachedFormatters(preset, tz, prefs?.locale).date.format(d), preset);
 }
 
 /** Time-only variant of `formatUserDateTime`. */
@@ -171,7 +180,7 @@ export function formatUserTime(iso?: string | null, prefs?: FormatPrefs): string
     if (!d) return '—';
     const preset = resolvePreset(prefs?.dateFormat);
     const tz = resolveTimezone(prefs?.timezone);
-    return getCachedFormatters(preset, tz).time.format(d);
+    return getCachedFormatters(preset, tz, prefs?.locale).time.format(d);
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +193,7 @@ export function formatUserTime(iso?: string | null, prefs?: FormatPrefs): string
 export function formatOpDateTime(iso?: string | null, prefs?: FormatPrefs): string {
     const d = toDate(iso);
     if (!d) return '—';
-    if (prefs && (prefs.timezone || prefs.dateFormat)) return formatUserDateTime(iso, prefs);
+    if (prefs && (prefs.timezone || prefs.dateFormat || prefs.locale)) return formatUserDateTime(iso, prefs);
     return d.toLocaleString(undefined, {
         day: '2-digit',
         month: 'short',
@@ -198,7 +207,7 @@ export function formatOpDateTime(iso?: string | null, prefs?: FormatPrefs): stri
 export function formatOpDate(iso?: string | null, prefs?: FormatPrefs): string {
     const d = toDate(iso);
     if (!d) return '—';
-    if (prefs && (prefs.timezone || prefs.dateFormat)) return formatUserDate(iso, prefs);
+    if (prefs && (prefs.timezone || prefs.dateFormat || prefs.locale)) return formatUserDate(iso, prefs);
     return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
@@ -206,7 +215,7 @@ export function formatOpDate(iso?: string | null, prefs?: FormatPrefs): string {
 export function formatOpTime(iso?: string | null, prefs?: FormatPrefs): string {
     const d = toDate(iso);
     if (!d) return '—';
-    if (prefs && (prefs.timezone || prefs.dateFormat)) return formatUserTime(iso, prefs);
+    if (prefs && (prefs.timezone || prefs.dateFormat || prefs.locale)) return formatUserTime(iso, prefs);
     return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -238,22 +247,32 @@ export function fromLocalDatetimeValue(local: string | null | undefined): string
     return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-/** "in 2h", "3d ago", "just now". */
-export function formatRelativeTime(iso?: string | null, prefs?: FormatPrefs): string {
+/**
+ * "in 2h", "3d ago", "just now". Pass the i18n `t` as `translate` to localize;
+ * without it the English strings render as before (the keys ARE the English
+ * text, so `translate` defaults to interpolation-only pass-through).
+ */
+export function formatRelativeTime(
+    iso?: string | null,
+    prefs?: FormatPrefs,
+    translate?: (key: string, params?: Record<string, string | number>) => string,
+): string {
     const d = toDate(iso);
     if (!d) return '';
+    const tr = translate ?? ((key: string, params?: Record<string, string | number>) =>
+        key.replace(/\{(\w+)\}/g, (match, name) => (params && params[name] !== undefined ? String(params[name]) : match)));
     const diff = Date.now() - d.getTime();
     const abs = Math.abs(diff);
     const past = diff >= 0;
 
     const s = Math.floor(abs / 1000);
-    if (s < 45) return past ? 'just now' : 'in a moment';
+    if (s < 45) return past ? tr('just now') : tr('in a moment');
     const m = Math.floor(s / 60);
-    if (m < 60) return past ? `${m}m ago` : `in ${m}m`;
+    if (m < 60) return past ? tr('{minutes}m ago', { minutes: m }) : tr('in {minutes}m', { minutes: m });
     const h = Math.floor(m / 60);
-    if (h < 24) return past ? `${h}h ago` : `in ${h}h`;
+    if (h < 24) return past ? tr('{hours}h ago', { hours: h }) : tr('in {hours}h', { hours: h });
     const days = Math.floor(h / 24);
-    if (days < 30) return past ? `${days}d ago` : `in ${days}d`;
+    if (days < 30) return past ? tr('{days}d ago', { days }) : tr('in {days}d', { days });
     return formatOpDate(iso, prefs);
 }
 

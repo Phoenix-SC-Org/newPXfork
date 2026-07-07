@@ -4,6 +4,7 @@ import { AccentKey, ACCENTS } from '../../../../shared/ui/accents';
 import SearchResultCard from '../SearchResultCard';
 import { timeAgoShort } from '../../../intel/intelStyles';
 import { clearanceAccent } from '../../../operations/operations/operationStyles';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 interface Props {
     page: WikiPage;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const WikiRowContent: React.FC<Props> = ({ page, onClick, isSelected }) => {
+    const { t } = useI18n();
     const isClassified = (page.classificationLevel || 0) > 0;
     const accent: AccentKey = isClassified ? clearanceAccent(page.classificationLevel) : 'indigo';
     const a = ACCENTS[accent];
@@ -25,7 +27,7 @@ const WikiRowContent: React.FC<Props> = ({ page, onClick, isSelected }) => {
         >
             <div className="flex items-center gap-2 min-w-0">
                 <span className="px-1.5 py-0.5 rounded-sm border bg-indigo-500/10 border-indigo-500/30 text-indigo-300 font-black text-[9px] uppercase tracking-widest shrink-0">
-                    Wiki
+                    {t('Wiki')}
                 </span>
                 <h3 className="text-white font-bold text-sm truncate">{page.title}</h3>
                 <span className="text-slate-700 shrink-0">·</span>
@@ -41,7 +43,7 @@ const WikiRowContent: React.FC<Props> = ({ page, onClick, isSelected }) => {
                 {isClassified && (
                     <span className={`px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest shrink-0 ${a.bg} ${a.border} ${a.text}`}>
                         <i className="fa-solid fa-shield-halved mr-1" aria-hidden />
-                        LVL {page.classificationLevel}
+                        {t('LVL {level}', { level: page.classificationLevel })}
                     </span>
                 )}
                 {markers.length > 0 && (

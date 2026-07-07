@@ -18,5 +18,5 @@ export const CONTRACT_STATUS_META: Record<MarketplaceContractStatus, { label: st
     cancelled: { label: 'Cancelled', cls: 'bg-red-500/15 text-red-300 border-red-500/30', icon: 'fa-ban' },
 };
 
-export const fmtUec = (n: number | null | undefined): string =>
-    n == null ? '—' : `${n.toLocaleString()} aUEC`;
+export const fmtUec = (n: number | null | undefined, locale?: string): string =>
+    n == null ? '—' : `${n.toLocaleString(locale)} aUEC`;

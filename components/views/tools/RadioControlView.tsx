@@ -14,6 +14,7 @@ import HeroActionButton from '../../shared/ui/HeroActionButton';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Moved outside to prevent re-definition on every re-render (which causes "flashing"/remounting)
 const RackMountChannel: React.FC<{
@@ -41,6 +42,7 @@ const RackMountChannel: React.FC<{
     allChannels, activeSpeakers, monitoredChannelId,
     onTuneIn, onEdit, onDelete, onSignal, onTransfer, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop
 }) => {
+    const { t } = useI18n();
     const [transferMenuOpen, setTransferMenuOpen] = useState<string | null>(null);
 
     // Look for matching room based on channel ID
@@ -86,7 +88,7 @@ const RackMountChannel: React.FC<{
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                     <code className="text-[10px] text-slate-500 font-mono tracking-wider">{channel.id}</code>
-                    {isRequest && <span className="text-[9px] bg-red-900/30 text-red-500 border border-red-500/20 px-1 rounded-sm uppercase font-black">Active Op</span>}
+                    {isRequest && <span className="text-[9px] bg-red-900/30 text-red-500 border border-red-500/20 px-1 rounded-sm uppercase font-black">{t('Active Op')}</span>}
                 </div>
             </div>
 
@@ -119,14 +121,14 @@ const RackMountChannel: React.FC<{
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onSignal(identity); }}
                                             className="text-slate-500 hover:text-amber-400 p-0.5"
-                                            title="Signal Operator"
+                                            title={t('Signal Operator')}
                                         >
                                             <i className="fa-solid fa-bell text-[10px]"></i>
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setTransferMenuOpen(transferMenuOpen === identity ? null : identity); }}
                                             className="text-slate-500 hover:text-sky-400 p-0.5"
-                                            title="Transfer Operator"
+                                            title={t('Transfer Operator')}
                                         >
                                             <i className="fa-solid fa-arrow-right-arrow-left text-[10px]"></i>
                                         </button>
@@ -135,7 +137,7 @@ const RackMountChannel: React.FC<{
 
                                 {canManage && transferMenuOpen === identity && (
                                     <div className="absolute top-full left-0 mt-1 z-50 bg-slate-800 border border-slate-600 rounded-lg shadow-xl w-48 max-h-48 overflow-y-auto custom-scrollbar py-1">
-                                        <p className="px-3 py-1 text-[9px] text-slate-500 uppercase font-black tracking-wider">Transfer to</p>
+                                        <p className="px-3 py-1 text-[9px] text-slate-500 uppercase font-black tracking-wider">{t('Transfer to')}</p>
                                         {transferTargets.map(target => (
                                             <button
                                                 key={target.id}
@@ -151,7 +153,7 @@ const RackMountChannel: React.FC<{
                                             </button>
                                         ))}
                                         {transferTargets.length === 0 && (
-                                            <p className="px-3 py-2 text-[10px] text-slate-600 italic">No other channels</p>
+                                            <p className="px-3 py-2 text-[10px] text-slate-600 italic">{t('No other channels')}</p>
                                         )}
                                     </div>
                                 )}
@@ -160,18 +162,18 @@ const RackMountChannel: React.FC<{
                     })
                 ) : (
                     <span className="text-[10px] text-slate-700 uppercase font-bold tracking-widest opacity-50 select-none pointer-events-none">
-                        {isDragTarget ? 'Drop to Transfer' : 'Frequency Clear'}
+                        {isDragTarget ? t('Drop to Transfer') : t('Frequency Clear')}
                     </span>
                 )}
             </div>
 
             <div className="w-40 flex justify-end gap-1 border-l border-slate-700/50 pl-2 items-center">
-                <span className="text-[10px] font-mono text-slate-600 mr-3">{userCount} USERS</span>
+                <span className="text-[10px] font-mono text-slate-600 mr-3">{t('{count} USERS', { count: userCount })}</span>
                 <button
                     onClick={() => onTuneIn(channel)}
                     disabled={isActive}
                     className={`p-2 rounded-sm transition-colors ${isActive ? 'text-green-500 cursor-default' : 'text-slate-500 hover:text-white hover:bg-slate-700'}`}
-                    title={isActive ? "Connected" : "Monitor Frequency"}
+                    title={isActive ? t('Connected') : t('Monitor Frequency')}
                 >
                     <i className={`fa-solid ${isActive ? 'fa-headphones' : 'fa-right-to-bracket'}`}></i>
                 </button>
@@ -201,6 +203,7 @@ const ChannelGroup: React.FC<{
     defaultOpen?: boolean,
     children: React.ReactNode
 }> = ({ title, icon, color, channels, activeRooms, totalParticipants, defaultOpen = true, children }) => {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     if (channels.length === 0) return null;
@@ -213,10 +216,10 @@ const ChannelGroup: React.FC<{
             >
                 <i className={`fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-[10px] text-slate-600 w-3 transition-transform`}></i>
                 <i className={`${icon} text-xs`} style={{ color }}></i>
-                <span className="text-xs font-black uppercase tracking-wider text-slate-400">{title}</span>
-                <span className="text-[10px] font-mono text-slate-600">{channels.length} CH</span>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400">{t(title)}</span>
+                <span className="text-[10px] font-mono text-slate-600">{t('{count} CH', { count: channels.length })}</span>
                 {totalParticipants > 0 && (
-                    <span className="text-[10px] font-mono text-green-500">{totalParticipants} ONLINE</span>
+                    <span className="text-[10px] font-mono text-green-500">{t('{count} ONLINE', { count: totalParticipants })}</span>
                 )}
             </button>
             {isOpen && (
@@ -236,6 +239,7 @@ const RadioControlView: React.FC = () => {
     const { setChannel, currentChannel, isConnected, activeSpeakers } = useRadio();
     const { addToast, confirm } = useNotification();
     const { openIssueEamModal } = useModalRegistry();
+    const { t } = useI18n();
 
     const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -303,9 +307,9 @@ const RadioControlView: React.FC = () => {
                 name: `SQD-${unit.name.substring(0, 3).toUpperCase()}`,
                 color: '#a3e635', // Lime
                 isPreset: false,
-                description: `Tactical channel for ${unit.name}`
+                description: t('Tactical channel for {name}', { name: unit.name })
             }));
-    }, [units]);
+    }, [units, t]);
 
     const allChannels = useMemo(() => {
         // Start with defined static channels
@@ -393,7 +397,7 @@ const RadioControlView: React.FC = () => {
 
     const handleTuneIn = (channel: RadioChannel) => {
         setChannel(channel);
-        addToast('Channel Tuned', <i className="fa-solid fa-headphones"></i>, 'bg-sky-500/10 text-sky-400 border-sky-500/50', { description: `Tuning into ${channel.name}.` });
+        addToast(t('Channel Tuned'), <i className="fa-solid fa-headphones"></i>, 'bg-sky-500/10 text-sky-400 border-sky-500/50', { description: t('Tuning into {name}.', { name: channel.name }) });
     };
 
     const handleEdit = (channel: RadioChannel) => {
@@ -407,28 +411,28 @@ const RadioControlView: React.FC = () => {
     };
 
     const handleDelete = async (id: string) => {
-        const confirmed = await confirm({ title: 'Delete Frequency', message: 'Delete this frequency? This will disconnect all active users.', confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Delete Frequency'), message: t('Delete this frequency? This will disconnect all active users.'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         try {
             await deleteRadioChannel(id);
-            addToast("Frequency Deleted", <i className="fa-solid fa-trash"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: "The radio frequency has been removed." });
+            addToast(t("Frequency Deleted"), <i className="fa-solid fa-trash"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t("The radio frequency has been removed.") });
         } catch {
-            addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to delete the radio channel." });
+            addToast(t("Delete Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to delete the radio channel.") });
         }
     };
 
     const handleReboot = async () => {
-        const confirmed = await confirm({ title: 'Reboot Network', message: "WARNING: This will forcibly close ALL active radio rooms and disconnect all users. This should only be used to fix 'ghost' sessions. Continue?", confirmText: 'Reboot', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Reboot Network'), message: t("WARNING: This will forcibly close ALL active radio rooms and disconnect all users. This should only be used to fix 'ghost' sessions. Continue?"), confirmText: t('Reboot'), variant: 'danger' });
         if (!confirmed) return;
 
         setIsRebooting(true);
         try {
             const result = await rpcAction('radio:reboot', {});
-            addToast('Network Rebooted', <i className="fa-solid fa-power-off"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: `${result.count} rooms cleared.` });
+            addToast(t('Network Rebooted'), <i className="fa-solid fa-power-off"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('{count} rooms cleared.', { count: result.count }) });
             setTimeout(fetchStatus, 1000);
         } catch (e: any) {
             console.error(e);
-            addToast("Reboot Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: e.message || "Failed to reboot the network." });
+            addToast(t("Reboot Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: e.message || t("Failed to reboot the network.") });
         } finally {
             setIsRebooting(false);
         }
@@ -439,10 +443,10 @@ const RadioControlView: React.FC = () => {
             await rpcAction('broadcast:alert', {
                 message: `[RADIO PING] ${currentUser?.name || 'Operator'} is signaling user ${identity} on ${channel.name}`
             });
-            addToast('Ping Sent', <i className="fa-solid fa-signal"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: 'Radio ping has been transmitted.' });
+            addToast(t('Ping Sent'), <i className="fa-solid fa-signal"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: t('Radio ping has been transmitted.') });
         } catch (error) {
             console.error("Failed to send ping:", error);
-            addToast("Ping Failed", <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: "Failed to transmit the radio ping." });
+            addToast(t("Ping Failed"), <i className="fa-solid fa-triangle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t("Failed to transmit the radio ping.") });
         }
     };
 
@@ -451,10 +455,10 @@ const RadioControlView: React.FC = () => {
         if (currentRoom === targetRoomName) return;
 
         addToast(
-            'Transferring Operator',
+            t('Transferring Operator'),
             <i className="fa-solid fa-arrow-right-arrow-left"></i>,
             'bg-green-500/10 text-green-400 border-green-500/50',
-            { description: `Moving to ${targetChannel.name}...` }
+            { description: t('Moving to {name}...', { name: targetChannel.name }) }
         );
 
         try {
@@ -465,9 +469,9 @@ const RadioControlView: React.FC = () => {
             setTimeout(fetchStatus, 1000);
         } catch (err) {
             console.error("Failed to transfer user:", err);
-            addToast("Transfer Failed", <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: "Failed to move the operator." });
+            addToast(t("Transfer Failed"), <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t("Failed to move the operator.") });
         }
-    }, [rpcAction, addToast, fetchStatus]);
+    }, [rpcAction, addToast, fetchStatus, t]);
 
     const handleBroadcastAlert = async () => {
         if (!broadcastMessage.trim()) return;
@@ -478,7 +482,7 @@ const RadioControlView: React.FC = () => {
             setIsBroadcastModalOpen(false);
         } catch (e) {
             console.error(e);
-            addToast("Broadcast Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to send the broadcast alert." });
+            addToast(t("Broadcast Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to send the broadcast alert.") });
         } finally {
             setIsSendingBroadcast(false);
         }
@@ -520,10 +524,10 @@ const RadioControlView: React.FC = () => {
 
         if (draggedUser && draggedUser.currentRoom !== targetRoomName) {
             addToast(
-                'Transferring Operator',
+                t('Transferring Operator'),
                 <i className="fa-solid fa-arrow-right-arrow-left"></i>,
                 'bg-green-500/10 text-green-400 border-green-500/50',
-                { description: 'Moving operator to the target channel...' }
+                { description: t('Moving operator to the target channel...') }
             );
 
             try {
@@ -536,7 +540,7 @@ const RadioControlView: React.FC = () => {
 
             } catch (err) {
                 console.error("Failed to move user:", err);
-                addToast("Transfer Failed", <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: "Failed to move the operator to the target channel." });
+                addToast(t("Transfer Failed"), <i className="fa-solid fa-circle-exclamation"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: t("Failed to move the operator to the target channel.") });
             }
         }
         setDraggedUser(null);
@@ -587,40 +591,40 @@ const RadioControlView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · RADIO CONTROL"
+                chipLabel={t('MODULE · RADIO CONTROL')}
                 chipIcon="fa-tower-broadcast"
                 chipAccent="amber"
-                title="Radio Control Center"
-                subtitle="Spectrum monitoring and dispatch. Tune into channels, transfer operators, and broadcast alerts."
+                title={t('Radio Control Center')}
+                subtitle={t('Spectrum monitoring and dispatch. Tune into channels, transfer operators, and broadcast alerts.')}
                 actions={<>
                     <HeroActionButton onClick={() => setIsBroadcastModalOpen(true)} accent="amber" icon="fa-bullhorn">
-                        Broadcast Alert
+                        {t('Broadcast Alert')}
                     </HeroActionButton>
                     <HeroActionButton onClick={openIssueEamModal} accent="red" icon="fa-radiation">
-                        Issue EAM
+                        {t('Issue EAM')}
                     </HeroActionButton>
                     {canManage && (
                         <>
                             <HeroActionButton onClick={handleCreate} accent="amber" icon="fa-plus">
-                                New Freq
+                                {t('New Freq')}
                             </HeroActionButton>
                             <HeroActionButton
                                 onClick={handleReboot}
                                 disabled={isRebooting}
                                 accent="slate"
                                 icon={isRebooting ? 'fa-spinner animate-spin' : 'fa-power-off'}
-                                title="Force disconnect all users and clear rooms"
+                                title={t('Force disconnect all users and clear rooms')}
                             >
-                                Reboot Net
+                                {t('Reboot Net')}
                             </HeroActionButton>
                         </>
                     )}
                 </>}
                 stats={<>
-                    <HeroStat icon="fa-tower-broadcast" label="Channels" value={allChannels.length} accent="amber" />
-                    <HeroStat icon="fa-bolt" label="Active" value={activeChannelsCount} accent="emerald" emphasize={activeChannelsCount > 0} />
-                    <HeroStat icon="fa-users" label="Operators Online" value={totalOnline} accent="cyan" emphasize={totalOnline > 0} />
-                    <HeroStat icon="fa-headphones" label="Monitoring" value={monitoredChannelId ? (currentChannel?.name || 'Tuned') : 'Off'} accent={monitoredChannelId ? 'emerald' : 'slate'} emphasize={!!monitoredChannelId} />
+                    <HeroStat icon="fa-tower-broadcast" label={t('Channels')} value={allChannels.length} accent="amber" />
+                    <HeroStat icon="fa-bolt" label={t('Active')} value={activeChannelsCount} accent="emerald" emphasize={activeChannelsCount > 0} />
+                    <HeroStat icon="fa-users" label={t('Operators Online')} value={totalOnline} accent="cyan" emphasize={totalOnline > 0} />
+                    <HeroStat icon="fa-headphones" label={t('Monitoring')} value={monitoredChannelId ? (currentChannel?.name || t('Tuned')) : t('Off')} accent={monitoredChannelId ? 'emerald' : 'slate'} emphasize={!!monitoredChannelId} />
                 </>}
             />
 
@@ -629,7 +633,7 @@ const RadioControlView: React.FC = () => {
                     <div className="bg-amber-500/5 border border-amber-500/30 rounded-xl p-3 flex items-center gap-3">
                         <i className="fa-solid fa-triangle-exclamation text-amber-400"></i>
                         <p className="text-xs text-slate-400">
-                            <strong className="text-amber-300">LiveKit Not Configured</strong> — Live comms data is unavailable. Set the LIVEKIT_* credentials in your server's .env file to enable real-time radio monitoring.
+                            <strong className="text-amber-300">{t('LiveKit Not Configured')}</strong> — {t("Live comms data is unavailable. Set the LIVEKIT_* credentials in your server's .env file to enable real-time radio monitoring.")}
                         </p>
                     </div>
                 )}
@@ -639,12 +643,12 @@ const RadioControlView: React.FC = () => {
                         <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                         <input
                             type="search"
-                            placeholder="Filter frequencies, channel IDs, or call signs…"
+                            placeholder={t('Filter frequencies, channel IDs, or call signs…')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-slate-900/60 text-white pl-12 pr-10 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/40 transition-all"
                         />
-                        <button onClick={fetchStatus} disabled={isRefreshing} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-amber-300 transition-colors" title="Refresh">
+                        <button onClick={fetchStatus} disabled={isRefreshing} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-500 hover:text-amber-300 transition-colors" title={t('Refresh')}>
                             <i className={`fa-solid fa-rotate ${isRefreshing ? 'animate-spin' : ''}`}></i>
                         </button>
                     </div>
@@ -655,17 +659,17 @@ const RadioControlView: React.FC = () => {
                                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                 : 'bg-slate-900/60 text-slate-500 border-slate-700 hover:text-slate-300'
                         }`}
-                        title={hideEmpty ? 'Show all channels' : 'Hide empty channels'}
+                        title={hideEmpty ? t('Show all channels') : t('Hide empty channels')}
                     >
                         <i className={`fa-solid ${hideEmpty ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                        <span className="hidden md:inline">{hideEmpty ? 'Empty Hidden' : 'Show All'}</span>
+                        <span className="hidden md:inline">{hideEmpty ? t('Empty Hidden') : t('Show All')}</span>
                     </button>
                 </div>
 
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-64 opacity-60">
                         <i className="fa-solid fa-circle-notch animate-spin text-4xl text-amber-400 mb-4"></i>
-                        <p className="text-[10px] uppercase tracking-widest font-black text-amber-300">Scanning Spectrum...</p>
+                        <p className="text-[10px] uppercase tracking-widest font-black text-amber-300">{t('Scanning Spectrum...')}</p>
                     </div>
                 ) : (
                     <div>
@@ -694,8 +698,8 @@ const RadioControlView: React.FC = () => {
                                 <EmptyState
                                     icon="fa-tower-broadcast"
                                     accent="amber"
-                                    heading="No frequencies found"
-                                    description={searchTerm ? 'Try a different search term or clear the filter.' : 'No radio channels are configured yet.'}
+                                    heading={t('No frequencies found')}
+                                    description={searchTerm ? t('Try a different search term or clear the filter.') : t('No radio channels are configured yet.')}
                                 />
                             </div>
                         )}
@@ -706,7 +710,7 @@ const RadioControlView: React.FC = () => {
                                     onClick={() => setHideEmpty(false)}
                                     className="text-[10px] text-slate-600 hover:text-amber-300 uppercase font-black tracking-widest transition-colors"
                                 >
-                                    {emptyChannelCount} empty {emptyChannelCount === 1 ? 'channel' : 'channels'} hidden
+                                    {emptyChannelCount === 1 ? t('{count} empty channel hidden', { count: emptyChannelCount }) : t('{count} empty channels hidden', { count: emptyChannelCount })}
                                 </button>
                             </div>
                         )}
@@ -723,34 +727,34 @@ const RadioControlView: React.FC = () => {
                                     <i className="fa-solid fa-bullhorn text-lg"></i>
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white uppercase tracking-tight">Broadcast Alert</h2>
-                                    <p className="text-[10px] text-amber-400 font-mono uppercase tracking-wide">All Channels</p>
+                                    <h2 className="text-lg font-bold text-white uppercase tracking-tight">{t('Broadcast Alert')}</h2>
+                                    <p className="text-[10px] text-amber-400 font-mono uppercase tracking-wide">{t('All Channels')}</p>
                                 </div>
                             </div>
                             <button onClick={() => setIsBroadcastModalOpen(false)} className="text-slate-400 hover:text-white"><i className="fa-solid fa-xmark text-lg"></i></button>
                         </div>
                         <div className="p-6">
                             <p className="text-xs text-slate-400 mb-4">
-                                Send a priority notification to all active terminals. This will appear as a popup message (Toast) for all connected users.
+                                {t('Send a priority notification to all active terminals. This will appear as a popup message (Toast) for all connected users.')}
                             </p>
-                            <label className="block text-[10px] text-slate-500 uppercase font-black mb-2 tracking-widest">Message</label>
+                            <label className="block text-[10px] text-slate-500 uppercase font-black mb-2 tracking-widest">{t('Message')}</label>
                             <textarea
                                 value={broadcastMessage}
                                 onChange={(e) => setBroadcastMessage(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/30 outline-hidden h-24 resize-none transition-all"
-                                placeholder="e.g. Squad Leaders report to Command."
+                                placeholder={t('e.g. Squad Leaders report to Command.')}
                                 autoFocus
                             />
                         </div>
                         <div className="p-4 bg-slate-950/60 border-t border-white/5 flex justify-end gap-3 rounded-b-xl">
-                            <button onClick={() => setIsBroadcastModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cancel</button>
+                            <button onClick={() => setIsBroadcastModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">{t('Cancel')}</button>
                             <button
                                 onClick={handleBroadcastAlert}
                                 disabled={isSendingBroadcast || !broadcastMessage.trim()}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white border border-amber-500/40 rounded-lg text-xs font-bold uppercase tracking-widest shadow-lg shadow-amber-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 {isSendingBroadcast ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
-                                Send
+                                {t('Send')}
                             </button>
                         </div>
                     </div>

@@ -3,6 +3,7 @@ import { useData } from '../../../../contexts/DataContext';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { PlatformLocation, PlatformLocationKind, ToastVariant } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 const PAGE_SIZE = 100;
 
@@ -36,6 +37,7 @@ type ToastFn = (message: string, type?: 'error' | 'success' | 'warning' | 'info'
 export default function AdminLocationCatalogTab() {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const toast = useCallback<ToastFn>((message, type = 'info') => {
         addToast(message, null, '', { variant: type as ToastVariant });
     }, [addToast]);
@@ -123,11 +125,11 @@ export default function AdminLocationCatalogTab() {
             setRows(Array.isArray(r) ? r : []);
         } catch (e: any) {
             if (seq !== requestSeqRef.current) return;
-            toast(`Failed to load locations: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Failed to load locations: {msg}', { msg: e?.message || t('unknown') }), 'error');
         } finally {
             if (seq === requestSeqRef.current) setLoading(false);
         }
-    }, [rpcAction, filterKind, filterStarSystemId, includeInternal, includeHidden, includeDecommissioned, debouncedSearch, page, toast]);
+    }, [rpcAction, filterKind, filterStarSystemId, includeInternal, includeHidden, includeDecommissioned, debouncedSearch, page, toast, t]);
 
     // Imperative wrapper for the event-handler call sites (sync / save / delete refreshes):
     // they run outside an effect, so the synchronous setLoading(true) is fine here and the
@@ -173,16 +175,16 @@ export default function AdminLocationCatalogTab() {
                 : '';
             const errCount = res.totalErrors || 0;
             toast(
-                `Sync complete in ${res.durationMs}ms (${totals}). Paths updated: ${res.pathsUpdated}. Errors: ${errCount}.`,
+                t('Sync complete in {duration}ms ({totals}). Paths updated: {paths}. Errors: {errors}.', { duration: res.durationMs, totals, paths: res.pathsUpdated, errors: errCount }),
                 errCount > 0 ? 'warning' : 'success'
             );
             await Promise.all([loadCounts(), loadStarSystems(), load()]);
         } catch (e: any) {
-            toast(`Sync failed: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Sync failed: {msg}', { msg: e?.message || t('unknown') }), 'error');
         } finally {
             setSyncLoading(false);
         }
-    }, [rpcAction, toast, loadCounts, loadStarSystems, load]);
+    }, [rpcAction, toast, loadCounts, loadStarSystems, load, t]);
 
     const openEdit = (loc: PlatformLocation) => {
         setEditing(loc);
@@ -210,9 +212,9 @@ export default function AdminLocationCatalogTab() {
             await rpcAction('catalog:update_location', { locationId: editing.id, updates });
             setEditing(null);
             load();
-            toast('Location updated', 'success');
+            toast(t('Location updated'), 'success');
         } catch (e: any) {
-            toast(e?.message || 'Update failed', 'error');
+            toast(e?.message || t('Update failed'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -220,18 +222,18 @@ export default function AdminLocationCatalogTab() {
 
     const handleDelete = async (loc: PlatformLocation) => {
         const ok = await confirm({
-            title: 'Delete Location',
-            message: `Delete "${loc.path || loc.name}"? Children of this location will lose their parent. This cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Location'),
+            message: t('Delete "{name}"? Children of this location will lose their parent. This cannot be undone.', { name: loc.path || loc.name }),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!ok) return;
         try {
             await rpcAction('catalog:delete_location', { locationId: loc.id });
             load();
-            toast(`Deleted "${loc.name}"`, 'success');
+            toast(t('Deleted "{name}"', { name: loc.name }), 'success');
         } catch (e: any) {
-            toast(e?.message || 'Delete failed', 'error');
+            toast(e?.message || t('Delete failed'), 'error');
         }
     };
 
@@ -260,10 +262,10 @@ export default function AdminLocationCatalogTab() {
                 <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-3">
                         <i className="fa-solid fa-globe text-purple-400"></i>
-                        Location Catalog
+                        {t('Location Catalog')}
                         <span className="text-sm font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-sm">{counts.total}</span>
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Star Citizen universe — synced from uexcorp.space.</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('Star Citizen universe — synced from uexcorp.space.')}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -272,7 +274,7 @@ export default function AdminLocationCatalogTab() {
                         className="flex items-center gap-2 bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                     >
                         {syncLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrows-rotate"></i>}
-                        {syncLoading ? 'Syncing...' : 'Sync from UEX'}
+                        {syncLoading ? t('Syncing...') : t('Sync from UEX')}
                     </button>
                 </div>
             </div>
@@ -283,7 +285,7 @@ export default function AdminLocationCatalogTab() {
                     <div key={s.label} className="bg-slate-900 border border-white/10 rounded-xl p-3 text-center">
                         <i className={`fa-solid ${s.icon} ${s.color} text-base mb-1`}></i>
                         <p className="text-lg font-black text-white">{s.value}</p>
-                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{s.label}</p>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{t(s.label)}</p>
                     </div>
                 ))}
             </div>
@@ -297,30 +299,30 @@ export default function AdminLocationCatalogTab() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name, path, or nickname…"
+                            placeholder={t('Search by name, path, or nickname…')}
                             className="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-hidden focus:border-purple-500"
                         />
                     </div>
                     <select value={filterKind} onChange={(e) => setFilterKind(e.target.value as PlatformLocationKind | '')} className={selectClass}>
-                        {KIND_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        {KIND_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.label)}</option>)}
                     </select>
                     <select value={filterStarSystemId} onChange={(e) => setFilterStarSystemId(e.target.value)} className={selectClass}>
-                        <option value="">All systems</option>
+                        <option value="">{t('All systems')}</option>
                         {starSystems.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
                 <div className="flex flex-wrap gap-4">
                     <label className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-slate-400 cursor-pointer">
                         <input type="checkbox" checked={includeInternal} onChange={(e) => setIncludeInternal(e.target.checked)} className="accent-purple-500" />
-                        Include internal (orbits)
+                        {t('Include internal (orbits)')}
                     </label>
                     <label className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-slate-400 cursor-pointer">
                         <input type="checkbox" checked={includeHidden} onChange={(e) => setIncludeHidden(e.target.checked)} className="accent-purple-500" />
-                        Include hidden
+                        {t('Include hidden')}
                     </label>
                     <label className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-slate-400 cursor-pointer">
                         <input type="checkbox" checked={includeDecommissioned} onChange={(e) => setIncludeDecommissioned(e.target.checked)} className="accent-purple-500" />
-                        Include decommissioned
+                        {t('Include decommissioned')}
                     </label>
                 </div>
             </div>
@@ -331,22 +333,22 @@ export default function AdminLocationCatalogTab() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-black/30 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">
                             <tr>
-                                <th className="p-3">Name</th>
-                                <th className="p-3">Path</th>
-                                <th className="p-3">Kind</th>
-                                <th className="p-3">Faction</th>
-                                <th className="p-3">Status</th>
-                                <th className="p-3 text-right">Actions</th>
+                                <th className="p-3">{t('Name')}</th>
+                                <th className="p-3">{t('Path')}</th>
+                                <th className="p-3">{t('Kind')}</th>
+                                <th className="p-3">{t('Faction')}</th>
+                                <th className="p-3">{t('Status')}</th>
+                                <th className="p-3 text-right">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading && (
-                                <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-slate-500"><i className="fa-solid fa-spinner animate-spin mr-2" />Loading…</td></tr>
+                                <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-slate-500"><i className="fa-solid fa-spinner animate-spin mr-2" />{t('Loading…')}</td></tr>
                             )}
                             {!loading && rows.length === 0 && (
                                 <tr><td colSpan={6} className="px-3 py-12 text-center text-sm text-slate-600">
                                     <i className="fa-solid fa-globe text-3xl mb-3 opacity-30 block"></i>
-                                    {counts.total === 0 ? 'The catalog is empty. Click "Sync from UEX" to populate.' : 'No locations match the current filters.'}
+                                    {counts.total === 0 ? t('The catalog is empty. Click "Sync from UEX" to populate.') : t('No locations match the current filters.')}
                                 </td></tr>
                             )}
                             {!loading && rows.map(loc => (
@@ -358,25 +360,25 @@ export default function AdminLocationCatalogTab() {
                                     <td className="p-3 text-slate-400 text-xs truncate max-w-md">{loc.path || '—'}</td>
                                     <td className="p-3">
                                         <span className={`text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border ${KIND_BADGE[loc.kind]}`}>
-                                            {loc.kind.replace('_', ' ')}
+                                            {t(loc.kind.replace('_', ' '), { context: 'locationKind' })}
                                         </span>
                                     </td>
                                     <td className="p-3 text-slate-500 text-xs">{loc.factionName || '—'}</td>
                                     <td className="p-3">
                                         <div className="flex flex-wrap gap-1">
-                                            {loc.isAvailableLive && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-green-500/10 text-green-400 border-green-500/20">live</span>}
-                                            {loc.isLandable && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-sky-500/10 text-sky-400 border-sky-500/20">landable</span>}
-                                            {loc.isDecommissioned && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-red-500/10 text-red-400 border-red-500/20">decom</span>}
-                                            {loc.isHidden && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-amber-500/10 text-amber-400 border-amber-500/20">hidden</span>}
-                                            {loc.isInternal && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-slate-500/10 text-slate-400 border-slate-500/20">internal</span>}
+                                            {loc.isAvailableLive && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-green-500/10 text-green-400 border-green-500/20">{t('live')}</span>}
+                                            {loc.isLandable && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-sky-500/10 text-sky-400 border-sky-500/20">{t('landable')}</span>}
+                                            {loc.isDecommissioned && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-red-500/10 text-red-400 border-red-500/20">{t('decom')}</span>}
+                                            {loc.isHidden && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-amber-500/10 text-amber-400 border-amber-500/20">{t('hidden')}</span>}
+                                            {loc.isInternal && <span className="text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-slate-500/10 text-slate-400 border-slate-500/20">{t('internal')}</span>}
                                         </div>
                                     </td>
                                     <td className="p-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <button onClick={() => openEdit(loc)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm" title="Edit">
+                                            <button onClick={() => openEdit(loc)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm" title={t('Edit')}>
                                                 <i className="fa-solid fa-pen-to-square"></i>
                                             </button>
-                                            <button onClick={() => handleDelete(loc)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm" title="Delete">
+                                            <button onClick={() => handleDelete(loc)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm" title={t('Delete')}>
                                                 <i className="fa-solid fa-trash-can"></i>
                                             </button>
                                         </div>
@@ -390,13 +392,13 @@ export default function AdminLocationCatalogTab() {
 
             {/* Pagination */}
             <div className="flex justify-between items-center text-sm text-slate-400 mb-8">
-                <p className="text-xs">Page {page + 1} · showing {rows.length} of {PAGE_SIZE}</p>
+                <p className="text-xs">{t('Page {page} · showing {shown} of {pageSize}', { page: page + 1, shown: rows.length, pageSize: PAGE_SIZE })}</p>
                 <div className="flex gap-2">
                     <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        <i className="fa-solid fa-chevron-left mr-1"></i> Prev
+                        <i className="fa-solid fa-chevron-left mr-1"></i> {t('Prev')}
                     </button>
                     <button onClick={() => setPage(p => p + 1)} disabled={rows.length < PAGE_SIZE} className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        Next <i className="fa-solid fa-chevron-right ml-1"></i>
+                        {t('Next')} <i className="fa-solid fa-chevron-right ml-1"></i>
                     </button>
                 </div>
             </div>
@@ -409,7 +411,7 @@ export default function AdminLocationCatalogTab() {
 
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Edit Location</h3>
+                                <h3 className="text-lg font-bold text-white">{t('Edit Location')}</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">{editing.path || editing.name}</p>
                                 <p className="text-[10px] text-slate-600 mt-0.5 font-mono">id: {editing.id} · kind: {editing.kind} · uex#: {editing.externalId}</p>
                             </div>
@@ -420,36 +422,36 @@ export default function AdminLocationCatalogTab() {
 
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className={labelClass}>Nickname (admin override)</label>
-                                <input value={editForm.nickname || ''} onChange={(e) => setEditForm({ ...editForm, nickname: e.target.value })} className={inputClass} placeholder="Optional friendly alias" />
-                                <p className="text-[10px] text-slate-600 mt-1">UEX-sourced nickname is replaced by this value. Preserved across re-syncs.</p>
+                                <label className={labelClass}>{t('Nickname (admin override)')}</label>
+                                <input value={editForm.nickname || ''} onChange={(e) => setEditForm({ ...editForm, nickname: e.target.value })} className={inputClass} placeholder={t('Optional friendly alias')} />
+                                <p className="text-[10px] text-slate-600 mt-1">{t('UEX-sourced nickname is replaced by this value. Preserved across re-syncs.')}</p>
                             </div>
                             <div>
-                                <label className={labelClass}>Wiki URL</label>
+                                <label className={labelClass}>{t('Wiki URL')}</label>
                                 <input value={editForm.wiki_url || ''} onChange={(e) => setEditForm({ ...editForm, wiki_url: e.target.value })} className={inputClass} />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <label className="flex items-start gap-2 cursor-pointer">
                                     <input type="checkbox" checked={!!editForm.is_hidden} onChange={(e) => setEditForm({ ...editForm, is_hidden: e.target.checked })} className="accent-purple-500 mt-1" />
                                     <span>
-                                        <span className="text-sm text-white block">Hidden</span>
-                                        <span className="text-[10px] text-slate-500">Excluded from search.</span>
+                                        <span className="text-sm text-white block">{t('Hidden')}</span>
+                                        <span className="text-[10px] text-slate-500">{t('Excluded from search.')}</span>
                                     </span>
                                 </label>
                                 <label className="flex items-start gap-2 cursor-pointer">
                                     <input type="checkbox" checked={!!editForm.is_internal} onChange={(e) => setEditForm({ ...editForm, is_internal: e.target.checked })} className="accent-purple-500 mt-1" />
                                     <span>
-                                        <span className="text-sm text-white block">Internal</span>
-                                        <span className="text-[10px] text-slate-500">Scaffolding only — never user-facing.</span>
+                                        <span className="text-sm text-white block">{t('Internal')}</span>
+                                        <span className="text-[10px] text-slate-500">{t('Scaffolding only — never user-facing.')}</span>
                                     </span>
                                 </label>
                             </div>
                         </div>
 
                         <div className="p-4 border-t border-white/10 flex justify-end gap-3">
-                            <button onClick={() => setEditing(null)} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white">Cancel</button>
+                            <button onClick={() => setEditing(null)} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white">{t('Cancel')}</button>
                             <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/50 hover:bg-purple-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50">
-                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Changes'}
+                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Changes')}
                             </button>
                         </div>
                     </div>

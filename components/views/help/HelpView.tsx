@@ -5,6 +5,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useGovernment } from '../../../contexts/GovernmentContext';
 import CallsignChip from '../../shared/ui/CallsignChip';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const HelpCard: React.FC<{
     title: string;
@@ -13,6 +14,7 @@ const HelpCard: React.FC<{
     iconColorClass: string;
     children: React.ReactNode
 }> = ({ title, icon, iconBgClass, iconColorClass, children }) => {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -27,7 +29,7 @@ const HelpCard: React.FC<{
                 <div className="flex-1 min-w-0">
                     <h3 className="text-base font-bold text-white">{title}</h3>
                     <p className="text-[10px] font-mono text-slate-500 mt-1 uppercase tracking-widest">
-                        {isOpen ? 'Tap to collapse' : 'Tap to expand'}
+                        {isOpen ? t('Tap to collapse') : t('Tap to expand')}
                     </p>
                 </div>
                 <i className={`fa-solid fa-chevron-down text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
@@ -52,6 +54,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 const HelpView: React.FC = () => {
+    const { t } = useI18n();
     const { setActiveView } = useNavigation();
     const { hasPermission } = useAuth();
     const { orgMeta } = useData();
@@ -70,12 +73,12 @@ const HelpView: React.FC = () => {
                 <div className="relative px-4 sm:px-8 pt-10 pb-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div className="min-w-0">
-                            <CallsignChip label="MODULE · FIELD MANUAL" icon="fa-book-open" accent="sky" pulse />
+                            <CallsignChip label={t('MODULE · FIELD MANUAL')} icon="fa-book-open" accent="sky" pulse />
                             <h1 className="mt-3 text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                                Operational Field Manual
+                                {t('Operational Field Manual')}
                             </h1>
                             <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-                                Quick reference for the most common workflows. Full documentation is published at <a href="https://docs.myrsi.org" target="_blank" rel="noreferrer" className="text-sky-400 hover:text-sky-300 underline">docs.myrsi.org</a>.
+                                {t('Quick reference for the most common workflows. Full documentation is published at')} <a href="https://docs.myrsi.org" target="_blank" rel="noreferrer" className="text-sky-400 hover:text-sky-300 underline">docs.myrsi.org</a>.
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 shrink-0">
@@ -83,13 +86,13 @@ const HelpView: React.FC = () => {
                                 onClick={() => setActiveView('changelog')}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
                             >
-                                <i className="fa-solid fa-scroll"></i> Changelog
+                                <i className="fa-solid fa-scroll"></i> {t('Changelog')}
                             </button>
                             <button
                                 onClick={() => setActiveView('tos')}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
                             >
-                                <i className="fa-solid fa-file-contract"></i> Terms of Service
+                                <i className="fa-solid fa-file-contract"></i> {t('Terms of Service')}
                             </button>
                         </div>
                     </div>
@@ -99,7 +102,7 @@ const HelpView: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
             <div className="grid grid-cols-1 gap-4">
 
-                <HelpCard title="App Installation & Alerts" icon="fa-solid fa-mobile-screen" iconBgClass="bg-emerald-500/10" iconColorClass="text-emerald-400">
+                <HelpCard title={t('App Installation & Alerts')} icon="fa-solid fa-mobile-screen" iconBgClass="bg-emerald-500/10" iconColorClass="text-emerald-400">
                     <Section title="Why Install?">
                         <p>
                             To receive <strong>EAM Broadcasts</strong>, <strong>service request alerts</strong>, and <strong>operation updates</strong> while the app is closed, install the terminal as a PWA on your device. Browser tabs alone don't deliver background push.
@@ -142,7 +145,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Service Requests (Client)" icon="fa-solid fa-headset" iconBgClass="bg-teal-500/10" iconColorClass="text-teal-400">
+                <HelpCard title={t('Service Requests (Client)')} icon="fa-solid fa-headset" iconBgClass="bg-teal-500/10" iconColorClass="text-teal-400">
                     <Section title="Submitting a Request">
                         <p>Click <strong>New Request</strong> from the sidebar or dashboard. Fill in:</p>
                         <ol className="list-decimal pl-5 space-y-1">
@@ -172,7 +175,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Staff Dashboard" icon="fa-solid fa-gauge-high" iconBgClass="bg-violet-500/10" iconColorClass="text-violet-400">
+                <HelpCard title={t('Staff Dashboard')} icon="fa-solid fa-gauge-high" iconBgClass="bg-violet-500/10" iconColorClass="text-violet-400">
                     <Section title="Overview">
                         <p>
                             Real-time view of org operations: active requests, the duty roster, current operations, EAM state, and bulletins. Tiles update automatically over the realtime connection — no refresh required.
@@ -198,7 +201,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Field Operations & Dispatch" icon="fa-solid fa-person-military-rifle" iconBgClass="bg-sky-500/10" iconColorClass="text-sky-400">
+                <HelpCard title={t('Field Operations & Dispatch')} icon="fa-solid fa-person-military-rifle" iconBgClass="bg-sky-500/10" iconColorClass="text-sky-400">
                     <Section title="Duty Status">
                         <p>
                             Toggle <strong>ON DUTY</strong> in the sidebar to enter the dispatch picker. The system auto-toggles you to <strong>Off Duty</strong> after <strong>30 minutes</strong> of inactivity (no clicks, keys, or API). Toggle back on when you return — there's no penalty.
@@ -226,7 +229,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Operations Center" icon="fa-solid fa-chess-board" iconBgClass="bg-purple-500/10" iconColorClass="text-purple-400">
+                <HelpCard title={t('Operations Center')} icon="fa-solid fa-chess-board" iconBgClass="bg-purple-500/10" iconColorClass="text-purple-400">
                     <Section title="When to Use">
                         <p>
                             Use Operations Center for planned, multi-person events — patrols, mining ops, joint exercises, training, org battles. Distinct from reactive service requests, which are for ad-hoc client tickets.
@@ -276,7 +279,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Tactical Radio" icon="fa-solid fa-tower-broadcast" iconBgClass="bg-red-500/10" iconColorClass="text-red-400">
+                <HelpCard title={t('Tactical Radio')} icon="fa-solid fa-tower-broadcast" iconBgClass="bg-red-500/10" iconColorClass="text-red-400">
                     <Section title="Push-to-Talk">
                         <p>
                             Open the radio widget from the sidebar. The first time you transmit, the browser will ask for microphone permission. Hold <strong>Push to Talk</strong> to transmit; release to stop. The horizontal meter under PTT is your <strong>TX level</strong> — green-to-yellow is healthy, red is clipping.
@@ -309,7 +312,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Intelligence & Security" icon="fa-solid fa-eye" iconBgClass="bg-amber-500/10" iconColorClass="text-amber-400">
+                <HelpCard title={t('Intelligence & Security')} icon="fa-solid fa-eye" iconBgClass="bg-amber-500/10" iconColorClass="text-amber-400">
                     <Section title="Reports & The Dossier">
                         <p>
                             File an <strong>Intel Report</strong> on a person (RSI handle) or org. Each report carries a Threat Level, Classification (0–5), Limiting Markers, Tags, Evidence URLs, and an Author.
@@ -363,7 +366,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Personnel & HR" icon="fa-solid fa-id-card" iconBgClass="bg-indigo-500/10" iconColorClass="text-indigo-400">
+                <HelpCard title={t('Personnel & HR')} icon="fa-solid fa-id-card" iconBgClass="bg-indigo-500/10" iconColorClass="text-indigo-400">
                     <Section title="Duty Roster">
                         <p>
                             Two views: <strong>Hierarchy</strong> (tree by unit) and <strong>Flat</strong> (sortable table). Filter by Unit, Rank, and Duty status; search matches name, RSI handle, and rank. Hero stats show On Duty / Off Duty / Total at a glance.
@@ -412,7 +415,7 @@ const HelpView: React.FC = () => {
                 </HelpCard>
 
                 {governmentEnabled && (
-                    <HelpCard title="Government" icon="fa-solid fa-landmark" iconBgClass="bg-blue-500/10" iconColorClass="text-blue-400">
+                    <HelpCard title={t('Government')} icon="fa-solid fa-landmark" iconBgClass="bg-blue-500/10" iconColorClass="text-blue-400">
                         <Section title="Six Tabs">
                             <p>
                                 Found at <strong>Sidebar → Government</strong>. Six tabs: <strong>Overview</strong> (branches, positions, current officials), <strong>Elections</strong>, <strong>Legislation</strong>, <strong>Motions</strong>, <strong>Orders</strong>, <strong>Constitution</strong> (an editable foundational document for the org).
@@ -444,7 +447,7 @@ const HelpView: React.FC = () => {
                 )}
 
                 {financesEnabled && (
-                    <HelpCard title="Finances" icon="fa-solid fa-coins" iconBgClass="bg-amber-500/10" iconColorClass="text-amber-400">
+                    <HelpCard title={t('Finances')} icon="fa-solid fa-coins" iconBgClass="bg-amber-500/10" iconColorClass="text-amber-400">
                         <Section title="Finances Ledger">
                             <p>
                                 Submit deposits (with a memo so the finance officer can match your in-game transfer) and withdrawals (with a reason) under <strong>Finances</strong>. Both enter a <strong>pending</strong> queue that finance officers Confirm or Deny. Confirmed entries move the recorded balance.
@@ -461,7 +464,7 @@ const HelpView: React.FC = () => {
                     </HelpCard>
                 )}
 
-                <HelpCard title="Fleet, Quartermaster & Warehouse" icon="fa-solid fa-warehouse" iconBgClass="bg-cyan-500/10" iconColorClass="text-cyan-400">
+                <HelpCard title={t('Fleet, Quartermaster & Warehouse')} icon="fa-solid fa-warehouse" iconBgClass="bg-cyan-500/10" iconColorClass="text-cyan-400">
                     <Section title="My Hangar & Org Fleet">
                         <p>
                             <strong>My Hangar</strong> is your personal ship list. Click <strong>+ Add Ship</strong> to browse the catalog (filter by manufacturer / size / role) and multi-select. Edit a ship's custom name, status (Active / Stored / Damaged / Lent / Sold), and loadout notes.
@@ -497,7 +500,7 @@ const HelpView: React.FC = () => {
                     </Section>}
                 </HelpCard>
 
-                <HelpCard title="Wiki & Search" icon="fa-solid fa-book" iconBgClass="bg-emerald-500/10" iconColorClass="text-emerald-400">
+                <HelpCard title={t('Wiki & Search')} icon="fa-solid fa-book" iconBgClass="bg-emerald-500/10" iconColorClass="text-emerald-400">
                     <Section title="Wiki Pages">
                         <p>
                             Authoring uses a rich-text WikiEditor. Pages live in a tree (drag-and-drop reorder). Each page can carry a <strong>clearance level</strong> + <strong>limiting markers</strong> — readers must pass both gates to see it. Pages below your clearance are hidden, not greyed.
@@ -515,7 +518,7 @@ const HelpView: React.FC = () => {
                     </Section>
                 </HelpCard>
 
-                <HelpCard title="Notifications & Sounds" icon="fa-solid fa-bell" iconBgClass="bg-pink-500/10" iconColorClass="text-pink-400">
+                <HelpCard title={t('Notifications & Sounds')} icon="fa-solid fa-bell" iconBgClass="bg-pink-500/10" iconColorClass="text-pink-400">
                     <Section title="Volume Control">
                         <p>
                             The <strong>master volume slider</strong> in the header controls all platform sounds: request alerts, assignment notifications, EAM sirens, and radio cues. Test it with the speaker icon next to the slider. The radio voice volume is independent — see Tactical Radio.
@@ -538,7 +541,7 @@ const HelpView: React.FC = () => {
                 </HelpCard>
 
                 {hasPermission('admin:access') && (
-                    <HelpCard title="System Administration" icon="fa-solid fa-screwdriver-wrench" iconBgClass="bg-slate-500/10" iconColorClass="text-slate-300">
+                    <HelpCard title={t('System Administration')} icon="fa-solid fa-screwdriver-wrench" iconBgClass="bg-slate-500/10" iconColorClass="text-slate-300">
                         <Section title="Admin Panel">
                             <p>
                                 Single configuration view, organised into eleven groups: Dashboard, User Management, Organization, Recognition, Communications, Governance, Integrations, Operations, Appearance, Maintenance, Platform. Tabs are <em>permission-gated</em> — if your role lacks a permission, the tab is hidden, not greyed. Active tab persists on reload.
@@ -590,14 +593,14 @@ const HelpView: React.FC = () => {
 
             <div className="bg-slate-900/60 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center mt-6 gap-4">
                 <div>
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Compliance</h3>
-                    <p className="text-sm text-slate-400 mt-1">Review the organization's terms of service and data policies.</p>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('Compliance')}</h3>
+                    <p className="text-sm text-slate-400 mt-1">{t("Review the organization's terms of service and data policies.")}</p>
                 </div>
                 <button
                     onClick={() => setActiveView('tos')}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition whitespace-nowrap"
                 >
-                    <i className="fa-solid fa-file-contract"></i> View Terms of Service
+                    <i className="fa-solid fa-file-contract"></i> {t('View Terms of Service')}
                 </button>
             </div>
             </div>

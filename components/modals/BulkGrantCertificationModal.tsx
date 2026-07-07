@@ -5,6 +5,7 @@ import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
  * single-user flow.
  */
 const BulkGrantCertificationModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { certifications } = useMembers();
     const [certificationId, setCertificationId] = useState<number | null>(null);
     const bulk = useBulkProgress<number>();
@@ -48,31 +50,31 @@ const BulkGrantCertificationModal: React.FC<Props> = ({ selectedUsers, onClose }
 
     return (
         <BulkActionShell
-            title="Grant Certification"
-            subtitle="The chosen certification will be added to every selected member."
+            title={t('Grant Certification')}
+            subtitle={t('The chosen certification will be added to every selected member.')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel="Grant"
+            confirmLabel={t('Grant')}
             confirmDisabled={certificationId == null}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
         >
             {!isRunning && !isFinished && (
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">Certification</label>
+                    <label className="text-sm font-bold text-white">{t('Certification')}</label>
                     <select
                         value={certificationId ?? ''}
                         onChange={(e) => setCertificationId(e.target.value ? Number(e.target.value) : null)}
                         className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:border-sky-500/50"
                     >
-                        <option value="">— Select a certification —</option>
+                        <option value="">{t('— Select a certification —')}</option>
                         {(certifications || []).map((c) => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
                     <p className="text-[11px] text-slate-500">
-                        Note: certifications can be granted multiple times to the same user. Duplicates won't be deduped.
+                        {t("Note: certifications can be granted multiple times to the same user. Duplicates won't be deduped.")}
                     </p>
                 </div>
             )}

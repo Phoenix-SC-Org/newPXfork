@@ -6,6 +6,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface RequestClearanceModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
     const { rpcAction, refreshHR } = useData();
     const { securityClearances, limitingMarkers } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [targetLevelId, setTargetLevelId] = useState<string>('');
     const [requestedMarkers, setRequestedMarkers] = useState<Set<number>>(() => new Set());
@@ -82,15 +84,15 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
 
             // UX Optimization: Close immediately, refresh in background
             onClose();
-            addToast("Clearance Request Submitted", <i className="fa-solid fa-lock"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: "Your security clearance request has been filed for review." });
+            addToast(t('Clearance Request Submitted'), <i className="fa-solid fa-lock"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: t('Your security clearance request has been filed for review.') });
             refreshHR();
 
         } catch (err: any) {
             console.error("Failed to submit request:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err.message || "An error occurred while submitting your request." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err.message || t('An error occurred while submitting your request.') });
             setIsLoading(false);
         }
-    }, [targetLevelId, requestedMarkers, justification, currentUser, rpcAction, refreshHR, onClose, securityClearances, limitingMarkers, addToast]);
+    }, [targetLevelId, requestedMarkers, justification, currentUser, rpcAction, refreshHR, onClose, securityClearances, limitingMarkers, addToast, t]);
 
     const hasSelection = targetLevelId !== '' || requestedMarkers.size > 0;
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/50 outline-hidden transition-all";
@@ -100,8 +102,8 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Request Security Clearance"
-            subtitle="Access Control Protocol"
+            title={t('Request Security Clearance')}
+            subtitle={t('Access Control Protocol')}
             icon="fa-solid fa-user-shield"
             color="emerald"
             width="max-w-lg"
@@ -109,29 +111,29 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     <p className="text-xs text-slate-400 leading-relaxed">
-                        Select the Clearance Level upgrade and/or specific Compartmented Access markers you require.
+                        {t('Select the Clearance Level upgrade and/or specific Compartmented Access markers you require.')}
                     </p>
 
                     <div className="space-y-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
                         <div>
-                            <label className={labelClass}>Target Clearance Level (Optional)</label>
+                            <label className={labelClass}>{t('Target Clearance Level (Optional)')}</label>
                             <select
                                 value={targetLevelId}
                                 onChange={(e) => setTargetLevelId(e.target.value)}
                                 className={inputClass}
                                 disabled={isLoading}
                             >
-                                <option value="">- No Change -</option>
+                                <option value="">{t('- No Change -')}</option>
                                 {availableLevels.length > 0 ? availableLevels.map(lvl => (
-                                    <option key={lvl.id} value={lvl.id}>Level {lvl.level} - {lvl.name}</option>
+                                    <option key={lvl.id} value={lvl.id}>{t('Level {level} - {name}', { level: lvl.level, name: lvl.name })}</option>
                                 )) : (
-                                    <option value="" disabled>No higher levels available</option>
+                                    <option value="" disabled>{t('No higher levels available')}</option>
                                 )}
                             </select>
                         </div>
 
                         <div>
-                            <label className={labelClass}>Compartment Markers (Optional)</label>
+                            <label className={labelClass}>{t('Compartment Markers (Optional)')}</label>
                             <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                                 {availableMarkers.length > 0 ? availableMarkers.map(m => (
                                     <label key={m.id} className="flex items-center space-x-3 cursor-pointer group bg-slate-900/50 p-2 rounded-lg border border-transparent hover:border-slate-700 transition-colors">
@@ -147,20 +149,20 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
                                         </div>
                                     </label>
                                 )) : (
-                                    <p className="text-xs text-slate-500 italic">No additional markers available.</p>
+                                    <p className="text-xs text-slate-500 italic">{t('No additional markers available.')}</p>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Justification / Need to Know</label>
+                        <label className={labelClass}>{t('Justification / Need to Know')}</label>
                         <textarea
                             value={justification}
                             onChange={(e) => setJustification(e.target.value)}
                             rows={4}
                             className={`${inputClass} resize-none`}
-                            placeholder="Explain why you require this access..."
+                            placeholder={t('Explain why you require this access...')}
                             required
                             disabled={isLoading}
                         />
@@ -168,19 +170,19 @@ const RequestClearanceModal: React.FC<RequestClearanceModalProps> = ({ isOpen, o
 
                     <div className="bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/30 text-[10px] text-emerald-300">
                         <i className="fa-solid fa-circle-info mr-2"></i>
-                        Submitting this request will open a formal vetting file. You may be contacted for an interview.
+                        {t('Submitting this request will open a formal vetting file. You may be contacted for an interview.')}
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition disabled:opacity-50"
                         disabled={isLoading || !hasSelection}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-paper-plane"></i> Submit Application</>}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-paper-plane"></i> {t('Submit Application')}</>}
                     </button>
                 </div>
             </form>

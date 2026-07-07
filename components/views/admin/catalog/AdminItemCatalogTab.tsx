@@ -4,6 +4,7 @@ import { useNotification } from '../../../../contexts/NotificationContext';
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { QmPlatformItemWithUsage, QmPlatformCategory, ToastVariant } from '../../../../types';
 import { CategoryEditor } from './AdminCommodityCatalogTab';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 const PAGE_SIZE = 50;
 
@@ -24,6 +25,7 @@ type ToastFn = (message: string, type?: 'error' | 'success' | 'warning' | 'info'
 export default function AdminItemCatalogTab() {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const toast = useCallback<ToastFn>((message, type = 'info') => {
         addToast(message, null, '', { variant: type as ToastVariant });
     }, [addToast]);
@@ -57,9 +59,9 @@ export default function AdminItemCatalogTab() {
             const cats = await rpcAction('catalog:list_item_categories', {});
             if (cats) setCategories(cats);
         } catch (e: any) {
-            toast(`Failed to load categories: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Failed to load categories: {msg}', { msg: e?.message || t('unknown') }), 'error');
         }
-    }, [rpcAction, toast]);
+    }, [rpcAction, toast, t]);
 
     const loadCount = useCallback(async () => {
         try {
@@ -89,11 +91,11 @@ export default function AdminItemCatalogTab() {
             setItems(Array.isArray(r) ? r : []);
         } catch (e: any) {
             if (seq !== requestSeqRef.current) return;
-            toast(`Failed to load items: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Failed to load items: {msg}', { msg: e?.message || t('unknown') }), 'error');
         } finally {
             if (seq === requestSeqRef.current) setLoading(false);
         }
-    }, [rpcAction, debouncedSearch, filterCategoryId, hideVehicles, page, toast]);
+    }, [rpcAction, debouncedSearch, filterCategoryId, hideVehicles, page, toast, t]);
 
     // Reset page when a non-page filter changes (skipping first mount).
     const isFirstFilterChangeRef = useRef(true);
@@ -124,17 +126,17 @@ export default function AdminItemCatalogTab() {
             const res = await rpcAction('catalog:sync_items', {});
             const errCount = (res.itemErrors || 0) + (res.fetchErrors?.length || 0);
             toast(
-                `Sync complete: ${res.itemsSynced} items synced, ${res.itemsSkipped} skipped, ${res.categoriesInserted} new + ${res.categoriesUpdated} updated categories, ${errCount} errors`,
+                t('Sync complete: {synced} items synced, {skipped} skipped, {inserted} new + {updated} updated categories, {errors} errors', { synced: res.itemsSynced, skipped: res.itemsSkipped, inserted: res.categoriesInserted, updated: res.categoriesUpdated, errors: errCount }),
                 errCount > 0 ? 'warning' : 'success'
             );
             if (res.fetchErrors?.length) setSyncErrors(res.fetchErrors);
             await Promise.all([loadCategories(), loadCount(), load()]);
         } catch (e: any) {
-            toast(`Sync failed: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Sync failed: {msg}', { msg: e?.message || t('unknown') }), 'error');
         } finally {
             setSyncLoading(false);
         }
-    }, [rpcAction, toast, loadCategories, loadCount, load]);
+    }, [rpcAction, toast, loadCategories, loadCount, load, t]);
 
     const openEdit = (item: QmPlatformItemWithUsage) => {
         setEditing(item);
@@ -153,9 +155,9 @@ export default function AdminItemCatalogTab() {
             await rpcAction('catalog:update_item', { itemId: editing.id, updates });
             setEditing(null);
             load();
-            toast('Item updated', 'success');
+            toast(t('Item updated'), 'success');
         } catch (e: any) {
-            toast(e?.message || 'Update failed', 'error');
+            toast(e?.message || t('Update failed'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -163,16 +165,16 @@ export default function AdminItemCatalogTab() {
 
     const handleDelete = async (item: QmPlatformItemWithUsage) => {
         const msg = item.usageCount > 0
-            ? `"${item.name}" is referenced by ${item.usageCount} inventory row(s). You must merge it first to reassign those references.`
-            : `Delete "${item.name}"? This cannot be undone.`;
-        const ok = await confirm({ title: 'Delete Item', message: msg, confirmText: 'Delete', variant: 'danger' });
+            ? t('"{name}" is referenced by {count} inventory row(s). You must merge it first to reassign those references.', { name: item.name, count: item.usageCount })
+            : t('Delete "{name}"? This cannot be undone.', { name: item.name });
+        const ok = await confirm({ title: t('Delete Item'), message: msg, confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         try {
             await rpcAction('catalog:delete_item', { itemId: item.id });
             await Promise.all([loadCount(), load()]);
-            toast(`Deleted "${item.name}"`, 'success');
+            toast(t('Deleted "{name}"', { name: item.name }), 'success');
         } catch (e: any) {
-            toast(e?.message || 'Delete failed', 'error');
+            toast(e?.message || t('Delete failed'), 'error');
         }
     };
 
@@ -189,17 +191,17 @@ export default function AdminItemCatalogTab() {
                 <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-3">
                         <i className="fa-solid fa-box-open text-purple-400"></i>
-                        Item Catalog
+                        {t('Item Catalog')}
                         <span className="text-sm font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-sm">{totalCount}</span>
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Platform-wide item database synced from uexcorp.space.</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('Platform-wide item database synced from uexcorp.space.')}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShowCategories(v => !v)}
                         className="flex items-center gap-2 bg-slate-800 text-slate-300 border border-white/10 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                     >
-                        <i className="fa-solid fa-tags"></i> Categories ({categories.length})
+                        <i className="fa-solid fa-tags"></i> {t('Categories')} ({categories.length})
                     </button>
                     <button
                         onClick={handleSync}
@@ -207,7 +209,7 @@ export default function AdminItemCatalogTab() {
                         className="flex items-center gap-2 bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                     >
                         {syncLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrows-rotate"></i>}
-                        {syncLoading ? 'Syncing...' : 'Sync from UEX'}
+                        {syncLoading ? t('Syncing...') : t('Sync from UEX')}
                     </button>
                 </div>
             </div>
@@ -216,7 +218,7 @@ export default function AdminItemCatalogTab() {
             {syncErrors.length > 0 && (
                 <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
                     <p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">
-                        Per-Category Fetch Errors ({syncErrors.length})
+                        {t('Per-Category Fetch Errors')} ({syncErrors.length})
                     </p>
                     <div className="max-h-32 overflow-y-auto custom-scrollbar text-[11px] text-red-300/80 font-mono space-y-0.5">
                         {syncErrors.map(e => (
@@ -247,20 +249,20 @@ export default function AdminItemCatalogTab() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name, subcategory, company…"
+                            placeholder={t('Search by name, subcategory, company…')}
                             className="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-hidden focus:border-purple-500"
                         />
                     </div>
                     <select value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)} className={selectClass}>
-                        <option value="">All Categories</option>
-                        {categories.map(c => <option key={c.id} value={c.id}>{c.displayName}{c.isHidden ? ' (hidden)' : ''}</option>)}
+                        <option value="">{t('All Categories')}</option>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.displayName}{c.isHidden ? ` (${t('hidden')})` : ''}</option>)}
                     </select>
                     <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer whitespace-nowrap">
                         <input type="checkbox" checked={hideVehicles} onChange={(e) => setHideVehicles(e.target.checked)} className="accent-purple-500" />
-                        Hide vehicle items
+                        {t('Hide vehicle items')}
                     </label>
                 </div>
-                <p className="text-[10px] text-slate-600 mt-2">{totalCount} items match · showing {items.length} on this page</p>
+                <p className="text-[10px] text-slate-600 mt-2">{t('{count} items match · showing {shown} on this page', { count: totalCount, shown: items.length })}</p>
             </div>
 
             {/* Table */}
@@ -269,24 +271,24 @@ export default function AdminItemCatalogTab() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-black/30 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">
                             <tr>
-                                <th className="p-3">Name</th>
-                                <th className="p-3">Category</th>
-                                <th className="p-3">Subcategory</th>
-                                <th className="p-3">Company</th>
-                                <th className="p-3">Size</th>
-                                <th className="p-3 text-center">Flags</th>
-                                <th className="p-3 text-center">Usage</th>
-                                <th className="p-3 text-right">Actions</th>
+                                <th className="p-3">{t('Name')}</th>
+                                <th className="p-3">{t('Category')}</th>
+                                <th className="p-3">{t('Subcategory')}</th>
+                                <th className="p-3">{t('Company')}</th>
+                                <th className="p-3">{t('Size')}</th>
+                                <th className="p-3 text-center">{t('Flags')}</th>
+                                <th className="p-3 text-center">{t('Usage')}</th>
+                                <th className="p-3 text-right">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading && (
-                                <tr><td colSpan={8} className="px-3 py-6 text-center text-xs text-slate-500"><i className="fa-solid fa-spinner animate-spin mr-2" />Loading…</td></tr>
+                                <tr><td colSpan={8} className="px-3 py-6 text-center text-xs text-slate-500"><i className="fa-solid fa-spinner animate-spin mr-2" />{t('Loading…')}</td></tr>
                             )}
                             {!loading && items.length === 0 && (
                                 <tr><td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-600">
                                     <i className="fa-solid fa-box-open text-3xl mb-3 opacity-30 block"></i>
-                                    {totalCount === 0 ? 'The catalog is empty. Click "Sync from UEX" to populate.' : 'No items match the current filters.'}
+                                    {totalCount === 0 ? t('The catalog is empty. Click "Sync from UEX" to populate.') : t('No items match the current filters.')}
                                 </td></tr>
                             )}
                             {!loading && items.map(item => {
@@ -300,9 +302,9 @@ export default function AdminItemCatalogTab() {
                                         <td className="p-3 text-slate-500 text-xs">{item.sizeLabel || '-'}</td>
                                         <td className="p-3">
                                             <div className="flex justify-center gap-1 flex-wrap">
-                                                {item.isVehicleItem && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm" title="Vehicle item">veh</span>}
-                                                {item.isCommodity && <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">cmd</span>}
-                                                {item.isHarvestable && <span className="bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">hrv</span>}
+                                                {item.isVehicleItem && <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm" title={t('Vehicle item')}>{t('veh')}</span>}
+                                                {item.isCommodity && <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">{t('cmd')}</span>}
+                                                {item.isHarvestable && <span className="bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">{t('hrv')}</span>}
                                             </div>
                                         </td>
                                         <td className="p-3 text-center">
@@ -314,10 +316,10 @@ export default function AdminItemCatalogTab() {
                                         </td>
                                         <td className="p-3 text-right">
                                             <div className="flex justify-end gap-1">
-                                                <button onClick={() => openEdit(item)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm" title="Edit">
+                                                <button onClick={() => openEdit(item)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm" title={t('Edit')}>
                                                     <i className="fa-solid fa-pen-to-square"></i>
                                                 </button>
-                                                <button onClick={() => handleDelete(item)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm" title="Delete">
+                                                <button onClick={() => handleDelete(item)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm" title={t('Delete')}>
                                                     <i className="fa-solid fa-trash-can"></i>
                                                 </button>
                                             </div>
@@ -332,13 +334,13 @@ export default function AdminItemCatalogTab() {
 
             {/* Pagination */}
             <div className="flex justify-between items-center text-sm text-slate-400 mb-8">
-                <p className="text-xs">Page {page + 1} of {totalPages} · {totalCount} total</p>
+                <p className="text-xs">{t('Page {page} of {total} · {count} total', { page: page + 1, total: totalPages, count: totalCount })}</p>
                 <div className="flex gap-2">
                     <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        <i className="fa-solid fa-chevron-left mr-1"></i> Prev
+                        <i className="fa-solid fa-chevron-left mr-1"></i> {t('Prev')}
                     </button>
                     <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1} className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700">
-                        Next <i className="fa-solid fa-chevron-right ml-1"></i>
+                        {t('Next')} <i className="fa-solid fa-chevron-right ml-1"></i>
                     </button>
                 </div>
             </div>
@@ -351,7 +353,7 @@ export default function AdminItemCatalogTab() {
 
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Edit Item</h3>
+                                <h3 className="text-lg font-bold text-white">{t('Edit Item')}</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">ID: {editing.id} | UUID: {editing.externalUuid || '—'} | UEX#: {editing.externalId ?? '—'}</p>
                             </div>
                             <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-white">
@@ -367,86 +369,86 @@ export default function AdminItemCatalogTab() {
                             )}
 
                             <div>
-                                <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3">Basic Info</h4>
+                                <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3">{t('Basic Info')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelClass}>Name</label>
+                                        <label className={labelClass}>{t('Name')}</label>
                                         <input value={editForm.name || ''} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Subcategory (UEX label)</label>
+                                        <label className={labelClass}>{t('Subcategory (UEX label)')}</label>
                                         <input value={editForm.subcategory || ''} onChange={(e) => setEditForm({ ...editForm, subcategory: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Platform Category</label>
+                                        <label className={labelClass}>{t('Platform Category')}</label>
                                         <select
                                             value={editForm.platformCategoryId ?? ''}
                                             onChange={(e) => setEditForm({ ...editForm, platformCategoryId: e.target.value ? Number(e.target.value) : null })}
                                             className={inputClass}
                                         >
-                                            <option value="">- None -</option>
+                                            <option value="">{t('- None -')}</option>
                                             {categories.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Company</label>
+                                        <label className={labelClass}>{t('Company')}</label>
                                         <input value={editForm.companyName || ''} onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Vehicle Name (if attached)</label>
+                                        <label className={labelClass}>{t('Vehicle Name (if attached)')}</label>
                                         <input value={editForm.vehicleName || ''} onChange={(e) => setEditForm({ ...editForm, vehicleName: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Size</label>
+                                        <label className={labelClass}>{t('Size')}</label>
                                         <input value={editForm.sizeLabel || ''} onChange={(e) => setEditForm({ ...editForm, sizeLabel: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Quality</label>
+                                        <label className={labelClass}>{t('Quality')}</label>
                                         <input type="number" value={editForm.quality ?? ''} onChange={(e) => setEditForm({ ...editForm, quality: e.target.value === '' ? null : Number(e.target.value) })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Game Version</label>
+                                        <label className={labelClass}>{t('Game Version')}</label>
                                         <input value={editForm.gameVersion || ''} onChange={(e) => setEditForm({ ...editForm, gameVersion: e.target.value })} className={inputClass} />
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">Flags</h4>
+                                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">{t('Flags')}</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                     <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                         <input type="checkbox" checked={!!editForm.isVehicleItem} onChange={(e) => setEditForm({ ...editForm, isVehicleItem: e.target.checked })} className="accent-purple-500" />
-                                        Vehicle Item
+                                        {t('Vehicle Item')}
                                     </label>
                                     <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                         <input type="checkbox" checked={!!editForm.isCommodity} onChange={(e) => setEditForm({ ...editForm, isCommodity: e.target.checked })} className="accent-purple-500" />
-                                        Commodity
+                                        {t('Commodity')}
                                     </label>
                                     <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                         <input type="checkbox" checked={!!editForm.isHarvestable} onChange={(e) => setEditForm({ ...editForm, isHarvestable: e.target.checked })} className="accent-purple-500" />
-                                        Harvestable
+                                        {t('Harvestable', { context: 'commodityFlag' })}
                                     </label>
                                 </div>
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Media & Links</h4>
+                                <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">{t('Media & Links')}</h4>
                                 <div className="space-y-3">
                                     <div>
-                                        <label className={labelClass}>Thumbnail URL</label>
+                                        <label className={labelClass}>{t('Thumbnail URL')}</label>
                                         <input value={editForm.thumbnailUrl || ''} onChange={(e) => setEditForm({ ...editForm, thumbnailUrl: e.target.value })} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Screenshot URL</label>
+                                        <label className={labelClass}>{t('Screenshot URL')}</label>
                                         <input value={editForm.screenshotUrl || ''} onChange={(e) => setEditForm({ ...editForm, screenshotUrl: e.target.value })} className={inputClass} />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
-                                            <label className={labelClass}>Wiki URL</label>
+                                            <label className={labelClass}>{t('Wiki URL')}</label>
                                             <input value={editForm.wikiUrl || ''} onChange={(e) => setEditForm({ ...editForm, wikiUrl: e.target.value })} className={inputClass} />
                                         </div>
                                         <div>
-                                            <label className={labelClass}>Pledge Store URL</label>
+                                            <label className={labelClass}>{t('Pledge Store URL')}</label>
                                             <input value={editForm.storeUrl || ''} onChange={(e) => setEditForm({ ...editForm, storeUrl: e.target.value })} className={inputClass} />
                                         </div>
                                     </div>
@@ -455,9 +457,9 @@ export default function AdminItemCatalogTab() {
                         </div>
 
                         <div className="p-4 border-t border-white/10 flex justify-end gap-3">
-                            <button onClick={() => setEditing(null)} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white">Cancel</button>
+                            <button onClick={() => setEditing(null)} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white">{t('Cancel')}</button>
                             <button onClick={handleSave} disabled={isSaving} className="px-6 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/50 hover:bg-purple-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50">
-                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Changes'}
+                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Changes')}
                             </button>
                         </div>
                     </div>

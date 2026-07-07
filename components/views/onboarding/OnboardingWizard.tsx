@@ -364,7 +364,7 @@ function parseImportUsers(ndjson: string): ImportUserOption[] {
 }
 
 function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; selfDiscordId?: string }) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [ndjson, setNdjson] = useState('');
     const [filename, setFilename] = useState('');
     const [manifest, setManifest] = useState<{ rows: number; tables: number; org?: string } | null>(null);
@@ -411,16 +411,16 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
         setRunning(true); setError(''); setDone(false); setPct(0); setLogLines([]);
         try {
             await apiService.importOrgStream(ndjson, (evt: any) => {
-                if (evt.type === 'start') pushLog(t('Importing {rows} rows across {tables} tables…', { rows: evt.totalRows.toLocaleString(), tables: evt.totalTables }));
+                if (evt.type === 'start') pushLog(t('Importing {rows} rows across {tables} tables…', { rows: evt.totalRows.toLocaleString(locale), tables: evt.totalTables }));
                 else if (evt.type === 'phase') pushLog(`• ${evt.phase}…`);
                 else if (evt.type === 'table') {
-                    pushLog(`✓ ${evt.table} (${evt.inserted.toLocaleString()})`);
+                    pushLog(`✓ ${evt.table} (${evt.inserted.toLocaleString(locale)})`);
                     if (evt.totalRows > 0) setPct(Math.min(100, Math.round((evt.rowsInserted / evt.totalRows) * 100)));
                 }
                 else if (evt.type === 'warning') pushLog(`⚠ ${evt.message}`);
                 else if (evt.type === 'done') {
                     setPct(100); setDone(true);
-                    pushLog(t('Done — {rows} rows, {tables} tables.', { rows: evt.result.rowsInserted.toLocaleString(), tables: evt.result.tablesProcessed }));
+                    pushLog(t('Done — {rows} rows, {tables} tables.', { rows: evt.result.rowsInserted.toLocaleString(locale), tables: evt.result.tablesProcessed }));
                 }
                 else if (evt.type === 'error') { setError(evt.message); pushLog(`✗ ${evt.message}`); }
             }, mergeUserId ?? undefined);
@@ -449,7 +449,7 @@ function ImportStep({ onContinue, selfDiscordId }: { onContinue: () => void; sel
             {manifest && !running && !done && (
                 <div className="rounded-lg border border-white/5 bg-slate-900/50 px-4 py-3 mb-4 text-xs text-slate-300">
                     <div>{t('Source org:')} <span className="text-white">{manifest.org || '—'}</span></div>
-                    <div>{t('{rows} rows across {tables} tables', { rows: manifest.rows.toLocaleString(), tables: manifest.tables })}</div>
+                    <div>{t('{rows} rows across {tables} tables', { rows: manifest.rows.toLocaleString(locale), tables: manifest.tables })}</div>
                     <p className="text-slate-500 mt-1">{t('Only standalone-safe data is imported; billing/cross-org/secret tables are excluded automatically.')}</p>
                 </div>
             )}

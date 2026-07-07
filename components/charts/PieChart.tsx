@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface PieChartProps {
     data: { name: string; value: number }[];
@@ -9,6 +10,7 @@ interface PieChartProps {
 }
 
 const PieChart: React.FC<PieChartProps> = ({ data, title, icon, unit = '' }) => {
+    const { t, locale } = useI18n();
     const total = data.reduce((acc, item) => acc + item.value, 0);
     const colors = ['#38bdf8', '#34d399', '#facc15', '#fb923c', '#f87171', '#c084fc', '#818cf8', '#a3e635', '#22d3ee', '#f472b6'];
     
@@ -43,7 +45,7 @@ const PieChart: React.FC<PieChartProps> = ({ data, title, icon, unit = '' }) => 
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="text-center">
-                                    <span className="text-xl font-bold text-white block leading-none">{total.toLocaleString()}</span>
+                                    <span className="text-xl font-bold text-white block leading-none">{total.toLocaleString(locale)}</span>
                                     {unit && <span className="text-[10px] text-slate-400 block uppercase mt-0.5">{unit}</span>}
                                 </div>
                             </div>
@@ -56,7 +58,7 @@ const PieChart: React.FC<PieChartProps> = ({ data, title, icon, unit = '' }) => 
                                         <span className="text-slate-300 truncate" title={segment.name}>{segment.name}</span>
                                    </div>
                                    <div className="text-right shrink-0">
-                                        <span className="font-semibold text-white">{segment.value.toLocaleString()}</span>
+                                        <span className="font-semibold text-white">{segment.value.toLocaleString(locale)}</span>
                                         <span className="text-[10px] text-slate-500 ml-1">({segment.percent.toFixed(0)}%)</span>
                                    </div>
                                 </div>
@@ -65,7 +67,7 @@ const PieChart: React.FC<PieChartProps> = ({ data, title, icon, unit = '' }) => 
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-full">
-                        <p className="text-slate-500 text-sm italic">No data available.</p>
+                        <p className="text-slate-500 text-sm italic">{t('No data available.')}</p>
                     </div>
                 )}
             </div>

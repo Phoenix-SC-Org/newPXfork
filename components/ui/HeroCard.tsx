@@ -2,8 +2,10 @@
 import React from 'react';
 import { useConfig } from '../../contexts/ConfigContext';
 import { sanitizeImageUrl } from '../../lib/imageUrl';
+import { useI18n } from '../../i18n/I18nContext';
 
 const HeroCard: React.FC = () => {
+    const { t } = useI18n();
     const { heroCardConfig } = useConfig();
 
     // Hide card if neither URL is configured
@@ -30,7 +32,7 @@ const HeroCard: React.FC = () => {
                     className="flex items-center justify-center w-full bg-[#5865F2] hover:bg-[#4f5bda] text-white font-bold text-xs uppercase tracking-wide px-4 py-2.5 rounded-lg transition-colors"
                 >
                     <i className="fa-brands fa-discord h-4 w-4 mr-2" />
-                    Join Discord
+                    {t('Join Discord')}
                 </a>
                 <a
                     href={heroCardConfig.organizationUrl}
@@ -38,7 +40,7 @@ const HeroCard: React.FC = () => {
                     rel="noopener noreferrer"
                     className="flex items-center justify-center w-full bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wide px-4 py-2.5 rounded-lg transition-colors border border-white/10"
                 >
-                    <span className="mr-2">RSI Org Page</span>
+                    <span className="mr-2">{t('RSI Org Page')}</span>
                     <i className="fa-solid fa-arrow-up-right-from-square h-3 w-3" />
                 </a>
             </div>

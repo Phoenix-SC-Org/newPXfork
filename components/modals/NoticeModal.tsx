@@ -5,6 +5,7 @@ import { useAnnouncements } from '../../contexts/AnnouncementsContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface NoticeModalProps {
     isOpen: boolean;
@@ -24,6 +25,7 @@ const AUDIENCE_CONFIG: { value: AudienceOption; label: string; description: stri
 const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) => {
     const { addAnnouncement, updateAnnouncement } = useAnnouncements();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
@@ -76,7 +78,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title.trim() || !body.trim() || audience.length === 0) {
-            addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "Title, Body, and at least one Audience are required." });
+            addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('Title, Body, and at least one Audience are required.') });
             return;
         }
 
@@ -98,10 +100,10 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
             onClose();
         } catch (err) {
             console.error("Failed to save notice:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the notice. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while saving the notice. Please try again.') });
             setIsLoading(false);
         }
-    }, [title, body, type, audience, expiryDate, isEditing, notice, addAnnouncement, updateAnnouncement, onClose, addToast]);
+    }, [title, body, type, audience, expiryDate, isEditing, notice, addAnnouncement, updateAnnouncement, onClose, addToast, t]);
 
     if (!isOpen) return null;
 
@@ -111,8 +113,8 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Notice' : 'Create Notice'}
-            subtitle="Broadcast System"
+            title={isEditing ? t('Edit Notice') : t('Create Notice')}
+            subtitle={t('Broadcast System')}
             icon="fa-solid fa-bullhorn"
             color="sky"
             width="max-w-2xl"
@@ -122,22 +124,22 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
                 <div className="p-6 space-y-6">
                     {/* scheme-light on inputs handles calendar icon visibility */}
                     <div>
-                        <label htmlFor="noticeTitle" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Title</label>
+                        <label htmlFor="noticeTitle" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Title')}</label>
                         <input type="text" id="noticeTitle" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all" required disabled={isLoading} />
                     </div>
                     <div>
-                        <label htmlFor="noticeBody" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Body</label>
+                        <label htmlFor="noticeBody" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Body')}</label>
                         <textarea id="noticeBody" value={body} onChange={e => setBody(e.target.value)} rows={5} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all resize-none" required disabled={isLoading} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="noticeType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Notice Type</label>
+                            <label htmlFor="noticeType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Notice Type')}</label>
                             <select id="noticeType" value={type} onChange={e => setType(e.target.value as AnnouncementType)} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all" disabled={isLoading}>
-                                {Object.values(AnnouncementType).map(t => <option key={t} value={t}>{t}</option>)}
+                                {Object.values(AnnouncementType).map(at => <option key={at} value={at}>{t(at, { context: 'announcement' })}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="expiryDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Expiry Date (Optional)</label>
+                            <label htmlFor="expiryDate" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Expiry Date (Optional)')}</label>
                             <input
                                 type="datetime-local"
                                 id="expiryDate"
@@ -149,7 +151,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Audience</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Audience')}</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {audienceOptions.map(opt => (
                                 <label key={opt.value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${audience.includes(opt.value) ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-950 border-slate-700 hover:bg-slate-900'}`}>
@@ -163,9 +165,9 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2">
                                             <i className={`${opt.icon} text-xs ${audience.includes(opt.value) ? 'text-sky-400' : 'text-slate-500'}`}></i>
-                                            <span className="text-sm font-bold text-slate-300">{opt.label}</span>
+                                            <span className="text-sm font-bold text-slate-300">{t(opt.label)}</span>
                                         </div>
-                                        <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{opt.description}</p>
+                                        <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{t(opt.description)}</p>
                                     </div>
                                 </label>
                             ))}
@@ -175,13 +177,13 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, notice }) =>
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 rounded-b-xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-sky-500/50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Notice')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Notice'))}
                     </button>
                 </div>
             </form>

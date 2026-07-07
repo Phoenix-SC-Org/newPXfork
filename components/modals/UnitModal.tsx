@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface UnitModalProps {
     isOpen: boolean;
@@ -19,6 +20,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
     const { units, addUnit, updateUnit, members } = useMembers();
     const { hasPermission } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [parentUnitId, setParentUnitId] = useState<string>('');
     const [leaderId, setLeaderId] = useState<string>('');
@@ -97,18 +99,18 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                 // recursive 'children' array; passing it to the RPC causes payload
                 // bloat and circular-reference errors. Only pass the ID and new data.
                 await updateUnit({ id: unit.id, ...unitData });
-                addToast("Unit Updated", <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "Unit details have been saved successfully." });
+                addToast(t("Unit Updated"), <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t("Unit details have been saved successfully.") });
             } else {
                 await addUnit(unitData);
-                addToast("Unit Created", <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "New unit has been added to the organizational structure." });
+                addToast(t("Unit Created"), <i className="fa-solid fa-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t("New unit has been added to the organizational structure.") });
             }
             onClose();
         } catch (err) {
             console.error("Failed to save unit:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save unit. Please try again." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to save unit. Please try again.") });
             setIsLoading(false);
         }
-    }, [name, parentUnitId, leaderId, logoUrl, motto, description, sortOrder, hasRadioChannel, linkedChannelId, isRestricted, isEditing, unit, addUnit, updateUnit, onClose, addToast]);
+    }, [name, parentUnitId, leaderId, logoUrl, motto, description, sortOrder, hasRadioChannel, linkedChannelId, isRestricted, isEditing, unit, addUnit, updateUnit, onClose, addToast, t]);
 
     const availableParents = [...units].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name)).filter(u => u.id !== unit?.id);
 
@@ -119,8 +121,8 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Unit' : 'Create Unit'}
-            subtitle="Organizational Structure"
+            title={isEditing ? t('Edit Unit') : t('Create Unit')}
+            subtitle={t('Organizational Structure')}
             icon="fa-solid fa-sitemap"
             color="sky"
             width="max-w-xl"
@@ -130,50 +132,50 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>Unit Name</label>
+                            <label className={labelClass}>{t('Unit Name')}</label>
                             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required disabled={isLoading} />
                         </div>
                         <div>
-                            <label className={labelClass}>Parent Unit</label>
+                            <label className={labelClass}>{t('Parent Unit')}</label>
                             <select
                                 value={parentUnitId}
                                 onChange={(e) => setParentUnitId(e.target.value)}
                                 className={inputClass}
                                 disabled={isLoading || !canManageStructure}
                             >
-                                <option value="">- Top Level -</option>
+                                <option value="">{t('- Top Level -')}</option>
                                 {availableParents.map(parent => <option key={parent.id} value={parent.id}>{parent.name}</option>)}
                             </select>
-                            {!canManageStructure && <p className="text-[9px] text-slate-500 mt-1 italic">Contact admin to change hierarchy.</p>}
+                            {!canManageStructure && <p className="text-[9px] text-slate-500 mt-1 italic">{t('Contact admin to change hierarchy.')}</p>}
                         </div>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Unit Leader</label>
+                        <label className={labelClass}>{t('Unit Leader')}</label>
                         <select value={leaderId} onChange={(e) => setLeaderId(e.target.value)} className={inputClass} disabled={isLoading}>
-                            <option value="">- No Assigned Leader -</option>
-                            {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.rank?.name || 'Unranked'})</option>)}
+                            <option value="">{t('- No Assigned Leader -')}</option>
+                            {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.rank?.name || t('Unranked')})</option>)}
                         </select>
                     </div>
 
                     <div className="border-t border-slate-700/50 pt-6">
-                        <h4 className="text-sm font-bold text-white mb-4">Branding & Identity</h4>
+                        <h4 className="text-sm font-bold text-white mb-4">{t('Branding & Identity')}</h4>
                         <div>
-                            <label className={labelClass}>Logo URL</label>
+                            <label className={labelClass}>{t('Logo URL')}</label>
                             <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} disabled={isLoading} />
                         </div>
                         <div className="mt-4">
-                            <label className={labelClass}>Motto</label>
-                            <input type="text" value={motto} onChange={(e) => setMotto(e.target.value)} placeholder="e.g. Semper Fidelis" className={inputClass} disabled={isLoading} />
+                            <label className={labelClass}>{t('Motto')}</label>
+                            <input type="text" value={motto} onChange={(e) => setMotto(e.target.value)} placeholder={t('e.g. Semper Fidelis')} className={inputClass} disabled={isLoading} />
                         </div>
                         <div className="mt-4">
-                            <label className={labelClass}>Mission Statement / Description</label>
+                            <label className={labelClass}>{t('Mission Statement / Description')}</label>
                             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className={`${inputClass} resize-none`} disabled={isLoading} />
                         </div>
                     </div>
 
                     <div className="border-t border-slate-700/50 pt-6">
-                        <h4 className="text-sm font-bold text-white mb-4">Radio Configuration</h4>
+                        <h4 className="text-sm font-bold text-white mb-4">{t('Radio Configuration')}</h4>
                         <label className="flex items-center gap-3 cursor-pointer group">
                             <input
                                 type="checkbox"
@@ -185,32 +187,32 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                                 className="w-4 h-4 rounded-sm border-slate-600 bg-slate-950 text-sky-500 focus:ring-sky-500 focus:ring-offset-0 cursor-pointer"
                                 disabled={isLoading}
                             />
-                            <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Create radio frequency for this unit</span>
+                            <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{t('Create radio frequency for this unit')}</span>
                         </label>
                         <p className="text-[10px] text-slate-500 mt-1.5 ml-7">
                             {hasRadioChannel
-                                ? 'A tactical radio channel will be available for this unit.'
-                                : 'This unit will be structural only — no radio frequency will be generated.'}
+                                ? t('A tactical radio channel will be available for this unit.')
+                                : t('This unit will be structural only — no radio frequency will be generated.')}
                         </p>
                         {hasRadioChannel && radioChannels.length > 0 && (
                             <div className="mt-4">
-                                <label className={labelClass}>Link Existing Channel (Optional)</label>
+                                <label className={labelClass}>{t('Link Existing Channel (Optional)')}</label>
                                 <select
                                     value={linkedChannelId}
                                     onChange={(e) => setLinkedChannelId(e.target.value)}
                                     className={inputClass}
                                     disabled={isLoading}
                                 >
-                                    <option value="">- Auto-generate frequency -</option>
+                                    <option value="">{t('- Auto-generate frequency -')}</option>
                                     {radioChannels.map(ch => <option key={ch.id} value={ch.id}>{ch.name} ({ch.id})</option>)}
                                 </select>
-                                <p className="text-[10px] text-slate-500 mt-1">Link to an existing channel instead of auto-generating one.</p>
+                                <p className="text-[10px] text-slate-500 mt-1">{t('Link to an existing channel instead of auto-generating one.')}</p>
                             </div>
                         )}
                     </div>
 
                     <div className="border-t border-slate-700/50 pt-6">
-                        <h4 className="text-sm font-bold text-white mb-4">Visibility</h4>
+                        <h4 className="text-sm font-bold text-white mb-4">{t('Visibility')}</h4>
                         <label className="flex items-start gap-3 cursor-pointer group">
                             <input
                                 type="checkbox"
@@ -222,17 +224,17 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                             <div>
                                 <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
                                     <i className="fa-solid fa-lock text-amber-400/80 mr-1.5 text-xs"></i>
-                                    Restrict this unit to members only
+                                    {t('Restrict this unit to members only')}
                                 </span>
                                 <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                                    When enabled, the unit appears in the Org Chart with a lock badge, but its detail page (members, feed, operations) is only accessible to members of this unit and org admins.
+                                    {t('When enabled, the unit appears in the Org Chart with a lock badge, but its detail page (members, feed, operations) is only accessible to members of this unit and org admins.')}
                                 </p>
                             </div>
                         </label>
                     </div>
 
                     <div>
-                        <label className={labelClass}>Sort Order (Precedence)</label>
+                        <label className={labelClass}>{t('Sort Order (Precedence)')}</label>
                         <input
                             type="number"
                             value={sortOrder}
@@ -241,15 +243,15 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                             disabled={isLoading || !canManageStructure}
                             placeholder="0"
                         />
-                        {!canManageStructure && <p className="text-[9px] text-slate-500 mt-1 italic">Contact admin to change precedence.</p>}
+                        {!canManageStructure && <p className="text-[9px] text-slate-500 mt-1 italic">{t('Contact admin to change precedence.')}</p>}
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button type="submit" className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 border border-sky-500/50" disabled={isLoading}>
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Unit')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Unit'))}
                     </button>
                 </div>
             </form>

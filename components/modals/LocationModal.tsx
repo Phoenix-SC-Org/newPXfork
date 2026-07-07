@@ -5,6 +5,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface LocationModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface LocationModalProps {
 const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location }) => {
     const { locations, addLocation, updateLocation } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [type, setType] = useState<LocationType>(LocationType.System);
     const [parentId, setParentId] = useState<string>('');
@@ -55,7 +57,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
         e.preventDefault();
         if (!name.trim()) return;
         if (type !== LocationType.System && !parentId) {
-            addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "A parent must be selected for this location type." });
+            addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('A parent must be selected for this location type.') });
             return;
         }
 
@@ -75,10 +77,10 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
             onClose();
         } catch (err) {
             console.error("Failed to save location:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the location. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while saving the location. Please try again.') });
             setIsLoading(false);
         }
-    }, [name, type, parentId, isEditing, location, addLocation, updateLocation, onClose, addToast]);
+    }, [name, type, parentId, isEditing, location, addLocation, updateLocation, onClose, addToast, t]);
 
     const availableParents = useMemo(() => {
         // Filter potential parents based on the selected type to maintain hierarchy logic
@@ -108,8 +110,8 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Location' : 'Create Location'}
-            subtitle="Cartography Database"
+            title={isEditing ? t('Edit Location') : t('Create Location')}
+            subtitle={t('Cartography Database')}
             icon="fa-solid fa-map-location-dot"
             color="sky"
             width="max-w-lg"
@@ -118,13 +120,13 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     <div>
-                        <label htmlFor="locName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Location Name</label>
+                        <label htmlFor="locName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Location Name')}</label>
                         <input
                             type="text"
                             id="locName"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Stanton or Grim HEX"
+                            placeholder={t('e.g., Stanton or Grim HEX')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
                             required
                             disabled={isLoading}
@@ -132,7 +134,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="locType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Type</label>
+                            <label htmlFor="locType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Type')}</label>
                             <select
                                 id="locType"
                                 value={type}
@@ -140,11 +142,11 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
                                 className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
                                 disabled={isLoading}
                             >
-                                {Object.values(LocationType).map(t => <option key={t} value={t}>{t}</option>)}
+                                {Object.values(LocationType).map(lt => <option key={lt} value={lt}>{t(lt, { context: 'locationType' })}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="locParent" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Parent Location</label>
+                            <label htmlFor="locParent" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Parent Location')}</label>
                             <select
                                 id="locParent"
                                 value={parentId}
@@ -152,7 +154,7 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
                                 className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all disabled:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={isLoading || type === LocationType.System}
                             >
-                                <option value="">- Select Parent -</option>
+                                <option value="">{t('- Select Parent -')}</option>
                                 {availableParents.map(parent => (
                                     <option key={parent.id} value={parent.id}>{parent.name}</option>
                                 ))}
@@ -163,13 +165,13 @@ const LocationModal: React.FC<LocationModalProps> = ({ isOpen, onClose, location
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Location')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Location'))}
                     </button>
                 </div>
             </form>

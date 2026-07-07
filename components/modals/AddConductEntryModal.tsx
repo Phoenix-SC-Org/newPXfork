@@ -4,6 +4,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AddConductEntryModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface AddConductEntryModalProps {
 const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onClose, user }) => {
     const { addConductEntry } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [type, setType] = useState<ConductRecordType>(ConductRecordType.Observation);
     const [reason, setReason] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -27,12 +29,12 @@ const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onC
                 onClose();
             } catch (err) {
                 console.error("Failed to add conduct entry:", err);
-                addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while adding the entry. Please try again." });
+                addToast(t("Error"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while adding the entry. Please try again.") });
             } finally {
                 setIsLoading(false);
             }
         }
-    }, [user.id, type, reason, addConductEntry, onClose, addToast]);
+    }, [user.id, type, reason, addConductEntry, onClose, addToast, t]);
 
     if (!isOpen) return null;
 
@@ -40,8 +42,8 @@ const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onC
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={`Add Conduct Entry: ${user.name}`}
-            subtitle="Personnel File"
+            title={t('Add Conduct Entry: {name}', { name: user.name })}
+            subtitle={t('Personnel File')}
             icon="fa-solid fa-file-pen"
             color="indigo"
             width="max-w-lg"
@@ -50,7 +52,7 @@ const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onC
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     <div>
-                        <label htmlFor="conductType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Conduct Type</label>
+                        <label htmlFor="conductType" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Conduct Type')}</label>
                         <select
                             id="conductType"
                             value={type}
@@ -58,17 +60,17 @@ const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onC
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
                             disabled={isLoading}
                         >
-                            {Object.values(ConductRecordType).map(t => <option key={t} value={t}>{t}</option>)}
+                            {Object.values(ConductRecordType).map(ct => <option key={ct} value={ct}>{t(ct, { context: 'conduct-record-type' })}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="reason" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Reason / Observation</label>
+                        <label htmlFor="reason" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Reason / Observation')}</label>
                         <textarea
                             id="reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={4}
-                            placeholder="Detail the observation or reason for this entry..."
+                            placeholder={t('Detail the observation or reason for this entry...')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all resize-none"
                             required
                             disabled={isLoading}
@@ -78,13 +80,13 @@ const AddConductEntryModal: React.FC<AddConductEntryModalProps> = ({ isOpen, onC
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-4 bg-slate-900/50 border-t border-white/5 rounded-b-xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none border border-sky-500/50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Add Entry'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Add Entry')}
                     </button>
                 </div>
             </form>

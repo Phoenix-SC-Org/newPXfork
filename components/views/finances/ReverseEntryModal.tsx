@@ -14,7 +14,7 @@ interface Props {
 export default function ReverseEntryModal({ entry, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [reason, setReason] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -41,7 +41,7 @@ export default function ReverseEntryModal({ entry, onClose, onSubmitted }: Props
             isOpen
             onClose={onClose}
             title={t('Reverse Entry')}
-            subtitle={`${t(entry.entryType, { context: 'finance' })} · ${Math.abs(entry.amount).toLocaleString()} aUEC`}
+            subtitle={`${t(entry.entryType, { context: 'finance' })} · ${Math.abs(entry.amount).toLocaleString(locale)} aUEC`}
             icon="fa-solid fa-rotate-left"
             color="slate"
             width="max-w-md"

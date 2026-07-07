@@ -11,6 +11,7 @@ import BulkSelectToolbar, { BulkAction } from '../../shared/BulkSelectToolbar';
 import BulkPromoteToMemberModal from '../../modals/BulkPromoteToMemberModal';
 import BulkSetClientFlagModal from '../../modals/BulkSetClientFlagModal';
 import { TabPageHeader } from '../../shared/ui';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type BulkActionKey = 'promote' | 'affiliate' | 'vip';
 
@@ -21,6 +22,7 @@ interface ClientManagementTabProps {
 type ClientListItem = User & { requestCount: number };
 
 const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser }) => {
+    const { t } = useI18n();
     const { hydratedServiceRequests } = useData();
     const { allUsers } = useMembers();
     const fmt = useFormatDate();
@@ -93,26 +95,26 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
     const bulkActions: BulkAction[] = useMemo(() => [
         {
             key: 'promote',
-            label: 'Promote to Member',
+            label: t('Promote to Member'),
             icon: 'fa-arrow-up',
             permission: 'admin:user:update_role',
             onClick: () => setBulkAction('promote'),
         },
         {
             key: 'affiliate',
-            label: 'Set Affiliate',
+            label: t('Set Affiliate'),
             icon: 'fa-handshake',
             permission: 'admin:user:update',
             onClick: () => setBulkAction('affiliate'),
         },
         {
             key: 'vip',
-            label: 'Set VIP',
+            label: t('Set VIP'),
             icon: 'fa-crown',
             permission: 'admin:user:update',
             onClick: () => setBulkAction('vip'),
         },
-    ], []);
+    ], [t]);
 
     const closeBulkModal = () => {
         setBulkAction(null);
@@ -123,16 +125,16 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
         <div className="h-full flex flex-col p-4 md:p-8 animate-fade-in">
             <div className="shrink-0">
                 <TabPageHeader
-                    title="Client Registry"
+                    title={t('Client Registry')}
                     icon="fa-solid fa-address-book"
                     accent="sky"
-                    subtitle={<>Total Registered: <span className="font-mono text-slate-200 font-bold">{clientData.length}</span></>}
+                    subtitle={<>{t('Total Registered:')} <span className="font-mono text-slate-200 font-bold">{clientData.length}</span></>}
                     actions={
                         <div className="relative w-full md:w-72">
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search clients..."
+                                placeholder={t('Search clients...')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -159,13 +161,13 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
                             onChange={onHeaderToggle}
                             disabled={visibleClientIds.length === 0}
                             className="w-4 h-4 accent-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="Select all visible clients"
+                            aria-label={t('Select all visible clients')}
                         />
                     </div>
-                    <div className="flex-1">Client Identity</div>
-                    <div className="w-48 hidden @3xl/clients:block">Joined</div>
-                    <div className="w-32 text-center hidden @2xl/clients:block">Requests</div>
-                    <div className="w-32 text-right hidden @lg/clients:block">Reputation</div>
+                    <div className="flex-1">{t('Client Identity')}</div>
+                    <div className="w-48 hidden @3xl/clients:block">{t('Joined')}</div>
+                    <div className="w-32 text-center hidden @2xl/clients:block">{t('Requests')}</div>
+                    <div className="w-32 text-right hidden @lg/clients:block">{t('Reputation')}</div>
                     <div className="w-12"></div>
                 </div>
 
@@ -173,7 +175,7 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
                     <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/50 backdrop-blur-xs">
                         <div className="flex flex-col items-center">
                             <i className="fa-solid fa-circle-notch animate-spin text-3xl text-slate-300 mb-3"></i>
-                            <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Accessing Registry...</span>
+                            <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{t('Accessing Registry...')}</span>
                         </div>
                     </div>
                 ) : (
@@ -198,7 +200,7 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
                                                 checked={isSelected(client.id)}
                                                 onChange={() => toggle(client.id)}
                                                 className="w-4 h-4 accent-amber-500 cursor-pointer"
-                                                aria-label={`Select ${client.name}`}
+                                                aria-label={t('Select {name}', { name: client.name })}
                                             />
                                         </div>
                                         <div className="flex-1 flex items-center gap-3 min-w-0">
@@ -214,8 +216,8 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
                                                 </div>
                                                 <p className="text-[10px] text-slate-500 font-mono truncate">{client.rsiHandle}</p>
                                                 <div className="flex gap-3 @lg/clients:hidden mt-0.5">
-                                                    <span className="text-[10px] text-slate-500">{client.requestCount} req</span>
-                                                    <span className={`text-[10px] font-mono font-bold ${getReputationColor(client.reputation)}`}>{client.reputation} rep</span>
+                                                    <span className="text-[10px] text-slate-500">{t('{count} req', { count: client.requestCount })}</span>
+                                                    <span className={`text-[10px] font-mono font-bold ${getReputationColor(client.reputation)}`}>{t('{count} rep', { count: client.reputation })}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -244,7 +246,7 @@ const ClientManagementTab: React.FC<ClientManagementTabProps> = ({ onManageUser 
                             />
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-slate-500 italic">
-                                No clients found.
+                                {t('No clients found.')}
                             </div>
                         )}
                     </div>

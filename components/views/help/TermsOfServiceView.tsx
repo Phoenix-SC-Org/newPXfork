@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import { useConfig } from '../../../contexts/ConfigContext';
 import CallsignChip from '../../shared/ui/CallsignChip';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface TermsOfServiceViewProps {
     onBack: () => void;
@@ -30,6 +31,7 @@ const DEFAULT_TOS_CONTENT = `
 `;
 
 const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onBack }) => {
+    const { t } = useI18n();
     const { brandingConfig } = useConfig();
     const orgName = brandingConfig.name || "Organisation";
 
@@ -47,12 +49,12 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onBack }) => {
                 <div className="relative px-4 sm:px-8 pt-10 pb-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div className="min-w-0">
-                            <CallsignChip label="MODULE · TERMS OF SERVICE" icon="fa-file-contract" accent="sky" />
+                            <CallsignChip label={t('MODULE · TERMS OF SERVICE')} icon="fa-file-contract" accent="sky" />
                             <h1 className="mt-3 text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                                Terms of Service
+                                {t('Terms of Service')}
                             </h1>
                             <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-                                {orgName} · Service agreement between the Client and the Organization.
+                                {orgName} · {t('Service agreement between the Client and the Organization.')}
                             </p>
                         </div>
                         <div className="flex shrink-0">
@@ -60,7 +62,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onBack }) => {
                                 onClick={onBack}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
                             >
-                                <i className="fa-solid fa-arrow-left"></i> Back to Help
+                                <i className="fa-solid fa-arrow-left"></i> {t('Back to Help')}
                             </button>
                         </div>
                     </div>
@@ -71,7 +73,7 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onBack }) => {
                 <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 md:p-10 shadow-lg">
                     <div className="text-center mb-8 border-b border-white/5 pb-6">
                         <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-wide">{orgName}</h2>
-                        <p className="text-sky-300 font-black uppercase tracking-[0.2em] text-[10px] mt-2">Terms of Service Protocol</p>
+                        <p className="text-sky-300 font-black uppercase tracking-[0.2em] text-[10px] mt-2">{t('Terms of Service Protocol')}</p>
                     </div>
 
                     <div
@@ -87,8 +89,8 @@ const TermsOfServiceView: React.FC<TermsOfServiceViewProps> = ({ onBack }) => {
                     </div>
 
                     <div className="text-center text-slate-600 text-[10px] pt-8 mt-10 border-t border-white/5 font-mono uppercase tracking-widest">
-                        <p>End of File</p>
-                        <p>{orgName} {'//'} Operations Division</p>
+                        <p>{t('End of File')}</p>
+                        <p>{orgName} {'//'} {t('Operations Division')}</p>
                     </div>
                 </div>
             </div>

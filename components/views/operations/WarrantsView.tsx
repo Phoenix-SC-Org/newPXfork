@@ -41,7 +41,7 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
     const { confirm } = useNotification();
     const { setSelectedWarrant } = useNavigation();
     const now = useNow();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const canManageWarrants = hasPermission('warrant:manage');
     const [filter, setFilter] = useState<WarrantFilter>('active');
     const [searchTerm, setSearchTerm] = useState('');
@@ -100,11 +100,11 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
             const a = ACCENTS[warrantStatusAccent(w.status)];
             return <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border ${a.bg} ${a.border} ${a.text} ${warrantIsLive(w.status) ? 'animate-pulse' : ''}`}>{t(warrantStatusLabel(w.status))}</span>;
         }},
-        { key: 'uecReward', label: t('Reward'), sortable: true, width: '100px', render: (w) => <span className="text-xs font-bold text-lime-400 font-mono">{w.uecReward.toLocaleString()} <span className="text-[9px] text-lime-400/60">aUEC</span></span> },
+        { key: 'uecReward', label: t('Reward'), sortable: true, width: '100px', render: (w) => <span className="text-xs font-bold text-lime-400 font-mono">{w.uecReward.toLocaleString(locale)} <span className="text-[9px] text-lime-400/60">aUEC</span></span> },
         { key: 'reason', label: t('Reason'), render: (w) => <span className="text-xs text-slate-400 truncate block">{w.reason.substring(0, 60)}{w.reason.length > 60 ? '...' : ''}</span> },
         { key: 'issuedAt', label: t('Issued'), sortable: true, width: '80px', render: (w) => <span className="text-[10px] text-slate-500 font-mono">{timeAgoShort(w.issuedAt)}</span> },
         { key: 'sourceFeedLabel', label: t('Source'), width: '70px', render: (w) => w.sourceFeedLabel ? <span className="text-[9px] text-sky-400 bg-sky-900/40 px-1.5 py-0.5 rounded-sm border border-sky-500/30 uppercase font-bold">EXT</span> : <span className="text-[9px] text-slate-600">LOCAL</span> },
-    ], [t]);
+    ], [t, locale]);
 
     const handleBulkDeleteWarrants = async () => {
         if (selectedIds.size === 0) return;
@@ -170,7 +170,7 @@ const WarrantsView: React.FC<WarrantsViewProps> = ({ openCreateModal, openUpdate
                 </>}
                 stats={<>
                     <HeroStat icon="fa-bolt" label={t('Active')} value={heroCounts.active} accent="red" emphasize={heroCounts.active > 0} />
-                    <HeroStat icon="fa-coins" label={t('Total Reward')} value={heroCounts.totalBounty.toLocaleString()} sub={t('aUEC outstanding')} accent="amber" />
+                    <HeroStat icon="fa-coins" label={t('Total Reward')} value={heroCounts.totalBounty.toLocaleString(locale)} sub={t('aUEC outstanding')} accent="amber" />
                     <HeroStat icon="fa-handcuffs" label={t('Claimed (30d)')} value={heroCounts.claimed30d} accent="sky" />
                     <HeroStat icon="fa-flag-checkered" label={t('Closed (30d)')} value={heroCounts.closed30d} accent="slate" />
                 </>}

@@ -7,6 +7,7 @@ import { SecurityClearance, LimitingMarker } from '../../../types';
 import { TabPageHeader, HeroStat } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getClearanceColor = (level: number) => {
     switch (level) {
@@ -54,6 +55,7 @@ const SectionCard: React.FC<{
 };
 
 const ClearanceManagementTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction, refreshMainState } = useData();
     const { securityClearances, limitingMarkers } = useMembers();
     const { addToast, confirm } = useNotification();
@@ -92,7 +94,7 @@ const ClearanceManagementTab: React.FC = () => {
             await refreshMainState();
         } catch (error) {
             console.error("Failed to update clearance:", error);
-            addToast("Update Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Could not update the clearance level." });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Could not update the clearance level.') });
         } finally {
             setIsLoading(false);
         }
@@ -128,14 +130,14 @@ const ClearanceManagementTab: React.FC = () => {
             await refreshMainState();
         } catch (error) {
             console.error("Failed to save marker:", error);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Could not save the limiting marker." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Could not save the limiting marker.') });
         } finally {
             setIsLoading(false);
         }
     };
 
     const deleteMarker = async (id: number) => {
-        const confirmed = await confirm({ title: 'Delete Marker', message: 'WARNING: Deleting a marker may cause sync issues with external organizations if they rely on this specific code. Are you sure?', confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Delete Marker'), message: t('WARNING: Deleting a marker may cause sync issues with external organizations if they rely on this specific code. Are you sure?'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         setIsLoading(true);
         try {
@@ -143,7 +145,7 @@ const ClearanceManagementTab: React.FC = () => {
             await refreshMainState();
         } catch (error) {
             console.error(error);
-            addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Could not delete the limiting marker." });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Could not delete the limiting marker.') });
         } finally {
             setIsLoading(false);
         }
@@ -156,28 +158,28 @@ const ClearanceManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Access Control & Clearances"
+                title={t('Access Control & Clearances')}
                 icon="fa-solid fa-shield-halved"
                 accent="red"
-                subtitle="Manage security levels and compartmented information controls."
+                subtitle={t('Manage security levels and compartmented information controls.')}
                 actions={canBulkAssign ? (
                     <button
                         onClick={openBulkAssignClearanceModal}
                         className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2.5 rounded-lg border border-red-500/40 transition-colors shadow-lg shadow-red-900/20 text-sm whitespace-nowrap"
                     >
                         <i className="fa-solid fa-users-gear" />
-                        Bulk Assign Clearance
+                        {t('Bulk Assign Clearance')}
                     </button>
                 ) : undefined}
             />
 
             <div className="hidden md:grid grid-cols-3 gap-3">
-                <HeroStat icon="fa-shield-halved" label="Clearance Levels" value={securityClearances.length} accent="sky" emphasize={securityClearances.length > 0} />
-                <HeroStat icon="fa-tags" label="Limiting Markers" value={limitingMarkers.length} accent="amber" emphasize={limitingMarkers.length > 0} />
-                <HeroStat icon="fa-ban" label="Sync Restricted" value={syncRestrictedCount} accent="red" emphasize={syncRestrictedCount > 0} />
+                <HeroStat icon="fa-shield-halved" label={t('Clearance Levels')} value={securityClearances.length} accent="sky" emphasize={securityClearances.length > 0} />
+                <HeroStat icon="fa-tags" label={t('Limiting Markers')} value={limitingMarkers.length} accent="amber" emphasize={limitingMarkers.length > 0} />
+                <HeroStat icon="fa-ban" label={t('Sync Restricted')} value={syncRestrictedCount} accent="red" emphasize={syncRestrictedCount > 0} />
             </div>
 
-            <SectionCard title="Clearance Levels" icon="fa-shield-halved" accent="sky" note="Hierarchical access tiers (1–5 are protected baselines)." contentClassName="divide-y divide-slate-800">
+            <SectionCard title={t('Clearance Levels')} icon="fa-shield-halved" accent="sky" note={t('Hierarchical access tiers (1–5 are protected baselines).')} contentClassName="divide-y divide-slate-800">
                     {securityClearances.map(c => (
                         <div key={c.id} className={`p-4 transition-colors ${editingId === c.id ? 'bg-slate-950/40' : 'hover:bg-slate-950/20'}`}>
                             <div className="flex items-start justify-between gap-4 mb-2">
@@ -188,7 +190,7 @@ const ClearanceManagementTab: React.FC = () => {
                                     ) : (
                                         <div className={`inline-flex items-center gap-3 px-3 py-1.5 rounded-lg border font-black uppercase text-xs tracking-wider ${getClearanceColor(c.level)}`}>
                                             <i className="fa-solid fa-shield-halved"></i>
-                                            Level {c.level} <span className="opacity-50">{'//'}</span> {c.name}
+                                            {t('Level {level}', { level: c.level })} <span className="opacity-50">{'//'}</span> {c.name}
                                         </div>
                                     )}
                                 </div>
@@ -219,15 +221,15 @@ const ClearanceManagementTab: React.FC = () => {
 
                 {/* LIMITING MARKERS */}
                 <SectionCard
-                    title="Limiting Markers"
+                    title={t('Limiting Markers')}
                     icon="fa-tags"
                     accent="amber"
-                    note="Compartmented control tags (e.g. NOFORN). Affects Intel feed sync."
+                    note={t('Compartmented control tags (e.g. NOFORN). Affects Intel feed sync.')}
                     contentClassName="divide-y divide-slate-800"
                     actions={
                         <button onClick={() => startEditMarker()}
                             className="text-[10px] font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">
-                            <i className="fa-solid fa-plus mr-1"></i> Add Marker
+                            <i className="fa-solid fa-plus mr-1"></i> {t('Add Marker')}
                         </button>
                     }
                 >
@@ -235,14 +237,14 @@ const ClearanceManagementTab: React.FC = () => {
                     {editingMarkerId === -1 && (
                         <div className="p-4 bg-amber-500/4 border-b border-amber-500/15">
                             <div className="flex gap-2 mb-2">
-                                <input type="text" placeholder="Code (e.g. ORCON)" value={markerCode}
+                                <input type="text" placeholder={t('Code (e.g. ORCON)')} value={markerCode}
                                     onChange={e => setMarkerCode(e.target.value.toUpperCase())}
                                     className={`${inputClassMono} w-32 text-xs`} />
-                                <input type="text" placeholder="Full Name" value={markerName}
+                                <input type="text" placeholder={t('Full Name')} value={markerName}
                                     onChange={e => setMarkerName(e.target.value)}
                                     className={`${inputClass} flex-1 text-sm`} />
                             </div>
-                            <textarea placeholder="Description..." value={markerDesc}
+                            <textarea placeholder={t('Description...')} value={markerDesc}
                                 onChange={e => setMarkerDesc(e.target.value)}
                                 className={`${inputClass} text-xs resize-none mb-3`} rows={2} />
                             <label className="flex items-center gap-2 cursor-pointer mb-3">
@@ -250,12 +252,12 @@ const ClearanceManagementTab: React.FC = () => {
                                     onChange={e => setMarkerSyncRestricted(e.target.checked)}
                                     className="h-4 w-4 rounded-sm bg-slate-800 border-slate-600 text-red-500 focus:ring-red-500" />
                                 <span className="text-xs text-red-300 font-bold uppercase tracking-wide">
-                                    <i className="fa-solid fa-ban mr-1"></i> Restrict from External Sync
+                                    <i className="fa-solid fa-ban mr-1"></i> {t('Restrict from External Sync')}
                                 </span>
                             </label>
                             <div className="flex justify-end gap-2">
-                                <button onClick={cancelEditMarker} disabled={isLoading} className="text-xs font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">Cancel</button>
-                                <button onClick={saveMarker} disabled={isLoading} className="text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">Save</button>
+                                <button onClick={cancelEditMarker} disabled={isLoading} className="text-xs font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">{t('Cancel')}</button>
+                                <button onClick={saveMarker} disabled={isLoading} className="text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">{t('Save')}</button>
                             </div>
                         </div>
                     )}
@@ -279,12 +281,12 @@ const ClearanceManagementTab: React.FC = () => {
                                             onChange={e => setMarkerSyncRestricted(e.target.checked)}
                                             className="h-4 w-4 rounded-sm bg-slate-800 border-slate-600 text-red-500 focus:ring-red-500" />
                                         <span className="text-xs text-red-300 font-bold uppercase tracking-wide">
-                                            <i className="fa-solid fa-ban mr-1"></i> Restrict from External Sync
+                                            <i className="fa-solid fa-ban mr-1"></i> {t('Restrict from External Sync')}
                                         </span>
                                     </label>
                                     <div className="flex justify-end gap-2">
-                                        <button onClick={cancelEditMarker} disabled={isLoading} className="text-xs font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">Cancel</button>
-                                        <button onClick={saveMarker} disabled={isLoading} className="text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">Save</button>
+                                        <button onClick={cancelEditMarker} disabled={isLoading} className="text-xs font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">{t('Cancel')}</button>
+                                        <button onClick={saveMarker} disabled={isLoading} className="text-xs font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">{t('Save')}</button>
                                     </div>
                                 </div>
                             ) : (
@@ -297,7 +299,7 @@ const ClearanceManagementTab: React.FC = () => {
                                             <span className="text-sm font-bold text-white">{m.name}</span>
                                             {m.syncRestricted && (
                                                 <span className="text-[9px] bg-red-500/10 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded-sm uppercase font-black tracking-wider flex items-center gap-1">
-                                                    <i className="fa-solid fa-ban"></i> No Sync
+                                                    <i className="fa-solid fa-ban"></i> {t('No Sync')}
                                                 </span>
                                             )}
                                         </div>
@@ -312,13 +314,13 @@ const ClearanceManagementTab: React.FC = () => {
                         </div>
                     ))}
                     {limitingMarkers.length === 0 && editingMarkerId !== -1 && (
-                        <div className="p-8 text-center text-slate-500 italic text-sm">No limiting markers defined.</div>
+                        <div className="p-8 text-center text-slate-500 italic text-sm">{t('No limiting markers defined.')}</div>
                     )}
                 </SectionCard>
 
-            <SectionCard title="API Sync Warning" icon="fa-triangle-exclamation" accent="red">
+            <SectionCard title={t('API Sync Warning')} icon="fa-triangle-exclamation" accent="red">
                 <p className="text-xs text-amber-200 leading-relaxed">
-                    Modifying or deleting Limiting Markers may affect intelligence reports synchronized with external organizations. If a marker (e.g., NOFORN) is removed locally but used by an allied organization's feed, reports containing that tag may be filtered out or display incorrectly. Use the <span className="font-bold text-red-300">Restrict from External Sync</span> toggle to prevent a specific marker from being exposed in your public API feed.
+                    {t("Modifying or deleting Limiting Markers may affect intelligence reports synchronized with external organizations. If a marker (e.g., NOFORN) is removed locally but used by an allied organization's feed, reports containing that tag may be filtered out or display incorrectly. Use the")} <span className="font-bold text-red-300">{t('Restrict from External Sync')}</span> {t('toggle to prevent a specific marker from being exposed in your public API feed.')}
                 </p>
             </SectionCard>
         </div>

@@ -8,6 +8,7 @@ import EmptyState from '../shared/ui/EmptyState';
 import AwardIcon from '../common/AwardIcon';
 import FilterPopover from './FilterPopover';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 /**
  * MemberPicker — reusable scrollable list-of-members body for any picker
@@ -61,6 +62,7 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
     const { members, units, ranks } = useMembers();
     const { toggleDutyStatus } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [unitFilter, setUnitFilter] = useState<Set<number>>(() => new Set());
@@ -160,17 +162,17 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
         try {
             await toggleDutyStatus(member.id);
             addToast(
-                member.isDuty ? 'Off Duty' : 'On Duty',
+                member.isDuty ? t('Off Duty') : t('On Duty'),
                 <i className={`fa-solid ${member.isDuty ? 'fa-moon' : 'fa-bolt'}`}></i>,
                 member.isDuty ? 'bg-slate-500/10 text-slate-400 border-slate-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                { description: `${member.name} is now ${member.isDuty ? 'off duty' : 'on duty'}.`, variant: (member.isDuty ? 'info' : 'success') as ToastVariant },
+                { description: member.isDuty ? t('{name} is now off duty.', { name: member.name }) : t('{name} is now on duty.', { name: member.name }), variant: (member.isDuty ? 'info' : 'success') as ToastVariant },
             );
         } catch (err: any) {
             addToast(
-                'Toggle Failed',
+                t('Toggle Failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Failed to update duty status.' },
+                { description: err?.message || t('Failed to update duty status.') },
             );
         } finally {
             setPendingDuty(prev => {
@@ -179,7 +181,7 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                 return next;
             });
         }
-    }, [pendingDuty, toggleDutyStatus, addToast]);
+    }, [pendingDuty, toggleDutyStatus, addToast, t]);
 
     // Auto-expand the off-duty section when there are no on-duty matches
     // but off-duty members exist that DO match. Without this, dispatchers
@@ -225,7 +227,7 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                         type="search"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search by name, handle, rank, or specialty…"
+                        placeholder={t('Search by name, handle, rank, or specialty…')}
                         className="w-full bg-slate-950/60 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 outline-hidden"
                     />
                 </div>
@@ -251,12 +253,12 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                         {matchKeyword && (
                             <button
                                 onClick={() => setSortMode('match')}
-                                title={`Surface members whose specialisations match "${matchKeyword}"`}
+                                title={t('Surface members whose specialisations match "{keyword}"', { keyword: matchKeyword })}
                                 className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
                                     sortMode === 'match' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                                 }`}
                             >
-                                <i className="fa-solid fa-bullseye mr-1"></i>Match
+                                <i className="fa-solid fa-bullseye mr-1"></i>{t('Match')}
                             </button>
                         )}
                         <button
@@ -265,7 +267,7 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                                 sortMode === 'rank' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                             }`}
                         >
-                            Rank
+                            {t('Rank')}
                         </button>
                         <button
                             onClick={() => setSortMode('name')}
@@ -273,13 +275,13 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                                 sortMode === 'name' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                             }`}
                         >
-                            Name
+                            {t('Name')}
                         </button>
                     </div>
                 </div>
                 <div className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                    {onDutyMembers.length} on duty
-                    {(unitFilter.size > 0 || rankFilter.size > 0 || debouncedSearch) && ` matching`}
+                    {t('{count} on duty', { count: onDutyMembers.length })}
+                    {(unitFilter.size > 0 || rankFilter.size > 0 || debouncedSearch) && ` ${t('matching')}`}
                 </div>
             </div>
 
@@ -312,8 +314,8 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                         <EmptyState
                             icon="fa-user-slash"
                             accent="emerald"
-                            heading="No on-duty members match"
-                            description={debouncedSearch || unitFilter.size > 0 || rankFilter.size > 0 ? 'Try clearing filters or expanding to off-duty.' : 'No members are currently on duty.'}
+                            heading={t('No on-duty members match')}
+                            description={debouncedSearch || unitFilter.size > 0 || rankFilter.size > 0 ? t('Try clearing filters or expanding to off-duty.') : t('No members are currently on duty.')}
                             compact
                         />
                     </div>
@@ -331,11 +333,13 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                     >
                         <span>
                             <i className={`fa-solid fa-chevron-${showOffDuty ? 'up' : 'down'} mr-2 text-[9px]`}></i>
-                            Off Duty ({offDutyMembers.length}{offDutyMembers.length !== totalOffDuty ? ` of ${totalOffDuty}` : ''})
+                            {offDutyMembers.length !== totalOffDuty
+                                ? t('Off Duty ({count} of {total})', { count: offDutyMembers.length, total: totalOffDuty })
+                                : t('Off Duty ({count})', { count: offDutyMembers.length })}
                         </span>
                         {allowDutyToggle && showOffDuty && (
                             <span className="text-[9px] font-mono text-slate-500 normal-case">
-                                Click <i className="fa-solid fa-power-off mx-1"></i> to bring on duty
+                                {t('Click')} <i className="fa-solid fa-power-off mx-1"></i> {t('to bring on duty')}
                             </span>
                         )}
                     </button>
@@ -350,14 +354,13 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                                 <div className="px-4 py-6 text-center">
                                     <i className="fa-solid fa-magnifying-glass text-2xl text-slate-700 mb-2"></i>
                                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Use the search box or filter chips above to find
-                                        specific off-duty members from the {totalOffDuty} available.
+                                        {t('Use the search box or filter chips above to find specific off-duty members from the {count} available.', { count: totalOffDuty })}
                                     </p>
                                     <button
                                         onClick={() => searchRef.current?.focus()}
                                         className="mt-2 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-widest"
                                     >
-                                        Focus search
+                                        {t('Focus search')}
                                     </button>
                                 </div>
                             ) : offDutyMembers.length > 0 ? (
@@ -371,7 +374,7 @@ const MemberPicker: React.FC<MemberPickerProps> = ({
                                     />
                                 ))
                             ) : (
-                                <p className="text-[11px] text-slate-600 italic px-4 py-3">No off-duty members match the current filters.</p>
+                                <p className="text-[11px] text-slate-600 italic px-4 py-3">{t('No off-duty members match the current filters.')}</p>
                             )}
                         </div>
                     )}
@@ -392,7 +395,9 @@ interface MemberRowProps {
     onDutyToggle: (e: React.MouseEvent) => void;
 }
 
-const MemberRow: React.FC<MemberRowProps> = ({ member, isAssigned, isPending, isDutyPending, allowDutyToggle, onClick, onDutyToggle }) => (
+const MemberRow: React.FC<MemberRowProps> = ({ member, isAssigned, isPending, isDutyPending, allowDutyToggle, onClick, onDutyToggle }) => {
+    const { t } = useI18n();
+    return (
     <div
         role="option"
         aria-selected={isAssigned}
@@ -416,7 +421,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, isAssigned, isPending, is
             <div className="min-w-0 flex-1">
                 <p className={`text-sm font-bold truncate ${isAssigned ? 'text-white' : 'text-slate-200'}`}>{member.name}</p>
                 <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                    <span className="truncate">{member.rank?.name || 'Operative'}</span>
+                    <span className="truncate">{member.rank?.name || t('Operative')}</span>
                     {member.specializations && member.specializations.length > 0 && (
                         <>
                             <span className="text-slate-700">·</span>
@@ -437,7 +442,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, isAssigned, isPending, is
                 <button
                     onClick={onDutyToggle}
                     disabled={isDutyPending}
-                    title="Toggle duty (set off duty)"
+                    title={t('Toggle duty (set off duty)')}
                     className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-sm transition-colors disabled:opacity-50"
                 >
                     <i className={`fa-solid ${isDutyPending ? 'fa-circle-notch animate-spin' : 'fa-power-off'} text-xs`}></i>
@@ -454,7 +459,8 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, isAssigned, isPending, is
             </div>
         </div>
     </div>
-);
+    );
+};
 
 // -- Off-duty row (compact, greyed) --
 interface OffDutyRowProps {
@@ -464,27 +470,30 @@ interface OffDutyRowProps {
     onDutyToggle: (e: React.MouseEvent) => void;
 }
 
-const OffDutyRow: React.FC<OffDutyRowProps> = ({ member, isDutyPending, allowDutyToggle, onDutyToggle }) => (
+const OffDutyRow: React.FC<OffDutyRowProps> = ({ member, isDutyPending, allowDutyToggle, onDutyToggle }) => {
+    const { t } = useI18n();
+    return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800/30 opacity-60 hover:opacity-90 transition-opacity">
         <div className="flex items-center gap-3 min-w-0 flex-1">
             <img src={member.avatarUrl} alt={member.name} className="w-7 h-7 rounded-full border border-slate-700 object-cover grayscale" />
             <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-slate-400 truncate">{member.name}</p>
-                <p className="text-[10px] text-slate-600 font-mono uppercase tracking-widest truncate">{member.rank?.name || 'Operative'}</p>
+                <p className="text-[10px] text-slate-600 font-mono uppercase tracking-widest truncate">{member.rank?.name || t('Operative')}</p>
             </div>
         </div>
         {allowDutyToggle && (
             <button
                 onClick={onDutyToggle}
                 disabled={isDutyPending}
-                title="Bring on duty"
+                title={t('Bring on duty')}
                 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-md transition-colors disabled:opacity-50"
             >
                 <i className={`fa-solid ${isDutyPending ? 'fa-circle-notch animate-spin' : 'fa-power-off'} mr-1 text-[9px]`}></i>
-                Bring on
+                {t('Bring on')}
             </button>
         )}
     </div>
-);
+    );
+};
 
 export default MemberPicker;

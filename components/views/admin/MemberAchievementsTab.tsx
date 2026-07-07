@@ -2,6 +2,7 @@
 import React, { useState, Suspense } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import AchievementImportExportModal from '../../modals/AchievementImportExportModal';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const SpecializationsManagementTab = React.lazy(() => import('./SpecializationsManagementTab'));
 const CertificationsManagementTab = React.lazy(() => import('./CertificationsManagementTab'));
@@ -23,16 +24,20 @@ const SUB_TABS: SubTabDef[] = [
     { id: 'commendations', label: 'Commendations', icon: 'fa-solid fa-medal', permission: 'admin:config:commendations', description: 'Honours and awards recognising member achievement.' },
 ];
 
-const Fallback = () => (
-    <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-3">
-            <i className="fa-solid fa-circle-notch animate-spin text-slate-300 text-2xl"></i>
-            <p className="text-slate-400 text-xs font-mono uppercase tracking-widest">Loading</p>
+const Fallback = () => {
+    const { t } = useI18n();
+    return (
+        <div className="flex items-center justify-center h-64">
+            <div className="text-center space-y-3">
+                <i className="fa-solid fa-circle-notch animate-spin text-slate-300 text-2xl"></i>
+                <p className="text-slate-400 text-xs font-mono uppercase tracking-widest">{t('Loading')}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const MemberAchievementsTab: React.FC = () => {
+    const { t } = useI18n();
     const { hasPermission } = useAuth();
     const available = SUB_TABS.filter(t => hasPermission(t.permission));
     const [active, setActive] = useState<SubTabId>(available[0]?.id ?? 'specializations');
@@ -70,7 +75,7 @@ const MemberAchievementsTab: React.FC = () => {
                                     }`}
                             >
                                 <i className={`${tab.icon} text-[11px]`}></i>
-                                {tab.label}
+                                {t(tab.label)}
                             </button>
                         );
                     })}
@@ -79,9 +84,9 @@ const MemberAchievementsTab: React.FC = () => {
                     <button
                         onClick={() => setImportExportOpen(true)}
                         className="shrink-0 mb-1.5 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/60 text-slate-300 border border-slate-700 hover:text-white hover:border-purple-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors"
-                        title={`Import or export ${activeDef.label} catalog as JSON`}
+                        title={t('Import or export {label} catalog as JSON', { label: t(activeDef.label) })}
                     >
-                        <i className="fa-solid fa-arrow-right-arrow-left"></i> Import / Export
+                        <i className="fa-solid fa-arrow-right-arrow-left"></i> {t('Import / Export')}
                     </button>
                 )}
             </div>

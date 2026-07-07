@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Visual-only pills for the affiliate / VIP client flags. Both can show at
 // once. Returns null when neither flag is set so callers can drop the
@@ -17,6 +18,7 @@ interface ClientFlagPillsProps {
 }
 
 const ClientFlagPills: React.FC<ClientFlagPillsProps> = ({ isAffiliate, isVip, size = 'sm', className = '' }) => {
+    const { t } = useI18n();
     if (!isAffiliate && !isVip) return null;
     const pillCls = size === 'sm'
         ? 'text-[9px] px-1.5 py-0.5'
@@ -26,7 +28,7 @@ const ClientFlagPills: React.FC<ClientFlagPillsProps> = ({ isAffiliate, isVip, s
             {isVip && (
                 <span
                     className={`${pillCls} font-black uppercase tracking-widest rounded-sm border bg-amber-500/10 text-amber-300 border-amber-500/30`}
-                    title="VIP client"
+                    title={t('VIP client')}
                 >
                     <i className="fa-solid fa-crown mr-1" aria-hidden /> VIP
                 </span>
@@ -34,9 +36,9 @@ const ClientFlagPills: React.FC<ClientFlagPillsProps> = ({ isAffiliate, isVip, s
             {isAffiliate && (
                 <span
                     className={`${pillCls} font-black uppercase tracking-widest rounded-sm border bg-purple-500/10 text-purple-300 border-purple-500/30`}
-                    title="Affiliate client"
+                    title={t('Affiliate client')}
                 >
-                    <i className="fa-solid fa-handshake mr-1" aria-hidden /> Affiliate
+                    <i className="fa-solid fa-handshake mr-1" aria-hidden /> {t('Affiliate')}
                 </span>
             )}
         </span>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useI18n } from '../../i18n/I18nContext';
 
 /**
  * Click-outside-dismissed multi-select chip popover used by the Duty Roster
@@ -23,6 +24,7 @@ const ACCENT_CLASSES: Record<NonNullable<FilterPopoverProps['accent']>, string> 
 };
 
 const FilterPopover: React.FC<FilterPopoverProps> = ({ label, icon, options, selected, onToggle, onClear, accent = 'emerald' }) => {
+    const { t } = useI18n();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -36,9 +38,9 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({ label, icon, options, sel
     }, [open]);
 
     const count = selected.size;
-    const summary = count === 0 ? `All ${label}s` : count === 1
-        ? options.find(o => selected.has(o.id))?.name || `1 ${label}`
-        : `${count} ${label}s`;
+    const summary = count === 0 ? t('All {label}s', { label: t(label) }) : count === 1
+        ? options.find(o => selected.has(o.id))?.name || t('1 {label}', { label: t(label) })
+        : t('{count} {label}s', { count, label: t(label) });
 
     return (
         <div ref={ref} className="relative">
@@ -63,11 +65,11 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({ label, icon, options, sel
                             onClick={onClear}
                             className="w-full text-left text-[10px] font-bold text-slate-500 hover:text-amber-300 uppercase tracking-wider px-2 py-1 rounded-sm hover:bg-slate-800/50 transition-colors mb-1"
                         >
-                            <i className="fa-solid fa-xmark mr-1"></i>Clear all
+                            <i className="fa-solid fa-xmark mr-1"></i>{t('Clear all')}
                         </button>
                     )}
                     {options.length === 0 ? (
-                        <p className="text-[11px] text-slate-600 italic p-2">No {label.toLowerCase()}s defined.</p>
+                        <p className="text-[11px] text-slate-600 italic p-2">{t('No {label}s defined.', { label: t(label) })}</p>
                     ) : options.map(opt => (
                         <label key={opt.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:text-white p-1.5 rounded-sm hover:bg-slate-800/50 transition-colors">
                             <input

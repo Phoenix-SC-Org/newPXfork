@@ -4,6 +4,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AwardCertificationModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface AwardCertificationModalProps {
 const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpen, onClose, certification }) => {
     const { members, awardCertification } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(() => new Set());
     const [isLoading, setIsLoading] = useState(false);
 
@@ -45,7 +47,7 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
             onClose();
         } catch (err) {
             console.error("Failed to bulk award certifications:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while awarding certifications. Please try again." });
+            addToast(t("Error"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while awarding certifications. Please try again.") });
         } finally {
             setIsLoading(false);
         }
@@ -57,8 +59,8 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={`Award: ${certification.name}`}
-            subtitle="Certification"
+            title={t('Award: {name}', { name: certification.name })}
+            subtitle={t('Certification')}
             icon="fa-solid fa-certificate"
             color="green"
             width="max-w-lg"
@@ -67,7 +69,7 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
                 {/* Body */}
                 <div className="p-4 flex-1 overflow-hidden flex flex-col">
                     <p className="text-xs text-slate-400 mb-3 bg-slate-900/50 p-2 rounded-sm border border-slate-800">
-                        Select members to award this certification to. Members who already have this certification are not listed.
+                        {t('Select members to award this certification to. Members who already have this certification are not listed.')}
                     </p>
                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
                         {membersWithoutCert.map(member => {
@@ -87,7 +89,7 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
                                         <img src={member.avatarUrl} alt={member.name} className="h-8 w-8 rounded-full" />
                                         <div>
                                             <div className="font-bold text-sm text-white">{member.name}</div>
-                                            <div className="text-[10px] text-slate-500 uppercase">{member.rank?.name || 'Member'}</div>
+                                            <div className="text-[10px] text-slate-500 uppercase">{member.rank?.name || t('Member')}</div>
                                         </div>
                                     </div>
                                 </label>
@@ -96,7 +98,7 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
                         {membersWithoutCert.length === 0 && (
                             <div className="text-center py-8 border-2 border-dashed border-slate-800 rounded-xl">
                                 <i className="fa-solid fa-check-double text-3xl text-slate-700 mb-3"></i>
-                                <p className="text-slate-500 text-xs italic">All members have currently been awarded this certification.</p>
+                                <p className="text-slate-500 text-xs italic">{t('All members have currently been awarded this certification.')}</p>
                             </div>
                         )}
                     </div>
@@ -105,17 +107,17 @@ const AwardCertificationModal: React.FC<AwardCertificationModalProps> = ({ isOpe
                 {/* Footer */}
                 <div className="flex justify-between items-center p-4 bg-slate-900/50 border-t border-white/5 rounded-b-xl shrink-0">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        {selectedUserIds.size} selected
+                        {t('{count} selected', { count: selectedUserIds.size })}
                     </p>
                     <div className="flex gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleSave}
                             className="px-6 py-2 bg-green-600/10 text-green-400 border border-green-600/30 hover:bg-green-600/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             disabled={isLoading || selectedUserIds.size === 0}
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : `Award Selected`}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Award Selected')}
                         </button>
                     </div>
                 </div>

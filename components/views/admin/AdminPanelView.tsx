@@ -11,6 +11,7 @@ import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import { useNavigation } from '../../../contexts/NavigationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Lazy-load all admin tabs — only the active tab's code is downloaded
 const AdminUserDetailView = React.lazy(() => import('./AdminUserDetailView'));
@@ -50,14 +51,17 @@ const AdminItemCatalogTab = React.lazy(() => import('./catalog/AdminItemCatalogT
 const AdminCommodityCatalogTab = React.lazy(() => import('./catalog/AdminCommodityCatalogTab'));
 const AdminLocationCatalogTab = React.lazy(() => import('./catalog/AdminLocationCatalogTab'));
 
-const AdminTabFallback = () => (
-    <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-3">
-            <i className="fa-solid fa-circle-notch animate-spin text-slate-300 text-2xl"></i>
-            <p className="text-slate-400 text-xs font-mono uppercase tracking-widest">Loading Module</p>
+const AdminTabFallback = () => {
+    const { t } = useI18n();
+    return (
+        <div className="flex items-center justify-center h-64">
+            <div className="text-center space-y-3">
+                <i className="fa-solid fa-circle-notch animate-spin text-slate-300 text-2xl"></i>
+                <p className="text-slate-400 text-xs font-mono uppercase tracking-widest">{t('Loading Module')}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const tabGroups = {
     "Dashboard": [
@@ -123,7 +127,9 @@ const tabGroups = {
     ],
 };
 
-const NavigationItem: React.FC<{ id: string; label: string; icon: string; isActive: boolean; onClick: () => void }> = ({ label, icon, isActive, onClick }) => (
+const NavigationItem: React.FC<{ id: string; label: string; icon: string; isActive: boolean; onClick: () => void }> = ({ label, icon, isActive, onClick }) => {
+    const { t } = useI18n();
+    return (
     <button
         onClick={onClick}
         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all duration-150 ${isActive
@@ -132,11 +138,13 @@ const NavigationItem: React.FC<{ id: string; label: string; icon: string; isActi
             }`}
     >
         <i className={`${icon} w-4 text-center text-[10px]`}></i>
-        <span className="truncate">{label}</span>
+        <span className="truncate">{t(label, { context: 'admin' })}</span>
     </button>
-);
+    );
+};
 
 const AdminPanelView: React.FC = () => {
+    const { t } = useI18n();
     const { hasPermission } = useAuth();
     const { editingServiceType } = useNavigation();
     const { openAdjustReputationModal, openReputationHistoryModal, openRatingHistoryModal, openAwardSingleCertModal, openAwardSingleCommendModal, openAddConductEntryModal, isServiceTypeModalOpen, setIsServiceTypeModalOpen } = useModalRegistry();
@@ -234,16 +242,16 @@ const AdminPanelView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · ADMIN CONSOLE"
+                chipLabel={t('MODULE · ADMIN CONSOLE')}
                 chipIcon="fa-screwdriver-wrench"
                 chipAccent="slate"
-                title="Admin Console"
-                subtitle="Organization configuration, users, integrations, and maintenance."
+                title={t('Admin Console')}
+                subtitle={t('Organization configuration, users, integrations, and maintenance.')}
                 stats={<>
-                    <HeroStat icon="fa-users" label="Members" value={heroStats.members} accent="sky" />
-                    <HeroStat icon="fa-tower-broadcast" label="Active Requests" value={heroStats.activeRequests} accent="amber" emphasize={heroStats.activeRequests > 0} />
-                    <HeroStat icon="fa-folder-open" label="Open Cases" value={heroStats.openCases} accent="emerald" emphasize={heroStats.openCases > 0} />
-                    <HeroStat icon="fa-bolt" label="On Duty" value={heroStats.dutyNow} accent="emerald" emphasize={heroStats.dutyNow > 0} />
+                    <HeroStat icon="fa-users" label={t('Members')} value={heroStats.members} accent="sky" />
+                    <HeroStat icon="fa-tower-broadcast" label={t('Active Requests')} value={heroStats.activeRequests} accent="amber" emphasize={heroStats.activeRequests > 0} />
+                    <HeroStat icon="fa-folder-open" label={t('Open Cases')} value={heroStats.openCases} accent="emerald" emphasize={heroStats.openCases > 0} />
+                    <HeroStat icon="fa-bolt" label={t('On Duty')} value={heroStats.dutyNow} accent="emerald" emphasize={heroStats.dutyNow > 0} />
                 </>}
             />
 
@@ -261,9 +269,9 @@ const AdminPanelView: React.FC = () => {
                                 const visibleTabs = tabs.filter(tab => hasPermission(tab.permission));
                                 if (visibleTabs.length === 0) return null;
                                 return (
-                                    <optgroup key={categoryName} label={categoryName} className="bg-slate-900 text-slate-400">
+                                    <optgroup key={categoryName} label={t(categoryName)} className="bg-slate-900 text-slate-400">
                                         {visibleTabs.map(tab => (
-                                            <option key={tab.id} value={tab.id} className="text-white">{tab.label}</option>
+                                            <option key={tab.id} value={tab.id} className="text-white">{t(tab.label, { context: 'admin' })}</option>
                                         ))}
                                     </optgroup>
                                 );
@@ -282,7 +290,7 @@ const AdminPanelView: React.FC = () => {
                         if (visibleTabs.length === 0) return null;
                         return (
                             <div key={categoryName} className="space-y-0.5">
-                                <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{categoryName}</p>
+                                <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{t(categoryName)}</p>
                                 {visibleTabs.map(tab => (
                                     <NavigationItem
                                         key={tab.id}

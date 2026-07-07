@@ -6,6 +6,7 @@ import { JobPostingStatus } from '../../../types';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusChip = (status: JobPostingStatus) => {
     if (status === JobPostingStatus.Open) return 'bg-green-500/10 text-green-400 border-green-500/30';
@@ -16,6 +17,7 @@ const getStatusChip = (status: JobPostingStatus) => {
 };
 
 const AdminJobsTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { hrJobs, setHrJobs } = useHR();
     const { confirm } = useNotification();
@@ -24,9 +26,9 @@ const AdminJobsTab: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         const confirmed = await confirm({
-            title: 'Delete Job Posting',
-            message: 'Are you sure you want to delete this job posting?',
-            confirmText: 'Delete',
+            title: t('Delete Job Posting'),
+            message: t('Are you sure you want to delete this job posting?'),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -55,15 +57,15 @@ const AdminJobsTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-pen-to-square text-emerald-300"></i>
-                        Manage Vacancies
+                        {t('Manage Vacancies')}
                     </h2>
-                    <p className="text-sm text-slate-400 mt-1">Recruitment &amp; vacancy control.</p>
+                    <p className="text-sm text-slate-400 mt-1">{t('Recruitment & vacancy control.')}</p>
                 </div>
                 <button
                     onClick={() => openCreateJobModal()}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                 >
-                    <i className="fa-solid fa-plus"></i>Create Vacancy
+                    <i className="fa-solid fa-plus"></i>{t('Create Vacancy')}
                 </button>
             </div>
 
@@ -75,7 +77,7 @@ const AdminJobsTab: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                                     <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-sm">{job.department}</span>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${getStatusChip(job.status as JobPostingStatus)}`}>{job.status}</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm border ${getStatusChip(job.status as JobPostingStatus)}`}>{t(job.status, { context: 'jobPosting' })}</span>
                                 </div>
                                 <h3 className="text-base font-black text-white group-hover:text-emerald-200 transition-colors truncate uppercase tracking-tight">{job.title}</h3>
                                 <p className="text-sm text-slate-400 mt-2 line-clamp-2 leading-relaxed">{job.description}</p>
@@ -88,10 +90,10 @@ const AdminJobsTab: React.FC = () => {
                                     className="flex-1 md:flex-none bg-slate-900/60 border border-slate-700 text-white text-xs font-black uppercase tracking-wider rounded-lg px-3 py-2 outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
                                     disabled={isSaving}
                                 >
-                                    {Object.values(JobPostingStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                    {Object.values(JobPostingStatus).map(s => <option key={s} value={s}>{t(s, { context: 'jobPosting' })}</option>)}
                                 </select>
-                                <button onClick={() => openCreateJobModal(job)} className="p-2 text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors" disabled={isSaving} title="Edit"><i className="fa-solid fa-pencil"></i></button>
-                                <button onClick={() => handleDelete(job.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" disabled={isSaving} title="Delete"><i className="fa-solid fa-trash-can"></i></button>
+                                <button onClick={() => openCreateJobModal(job)} className="p-2 text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors" disabled={isSaving} title={t('Edit')}><i className="fa-solid fa-pencil"></i></button>
+                                <button onClick={() => handleDelete(job.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" disabled={isSaving} title={t('Delete')}><i className="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
                     ))}
@@ -101,8 +103,8 @@ const AdminJobsTab: React.FC = () => {
                     <EmptyState
                         icon="fa-pen-to-square"
                         accent="emerald"
-                        heading="No vacancies yet"
-                        description="Create a job posting to begin the recruitment cycle."
+                        heading={t('No vacancies yet')}
+                        description={t('Create a job posting to begin the recruitment cycle.')}
                     />
                 </div>
             )}

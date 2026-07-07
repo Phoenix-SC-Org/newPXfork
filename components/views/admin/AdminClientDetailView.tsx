@@ -11,6 +11,7 @@ import ClientFlagPills from '../../shared/ui/ClientFlagPills';
 import Switch from '../../ui/Switch';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface AdminClientDetailViewProps {
     user: User;
@@ -63,6 +64,7 @@ const SectionCard: React.FC<{
 type Tab = 'profile' | 'history' | 'notes';
 
 const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onBack, openAdjustReputationModal, openReputationHistoryModal }) => {
+    const { t } = useI18n();
     const { hydratedServiceRequests, rpcAction, refreshMainState } = useData();
     const { allUsers, updateUserRecord, promoteUserToMember } = useMembers();
     const { hasPermission } = useAuth();
@@ -105,14 +107,14 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save client record changes." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to save client record changes.") });
         } finally {
             setIsSaving(false);
         }
     };
 
     const handlePromote = async () => {
-        const confirmed = await confirm({ title: 'Promote to Member', message: `Are you sure you want to promote ${userToDisplay.name} to a Member? This will grant them access to the member-level dashboard features.`, confirmText: 'Promote', variant: 'warning' });
+        const confirmed = await confirm({ title: t('Promote to Member'), message: t('Are you sure you want to promote {name} to a Member? This will grant them access to the member-level dashboard features.', { name: userToDisplay.name }), confirmText: t('Promote'), variant: 'warning' });
         if (confirmed) {
             setIsPromoting(true);
             try {
@@ -120,7 +122,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                 setIsPromoted(true);
             } catch (err: any) {
                 console.error(err);
-                addToast("Promotion Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || "Failed to promote the user to Member." });
+                addToast(t("Promotion Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || t("Failed to promote the user to Member.") });
             } finally {
                 setIsPromoting(false);
             }
@@ -139,7 +141,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
             await rpcAction(action, { targetUserId: userToDisplay.id });
             await refreshMainState();
         } catch (err: any) {
-            addToast(`${label} Toggle Failed`, <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not update the flag.' });
+            addToast(t('{label} Toggle Failed', { label }), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not update the flag.') });
         } finally {
             setBusy(false);
         }
@@ -164,7 +166,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                     }`}
                 >
                     <i className={`fa-solid ${tab.icon}`}></i>
-                    {tab.label}
+                    {t(tab.label)}
                 </button>
             ))}
         </div>
@@ -173,7 +175,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel={`CLIENT RECORD · ID ${userToDisplay.id.toString().padStart(6, '0')}`}
+                chipLabel={t('CLIENT RECORD · ID {id}', { id: userToDisplay.id.toString().padStart(6, '0') })}
                 chipIcon="fa-user-shield"
                 chipAccent="amber"
                 chipPulse={userToDisplay.isDuty}
@@ -189,7 +191,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                         onClick={onBack}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-amber-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
                     >
-                        <i className="fa-solid fa-arrow-left"></i> Return to Registry
+                        <i className="fa-solid fa-arrow-left"></i> {t('Return to Registry')}
                     </button>
                     {hasPermission('admin:user:update_role') && !isPromoted && (
                         <HeroActionButton
@@ -198,21 +200,21 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                             icon={isPromoting ? 'fa-circle-notch fa-spin' : 'fa-arrow-up'}
                             disabled={isPromoting}
                         >
-                            {isPromoting ? 'Promoting...' : 'Promote to Member'}
+                            {isPromoting ? t('Promoting...') : t('Promote to Member')}
                         </HeroActionButton>
                     )}
                     {isPromoted && (
                         <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider">
-                            <i className="fa-solid fa-check"></i> Promoted
+                            <i className="fa-solid fa-check"></i> {t('Promoted')}
                         </span>
                     )}
                 </>}
                 statsCols={4}
                 stats={<>
-                    <HeroStat icon="fa-clipboard-list" label="Total Requests" value={clientStats.totalRequests} accent="amber" emphasize={clientStats.totalRequests > 0} />
-                    <HeroStat icon="fa-percent" label="Success Rate" value={`${clientStats.successRate.toFixed(0)}%`} accent="emerald" emphasize={clientStats.successRate >= 75} />
-                    <HeroStat icon="fa-star" label="Reputation" value={userToDisplay.reputation ?? 0} accent={userToDisplay.reputation < 25 ? 'red' : userToDisplay.reputation < 50 ? 'amber' : 'emerald'} />
-                    <HeroStat icon={userToDisplay.isDuty ? 'fa-circle-check' : 'fa-circle-minus'} label="Status" value={userToDisplay.isDuty ? 'Connected' : 'Offline'} accent={userToDisplay.isDuty ? 'emerald' : 'slate'} emphasize={userToDisplay.isDuty} />
+                    <HeroStat icon="fa-clipboard-list" label={t('Total Requests')} value={clientStats.totalRequests} accent="amber" emphasize={clientStats.totalRequests > 0} />
+                    <HeroStat icon="fa-percent" label={t('Success Rate')} value={`${clientStats.successRate.toFixed(0)}%`} accent="emerald" emphasize={clientStats.successRate >= 75} />
+                    <HeroStat icon="fa-star" label={t('Reputation')} value={userToDisplay.reputation ?? 0} accent={userToDisplay.reputation < 25 ? 'red' : userToDisplay.reputation < 50 ? 'amber' : 'emerald'} />
+                    <HeroStat icon={userToDisplay.isDuty ? 'fa-circle-check' : 'fa-circle-minus'} label={t('Status')} value={userToDisplay.isDuty ? t('Connected') : t('Offline')} accent={userToDisplay.isDuty ? 'emerald' : 'slate'} emphasize={userToDisplay.isDuty} />
                 </>}
                 tabs={tabBar}
             />
@@ -222,51 +224,51 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                     {/* Main column */}
                     <div className="lg:col-span-2 space-y-6">
                         {activeTab === 'profile' && (
-                            <SectionCard title="Account Integrity" icon="fa-id-card" accent="amber">
+                            <SectionCard title={t('Account Integrity')} icon="fa-id-card" accent="amber">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">RSI Handle</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">{t('RSI Handle')}</p>
                                         <p className="text-white font-mono text-sm">{userToDisplay.rsiHandle}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Discord Identifier</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">{t('Discord Identifier')}</p>
                                         <p className="text-white font-mono text-sm">{userToDisplay.discordId}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Joined</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">{t('Joined')}</p>
                                         <p className="text-white font-mono text-sm">{fmt(userToDisplay.createdAt)}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Role</p>
-                                        <p className="text-white font-mono text-sm uppercase">{userToDisplay.role}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">{t('Role')}</p>
+                                        <p className="text-white font-mono text-sm uppercase">{t(userToDisplay.role)}</p>
                                     </div>
                                 </div>
                                 <div className="bg-slate-950/40 border border-amber-500/20 p-4 rounded-lg">
                                     <p className="text-xs text-slate-400 leading-relaxed">
                                         <i className="fa-solid fa-circle-info mr-2 text-amber-400/80"></i>
-                                        Clients are managed based on their reputation score. Low reputation clients (below 10) are restricted from initiating new service requests.
+                                        {t('Clients are managed based on their reputation score. Low reputation clients (below 10) are restricted from initiating new service requests.')}
                                     </p>
                                 </div>
                             </SectionCard>
                         )}
 
                         {activeTab === 'profile' && hasPermission('admin:user:update') && (
-                            <SectionCard title="Visibility Flags" icon="fa-flag" accent="amber">
+                            <SectionCard title={t('Visibility Flags')} icon="fa-flag" accent="amber">
                                 <p className="text-xs text-slate-400 leading-relaxed">
-                                    Visual-only pills shown next to this client's name in the registry, dispatch, and request views. They don't change permissions or behaviour.
+                                    {t("Visual-only pills shown next to this client's name in the registry, dispatch, and request views. They don't change permissions or behaviour.")}
                                 </p>
                                 <div className="space-y-3 pt-2">
                                     <Switch
-                                        label="Mark as VIP"
-                                        hint="Highlights this client as high-value (amber crown pill)."
+                                        label={t('Mark as VIP')}
+                                        hint={t('Highlights this client as high-value (amber crown pill).')}
                                         checked={!!userToDisplay.isVip}
                                         onChange={() => toggleClientFlag('admin:toggle_vip', 'VIP')}
                                         disabled={togglingVip}
                                         accent="amber"
                                     />
                                     <Switch
-                                        label="Mark as Affiliate"
-                                        hint="Identifies this client as a partner / referral relationship (purple handshake pill)."
+                                        label={t('Mark as Affiliate')}
+                                        hint={t('Identifies this client as a partner / referral relationship (purple handshake pill).')}
                                         checked={!!userToDisplay.isAffiliate}
                                         onChange={() => toggleClientFlag('admin:toggle_affiliate', 'Affiliate')}
                                         disabled={togglingAffiliate}
@@ -277,14 +279,14 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                         )}
 
                         {activeTab === 'history' && (
-                            <SectionCard title="Mission History" icon="fa-clock-rotate-left" accent="sky" contentClassName="p-0">
+                            <SectionCard title={t('Mission History')} icon="fa-clock-rotate-left" accent="sky" contentClassName="p-0">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-950/40 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-widest font-black">
-                                            <th className="p-3 sm:p-4">Reference</th>
-                                            <th className="p-3 sm:p-4">Type</th>
-                                            <th className="p-3 sm:p-4">Date</th>
-                                            <th className="p-3 sm:p-4 text-right">Result</th>
+                                            <th className="p-3 sm:p-4">{t('Reference')}</th>
+                                            <th className="p-3 sm:p-4">{t('Type')}</th>
+                                            <th className="p-3 sm:p-4">{t('Date')}</th>
+                                            <th className="p-3 sm:p-4 text-right">{t('Result')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800">
@@ -295,13 +297,13 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                                                 <td className="p-3 sm:p-4 text-sm text-slate-400 font-mono">{fmt.date(req.createdAt)}</td>
                                                 <td className="p-3 sm:p-4 text-right">
                                                     <span className={`px-2 py-1 rounded-sm text-[10px] font-black uppercase tracking-wider border ${getStatusChipClass(req.status)}`}>
-                                                        {req.status}
+                                                        {t(req.status)}
                                                     </span>
                                                 </td>
                                             </tr>
                                         ))}
                                         {clientStats.requests.length === 0 && (
-                                            <tr><td colSpan={4} className="p-10 text-center text-slate-500 italic">No historical requests found.</td></tr>
+                                            <tr><td colSpan={4} className="p-10 text-center text-slate-500 italic">{t('No historical requests found.')}</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -309,13 +311,13 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                         )}
 
                         {activeTab === 'notes' && (
-                            <SectionCard title="Confidential Archive Notes" icon="fa-pen-to-square" accent="amber">
+                            <SectionCard title={t('Confidential Archive Notes')} icon="fa-pen-to-square" accent="amber">
                                 <textarea
                                     value={adminNotes}
                                     onChange={e => setAdminNotes(e.target.value)}
                                     rows={12}
                                     className="w-full bg-slate-950/40 border border-slate-800 rounded-lg p-4 text-white text-sm focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/30 outline-hidden resize-none leading-relaxed transition-colors"
-                                    placeholder="Enter internal observations..."
+                                    placeholder={t('Enter internal observations...')}
                                     disabled={!hasPermission('admin:user:update') || isSaving}
                                 />
                                 <div className="flex justify-end">
@@ -325,7 +327,7 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                                                 ? 'bg-green-600 text-white border border-green-500'
                                                 : 'bg-amber-600 hover:bg-amber-500 text-white border border-amber-500/40 shadow-lg shadow-amber-900/20'
                                         } disabled:opacity-50 disabled:cursor-not-allowed`}>
-                                        {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> Saving...</> : isSaved ? <><i className="fa-solid fa-check mr-1"></i> Saved</> : <><i className="fa-solid fa-floppy-disk mr-1"></i> Commit Notes</>}
+                                        {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i> {t('Saving...')}</> : isSaved ? <><i className="fa-solid fa-check mr-1"></i> {t('Saved')}</> : <><i className="fa-solid fa-floppy-disk mr-1"></i> {t('Commit Notes')}</>}
                                     </button>
                                 </div>
                             </SectionCard>
@@ -334,12 +336,12 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
 
                     {/* Right sidebar */}
                     <div className="space-y-6 lg:sticky lg:top-0 lg:self-start">
-                        <SectionCard title="Reputation Profile" icon="fa-star" accent="amber">
+                        <SectionCard title={t('Reputation Profile')} icon="fa-star" accent="amber">
                             <div className="text-center py-2">
                                 <div className={`text-3xl font-black mb-1 ${reputationColor}`}>
                                     {userToDisplay.reputation}
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Score</div>
+                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('Active Score')}</div>
                             </div>
                             <div className="space-y-2 pt-2">
                                 <button
@@ -347,14 +349,14 @@ const AdminClientDetailView: React.FC<AdminClientDetailViewProps> = ({ user, onB
                                     disabled={!hasPermission('admin:user:adjust_reputation')}
                                     className="w-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider border border-amber-500/30"
                                 >
-                                    <i className="fa-solid fa-sliders mr-1.5"></i> Adjust Rating
+                                    <i className="fa-solid fa-sliders mr-1.5"></i> {t('Adjust Rating')}
                                 </button>
                                 <button
                                     onClick={() => openReputationHistoryModal(userToDisplay)}
                                     disabled={!hasPermission('admin:user:view_history')}
                                     className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-white text-xs font-bold py-2.5 rounded-lg transition-colors border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
                                 >
-                                    <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> Audit History
+                                    <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> {t('Audit History')}
                                 </button>
                             </div>
                         </SectionCard>

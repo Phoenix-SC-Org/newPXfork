@@ -5,6 +5,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface ExternalToolModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ interface ExternalToolModalProps {
 const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, tool }) => {
     const { addExternalTool, updateExternalTool, externalTools } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [url, setUrl] = useState('');
@@ -102,10 +104,10 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
             onClose();
         } catch (err) {
             console.error("Failed to save external tool:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the tool. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while saving the tool. Please try again.') });
             setIsLoading(false);
         }
-    }, [title, description, url, icon, audience, isEditing, tool, addExternalTool, updateExternalTool, onClose, addToast, category]);
+    }, [title, description, url, icon, audience, isEditing, tool, addExternalTool, updateExternalTool, onClose, addToast, category, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -115,8 +117,8 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit External Tool' : 'Create External Tool'}
-            subtitle="Resource Management"
+            title={isEditing ? t('Edit External Tool') : t('Create External Tool')}
+            subtitle={t('Resource Management')}
             icon="fa-solid fa-toolbox"
             color="sky"
             width="max-w-lg"
@@ -124,24 +126,24 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-5">
                     <div>
-                        <label className={labelClass}>Title</label>
+                        <label className={labelClass}>{t('Title')}</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="e.g., Coriolis Ship Builder"
+                            placeholder={t('e.g., Coriolis Ship Builder')}
                             className={inputClass}
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Category (Optional)</label>
+                        <label className={labelClass}>{t('Category (Optional)')}</label>
                         <input
                             type="text"
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
-                            placeholder="e.g., Theorycraft, Logistics, Reference"
+                            placeholder={t('e.g., Theorycraft, Logistics, Reference')}
                             list="external-tool-category-suggestions"
                             className={inputClass}
                             disabled={isLoading}
@@ -151,10 +153,10 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
                                 {existingCategories.map(c => <option key={c} value={c} />)}
                             </datalist>
                         )}
-                        <p className="text-[10px] text-slate-500 mt-1">Tools sharing a category are grouped together in the user-facing view. Leave blank to file under "General".</p>
+                        <p className="text-[10px] text-slate-500 mt-1">{t('Tools sharing a category are grouped together in the user-facing view. Leave blank to file under "General".')}</p>
                     </div>
                     <div>
-                        <label className={labelClass}>URL</label>
+                        <label className={labelClass}>{t('URL')}</label>
                         <input
                             type="url"
                             value={url}
@@ -166,13 +168,13 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Font Awesome Icon</label>
+                        <label className={labelClass}>{t('Font Awesome Icon')}</label>
                         <div className="flex gap-3 items-center">
                             <input
                                 type="text"
                                 value={icon}
                                 onChange={(e) => setIcon(e.target.value)}
-                                placeholder="e.g., fa-solid fa-ship"
+                                placeholder={t('e.g., fa-solid fa-ship')}
                                 className={`${inputClass} font-mono`}
                                 required
                                 disabled={isLoading}
@@ -185,19 +187,19 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
                         </div>
                     </div>
                     <div>
-                        <label className={labelClass}>Description</label>
+                        <label className={labelClass}>{t('Description')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={2}
-                            placeholder="A tool for theorycrafting ship builds."
+                            placeholder={t('A tool for theorycrafting ship builds.')}
                             className={`${inputClass} resize-none`}
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Audience Access</label>
+                        <label className={labelClass}>{t('Audience Access')}</label>
                         <div className="grid grid-cols-2 gap-3">
                             {audienceOptions.map(opt => (
                                 <label key={opt} className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${audience.includes(opt) ? 'bg-sky-500/20 border-sky-500/50' : 'bg-slate-950 border-slate-800 hover:bg-slate-900'}`}>
@@ -208,7 +210,7 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
                                         className="h-4 w-4 rounded-sm bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
                                         disabled={isLoading}
                                     />
-                                    <span className="text-xs font-bold text-slate-300">{opt}</span>
+                                    <span className="text-xs font-bold text-slate-300">{t(opt)}</span>
                                 </label>
                             ))}
                         </div>
@@ -216,13 +218,13 @@ const ExternalToolModal: React.FC<ExternalToolModalProps> = ({ isOpen, onClose, 
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-sky-500/10 text-sky-400 border border-sky-500/50 hover:bg-sky-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Tool')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Tool'))}
                     </button>
                 </div>
             </form>

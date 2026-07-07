@@ -71,10 +71,11 @@ describe('de dictionary shape', () => {
 });
 
 const Probe: React.FC = () => {
-    const { language, setLanguage, t } = useI18n();
+    const { language, locale, setLanguage, t } = useI18n();
     return (
         <div>
             <span data-testid="lang">{language}</span>
+            <span data-testid="locale">{locale}</span>
             <span data-testid="radio">{t('Radio')}</span>
             <button onClick={() => setLanguage('de')}>to-de</button>
             <button onClick={() => setLanguage('en')}>to-en</button>
@@ -103,6 +104,13 @@ describe('I18nProvider', () => {
         expect(screen.getByTestId('radio').textContent).toBe('Funk');
         expect(document.documentElement.lang).toBe('de');
         expect(localStorage.getItem('ui.language')).toBe('"de"');
+    });
+
+    it('derives the Intl locale from the language', () => {
+        render(<I18nProvider><Probe /></I18nProvider>);
+        expect(screen.getByTestId('locale').textContent).toBe('en-US');
+        fireEvent.click(screen.getByText('to-de'));
+        expect(screen.getByTestId('locale').textContent).toBe('de-DE');
     });
 
     it('restores the persisted language on mount', () => {

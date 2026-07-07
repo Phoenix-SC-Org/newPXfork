@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, UserRole } from '../../../../../types';
 import SearchResultCard from '../SearchResultCard';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 interface Props {
     user: User;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const PersonnelRowContent: React.FC<Props> = ({ user, onClick, isSelected }) => {
+    const { t } = useI18n();
     const isClient = user.role === UserRole.Client;
     const accent = isClient ? 'emerald' : 'sky';
     return (
@@ -26,7 +28,7 @@ const PersonnelRowContent: React.FC<Props> = ({ user, onClick, isSelected }) => 
                 {user.isDuty && (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-300">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        On Duty
+                        {t('On Duty')}
                     </span>
                 )}
             </div>
@@ -36,7 +38,7 @@ const PersonnelRowContent: React.FC<Props> = ({ user, onClick, isSelected }) => 
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                         : 'bg-sky-500/10 border-sky-500/30 text-sky-300'
                 }`}>
-                    {user.role}
+                    {t(user.role)}
                 </span>
                 {user.rank?.name && (
                     <span className="px-1.5 py-0.5 rounded-sm border bg-slate-900/60 border-white/10 text-slate-400 font-mono text-[10px] uppercase tracking-wider">

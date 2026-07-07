@@ -1,6 +1,7 @@
 
 import React from 'react';
 import CallsignChip from '../../shared/ui/CallsignChip';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ChangeLogViewProps {
     onBack: () => void;
@@ -15,25 +16,29 @@ const archiveId = (version: string): string => {
     return (hash >>> 0).toString(36).padStart(8, '0').slice(0, 8).toUpperCase();
 };
 
-const VersionCard: React.FC<{ version: string; title: string; children: React.ReactNode; isLatest?: boolean }> = ({ version, title, children, isLatest }) => (
-    <section className={`bg-slate-900/80 backdrop-blur-md border rounded-xl p-5 sm:p-6 space-y-4 shadow-lg transition-all ${isLatest ? 'border-sky-500/50 shadow-sky-900/20' : 'border-slate-700/50 hover:border-slate-600'}`}>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/5 pb-3">
-            <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">{`Version ${version}`}</h2>
-                    {isLatest && <span className="bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest">Current Release</span>}
+const VersionCard: React.FC<{ version: string; title: string; children: React.ReactNode; isLatest?: boolean }> = ({ version, title, children, isLatest }) => {
+    const { t } = useI18n();
+    return (
+        <section className={`bg-slate-900/80 backdrop-blur-md border rounded-xl p-5 sm:p-6 space-y-4 shadow-lg transition-all ${isLatest ? 'border-sky-500/50 shadow-sky-900/20' : 'border-slate-700/50 hover:border-slate-600'}`}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-white/5 pb-3">
+                <div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">{t('Version {version}', { version })}</h2>
+                        {isLatest && <span className="bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest">{t('Current Release')}</span>}
+                    </div>
+                    <p className="text-[10px] text-sky-300 font-black uppercase tracking-widest mt-1">{title}</p>
                 </div>
-                <p className="text-[10px] text-sky-300 font-black uppercase tracking-widest mt-1">{title}</p>
+                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">{t('Archive ID: {id}', { id: archiveId(version) })}</p>
             </div>
-            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Archive ID: {archiveId(version)}</p>
-        </div>
-        <ul className="list-none space-y-3 text-slate-300 text-sm">
-            {children}
-        </ul>
-    </section>
-);
+            <ul className="list-none space-y-3 text-slate-300 text-sm">
+                {children}
+            </ul>
+        </section>
+    );
+};
 
 const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
+    const { t } = useI18n();
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <div className="shrink-0 relative overflow-hidden border-b border-white/5 bg-linear-to-b from-sky-950/30 via-slate-950/80 to-slate-950">
@@ -42,12 +47,12 @@ const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
                 <div className="relative px-4 sm:px-8 pt-10 pb-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div className="min-w-0">
-                            <CallsignChip label="MODULE · CHANGELOG" icon="fa-scroll" accent="sky" />
+                            <CallsignChip label={t('MODULE · CHANGELOG')} icon="fa-scroll" accent="sky" />
                             <h1 className="mt-3 text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                                System Changelog
+                                {t('System Changelog')}
                             </h1>
                             <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-                                Operational updates and version history of the platform.
+                                {t('Operational updates and version history of the platform.')}
                             </p>
                         </div>
                         <div className="flex shrink-0">
@@ -55,7 +60,7 @@ const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
                                 onClick={onBack}
                                 className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-sky-300 transition-colors"
                             >
-                                <i className="fa-solid fa-arrow-left"></i> Back to Help
+                                <i className="fa-solid fa-arrow-left"></i> {t('Back to Help')}
                             </button>
                         </div>
                     </div>
@@ -73,7 +78,7 @@ const ChangeLogView: React.FC<ChangeLogViewProps> = ({ onBack }) => {
                 <div className="space-y-6">
                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center">
                         <span className="h-px bg-slate-700 grow mr-4"></span>
-                        Version History
+                        {t('Version History')}
                         <span className="h-px bg-slate-700 grow ml-4"></span>
                     </h3>
 

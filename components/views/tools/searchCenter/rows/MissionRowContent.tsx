@@ -3,6 +3,7 @@ import { HydratedServiceRequest, ServiceRequestStatus } from '../../../../../typ
 import { AccentKey } from '../../../../shared/ui/accents';
 import SearchResultCard from '../SearchResultCard';
 import { timeAgoShort } from '../../../intel/intelStyles';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 interface Props {
     request: HydratedServiceRequest;
@@ -33,9 +34,10 @@ const statusAccent = (s: ServiceRequestStatus): AccentKey => {
 };
 
 const MissionRowContent: React.FC<Props> = ({ request, onClick, isSelected }) => {
+    const { t } = useI18n();
     const accent = statusAccent(request.status);
     const shortId = request.id.split('-')[1]?.toUpperCase() ?? request.id.slice(0, 8).toUpperCase();
-    const clientLabel = request.client?.name || request.unregisteredClientRsiHandle || 'Unknown';
+    const clientLabel = request.client?.name || request.unregisteredClientRsiHandle || t('Unknown');
     const isActive = request.status === ServiceRequestStatus.InProgress;
     return (
         <SearchResultCard
@@ -70,7 +72,7 @@ const MissionRowContent: React.FC<Props> = ({ request, onClick, isSelected }) =>
                             ? 'bg-sky-500/10 border-sky-500/30 text-sky-300'
                             : 'bg-slate-900/60 border-white/10 text-slate-400'
                 }`}>
-                    {request.status}
+                    {t(request.status)}
                 </span>
             </div>
         </SearchResultCard>

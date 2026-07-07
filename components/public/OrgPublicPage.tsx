@@ -363,7 +363,7 @@ const LoginCard: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
 // --- Sidebar: stats ---
 
 const StatsCard: React.FC<{ slug: string }> = ({ slug }) => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [stats, setStats] = useState<Stats | null>(null);
 
     useEffect(() => {
@@ -384,10 +384,10 @@ const StatsCard: React.FC<{ slug: string }> = ({ slug }) => {
         : '—';
 
     const rows: Array<{ label: string; value: string; icon: string }> = [
-        { label: t('Requests Completed'), value: stats.totalCompleted.toLocaleString(), icon: 'fa-solid fa-check-double' },
+        { label: t('Requests Completed'), value: stats.totalCompleted.toLocaleString(locale), icon: 'fa-solid fa-check-double' },
         { label: t('Avg Client Rating'), value: avgRating, icon: 'fa-solid fa-star' },
         { label: t('Avg Response Time'), value: avgResp, icon: 'fa-solid fa-stopwatch' },
-        { label: t('Completed (30d)'), value: stats.last30Completed.toLocaleString(), icon: 'fa-solid fa-calendar-check' },
+        { label: t('Completed (30d)'), value: stats.last30Completed.toLocaleString(locale), icon: 'fa-solid fa-calendar-check' },
     ];
 
     return (

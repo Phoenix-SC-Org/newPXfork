@@ -9,6 +9,7 @@ import { useTableControls } from '../../../hooks/useTableControls';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const AUDIENCE_LABELS: Record<string, string> = {
     'Client': 'Client Dashboard',
@@ -33,6 +34,7 @@ const NoticesManagementTab: React.FC = () => {
     const fmt = useFormatDate();
     const { confirm } = useNotification();
     const { openNoticeModal } = useModalRegistry();
+    const { t } = useI18n();
     const [searchTerm, setSearchTerm] = useState('');
 
     const { sortedAndFilteredItems } = useTableControls(
@@ -43,7 +45,7 @@ const NoticesManagementTab: React.FC = () => {
     );
 
     const handleDelete = async (notice: Announcement) => {
-        if (await confirm({ title: 'Delete Notice', message: `Are you sure you want to delete the notice "${notice.title}"?`, confirmText: 'Delete', variant: 'danger' })) {
+        if (await confirm({ title: t('Delete Notice'), message: t('Are you sure you want to delete the notice "{title}"?', { title: notice.title }), confirmText: t('Delete'), variant: 'danger' })) {
             deleteAnnouncement(notice.id);
         }
     };
@@ -51,13 +53,13 @@ const NoticesManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Notices & Alerts"
+                title={t("Notices & Alerts")}
                 icon="fa-solid fa-bullhorn"
                 accent="orange"
-                subtitle="Manage system-wide broadcasts and information."
+                subtitle={t("Manage system-wide broadcasts and information.")}
                 meta={isFetching['announcements'] && (
                     <span className="text-slate-300 animate-pulse text-xs font-bold flex items-center gap-1">
-                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...
+                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing...')}
                     </span>
                 )}
                 actions={
@@ -66,7 +68,7 @@ const NoticesManagementTab: React.FC = () => {
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search notices..."
+                                placeholder={t("Search notices...")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -77,7 +79,7 @@ const NoticesManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Notice
+                            {t('Create Notice')}
                         </button>
                     </div>
                 }
@@ -85,10 +87,10 @@ const NoticesManagementTab: React.FC = () => {
 
             <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                 <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
-                    <div className="flex-1">Announcement Details</div>
-                    <div className="w-48 hidden md:block">Audience</div>
-                    <div className="w-32 hidden sm:block text-right">Expires</div>
-                    <div className="w-24 text-right">Actions</div>
+                    <div className="flex-1">{t('Announcement Details')}</div>
+                    <div className="w-48 hidden md:block">{t('Audience')}</div>
+                    <div className="w-32 hidden sm:block text-right">{t('Expires')}</div>
+                    <div className="w-24 text-right">{t('Actions')}</div>
                 </div>
 
                 <div className="divide-y divide-slate-700/50">
@@ -103,7 +105,7 @@ const NoticesManagementTab: React.FC = () => {
                                         </div>
                                         <h3 className="text-white font-bold text-sm truncate">{notice.title}</h3>
                                         <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm border ${styles.bg} ${styles.text} ${styles.border}`}>
-                                            {notice.type}
+                                            {t(notice.type, { context: 'announcement' })}
                                         </span>
                                     </div>
                                     <p className="text-slate-400 text-xs line-clamp-1 pl-9">{notice.body}</p>
@@ -112,7 +114,7 @@ const NoticesManagementTab: React.FC = () => {
                                 <div className="w-48 hidden md:flex flex-wrap gap-1">
                                     {notice.audience.slice(0, 3).map((aud) => (
                                         <span key={aud} className="text-[9px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded-sm border border-slate-700 uppercase font-bold">
-                                            {AUDIENCE_LABELS[aud] || aud}
+                                            {AUDIENCE_LABELS[aud] ? t(AUDIENCE_LABELS[aud]) : aud}
                                         </span>
                                     ))}
                                     {notice.audience.length > 3 && (
@@ -122,15 +124,15 @@ const NoticesManagementTab: React.FC = () => {
 
                                 <div className="w-32 hidden sm:block text-right">
                                     <span className={`text-xs font-mono ${notice.expiryDate ? 'text-slate-400' : 'text-slate-600 italic'}`}>
-                                        {notice.expiryDate ? fmt(notice.expiryDate) : 'Never'}
+                                        {notice.expiryDate ? fmt(notice.expiryDate) : t('Never')}
                                     </span>
                                 </div>
 
                                 <div className="w-24 text-right flex justify-end gap-2">
-                                    <button onClick={() => openNoticeModal(notice)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                    <button onClick={() => openNoticeModal(notice)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t("Edit")}>
                                         <i className="fa-solid fa-pencil"></i>
                                     </button>
-                                    <button onClick={() => handleDelete(notice)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title="Delete">
+                                    <button onClick={() => handleDelete(notice)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title={t("Delete")}>
                                         <i className="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
@@ -140,7 +142,7 @@ const NoticesManagementTab: React.FC = () => {
 
                     {sortedAndFilteredItems.length === 0 && (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No notices match your criteria.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No notices match your criteria.')}</p>
                         </div>
                     )}
                 </div>

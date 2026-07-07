@@ -8,6 +8,7 @@ import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { ApiKey } from '../../../types';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ProgressLine {
     // Stable client-only id minted when the line is appended. Used solely as the
@@ -23,6 +24,7 @@ const IntelligenceManagementTab: React.FC = () => {
     const { currentUser } = useAuth();
     const fmt = useFormatDate();
     const { confirm } = useNotification();
+    const { t } = useI18n();
 
     // Operation modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,24 +110,24 @@ const IntelligenceManagementTab: React.FC = () => {
     const handleSyncWarrants = async () => {
         if (!currentUser) return;
         const ok = await confirm({
-            title: 'Sync Cautions to Intelligence',
-            message: "This will scan all active caution notes and generate intelligence reports for any targets that don't already have one. Continue?",
-            confirmText: 'Run Sync',
+            title: t('Sync Cautions to Intelligence'),
+            message: t("This will scan all active caution notes and generate intelligence reports for any targets that don't already have one. Continue?"),
+            confirmText: t('Run Sync'),
         });
         if (!ok) return;
 
         setIsSyncingWarrants(true);
-        openModal('Caution Sync', 'fa-solid fa-sync');
-        addProgress('Initiating organizational caution sync process...', 'info');
+        openModal(t('Caution Sync'), 'fa-solid fa-sync');
+        addProgress(t('Initiating organizational caution sync process...'), 'info');
 
         try {
-            addProgress('Scanning active and standing caution notes...', 'info');
+            addProgress(t('Scanning active and standing caution notes...'), 'info');
             const count = await rpcAction('admin:sync_warrants_to_reports', { adminId: currentUser.id });
-            addProgress(`Generated ${count} new intelligence reports from caution notes.`, 'success');
-            addProgress('Caution sync complete.', 'success');
+            addProgress(t('Generated {count} new intelligence reports from caution notes.', { count }), 'success');
+            addProgress(t('Caution sync complete.'), 'success');
         } catch (error: any) {
             console.error(error);
-            addProgress(`Caution sync failed: ${error.message || 'Unknown server error.'}`, 'error');
+            addProgress(t('Caution sync failed: {error}', { error: error.message || t('Unknown server error.') }), 'error');
         } finally {
             setIsSyncingWarrants(false);
             setIsOperationRunning(false);
@@ -136,10 +138,10 @@ const IntelligenceManagementTab: React.FC = () => {
         if (!currentUser) return;
 
         setIsSyncingFeeds(true);
-        openModal('External Feed Ingest', 'fa-solid fa-satellite-dish');
-        addProgress('Initiating secure feed ingest sequence...', 'info');
+        openModal(t('External Feed Ingest'), 'fa-solid fa-satellite-dish');
+        addProgress(t('Initiating secure feed ingest sequence...'), 'info');
 
-        addProgress('Querying receive-only feeds and active allied peers...', 'info');
+        addProgress(t('Querying receive-only feeds and active allied peers...'), 'info');
 
         try {
             const result = await rpcAction('intel:sync_feeds', { force: true });
@@ -158,20 +160,20 @@ const IntelligenceManagementTab: React.FC = () => {
 
             if (totalNew > 0) {
                 const parts: string[] = [];
-                if (newReports > 0) parts.push(`${newReports} report(s)`);
-                if (newWarrants > 0) parts.push(`${newWarrants} caution note(s)`);
-                if (newBulletins > 0) parts.push(`${newBulletins} bulletin(s)`);
-                addProgress(`Total ingested: ${parts.join(', ')}`, 'success');
+                if (newReports > 0) parts.push(t('{count} report(s)', { count: newReports }));
+                if (newWarrants > 0) parts.push(t('{count} caution note(s)', { count: newWarrants }));
+                if (newBulletins > 0) parts.push(t('{count} bulletin(s)', { count: newBulletins }));
+                addProgress(t('Total ingested: {list}', { list: parts.join(', ') }), 'success');
                 setIsLoadingKeys(true);
                 fetchData();
             } else {
-                addProgress('No new records were ingested across all feeds.', 'warning');
+                addProgress(t('No new records were ingested across all feeds.'), 'warning');
             }
 
-            addProgress('Feed ingest complete.', 'success');
+            addProgress(t('Feed ingest complete.'), 'success');
         } catch (error: any) {
             console.error(error);
-            addProgress(`Feed ingest failed: ${error.message || 'Secure link timed out.'}`, 'error');
+            addProgress(t('Feed ingest failed: {error}', { error: error.message || t('Secure link timed out.') }), 'error');
         } finally {
             setIsSyncingFeeds(false);
             setIsOperationRunning(false);
@@ -181,24 +183,24 @@ const IntelligenceManagementTab: React.FC = () => {
     const handleCleanup = async () => {
         if (!currentUser) return;
         const ok = await confirm({
-            title: 'Deduplicate Caution Notes',
-            message: 'This will scan the database for duplicate Active/Standing caution notes for the same target and remove older or redundant entries. Continue?',
-            confirmText: 'Run Cleanup',
+            title: t('Deduplicate Caution Notes'),
+            message: t('This will scan the database for duplicate Active/Standing caution notes for the same target and remove older or redundant entries. Continue?'),
+            confirmText: t('Run Cleanup'),
             variant: 'danger',
         });
         if (!ok) return;
 
         setIsCleaning(true);
-        openModal('Caution Deduplication', 'fa-solid fa-triangle-exclamation');
-        addProgress('Scanning for redundant caution note signatures...', 'info');
+        openModal(t('Caution Deduplication'), 'fa-solid fa-triangle-exclamation');
+        addProgress(t('Scanning for redundant caution note signatures...'), 'info');
 
         try {
             const removedCount = await rpcAction('admin:deduplicate_warrants', {});
-            addProgress(`Identified and purged ${removedCount} duplicate caution note record(s).`, 'success');
-            addProgress('Database normalized.', 'success');
+            addProgress(t('Identified and purged {count} duplicate caution note record(s).', { count: removedCount }), 'success');
+            addProgress(t('Database normalized.'), 'success');
         } catch (error: any) {
             console.error(error);
-            addProgress(`Deduplication failed: ${error.message || 'Database integrity check failed.'}`, 'error');
+            addProgress(t('Deduplication failed: {error}', { error: error.message || t('Database integrity check failed.') }), 'error');
         } finally {
             setIsCleaning(false);
             setIsOperationRunning(false);
@@ -208,24 +210,24 @@ const IntelligenceManagementTab: React.FC = () => {
     const handleCleanupIntel = async () => {
         if (!currentUser) return;
         const ok = await confirm({
-            title: 'Deduplicate Intel Reports',
-            message: 'This will scan ALL intelligence reports for duplicates based on content and target ID. Duplicate manual entries may be removed in favor of external feed data. Continue?',
-            confirmText: 'Run Cleanup',
+            title: t('Deduplicate Intel Reports'),
+            message: t('This will scan ALL intelligence reports for duplicates based on content and target ID. Duplicate manual entries may be removed in favor of external feed data. Continue?'),
+            confirmText: t('Run Cleanup'),
             variant: 'danger',
         });
         if (!ok) return;
 
         setIsCleaningIntel(true);
-        openModal('Intel Report Deduplication', 'fa-solid fa-file-shield');
-        addProgress('Analyzing report signatures across database...', 'info');
+        openModal(t('Intel Report Deduplication'), 'fa-solid fa-file-shield');
+        addProgress(t('Analyzing report signatures across database...'), 'info');
 
         try {
             const removedCount = await rpcAction('admin:deduplicate_intel', {});
-            addProgress(`Purged ${removedCount} duplicate intelligence report(s).`, 'success');
-            addProgress('Intel database normalized.', 'success');
+            addProgress(t('Purged {count} duplicate intelligence report(s).', { count: removedCount }), 'success');
+            addProgress(t('Intel database normalized.'), 'success');
         } catch (error: any) {
             console.error(error);
-            addProgress(`Deduplication failed: ${error.message || 'Database integrity check failed.'}`, 'error');
+            addProgress(t('Deduplication failed: {error}', { error: error.message || t('Database integrity check failed.') }), 'error');
         } finally {
             setIsCleaningIntel(false);
             setIsOperationRunning(false);
@@ -252,9 +254,9 @@ const IntelligenceManagementTab: React.FC = () => {
 
     const handleDeleteKey = async (id: string) => {
         const ok = await confirm({
-            title: 'Revoke API Key',
-            message: 'Revoke this API Key? Any external systems using it will lose access immediately.',
-            confirmText: 'Revoke',
+            title: t('Revoke API Key'),
+            message: t('Revoke this API Key? Any external systems using it will lose access immediately.'),
+            confirmText: t('Revoke'),
             variant: 'danger',
         });
         if (!ok) return;
@@ -299,10 +301,10 @@ const IntelligenceManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Intel & Network Management"
+                title={t('Intel & Network Management')}
                 icon="fa-solid fa-network-wired"
                 accent="cyan"
-                subtitle="Manage external intelligence feeds, API access, and database synchronization."
+                subtitle={t('Manage external intelligence feeds, API access, and database synchronization.')}
             />
 
             {/* ACTION BAR */}
@@ -315,8 +317,8 @@ const IntelligenceManagementTab: React.FC = () => {
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${colorMap[btn.color]}`}
                     >
                         <i className={`${btn.loading ? 'fa-solid fa-spinner animate-spin' : btn.icon} text-lg`}></i>
-                        <span className="text-xs font-bold uppercase tracking-wider">{btn.label}</span>
-                        <span className="text-[10px] opacity-60">{btn.description}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider">{t(btn.label)}</span>
+                        <span className="text-[10px] opacity-60">{t(btn.description)}</span>
                     </button>
                 ))}
             </div>
@@ -326,16 +328,15 @@ const IntelligenceManagementTab: React.FC = () => {
                 <div className="px-6 py-4 bg-slate-800/50 border-b border-slate-700/50">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center">
                         <i className="fa-solid fa-shield-halved mr-3 text-amber-400"></i>
-                        Outbound Feed Sharing Policy
+                        {t('Outbound Feed Sharing Policy')}
                     </h3>
                 </div>
                 <div className="p-6">
                     <p className="text-sm text-slate-400 mb-4">
-                        Control the maximum classification level of intelligence that may be shared via the API feed with external organizations and alliances.
-                        Reports and bulletins above this level will be excluded from the feed. Items with sync-restricted limiting markers are always excluded.
+                        {t('Control the maximum classification level of intelligence that may be shared via the API feed with external organizations and alliances. Reports and bulletins above this level will be excluded from the feed. Items with sync-restricted limiting markers are always excluded.')}
                     </p>
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Max Shareable Level</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{t('Max Shareable Level')}</label>
                         <select
                             value={maxShareableClearance}
                             onChange={(e) => handleSaveShareConfig(Number(e.target.value))}
@@ -345,16 +346,16 @@ const IntelligenceManagementTab: React.FC = () => {
                             {securityClearances.length > 0 ? (
                                 securityClearances.map((c: any) => (
                                     <option key={c.level} value={c.level}>
-                                        Level {c.level} — {c.name}
+                                        {t('Level {level} — {name}', { level: c.level, name: c.name })}
                                     </option>
                                 ))
                             ) : (
                                 <>
-                                    <option value={0}>Level 0 — Unclassified Only</option>
-                                    <option value={1}>Level 1 — Restricted & Below</option>
-                                    <option value={2}>Level 2 — Confidential & Below</option>
-                                    <option value={3}>Level 3 — Secret & Below</option>
-                                    <option value={4}>Level 4 — Top Secret & Below</option>
+                                    <option value={0}>{t('Level 0 — Unclassified Only')}</option>
+                                    <option value={1}>{t('Level 1 — Restricted & Below')}</option>
+                                    <option value={2}>{t('Level 2 — Confidential & Below')}</option>
+                                    <option value={3}>{t('Level 3 — Secret & Below')}</option>
+                                    <option value={4}>{t('Level 4 — Top Secret & Below')}</option>
                                 </>
                             )}
                         </select>
@@ -368,19 +369,19 @@ const IntelligenceManagementTab: React.FC = () => {
                 <div className="px-6 py-4 bg-slate-800/50 border-b border-slate-700/50 flex justify-between items-center">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center">
                         <i className="fa-solid fa-key mr-3 text-emerald-400"></i>
-                        API Access Management
+                        {t('API Access Management')}
                     </h3>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">{keys.length} Active Key{keys.length !== 1 ? 's' : ''}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">{keys.length === 1 ? t('{count} Active Key', { count: keys.length }) : t('{count} Active Keys', { count: keys.length })}</span>
                 </div>
                 <div className="p-6">
                     <p className="text-sm text-slate-400 mb-4">
-                        Manage API keys to grant external organizations read-only access to your public intelligence feed.
+                        {t('Manage API keys to grant external organizations read-only access to your public intelligence feed.')}
                     </p>
 
                     {justCreatedKey && (
                         <div className="bg-emerald-900/30 border border-emerald-500/50 p-4 rounded-lg mb-6 animate-fade-in">
-                            <h3 className="text-emerald-400 font-bold mb-2">Key Created: {justCreatedKey.label}</h3>
-                            <p className="text-sm text-slate-300 mb-2">Copy this key now. You will not be able to see it again.</p>
+                            <h3 className="text-emerald-400 font-bold mb-2">{t('Key Created: {label}', { label: justCreatedKey.label })}</h3>
+                            <p className="text-sm text-slate-300 mb-2">{t('Copy this key now. You will not be able to see it again.')}</p>
                             <div className="bg-black/50 p-3 rounded-sm font-mono text-white break-all border border-emerald-500/30 select-all">
                                 {justCreatedKey.key}
                             </div>
@@ -388,7 +389,7 @@ const IntelligenceManagementTab: React.FC = () => {
                                 onClick={() => setJustCreatedKey(null)}
                                 className="mt-4 text-sm text-emerald-400 hover:text-emerald-300 underline"
                             >
-                                I have copied the key
+                                {t('I have copied the key')}
                             </button>
                         </div>
                     )}
@@ -398,7 +399,7 @@ const IntelligenceManagementTab: React.FC = () => {
                             type="text"
                             value={newKeyLabel}
                             onChange={(e) => setNewKeyLabel(e.target.value)}
-                            placeholder="Label (e.g. Allied Org Name)"
+                            placeholder={t('Label (e.g. Allied Org Name)')}
                             className="flex-1 bg-slate-800 border border-slate-600 rounded-md p-2 text-white focus:ring-2 focus:ring-emerald-500 outline-hidden transition-colors"
                         />
                         <button
@@ -406,7 +407,7 @@ const IntelligenceManagementTab: React.FC = () => {
                             disabled={isLoadingKeys || !newKeyLabel.trim()}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-semibold transition-colors disabled:opacity-50"
                         >
-                            Generate Key
+                            {t('Generate Key')}
                         </button>
                     </form>
 
@@ -414,11 +415,11 @@ const IntelligenceManagementTab: React.FC = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-slate-700 text-slate-400 text-sm">
-                                    <th className="p-3">Label</th>
-                                    <th className="p-3">Key Prefix</th>
-                                    <th className="p-3">Created</th>
-                                    <th className="p-3">Last Used</th>
-                                    <th className="p-3 text-right">Actions</th>
+                                    <th className="p-3">{t('Label')}</th>
+                                    <th className="p-3">{t('Key Prefix')}</th>
+                                    <th className="p-3">{t('Created')}</th>
+                                    <th className="p-3">{t('Last Used')}</th>
+                                    <th className="p-3 text-right">{t('Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
@@ -428,13 +429,13 @@ const IntelligenceManagementTab: React.FC = () => {
                                         <td className="p-3 font-mono text-xs text-slate-400">{key.keyPrefix}</td>
                                         <td className="p-3 text-sm text-slate-400">{fmt(key.createdAt)}</td>
                                         <td className="p-3 text-sm text-slate-400">
-                                            {key.lastUsedAt ? fmt(key.lastUsedAt) : 'Never'}
+                                            {key.lastUsedAt ? fmt(key.lastUsedAt) : t('Never')}
                                         </td>
                                         <td className="p-3 text-right">
                                             <button
                                                 onClick={() => handleDeleteKey(key.id)}
                                                 className="text-red-400 hover:text-red-300 p-2 hover:bg-red-500/10 rounded-sm transition-colors"
-                                                title="Revoke Key"
+                                                title={t('Revoke Key')}
                                             >
                                                 <i className="fa-solid fa-trash"></i>
                                             </button>
@@ -443,7 +444,7 @@ const IntelligenceManagementTab: React.FC = () => {
                                 ))}
                                 {keys.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="p-4 text-center text-slate-500 italic">No active API keys.</td>
+                                        <td colSpan={5} className="p-4 text-center text-slate-500 italic">{t('No active API keys.')}</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -451,7 +452,7 @@ const IntelligenceManagementTab: React.FC = () => {
                     </div>
 
                     <div className="mt-6 bg-black/20 p-4 rounded-lg border border-slate-700/50">
-                        <h3 className="text-white font-bold mb-2 text-xs uppercase tracking-wider">Your Feed Endpoint</h3>
+                        <h3 className="text-white font-bold mb-2 text-xs uppercase tracking-wider">{t('Your Feed Endpoint')}</h3>
                         <code className="block bg-black/40 p-3 rounded-sm text-xs font-mono text-slate-200 break-all">
                             {window.location.origin}
                         </code>
@@ -471,7 +472,7 @@ const IntelligenceManagementTab: React.FC = () => {
                             {isOperationRunning ? (
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-slate-300 rounded-full animate-pulse"></div>
-                                    <span className="text-xs text-slate-300 font-bold uppercase">Running</span>
+                                    <span className="text-xs text-slate-300 font-bold uppercase">{t('Running')}</span>
                                 </div>
                             ) : (
                                 <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors p-1">
@@ -499,7 +500,7 @@ const IntelligenceManagementTab: React.FC = () => {
                             {isOperationRunning && (
                                 <div className="flex items-center gap-2 text-slate-500">
                                     <i className="fa-solid fa-spinner animate-spin text-[10px]"></i>
-                                    <span>Processing...</span>
+                                    <span>{t('Processing...')}</span>
                                 </div>
                             )}
                             <div ref={progressEndRef} />
@@ -510,7 +511,7 @@ const IntelligenceManagementTab: React.FC = () => {
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-600 transition-colors"
                                 >
-                                    Dismiss
+                                    {t('Dismiss')}
                                 </button>
                             </div>
                         )}

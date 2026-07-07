@@ -17,7 +17,7 @@ export const Stars: React.FC<{ value: number; size?: string }> = ({ value, size 
 };
 
 export const ListingCard: React.FC<{ listing: MarketplaceListing; onClick: () => void }> = ({ listing, onClick }) => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const meta = LISTING_TYPE_META[listing.listingType];
     return (
         <button onClick={onClick} className="group w-full text-left flex items-stretch gap-0 rounded-lg border border-slate-700/50 bg-slate-800/30 hover:bg-slate-800/60 hover:border-indigo-500/40 transition-colors overflow-hidden">
@@ -37,7 +37,7 @@ export const ListingCard: React.FC<{ listing: MarketplaceListing; onClick: () =>
                     {listing.location && <span className="truncate"><i className="fa-solid fa-location-dot mr-1 text-slate-500" aria-hidden />{listing.location}</span>}
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-2">
-                    <span className="text-sm font-black text-lime-400 font-mono">{listing.priceUec != null ? fmtUec(listing.priceUec) : t('Negotiable')}{listing.priceType === 'per_unit' ? t('/unit') : listing.priceType === 'hourly' ? t('/hr') : ''}</span>
+                    <span className="text-sm font-black text-lime-400 font-mono">{listing.priceUec != null ? fmtUec(listing.priceUec, locale) : t('Negotiable')}{listing.priceType === 'per_unit' ? t('/unit') : listing.priceType === 'hourly' ? t('/hr') : ''}</span>
                     <span className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
                         {listing.seller?.avatarUrl && <img src={listing.seller.avatarUrl} alt="" className="w-4 h-4 rounded-full" />}
                         {listing.seller?.name || t('User #{id}', { id: listing.sellerId })}
@@ -49,7 +49,7 @@ export const ListingCard: React.FC<{ listing: MarketplaceListing; onClick: () =>
 };
 
 export const ContractRow: React.FC<{ contract: MarketplaceContract; meId: number; onClick: () => void }> = ({ contract, meId, onClick }) => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const meta = CONTRACT_STATUS_META[contract.status];
     const role = contract.sellerId === meId ? 'Seller' : 'Buyer';
     return (
@@ -65,7 +65,7 @@ export const ContractRow: React.FC<{ contract: MarketplaceContract; meId: number
                     <span className={`px-1.5 py-0.5 rounded-sm border text-[9px] font-bold uppercase ${role === 'Seller' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-sky-500/10 text-sky-300 border-sky-500/20'}`}>{t(role)}</span>
                     {contract.kind === 'item' && contract.quantity != null && <span>×{contract.quantity}</span>}
                 </span>
-                <span className="font-mono text-lime-400/80">{fmtUec(contract.agreedPriceUec)}</span>
+                <span className="font-mono text-lime-400/80">{fmtUec(contract.agreedPriceUec, locale)}</span>
             </div>
         </button>
     );

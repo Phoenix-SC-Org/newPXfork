@@ -5,6 +5,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { useGovernment } from '../../../contexts/GovernmentContext';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 /**
  * Toggle row for a single feature flag with optional description + sub-flags.
@@ -28,6 +29,7 @@ const Toggle: React.FC<ToggleProps> = ({ enabled, onToggle, disabled = false, ac
 );
 
 const FeaturesSettingsTab: React.FC = () => {
+    const { t } = useI18n();
     const { orgMeta, rpcAction } = useData();
     const { updateOrgFeatures } = useConfig();
     const { governmentsFeatureConfig, refreshGovernment } = useGovernment();
@@ -53,9 +55,9 @@ const FeaturesSettingsTab: React.FC = () => {
         const next = !governmentEnabled;
         if (!next) {
             const ok = await confirm({
-                title: 'Disable Government?',
-                message: 'Government structure, positions, elections, and legislation are preserved but hidden from all members until re-enabled.',
-                confirmText: 'Disable',
+                title: t('Disable Government?'),
+                message: t('Government structure, positions, elections, and legislation are preserved but hidden from all members until re-enabled.'),
+                confirmText: t('Disable'),
                 variant: 'warning',
             });
             if (!ok) return;
@@ -65,16 +67,16 @@ const FeaturesSettingsTab: React.FC = () => {
             await rpcAction('gov:update_feature_config', { config: { enabled: next } });
             await refreshGovernment();
             addToast(
-                'Feature Updated',
+                t('Feature Updated'),
                 <i className="fa-solid fa-check"></i>,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
             );
         } catch (err: any) {
             addToast(
-                'Update Failed',
+                t('Update Failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Failed to update government feature.' },
+                { description: err?.message || t('Failed to update government feature.') },
             );
         } finally {
             setSavingKey(null);
@@ -83,24 +85,24 @@ const FeaturesSettingsTab: React.FC = () => {
 
     const applyPatch = async (key: string, patch: Record<string, any>, confirmMsg?: string) => {
         if (confirmMsg) {
-            const ok = await confirm({ title: 'Confirm change', message: confirmMsg });
+            const ok = await confirm({ title: t('Confirm change'), message: confirmMsg });
             if (!ok) return;
         }
         setSavingKey(key);
         try {
             await updateOrgFeatures(patch);
             addToast(
-                'Feature Updated',
+                t('Feature Updated'),
                 <i className="fa-solid fa-check"></i>,
                 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
             );
         } catch (err: any) {
             console.error(err);
             addToast(
-                'Update Failed',
+                t('Update Failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Failed to update feature.' },
+                { description: err?.message || t('Failed to update feature.') },
             );
         } finally {
             setSavingKey(null);
@@ -110,10 +112,10 @@ const FeaturesSettingsTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Optional Features"
+                title={t('Optional Features')}
                 icon="fa-solid fa-toggle-on"
                 accent="emerald"
-                subtitle="Turn on or off optional modules for your organization. Disabled modules are hidden from all members and their backend actions are rejected."
+                subtitle={t('Turn on or off optional modules for your organization. Disabled modules are hidden from all members and their backend actions are rejected.')}
             />
 
             <div className="bg-slate-900/50 rounded-lg p-6 border border-slate-700/50">
@@ -127,9 +129,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Government</h3>
+                                        <h3 className="font-semibold text-white">{t('Government')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            Let your organization establish branches, positions, elections, and legislation. Full configuration &mdash; templates, constitution, seats &mdash; is managed from the <span className="text-indigo-300 font-semibold">Government</span> tab when enabled.
+                                            {t('Let your organization establish branches, positions, elections, and legislation. Full configuration — templates, constitution, seats — is managed from the')} <span className="text-indigo-300 font-semibold">{t('Government')}</span> {t('tab when enabled.')}
                                         </p>
                                     </div>
                                     <Toggle
@@ -152,9 +154,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Finances</h3>
+                                        <h3 className="font-semibold text-white">{t('Finances')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            Track your org's in-game bank alt-account as a proper ledger. Members submit deposits with an in-game transfer memo; officers confirm against the real alt. Withdrawals, adjustments, and reversals are all audited. No real money — aUEC only.
+                                            {t("Track your org's in-game bank alt-account as a proper ledger. Members submit deposits with an in-game transfer memo; officers confirm against the real alt. Withdrawals, adjustments, and reversals are all audited. No real money — aUEC only.")}
                                         </p>
                                     </div>
                                     <Toggle
@@ -167,7 +169,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { finances: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling Finances will hide accounts and the ledger from all members. All records are preserved and will return when re-enabled.',
+                                                    : t('Disabling Finances will hide accounts and the ledger from all members. All records are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-amber-500"
@@ -186,9 +188,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Quartermaster</h3>
+                                        <h3 className="font-semibold text-white">{t('Quartermaster')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            Track your org's physical in-game assets — armour, weapons, components, consumables — across locations. Log current stock, issue kit to members for operations, track returns with outcomes (returned on time, damaged, lost, destroyed in action). Append-only movement ledger with full audit.
+                                            {t("Track your org's physical in-game assets — armour, weapons, components, consumables — across locations. Log current stock, issue kit to members for operations, track returns with outcomes (returned on time, damaged, lost, destroyed in action). Append-only movement ledger with full audit.")}
                                         </p>
                                     </div>
                                     <Toggle
@@ -201,7 +203,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { quartermaster: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling Quartermaster will hide the armoury and all issuance data from members. All records are preserved and will return when re-enabled.',
+                                                    : t('Disabling Quartermaster will hide the armoury and all issuance data from members. All records are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-orange-500"
@@ -220,9 +222,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Warehouse</h3>
+                                        <h3 className="font-semibold text-white">{t('Warehouse')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            Track bulk fungible commodities — ore, refined materials, fuel, RMC, missiles — across your warehouses. Sister module to Quartermaster, but for stock that gets <em>consumed, sold, or transported</em> rather than issued and returned. Quality bands per commodity, withdrawal request flow, transfer between locations, append-only movement ledger.
+                                            {t('Track bulk fungible commodities — ore, refined materials, fuel, RMC, missiles — across your warehouses. Sister module to Quartermaster, but for stock that gets')} <em>{t('consumed, sold, or transported')}</em> {t('rather than issued and returned. Quality bands per commodity, withdrawal request flow, transfer between locations, append-only movement ledger.')}
                                         </p>
                                     </div>
                                     <Toggle
@@ -235,7 +237,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { warehouse: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling Warehouse will hide the warehouse view and all withdrawal data from members. All records are preserved and will return when re-enabled.',
+                                                    : t('Disabling Warehouse will hide the warehouse view and all withdrawal data from members. All records are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-cyan-500"
@@ -254,9 +256,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Leaderboard</h3>
+                                        <h3 className="font-semibold text-white">{t('Leaderboard')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            A ranked view of member performance — missions completed, aUEC earned, average rating, largest payouts. Healthy competition for orgs that run contract work; noise for orgs that don't. On by default.
+                                            {t("A ranked view of member performance — missions completed, aUEC earned, average rating, largest payouts. Healthy competition for orgs that run contract work; noise for orgs that don't. On by default.")}
                                         </p>
                                     </div>
                                     <Toggle
@@ -269,7 +271,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { leaderboard: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling the Leaderboard will remove it from the sidebar for all members. Stats continue to accrue and will return when re-enabled.',
+                                                    : t('Disabling the Leaderboard will remove it from the sidebar for all members. Stats continue to accrue and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-yellow-500"
@@ -288,9 +290,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">External Tools</h3>
+                                        <h3 className="font-semibold text-white">{t('External Tools')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            A curated launcher for third-party links your members use — uexcorp, verse mapping, DPS calculators. Hide the module entirely if your org doesn't curate external resources. On by default.
+                                            {t("A curated launcher for third-party links your members use — uexcorp, verse mapping, DPS calculators. Hide the module entirely if your org doesn't curate external resources. On by default.")}
                                         </p>
                                     </div>
                                     <Toggle
@@ -303,7 +305,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { externalTools: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling External Tools will hide the launcher from all members. Curated tools are preserved and will return when re-enabled.',
+                                                    : t('Disabling External Tools will hide the launcher from all members. Curated tools are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-sky-500"
@@ -322,9 +324,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Marketplace</h3>
+                                        <h3 className="font-semibold text-white">{t('Marketplace')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            An internal trading board where members post listings — items to sell or buy, services to offer or request — and run them through a negotiate → accept → deliver → confirm contract lifecycle with mutual ratings. Item listings can optionally reserve and move real warehouse stock. Prices are in aUEC for negotiation; settlement happens in-game. Off by default.
+                                            {t('An internal trading board where members post listings — items to sell or buy, services to offer or request — and run them through a negotiate → accept → deliver → confirm contract lifecycle with mutual ratings. Item listings can optionally reserve and move real warehouse stock. Prices are in aUEC for negotiation; settlement happens in-game. Off by default.')}
                                         </p>
                                     </div>
                                     <Toggle
@@ -337,7 +339,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { marketplace: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling the Marketplace hides the trading board from all members. Listings, contracts, and ratings are preserved and will return when re-enabled.',
+                                                    : t('Disabling the Marketplace hides the trading board from all members. Listings, contracts, and ratings are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-indigo-500"
@@ -349,13 +351,13 @@ const FeaturesSettingsTab: React.FC = () => {
 
                     {/* Placeholder for future features */}
                     <div className="bg-slate-800/20 rounded-lg border border-dashed border-slate-700/50 p-5 text-center">
-                        <p className="text-xs text-slate-500 uppercase tracking-widest">More features coming soon</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest">{t('More features coming soon')}</p>
                     </div>
                 </div>
 
                 <div className="mt-6 p-3 bg-black/40 rounded-sm border border-slate-800 text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest">
                     <i className="fa-solid fa-circle-info mr-2 text-slate-400"></i>
-                    Feature toggles save instantly. Changes propagate to all logged-in members via realtime.
+                    {t('Feature toggles save instantly. Changes propagate to all logged-in members via realtime.')}
                 </div>
             </div>
         </div>

@@ -8,10 +8,12 @@ import { useTableControls } from '../../../hooks/useTableControls';
 import AwardIcon from '../../common/AwardIcon';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const SpecializationsManagementTab: React.FC = () => {
     const { specializationTags, allUsers, deleteSpecializationTag } = useMembers();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTag, setEditingTag] = useState<SpecializationTag | undefined>(undefined);
     const [searchTerm, setSearchTerm] = useState('');
@@ -49,17 +51,17 @@ const SpecializationsManagementTab: React.FC = () => {
     const handleDelete = async (tag: SpecializationTag & { memberCount: number }) => {
         if (tag.memberCount > 0) {
             await confirm({
-                title: 'Cannot Delete',
-                message: `Cannot delete "${tag.name}" as it is assigned to ${tag.memberCount} member(s).`,
-                confirmText: 'OK',
+                title: t('Cannot Delete'),
+                message: t('Cannot delete "{name}" as it is assigned to {count} member(s).', { name: tag.name, count: tag.memberCount }),
+                confirmText: t('OK'),
                 variant: 'info'
             });
             return;
         }
         const confirmed = await confirm({
-            title: 'Delete Specialization',
-            message: `Are you sure you want to permanently delete the specialization tag "${tag.name}"? This action cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Specialization'),
+            message: t('Are you sure you want to permanently delete the specialization tag "{name}"? This action cannot be undone.', { name: tag.name }),
+            confirmText: t('Delete'),
             variant: 'danger'
         });
         if (confirmed) {
@@ -70,17 +72,17 @@ const SpecializationsManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Specializations"
+                title={t("Specializations")}
                 icon="fa-solid fa-tags"
                 accent="purple"
-                subtitle="Manage skill tags and designations."
+                subtitle={t("Manage skill tags and designations.")}
                 actions={
                     <div className="flex gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search tags..."
+                                placeholder={t("Search tags...")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -91,7 +93,7 @@ const SpecializationsManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Tag
+                            {t('Create Tag')}
                         </button>
                     </div>
                 }
@@ -99,10 +101,10 @@ const SpecializationsManagementTab: React.FC = () => {
 
             <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                  <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
-                    <div className="flex-1 md:w-1/4 md:flex-none">Tag Name</div>
-                    <div className="flex-1 hidden md:block">Description</div>
-                    <div className="w-32 text-center hidden md:block">Assigned</div>
-                    <div className="w-24 text-right">Actions</div>
+                    <div className="flex-1 md:w-1/4 md:flex-none">{t('Tag Name')}</div>
+                    <div className="flex-1 hidden md:block">{t('Description')}</div>
+                    <div className="w-32 text-center hidden md:block">{t('Assigned')}</div>
+                    <div className="w-24 text-right">{t('Actions')}</div>
                 </div>
                 
                 <div className="divide-y divide-slate-700/50">
@@ -115,7 +117,7 @@ const SpecializationsManagementTab: React.FC = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="font-bold text-white text-sm truncate block">{tag.name}</span>
-                                        <span className="text-xs text-slate-500 md:hidden">{tag.memberCount} assigned</span>
+                                        <span className="text-xs text-slate-500 md:hidden">{t('{count} assigned', { count: tag.memberCount })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -128,13 +130,13 @@ const SpecializationsManagementTab: React.FC = () => {
                                 </span>
                             </div>
                             <div className="w-24 text-right flex justify-end gap-2">
-                                <button onClick={() => openModal(tag)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                <button onClick={() => openModal(tag)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t("Edit")}>
                                     <i className="fa-solid fa-pencil"></i>
                                 </button>
                                 <button 
                                     onClick={() => handleDelete(tag)} 
                                     className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors disabled:opacity-30"
-                                    title="Delete"
+                                    title={t("Delete")}
                                     disabled={tag.memberCount > 0}
                                 >
                                     <i className="fa-solid fa-trash-can"></i>
@@ -144,7 +146,7 @@ const SpecializationsManagementTab: React.FC = () => {
                     ))}
                      {sortedAndFilteredItems.length === 0 && (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No tags found.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No tags found.')}</p>
                         </div>
                     )}
                 </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import CallsignChip from './CallsignChip';
 import { ACCENTS, AccentKey } from './accents';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     chipLabel: string;
@@ -54,6 +55,7 @@ export default function HeroShell({
     tabs,
     titleBreakpoint = 'sm',
 }: Props) {
+    const { t } = useI18n();
     const a = ACCENTS[chipAccent];
     const rowClass = titleBreakpoint === 'lg'
         ? 'flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 lg:gap-4 mb-3 sm:mb-5'
@@ -76,7 +78,7 @@ export default function HeroShell({
                             {title}
                             {syncing && (
                                 <span className={`${a.text} text-xs font-mono uppercase tracking-widest animate-pulse inline-flex items-center gap-1`}>
-                                    <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> Syncing
+                                    <i className="fa-solid fa-arrows-rotate fa-spin" aria-hidden /> {t('Syncing')}
                                 </span>
                             )}
                         </h1>

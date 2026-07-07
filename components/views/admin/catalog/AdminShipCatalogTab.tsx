@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useData } from '../../../../contexts/DataContext';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { PlatformShip, ToastVariant } from '../../../../types';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface ShipWithUsage extends PlatformShip {
     usageCount: number;
@@ -25,6 +26,7 @@ const SortIcon: React.FC<{ field: SortField; sortField: SortField; sortDir: 'asc
 export default function AdminShipCatalogTab() {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
+    const { t, locale } = useI18n();
     const toast = useCallback<ToastFn>((message, type = 'info') => {
         addToast(message, null, '', { variant: type as ToastVariant });
     }, [addToast]);
@@ -35,9 +37,9 @@ export default function AdminShipCatalogTab() {
             const rows = await rpcAction('catalog:list_ships', {});
             setShips(Array.isArray(rows) ? rows : []);
         } catch (e: any) {
-            toast(`Failed to load ships: ${e?.message || 'unknown'}`, 'error');
+            toast(t('Failed to load ships: {msg}', { msg: e?.message || t('unknown') }), 'error');
         }
-    }, [rpcAction, toast]);
+    }, [rpcAction, toast, t]);
     // Mount / dependency-change data fetch. The fetch is genuinely asynchronous: setShips
     // only runs after the awaited RPC resolves. Inlining the async work directly in the
     // effect (rather than calling loadShips) keeps the setState provably post-await, so the
@@ -50,11 +52,11 @@ export default function AdminShipCatalogTab() {
                 const rows = await rpcAction('catalog:list_ships', {});
                 if (!cancelled) setShips(Array.isArray(rows) ? rows : []);
             } catch (e: any) {
-                if (!cancelled) toast(`Failed to load ships: ${e?.message || 'unknown'}`, 'error');
+                if (!cancelled) toast(t('Failed to load ships: {msg}', { msg: e?.message || t('unknown') }), 'error');
             }
         })();
         return () => { cancelled = true; };
-    }, [rpcAction, toast]);
+    }, [rpcAction, toast, t]);
 
     // Filter state
     const [search, setSearch] = useState('');
@@ -169,9 +171,9 @@ export default function AdminShipCatalogTab() {
             await rpcAction('catalog:update_ship', { shipId: editingShip.id, updates });
             setEditingShip(null);
             loadShips();
-            toast('Ship updated successfully', 'success');
+            toast(t('Ship updated successfully'), 'success');
         } catch (e: any) {
-            toast(e.message || 'Failed to update ship', 'error');
+            toast(e.message || t('Failed to update ship'), 'error');
         } finally {
             setIsSaving(false);
         }
@@ -179,16 +181,16 @@ export default function AdminShipCatalogTab() {
 
     const handleDelete = async (ship: ShipWithUsage) => {
         const msg = ship.usageCount > 0
-            ? `"${ship.name}" is referenced by ${ship.usageCount} user ship(s). You must merge it first to reassign those references.`
-            : `Are you sure you want to delete "${ship.name}"? This cannot be undone.`;
-        const ok = await confirm({ title: 'Delete Ship', message: msg, confirmText: 'Delete', variant: 'danger' });
+            ? t('"{name}" is referenced by {count} user ship(s). You must merge it first to reassign those references.', { name: ship.name, count: ship.usageCount })
+            : t('Are you sure you want to delete "{name}"? This cannot be undone.', { name: ship.name });
+        const ok = await confirm({ title: t('Delete Ship'), message: msg, confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         try {
             await rpcAction('catalog:delete_ship', { shipId: ship.id });
             loadShips();
-            toast(`Deleted "${ship.name}"`, 'success');
+            toast(t('Deleted "{name}"', { name: ship.name }), 'success');
         } catch (e: any) {
-            toast(e.message || 'Failed to delete ship', 'error');
+            toast(e.message || t('Failed to delete ship'), 'error');
         }
     };
 
@@ -205,9 +207,9 @@ export default function AdminShipCatalogTab() {
     const handleMerge = async (target: ShipWithUsage) => {
         if (!mergeSource) return;
         const ok = await confirm({
-            title: 'Merge Ships',
-            message: `Reassign ${mergeSource.usageCount} user ship(s) from "${mergeSource.name}" to "${target.name}", then delete "${mergeSource.name}"?`,
-            confirmText: 'Merge & Delete',
+            title: t('Merge Ships'),
+            message: t('Reassign {count} user ship(s) from "{source}" to "{target}", then delete "{source}"?', { count: mergeSource.usageCount, source: mergeSource.name, target: target.name }),
+            confirmText: t('Merge & Delete'),
             variant: 'danger'
         });
         if (!ok) return;
@@ -216,9 +218,9 @@ export default function AdminShipCatalogTab() {
             setMergeSource(null);
             setMergeSearch('');
             loadShips();
-            toast('Ships merged successfully', 'success');
+            toast(t('Ships merged successfully'), 'success');
         } catch (e: any) {
-            toast(e.message || 'Failed to merge ships', 'error');
+            toast(e.message || t('Failed to merge ships'), 'error');
         }
     };
 
@@ -226,10 +228,10 @@ export default function AdminShipCatalogTab() {
         setSyncLoading(true);
         try {
             const res = await rpcAction('catalog:sync_ships', {});
-            toast(`Sync complete: ${res.synced} ships synced, ${res.claimed || 0} legacy rows claimed, ${res.errors || 0} errors, ${res.images} images`, 'success');
+            toast(t('Sync complete: {synced} ships synced, {claimed} legacy rows claimed, {errors} errors, {images} images', { synced: res.synced, claimed: res.claimed || 0, errors: res.errors || 0, images: res.images }), 'success');
             loadShips();
         } catch (e: any) {
-            toast('Sync failed: ' + (e.message || 'Unknown error'), 'error');
+            toast(t('Sync failed: {msg}', { msg: e.message || t('Unknown error') }), 'error');
         } finally {
             setSyncLoading(false);
         }
@@ -237,9 +239,9 @@ export default function AdminShipCatalogTab() {
 
     const handleRepair = async () => {
         const ok = await confirm({
-            title: 'Repair Ship Catalog',
-            message: 'This will find and merge duplicate ships created by paint/livery variants in the API. User ship references will be safely reassigned. This may take a moment.',
-            confirmText: 'Run Repair',
+            title: t('Repair Ship Catalog'),
+            message: t('This will find and merge duplicate ships created by paint/livery variants in the API. User ship references will be safely reassigned. This may take a moment.'),
+            confirmText: t('Run Repair'),
             variant: 'danger'
         });
         if (!ok) return;
@@ -247,12 +249,12 @@ export default function AdminShipCatalogTab() {
         try {
             const res = await rpcAction('catalog:repair_ships', {});
             const msg = res.shipsMerged > 0
-                ? `Repair complete: ${res.shipsMerged} duplicates merged, ${res.backfilled} backfilled, ${res.errors || 0} errors`
-                : `No duplicates found. ${res.backfilled} entries backfilled.`;
+                ? t('Repair complete: {merged} duplicates merged, {backfilled} backfilled, {errors} errors', { merged: res.shipsMerged, backfilled: res.backfilled, errors: res.errors || 0 })
+                : t('No duplicates found. {backfilled} entries backfilled.', { backfilled: res.backfilled });
             toast(msg, res.errors > 0 ? 'warning' : 'success');
             loadShips();
         } catch (e: any) {
-            toast('Repair failed: ' + (e.message || 'Unknown error'), 'error');
+            toast(t('Repair failed: {msg}', { msg: e.message || t('Unknown error') }), 'error');
         } finally {
             setRepairLoading(false);
         }
@@ -277,10 +279,10 @@ export default function AdminShipCatalogTab() {
                 <div>
                     <h2 className="text-2xl font-black text-white flex items-center gap-3">
                         <i className="fa-solid fa-rocket text-purple-400"></i>
-                        Ship Catalog
+                        {t('Ship Catalog')}
                         <span className="text-sm font-bold text-slate-500 bg-slate-800 px-2 py-0.5 rounded-sm">{ships.length}</span>
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">Manage the platform-wide ship database synced from the Star Citizen Wiki.</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('Manage the platform-wide ship database synced from the Star Citizen Wiki.')}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -289,7 +291,7 @@ export default function AdminShipCatalogTab() {
                         className="flex items-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                     >
                         {repairLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-wrench"></i>}
-                        {repairLoading ? 'Repairing...' : 'Repair Duplicates'}
+                        {repairLoading ? t('Repairing...') : t('Repair Duplicates')}
                     </button>
                     <button
                         onClick={handleSync}
@@ -297,7 +299,7 @@ export default function AdminShipCatalogTab() {
                         className="flex items-center gap-2 bg-purple-500/10 text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                     >
                         {syncLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-arrows-rotate"></i>}
-                        {syncLoading ? 'Syncing...' : 'Sync from Wiki'}
+                        {syncLoading ? t('Syncing...') : t('Sync from Wiki')}
                     </button>
                 </div>
             </div>
@@ -314,7 +316,7 @@ export default function AdminShipCatalogTab() {
                     <div key={s.label} className="bg-slate-900 border border-white/10 rounded-xl p-4 text-center">
                         <i className={`fa-solid ${s.icon} ${s.color} text-lg mb-1`}></i>
                         <p className="text-xl font-black text-white">{s.value}</p>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{s.label}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{t(s.label)}</p>
                     </div>
                 ))}
             </div>
@@ -328,29 +330,29 @@ export default function AdminShipCatalogTab() {
                             type="text"
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-                            placeholder="Search by name or manufacturer..."
+                            placeholder={t('Search by name or manufacturer...')}
                             className="w-full bg-black/30 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-hidden focus:border-purple-500 transition-all placeholder:text-slate-600"
                         />
                     </div>
                     <select value={filterManufacturer} onChange={(e) => { setFilterManufacturer(e.target.value); setPage(0); }} className={selectClass}>
-                        <option value="">All Manufacturers</option>
+                        <option value="">{t('All Manufacturers')}</option>
                         {manufacturers.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                     <select value={filterSize} onChange={(e) => { setFilterSize(e.target.value); setPage(0); }} className={selectClass}>
-                        <option value="">All Sizes</option>
+                        <option value="">{t('All Sizes')}</option>
                         {sizes.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                     <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }} className={selectClass}>
-                        <option value="">All Statuses</option>
+                        <option value="">{t('All Statuses')}</option>
                         {productionStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                     {(search || filterManufacturer || filterSize || filterStatus) && (
                         <button onClick={clearFilters} className="text-xs text-slate-400 hover:text-white underline whitespace-nowrap">
-                            Clear
+                            {t('Clear')}
                         </button>
                     )}
                 </div>
-                <p className="text-[10px] text-slate-600 mt-2">{filtered.length} ships shown</p>
+                <p className="text-[10px] text-slate-600 mt-2">{t('{count} ships shown', { count: filtered.length })}</p>
             </div>
 
             {/* Table */}
@@ -362,21 +364,21 @@ export default function AdminShipCatalogTab() {
                             <tr>
                                 <th className="p-3 w-14"></th>
                                 <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('name')}>
-                                    Name <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
+                                    {t('Name')} <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                                 </th>
                                 <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('manufacturer')}>
-                                    Manufacturer <SortIcon field="manufacturer" sortField={sortField} sortDir={sortDir} />
+                                    {t('Manufacturer')} <SortIcon field="manufacturer" sortField={sortField} sortDir={sortDir} />
                                 </th>
-                                <th className="p-3">Size</th>
-                                <th className="p-3">Role</th>
-                                <th className="p-3">Status</th>
+                                <th className="p-3">{t('Size')}</th>
+                                <th className="p-3">{t('Role')}</th>
+                                <th className="p-3">{t('Status')}</th>
                                 <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort('msrp')}>
                                     MSRP <SortIcon field="msrp" sortField={sortField} sortDir={sortDir} />
                                 </th>
                                 <th className="p-3 cursor-pointer hover:text-white text-center" onClick={() => handleSort('usageCount')}>
-                                    Usage <SortIcon field="usageCount" sortField={sortField} sortDir={sortDir} />
+                                    {t('Usage')} <SortIcon field="usageCount" sortField={sortField} sortDir={sortDir} />
                                 </th>
-                                <th className="p-3 text-right">Actions</th>
+                                <th className="p-3 text-right">{t('Actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -400,7 +402,7 @@ export default function AdminShipCatalogTab() {
                                                 ship.size === 'Large' ? 'text-amber-400' :
                                                 ship.size === 'Medium' ? 'text-sky-400' :
                                                 'text-green-400'
-                                            }`}>{ship.size}</span>
+                                            }`}>{t(ship.size, { context: 'shipSize' })}</span>
                                         )}
                                     </td>
                                     <td className="p-3 text-slate-500 text-xs">{ship.role || '-'}</td>
@@ -414,7 +416,7 @@ export default function AdminShipCatalogTab() {
                                         )}
                                     </td>
                                     <td className="p-3 text-right text-slate-400 font-mono text-xs">
-                                        {ship.msrp ? `$${ship.msrp.toLocaleString()}` : '-'}
+                                        {ship.msrp ? `$${ship.msrp.toLocaleString(locale)}` : '-'}
                                     </td>
                                     <td className="p-3 text-center">
                                         {ship.usageCount > 0 ? (
@@ -425,15 +427,15 @@ export default function AdminShipCatalogTab() {
                                     </td>
                                     <td className="p-3 text-right">
                                         <div className="flex justify-end gap-1">
-                                            <button onClick={() => openEdit(ship)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm transition-colors" title="Edit">
+                                            <button onClick={() => openEdit(ship)} className="p-1.5 text-purple-400 hover:bg-purple-500/10 rounded-sm transition-colors" title={t('Edit')}>
                                                 <i className="fa-solid fa-pen-to-square"></i>
                                             </button>
                                             {ship.usageCount > 0 && (
-                                                <button onClick={() => { setMergeSource(ship); setMergeSearch(''); }} className="p-1.5 text-amber-400 hover:bg-amber-500/10 rounded-sm transition-colors" title="Merge into another ship">
+                                                <button onClick={() => { setMergeSource(ship); setMergeSearch(''); }} className="p-1.5 text-amber-400 hover:bg-amber-500/10 rounded-sm transition-colors" title={t('Merge into another ship')}>
                                                     <i className="fa-solid fa-code-merge"></i>
                                                 </button>
                                             )}
-                                            <button onClick={() => handleDelete(ship)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm transition-colors" title="Delete">
+                                            <button onClick={() => handleDelete(ship)} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-sm transition-colors" title={t('Delete')}>
                                                 <i className="fa-solid fa-trash-can"></i>
                                             </button>
                                         </div>
@@ -460,20 +462,20 @@ export default function AdminShipCatalogTab() {
                                     <p className="text-white font-bold truncate">{ship.name}</p>
                                     <p className="text-xs text-slate-500">{ship.manufacturer}</p>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        {ship.size && <span className="text-[10px] font-bold text-sky-400">{ship.size}</span>}
+                                        {ship.size && <span className="text-[10px] font-bold text-sky-400">{t(ship.size, { context: 'shipSize' })}</span>}
                                         {ship.role && <span className="text-[10px] text-slate-600">{ship.role}</span>}
                                         {ship.usageCount > 0 && (
-                                            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{ship.usageCount} users</span>
+                                            <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{t('{count} users', { count: ship.usageCount })}</span>
                                         )}
                                     </div>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2">
-                                <button onClick={() => openEdit(ship)} className="text-xs text-purple-400 font-bold uppercase">Edit</button>
+                                <button onClick={() => openEdit(ship)} className="text-xs text-purple-400 font-bold uppercase">{t('Edit')}</button>
                                 {ship.usageCount > 0 && (
-                                    <button onClick={() => { setMergeSource(ship); setMergeSearch(''); }} className="text-xs text-amber-400 font-bold uppercase">Merge</button>
+                                    <button onClick={() => { setMergeSource(ship); setMergeSearch(''); }} className="text-xs text-amber-400 font-bold uppercase">{t('Merge')}</button>
                                 )}
-                                <button onClick={() => handleDelete(ship)} className="text-xs text-red-400 font-bold uppercase">Delete</button>
+                                <button onClick={() => handleDelete(ship)} className="text-xs text-red-400 font-bold uppercase">{t('Delete')}</button>
                             </div>
                         </div>
                     ))}
@@ -482,8 +484,8 @@ export default function AdminShipCatalogTab() {
                 {filtered.length === 0 && (
                     <div className="p-12 text-center text-slate-600">
                         <i className="fa-solid fa-rocket text-3xl mb-3 opacity-30"></i>
-                        <p className="text-sm font-bold">No ships found</p>
-                        <p className="text-xs mt-1">{ships.length === 0 ? 'The ship catalog is empty. Try syncing from the Wiki.' : 'Try adjusting your search or filters.'}</p>
+                        <p className="text-sm font-bold">{t('No ships found')}</p>
+                        <p className="text-xs mt-1">{ships.length === 0 ? t('The ship catalog is empty. Try syncing from the Wiki.') : t('Try adjusting your search or filters.')}</p>
                     </div>
                 )}
             </div>
@@ -492,7 +494,7 @@ export default function AdminShipCatalogTab() {
             {totalPages > 1 && (
                 <div className="flex justify-between items-center text-sm text-slate-400 mb-8">
                     <p className="text-xs">
-                        Showing {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+                        {t('Showing {from}-{to} of {total}', { from: page * PAGE_SIZE + 1, to: Math.min((page + 1) * PAGE_SIZE, filtered.length), total: filtered.length })}
                     </p>
                     <div className="flex gap-2">
                         <button
@@ -500,7 +502,7 @@ export default function AdminShipCatalogTab() {
                             disabled={page === 0}
                             className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700 transition-colors"
                         >
-                            <i className="fa-solid fa-chevron-left mr-1"></i> Prev
+                            <i className="fa-solid fa-chevron-left mr-1"></i> {t('Prev')}
                         </button>
                         <span className="px-3 py-1.5 text-xs font-bold text-slate-500">
                             {page + 1} / {totalPages}
@@ -510,7 +512,7 @@ export default function AdminShipCatalogTab() {
                             disabled={page >= totalPages - 1}
                             className="px-3 py-1.5 bg-slate-800 border border-white/10 rounded-sm text-xs font-bold disabled:opacity-30 hover:bg-slate-700 transition-colors"
                         >
-                            Next <i className="fa-solid fa-chevron-right ml-1"></i>
+                            {t('Next')} <i className="fa-solid fa-chevron-right ml-1"></i>
                         </button>
                     </div>
                 </div>
@@ -524,7 +526,7 @@ export default function AdminShipCatalogTab() {
 
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Edit Ship</h3>
+                                <h3 className="text-lg font-bold text-white">{t('Edit Ship')}</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">ID: {editingShip.id} {editingShip.externalUuid && `| UUID: ${editingShip.externalUuid}`}</p>
                             </div>
                             <button onClick={() => setEditingShip(null)} className="text-slate-400 hover:text-white transition-colors">
@@ -537,46 +539,46 @@ export default function AdminShipCatalogTab() {
                             {/* Image Preview */}
                             {editForm.imageUrl && (
                                 <div className="flex justify-center">
-                                    <img src={editForm.imageUrl} alt="Preview" className="max-h-40 rounded-lg border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    <img src={editForm.imageUrl} alt={t('Preview')} className="max-h-40 rounded-lg border border-white/10" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                 </div>
                             )}
 
                             {/* Basic Info */}
                             <div>
                                 <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <i className="fa-solid fa-tag"></i> Basic Info
+                                    <i className="fa-solid fa-tag"></i> {t('Basic Info')}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelClass}>Name</label>
+                                        <label className={labelClass}>{t('Name')}</label>
                                         <input value={editForm.name || ''} onChange={(e) => handleEditChange('name', e.target.value)} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Manufacturer</label>
+                                        <label className={labelClass}>{t('Manufacturer')}</label>
                                         <input value={editForm.manufacturer || ''} onChange={(e) => handleEditChange('manufacturer', e.target.value)} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Manufacturer Code</label>
-                                        <input value={editForm.manufacturerCode || ''} onChange={(e) => handleEditChange('manufacturerCode', e.target.value)} className={inputClass} placeholder="e.g. RSI" />
+                                        <label className={labelClass}>{t('Manufacturer Code')}</label>
+                                        <input value={editForm.manufacturerCode || ''} onChange={(e) => handleEditChange('manufacturerCode', e.target.value)} className={inputClass} placeholder={t('e.g. RSI')} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Role</label>
-                                        <input value={editForm.role || ''} onChange={(e) => handleEditChange('role', e.target.value)} className={inputClass} placeholder="e.g. Combat, Exploration" />
+                                        <label className={labelClass}>{t('Role')}</label>
+                                        <input value={editForm.role || ''} onChange={(e) => handleEditChange('role', e.target.value)} className={inputClass} placeholder={t('e.g. Combat, Exploration')} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Career</label>
+                                        <label className={labelClass}>{t('Career')}</label>
                                         <input value={editForm.career || ''} onChange={(e) => handleEditChange('career', e.target.value)} className={inputClass} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Size</label>
+                                        <label className={labelClass}>{t('Size')}</label>
                                         <select value={editForm.size || ''} onChange={(e) => handleEditChange('size', e.target.value)} className={inputClass}>
                                             <option value="">-</option>
-                                            {sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                            {sizeOptions.map(s => <option key={s} value={s}>{t(s, { context: 'shipSize' })}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Production Status</label>
-                                        <input value={editForm.productionStatus || ''} onChange={(e) => handleEditChange('productionStatus', e.target.value)} className={inputClass} placeholder="e.g. Flight Ready" />
+                                        <label className={labelClass}>{t('Production Status')}</label>
+                                        <input value={editForm.productionStatus || ''} onChange={(e) => handleEditChange('productionStatus', e.target.value)} className={inputClass} placeholder={t('e.g. Flight Ready')} />
                                     </div>
                                 </div>
                             </div>
@@ -584,7 +586,7 @@ export default function AdminShipCatalogTab() {
                             {/* Specs */}
                             <div>
                                 <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <i className="fa-solid fa-gauge-high"></i> Specifications
+                                    <i className="fa-solid fa-gauge-high"></i> {t('Specifications')}
                                 </h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {[
@@ -602,7 +604,7 @@ export default function AdminShipCatalogTab() {
                                         { key: 'shieldHp', label: 'Shield HP' },
                                     ].map(f => (
                                         <div key={f.key}>
-                                            <label className={labelClass}>{f.label}</label>
+                                            <label className={labelClass}>{t(f.label)}</label>
                                             <input
                                                 type="number"
                                                 value={editForm[f.key] ?? ''}
@@ -617,30 +619,30 @@ export default function AdminShipCatalogTab() {
                             {/* Media & Links */}
                             <div>
                                 <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <i className="fa-solid fa-link"></i> Media & Links
+                                    <i className="fa-solid fa-link"></i> {t('Media & Links')}
                                 </h4>
                                 <div className="space-y-3">
                                     <div>
-                                        <label className={labelClass}>Image URL</label>
+                                        <label className={labelClass}>{t('Image URL')}</label>
                                         <input value={editForm.imageUrl || ''} onChange={(e) => handleEditChange('imageUrl', e.target.value)} className={inputClass} placeholder="https://..." />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
-                                            <label className={labelClass}>Wiki URL</label>
+                                            <label className={labelClass}>{t('Wiki URL')}</label>
                                             <input value={editForm.wikiUrl || ''} onChange={(e) => handleEditChange('wikiUrl', e.target.value)} className={inputClass} />
                                         </div>
                                         <div>
-                                            <label className={labelClass}>Pledge URL</label>
+                                            <label className={labelClass}>{t('Pledge URL')}</label>
                                             <input value={editForm.pledgeUrl || ''} onChange={(e) => handleEditChange('pledgeUrl', e.target.value)} className={inputClass} />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Description</label>
+                                        <label className={labelClass}>{t('Description')}</label>
                                         <textarea
                                             value={editForm.description || ''}
                                             onChange={(e) => handleEditChange('description', e.target.value)}
                                             className={`${inputClass} h-24 resize-none`}
-                                            placeholder="Ship description..."
+                                            placeholder={t('Ship description...')}
                                         />
                                     </div>
                                 </div>
@@ -650,14 +652,14 @@ export default function AdminShipCatalogTab() {
                         {/* Footer */}
                         <div className="p-4 border-t border-white/10 flex justify-end gap-3">
                             <button onClick={() => setEditingShip(null)} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors">
-                                Cancel
+                                {t('Cancel')}
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
                                 className="px-6 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/50 hover:bg-purple-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             >
-                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Changes'}
+                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Changes')}
                             </button>
                         </div>
                     </div>
@@ -672,20 +674,20 @@ export default function AdminShipCatalogTab() {
 
                         <div className="p-6 border-b border-white/10">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <i className="fa-solid fa-code-merge text-amber-400"></i> Merge Ship
+                                <i className="fa-solid fa-code-merge text-amber-400"></i> {t('Merge Ship')}
                             </h3>
                             <p className="text-xs text-slate-500 mt-1">
-                                Reassign all <strong className="text-amber-400">{mergeSource.usageCount}</strong> user reference(s) from "<strong className="text-white">{mergeSource.name}</strong>" to another ship, then delete it.
+                                {t('Reassign all')} <strong className="text-amber-400">{mergeSource.usageCount}</strong> {t('user reference(s) from')} "<strong className="text-white">{mergeSource.name}</strong>" {t('to another ship, then delete it.')}
                             </p>
                         </div>
 
                         <div className="p-6">
-                            <label className={labelClass}>Select target ship to keep</label>
+                            <label className={labelClass}>{t('Select target ship to keep')}</label>
                             <input
                                 type="text"
                                 value={mergeSearch}
                                 onChange={(e) => setMergeSearch(e.target.value)}
-                                placeholder="Search for target ship..."
+                                placeholder={t('Search for target ship...')}
                                 className={`${inputClass} mb-3`}
                                 autoFocus
                             />
@@ -708,13 +710,13 @@ export default function AdminShipCatalogTab() {
                                             <p className="text-[10px] text-slate-500">{target.manufacturer} {target.size && `| ${target.size}`}</p>
                                         </div>
                                         {target.usageCount > 0 && (
-                                            <span className="text-[10px] text-slate-500">{target.usageCount} refs</span>
+                                            <span className="text-[10px] text-slate-500">{t('{count} refs', { count: target.usageCount })}</span>
                                         )}
                                     </button>
                                 ))}
                                 {mergeTargets.length === 0 && (
                                     <p className="text-sm text-slate-600 italic text-center py-4">
-                                        {mergeSearch ? 'No ships match your search' : 'Type to search for a target ship'}
+                                        {mergeSearch ? t('No ships match your search') : t('Type to search for a target ship')}
                                     </p>
                                 )}
                             </div>
@@ -722,7 +724,7 @@ export default function AdminShipCatalogTab() {
 
                         <div className="p-4 border-t border-white/10 flex justify-end">
                             <button onClick={() => { setMergeSource(null); setMergeSearch(''); }} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors">
-                                Cancel
+                                {t('Cancel')}
                             </button>
                         </div>
                     </div>

@@ -6,8 +6,10 @@ import { HeroCardConfig } from '../../../types';
 import { sanitizeImageUrl } from '../../../lib/imageUrl';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const ClientSettingsTab: React.FC = () => {
+    const { t } = useI18n();
     const { heroCardConfig, updateHeroCardConfig } = useConfig();
     const { addToast } = useNotification();
     const [config, setConfig] = useState<HeroCardConfig>(heroCardConfig);
@@ -43,7 +45,7 @@ const ClientSettingsTab: React.FC = () => {
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save client dashboard settings. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save client dashboard settings. Please try again.') });
         } finally {
             setIsSaving(false);
         }
@@ -52,17 +54,17 @@ const ClientSettingsTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Client Dashboard Settings"
+                title={t('Client Dashboard Settings')}
                 icon="fa-solid fa-gear"
                 accent="sky"
-                subtitle="Configure the hero card shown to users with the Client role."
+                subtitle={t('Configure the hero card shown to users with the Client role.')}
             />
 
-            <SectionPanel title="Hero Card" icon="fa-solid fa-image">
+            <SectionPanel title={t('Hero Card')} icon="fa-solid fa-image">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div className="md:col-span-3 space-y-6">
                         <div>
-                            <label htmlFor="backgroundImageUrl" className="block text-sm font-medium text-slate-300 mb-2">Background Image URL</label>
+                            <label htmlFor="backgroundImageUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Background Image URL')}</label>
                             <input
                                 type="text"
                                 id="backgroundImageUrl"
@@ -74,7 +76,7 @@ const ClientSettingsTab: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label htmlFor="discordUrl" className="block text-sm font-medium text-slate-300 mb-2">Discord Invite URL</label>
+                            <label htmlFor="discordUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Discord Invite URL')}</label>
                             <input
                                 type="text"
                                 id="discordUrl"
@@ -86,7 +88,7 @@ const ClientSettingsTab: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label htmlFor="organizationUrl" className="block text-sm font-medium text-slate-300 mb-2">Organization URL</label>
+                            <label htmlFor="organizationUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Organization URL')}</label>
                             <input
                                 type="text"
                                 id="organizationUrl"
@@ -98,7 +100,7 @@ const ClientSettingsTab: React.FC = () => {
                             />
                         </div>
                          <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">Card Title</label>
+                            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">{t('Card Title')}</label>
                             <input
                                 type="text"
                                 id="title"
@@ -109,7 +111,7 @@ const ClientSettingsTab: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label htmlFor="subtitle" className="block text-sm font-medium text-slate-300 mb-2">Card Subtitle</label>
+                            <label htmlFor="subtitle" className="block text-sm font-medium text-slate-300 mb-2">{t('Card Subtitle')}</label>
                             <textarea
                                 id="subtitle"
                                 name="subtitle"
@@ -121,7 +123,7 @@ const ClientSettingsTab: React.FC = () => {
                         </div>
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Live Preview</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">{t('Live Preview')}</label>
                         <div
                             className="w-full aspect-video min-h-[280px] rounded-lg border border-slate-700 bg-cover bg-center flex flex-col justify-between p-4 text-white relative overflow-hidden"
                             style={previewStyle}
@@ -134,10 +136,10 @@ const ClientSettingsTab: React.FC = () => {
                             <div className="relative z-10 space-y-2">
                                 <button className="flex items-center justify-center w-full bg-[#5865F2] text-white font-semibold px-4 py-2 rounded-md text-sm">
                                     <i className="fa-brands fa-discord h-4 w-4 mr-2" />
-                                    Join our Discord
+                                    {t('Join our Discord')}
                                 </button>
                                 <button className="flex items-center justify-center w-full bg-slate-700/80 text-slate-200 font-semibold px-4 py-2 rounded-md text-sm">
-                                    Join the Organization
+                                    {t('Join the Organization')}
                                     <i className="fa-solid fa-arrow-up-right-from-square h-3 w-3 ml-2" />
                                 </button>
                             </div>
@@ -147,7 +149,7 @@ const ClientSettingsTab: React.FC = () => {
 
                 <div className="mt-6 flex justify-end">
                     <button onClick={handleSave} disabled={isSaving || isSaved} className={`px-6 py-2 text-sm font-semibold text-white rounded-md border border-slate-600 transition-colors w-32 text-center ${isSaving ? 'bg-slate-800 cursor-wait' : isSaved ? 'bg-green-600 border-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                        {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? 'Saved!' : 'Save Settings'}
+                        {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? t('Saved!') : t('Save Settings')}
                     </button>
                 </div>
             </SectionPanel>

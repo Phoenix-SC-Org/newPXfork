@@ -9,10 +9,12 @@ import { useTableControls } from '../../../hooks/useTableControls';
 import AwardIcon from '../../common/AwardIcon';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const CertificationsManagementTab: React.FC = () => {
     const { certifications, allUsers, deleteCertification } = useMembers();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
     const [editingCert, setEditingCert] = useState<Certification | undefined>(undefined);
@@ -61,10 +63,10 @@ const CertificationsManagementTab: React.FC = () => {
 
     const handleDelete = async (cert: Certification & { memberCount: number }) => {
         if (cert.memberCount > 0) {
-            await confirm({ title: 'Cannot Delete', message: `Cannot delete "${cert.name}" as it has been awarded to ${cert.memberCount} member(s).`, confirmText: 'OK', variant: 'info' });
+            await confirm({ title: t('Cannot Delete'), message: t('Cannot delete "{name}" as it has been awarded to {count} member(s).', { name: cert.name, count: cert.memberCount }), confirmText: t('OK'), variant: 'info' });
             return;
         }
-        if (await confirm({ title: 'Delete Certification', message: `Are you sure you want to permanently delete the certification "${cert.name}"? This action cannot be undone.`, confirmText: 'Delete', variant: 'danger' })) {
+        if (await confirm({ title: t('Delete Certification'), message: t('Are you sure you want to permanently delete the certification "{name}"? This action cannot be undone.', { name: cert.name }), confirmText: t('Delete'), variant: 'danger' })) {
             deleteCertification(cert.id);
         }
     };
@@ -72,17 +74,17 @@ const CertificationsManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Certifications"
+                title={t("Certifications")}
                 icon="fa-solid fa-certificate"
                 accent="amber"
-                subtitle="Manage training credentials and awards."
+                subtitle={t("Manage training credentials and awards.")}
                 actions={
                     <div className="flex gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search certifications..."
+                                placeholder={t("Search certifications...")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -93,7 +95,7 @@ const CertificationsManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Cert
+                            {t('Create Cert')}
                         </button>
                     </div>
                 }
@@ -101,10 +103,10 @@ const CertificationsManagementTab: React.FC = () => {
 
             <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                  <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
-                    <div className="flex-1 md:w-1/4 md:flex-none">Certification Name</div>
-                    <div className="flex-1 hidden md:block">Description</div>
-                    <div className="w-32 text-center hidden md:block">Holders</div>
-                    <div className="w-32 text-right">Actions</div>
+                    <div className="flex-1 md:w-1/4 md:flex-none">{t('Certification Name')}</div>
+                    <div className="flex-1 hidden md:block">{t('Description')}</div>
+                    <div className="w-32 text-center hidden md:block">{t('Holders')}</div>
+                    <div className="w-32 text-right">{t('Actions')}</div>
                 </div>
 
                 <div className="divide-y divide-slate-700/50">
@@ -117,7 +119,7 @@ const CertificationsManagementTab: React.FC = () => {
                                     </div>
                                     <div className="min-w-0">
                                         <span className="font-bold text-white text-sm truncate block">{cert.name}</span>
-                                        <span className="text-xs text-slate-500 md:hidden">{cert.memberCount} holder{cert.memberCount !== 1 ? 's' : ''}</span>
+                                        <span className="text-xs text-slate-500 md:hidden">{cert.memberCount === 1 ? t('{count} holder', { count: cert.memberCount }) : t('{count} holders', { count: cert.memberCount })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -130,16 +132,16 @@ const CertificationsManagementTab: React.FC = () => {
                                 </span>
                             </div>
                             <div className="w-32 text-right flex justify-end gap-2">
-                                <button onClick={() => openAwardModal(cert)} className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-green-900/20 rounded-sm transition-colors" title="Award to Users">
+                                <button onClick={() => openAwardModal(cert)} className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-green-900/20 rounded-sm transition-colors" title={t("Award to Users")}>
                                     <i className="fa-solid fa-user-plus"></i>
                                 </button>
-                                <button onClick={() => openModal(cert)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                <button onClick={() => openModal(cert)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t("Edit")}>
                                     <i className="fa-solid fa-pencil"></i>
                                 </button>
                                 <button 
                                     onClick={() => handleDelete(cert)} 
                                     className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors disabled:opacity-30" 
-                                    title="Delete"
+                                    title={t("Delete")}
                                     disabled={cert.memberCount > 0}
                                 >
                                     <i className="fa-solid fa-trash-can"></i>
@@ -149,7 +151,7 @@ const CertificationsManagementTab: React.FC = () => {
                     ))}
                     {sortedAndFilteredItems.length === 0 && (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No certifications found.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No certifications found.')}</p>
                         </div>
                     )}
                 </div>

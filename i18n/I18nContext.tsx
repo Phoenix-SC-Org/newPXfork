@@ -5,9 +5,13 @@ import { usePersistentState } from '../hooks/usePersistentState';
 
 interface I18nContextValue {
     language: Language;
+    /** BCP-47 locale for Intl/toLocaleString formatting, derived from language. */
+    locale: string;
     setLanguage: (lang: Language) => void;
     t: (key: string, params?: TranslateParams) => string;
 }
+
+const LOCALE_BY_LANGUAGE: Record<Language, string> = { en: 'en-US', de: 'de-DE' };
 
 /** Browser language on first visit; localStorage ('ui.language') wins after. */
 function detectDefaultLanguage(): Language {
@@ -22,6 +26,7 @@ function detectDefaultLanguage(): Language {
 // (e.g. isolated component tests).
 const I18nContext = createContext<I18nContextValue>({
     language: 'en',
+    locale: 'en-US',
     setLanguage: () => undefined,
     t: (key, params) => translateEnglish(key, params),
 });
@@ -43,7 +48,10 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         language === 'de' ? translate(de, key, params) : translateEnglish(key, params)
     ), [language]);
 
-    const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+    const value = useMemo(
+        () => ({ language, locale: LOCALE_BY_LANGUAGE[language], setLanguage, t }),
+        [language, setLanguage, t],
+    );
 
     return <I18nContext value={value}>{children}</I18nContext>;
 };

@@ -17,6 +17,7 @@ import BulkAssignPositionModal from '../../modals/BulkAssignPositionModal';
 import BulkGrantCertificationModal from '../../modals/BulkGrantCertificationModal';
 import BulkGrantCommendationModal from '../../modals/BulkGrantCommendationModal';
 import { TabPageHeader } from '../../shared/ui';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type BulkActionKey = 'demote' | 'unit' | 'rank' | 'position' | 'cert' | 'commendation';
 type RosterMode = 'hierarchy' | 'flat';
@@ -48,6 +49,7 @@ interface UnitNode extends OrganizationalUnit {
 }
 
 const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageUser, scrollId = "admin-member-list" }) => {
+    const { t } = useI18n();
     const { isFetching } = useData();
     const { allUsers, units, ranks } = useMembers();
     const { currentUser } = useAuth();
@@ -264,7 +266,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                 result.push({
                     id: 'unit-unassigned',
                     type: 'unit',
-                    data: { id: 0, name: 'Unassigned Personnel', sortOrder: 9999 } as OrganizationalUnit,
+                    data: { id: 0, name: t('Unassigned Personnel'), sortOrder: 9999 } as OrganizationalUnit,
                     level: 0
                 });
                 unassigned.forEach(m => {
@@ -283,7 +285,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
 
         return result;
 
-    }, [unitTree, members, memberMatches, isLoading, rosterMode, flatSortKey, flatSortDir]);
+    }, [unitTree, members, memberMatches, isLoading, rosterMode, flatSortKey, flatSortDir, t]);
 
     // Resolve full User objects for the selection (modals need them for the
     // preview list). Filter out the actor so they can't self-demote.
@@ -314,7 +316,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
     const bulkActions: BulkAction[] = useMemo(() => [
         {
             key: 'demote',
-            label: 'Demote to Client',
+            label: t('Demote to Client'),
             icon: 'fa-arrow-down',
             permission: 'admin:user:update_role',
             variant: 'danger',
@@ -322,40 +324,40 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
         },
         {
             key: 'unit',
-            label: 'Assign Unit',
+            label: t('Assign Unit'),
             icon: 'fa-people-group',
             permission: 'admin:user:update',
             onClick: () => setBulkAction('unit'),
         },
         {
             key: 'rank',
-            label: 'Assign Rank',
+            label: t('Assign Rank'),
             icon: 'fa-medal',
             permission: 'admin:user:update',
             onClick: () => setBulkAction('rank'),
         },
         {
             key: 'position',
-            label: 'Assign Position',
+            label: t('Assign Position'),
             icon: 'fa-id-badge',
             permission: 'admin:user:update',
             onClick: () => setBulkAction('position'),
         },
         {
             key: 'cert',
-            label: 'Grant Certification',
+            label: t('Grant Certification'),
             icon: 'fa-certificate',
             permission: 'admin:award:certification',
             onClick: () => setBulkAction('cert'),
         },
         {
             key: 'commendation',
-            label: 'Grant Commendation',
+            label: t('Grant Commendation'),
             icon: 'fa-award',
             permission: 'admin:award:commendation',
             onClick: () => setBulkAction('commendation'),
         },
-    ], []);
+    ], [t]);
 
     const closeBulkModal = () => {
         setBulkAction(null);
@@ -366,13 +368,13 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
         <div className="h-full flex flex-col p-4 md:p-8 animate-fade-in">
             <div className="shrink-0">
                 <TabPageHeader
-                    title="Member Roster"
+                    title={t('Member Roster')}
                     icon="fa-solid fa-users"
                     accent="emerald"
-                    subtitle={<>Total Personnel: <span className="font-mono text-slate-300 font-bold">{members.length}</span></>}
+                    subtitle={<>{t('Total Personnel:')} <span className="font-mono text-slate-300 font-bold">{members.length}</span></>}
                     meta={isFetching['main'] && (
                         <span className="text-slate-300 animate-pulse text-xs font-bold flex items-center gap-1">
-                            <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...
+                            <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing...')}
                         </span>
                     )}
                     actions={
@@ -380,7 +382,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search members..."
+                                placeholder={t('Search members...')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all focus:bg-slate-700"
@@ -404,12 +406,12 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                             }`}
                         >
                             <i className={`fa-solid ${m === 'hierarchy' ? 'fa-sitemap' : 'fa-list'} mr-1.5`}></i>
-                            {m === 'hierarchy' ? 'Hierarchy' : 'Flat'}
+                            {m === 'hierarchy' ? t('Hierarchy') : t('Flat')}
                         </button>
                     ))}
                 </div>
                 <FilterPopover
-                    label="Unit"
+                    label={t('Unit')}
                     icon="fa-people-group"
                     options={units.map(u => ({ id: u.id, name: u.name }))}
                     selected={unitFilter}
@@ -418,7 +420,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                     accent="sky"
                 />
                 <FilterPopover
-                    label="Rank"
+                    label={t('Rank')}
                     icon="fa-medal"
                     options={sortedRanksForFilter.map(r => ({ id: r.id, name: r.name }))}
                     selected={rankFilter}
@@ -436,14 +438,14 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                                 setSearchTerm('');
                             }}
                             className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-colors"
-                            title="Clear unit, rank, and search filters"
+                            title={t('Clear unit, rank, and search filters')}
                         >
                             <i className="fa-solid fa-rotate-left text-[10px]"></i>
-                            Reset filters
+                            {t('Reset filters')}
                         </button>
                         {(unitFilter.size > 0 || rankFilter.size > 0) && (
                             <span className="text-[10px] text-slate-500 font-mono">
-                                {filteredCount} match{filteredCount === 1 ? '' : 'es'}
+                                {filteredCount === 1 ? t('{count} match', { count: filteredCount }) : t('{count} matches', { count: filteredCount })}
                             </span>
                         )}
                     </>
@@ -468,23 +470,23 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                                 onChange={onHeaderToggle}
                                 disabled={visibleMemberIds.length === 0}
                                 className="w-4 h-4 accent-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Select all visible members"
+                                aria-label={t('Select all visible members')}
                             />
                         </div>
                         <div className="flex-1">
-                            <SortableColumnHeader label="Name" sortKey="name" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
+                            <SortableColumnHeader label={t('Name')} sortKey="name" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
                         </div>
                         <div className="w-48 hidden md:block">
-                            <SortableColumnHeader label="Rank" sortKey="rank" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
+                            <SortableColumnHeader label={t('Rank')} sortKey="rank" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
                         </div>
                         <div className="w-44 hidden lg:block">
-                            <SortableColumnHeader label="Position" sortKey="position" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
+                            <SortableColumnHeader label={t('Position')} sortKey="position" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
                         </div>
                         <div className="w-44 hidden xl:block">
-                            <SortableColumnHeader label="Unit" sortKey="unit" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
+                            <SortableColumnHeader label={t('Unit')} sortKey="unit" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
                         </div>
                         <div className="w-32 hidden sm:flex justify-center">
-                            <SortableColumnHeader label="Status" sortKey="isDuty" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
+                            <SortableColumnHeader label={t('Status')} sortKey="isDuty" activeKey={flatSortKey} sortDir={flatSortDir} onSort={requestFlatSort} />
                         </div>
                         <div className="w-12 text-right"></div>
                     </div>
@@ -500,13 +502,13 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                                 onChange={onHeaderToggle}
                                 disabled={visibleMemberIds.length === 0}
                                 className="w-4 h-4 accent-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-                                aria-label="Select all visible members"
+                                aria-label={t('Select all visible members')}
                             />
                         </div>
-                        <div className="flex-1">Identity</div>
-                        <div className="w-48 hidden md:block">Rank</div>
-                        <div className="w-44 hidden lg:block">Position</div>
-                        <div className="w-32 text-center hidden sm:block">Status</div>
+                        <div className="flex-1">{t('Identity')}</div>
+                        <div className="w-48 hidden md:block">{t('Rank')}</div>
+                        <div className="w-44 hidden lg:block">{t('Position')}</div>
+                        <div className="w-32 text-center hidden sm:block">{t('Status')}</div>
                         <div className="w-12 text-right"></div>
                     </div>
                 )}
@@ -515,7 +517,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                     <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/50 backdrop-blur-xs">
                         <div className="flex flex-col items-center">
                             <i className="fa-solid fa-circle-notch animate-spin text-3xl text-slate-300 mb-3"></i>
-                            <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Loading Roster...</span>
+                            <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{t('Loading Roster...')}</span>
                         </div>
                     </div>
                 ) : (
@@ -570,7 +572,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                                                             checked={isSelected(member.id)}
                                                             onChange={() => toggle(member.id)}
                                                             className="w-4 h-4 accent-amber-500 cursor-pointer"
-                                                            aria-label={`Select ${member.name}`}
+                                                            aria-label={t('Select {name}', { name: member.name })}
                                                         />
                                                     )}
                                                 </div>
@@ -587,7 +589,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-bold text-slate-200 truncate group-hover:text-white transition-colors flex items-center gap-2">
                                                             {member.name}
-                                                            {member.role === 'Admin' && <span className="text-[9px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded-sm border border-red-500/20 uppercase font-black">Admin</span>}
+                                                            {member.role === 'Admin' && <span className="text-[9px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded-sm border border-red-500/20 uppercase font-black">{t('Admin')}</span>}
                                                         </p>
                                                         <p className="text-[10px] text-slate-500 font-mono truncate md:hidden">{member.rank?.name || member.rsiHandle}</p>
                                                     </div>
@@ -605,13 +607,13 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
 
                                                 {rosterMode === 'flat' && (
                                                     <div className="w-44 hidden xl:flex items-center text-xs text-slate-400 truncate">
-                                                        {member.unit?.name || <span className="text-slate-600 italic">Unassigned</span>}
+                                                        {member.unit?.name || <span className="text-slate-600 italic">{t('Unassigned')}</span>}
                                                     </div>
                                                 )}
 
                                                 <div className={`${rosterMode === 'flat' ? 'w-32' : 'w-32'} text-center hidden sm:block`}>
                                                     <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider ${member.isDuty ? 'bg-green-500/10 text-green-400' : 'text-slate-600'}`}>
-                                                        {member.isDuty ? 'Active' : 'Offline'}
+                                                        {member.isDuty ? t('Active') : t('Offline')}
                                                     </span>
                                                 </div>
 
@@ -625,7 +627,7 @@ const AdminMemberManagement: React.FC<AdminMemberManagementProps> = ({ onManageU
                             />
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-slate-500 italic">
-                                No personnel found.
+                                {t('No personnel found.')}
                             </div>
                         )}
                     </div>

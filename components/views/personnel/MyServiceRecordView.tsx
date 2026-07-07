@@ -11,6 +11,7 @@ import HeroStat from '../../shared/ui/HeroStat';
 import EmptyState from '../../shared/ui/EmptyState';
 import { MemberIdCard, getClearanceColor } from '../../shared/ui';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const getStatusChipClass = (status: ServiceRequestStatus | OperationStatus) => {
     switch (status) {
@@ -133,6 +134,7 @@ const matchesFilter = (event: TimelineEvent, filter: FilterKey): boolean => {
 
 const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUser, onBack }) => {
     const { currentUser, hasPermission } = useAuth();
+    const { t } = useI18n();
     const fmt = useFormatDate();
     const { hydratedServiceRequests, fetchUserDetail, getPositionHistory } = useData();
     const { allUsers } = useMembers();
@@ -327,7 +329,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
 
     const heroSubtitle = [
         user.rank?.name,
-        user.unit?.name || 'Unassigned',
+        user.unit?.name || t('Unassigned'),
         user.position?.name || user.jobTitle,
     ].filter(Boolean).join(' · ');
 
@@ -341,7 +343,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel={`SERVICE RECORD · ID ${user.id.toString().padStart(6, '0')}`}
+                chipLabel={t('SERVICE RECORD · ID {id}', { id: user.id.toString().padStart(6, '0') })}
                 chipIcon="fa-medal"
                 chipAccent="sky"
                 chipPulse={user.isDuty}
@@ -352,15 +354,15 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                         onClick={onBack}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-sky-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
                     >
-                        <i className="fa-solid fa-arrow-left"></i> Return to Roster
+                        <i className="fa-solid fa-arrow-left"></i> {t('Return to Roster')}
                     </button>
                 ) : undefined}
                 statsCols={4}
                 stats={<>
-                    <HeroStat icon="fa-star" label="Reputation" value={user.reputation ?? 0} accent="amber" emphasize={(user.reputation ?? 0) > 0} />
-                    <HeroStat icon="fa-clock-rotate-left" label="Total Records" value={isHydrating ? '—' : totalRecords} accent="sky" emphasize={!isHydrating && totalRecords > 0} />
-                    <HeroStat icon="fa-certificate" label="Certifications" value={isHydrating ? '—' : certCount} accent="emerald" emphasize={!isHydrating && certCount > 0} />
-                    <HeroStat icon="fa-medal" label="Commendations" value={isHydrating ? '—' : commendCount} accent="amber" emphasize={!isHydrating && commendCount > 0} />
+                    <HeroStat icon="fa-star" label={t('Reputation')} value={user.reputation ?? 0} accent="amber" emphasize={(user.reputation ?? 0) > 0} />
+                    <HeroStat icon="fa-clock-rotate-left" label={t('Total Records')} value={isHydrating ? '—' : totalRecords} accent="sky" emphasize={!isHydrating && totalRecords > 0} />
+                    <HeroStat icon="fa-certificate" label={t('Certifications')} value={isHydrating ? '—' : certCount} accent="emerald" emphasize={!isHydrating && certCount > 0} />
+                    <HeroStat icon="fa-medal" label={t('Commendations')} value={isHydrating ? '—' : commendCount} accent="amber" emphasize={!isHydrating && commendCount > 0} />
                 </>}
             />
 
@@ -369,7 +371,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                 <div className="flex gap-0 -mb-px overflow-x-auto custom-scrollbar">
                     {(['dossier', 'history', 'position-history'] as const).map(tab => {
                         const isActive = activeTab === tab;
-                        const label = tab === 'dossier' ? 'Dossier' : tab === 'history' ? 'Service History' : 'Position History';
+                        const label = tab === 'dossier' ? t('Dossier') : tab === 'history' ? t('Service History') : t('Position History');
                         const icon = tab === 'dossier' ? 'fa-id-card-clip' : tab === 'history' ? 'fa-clock-rotate-left' : 'fa-briefcase';
                         return (
                             <button
@@ -398,7 +400,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                             timeline reaches the bottom of the viewport. */}
                         <div className="lg:col-span-2 lg:flex lg:flex-col lg:min-h-0">
                             <SectionCard
-                                title="Operational History"
+                                title={t('Operational History')}
                                 icon="fa-clock-rotate-left"
                                 accent="sky"
                                 className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0"
@@ -418,7 +420,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                     }`}
                                                     aria-pressed={isActive}
                                                 >
-                                                    {f.label}
+                                                    {t(f.label)}
                                                 </button>
                                             );
                                         })}
@@ -433,7 +435,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                     // renders in one settled pass instead of
                                     // letting awards visibly pop in seconds later.
                                     <div className="pl-3 -ml-3 pr-2 lg:flex-1 lg:min-h-0">
-                                        <ol className="relative border-l border-slate-800 ml-3 space-y-5" aria-busy="true" aria-label="Loading service history">
+                                        <ol className="relative border-l border-slate-800 ml-3 space-y-5" aria-busy="true" aria-label={t('Loading service history')}>
                                             {[0, 1, 2, 3].map(i => (
                                                 <li key={i} className="relative pl-6 min-w-0">
                                                     <span className="absolute left-[-13px] top-0 w-6 h-6 rounded-full bg-slate-800/60 border border-slate-700 ring-4 ring-slate-900/60" />
@@ -471,7 +473,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                                 <div className="min-w-0 flex-1">
                                                                     <div className="flex items-center gap-2 flex-wrap">
                                                                         <span className={`text-[9px] font-black uppercase tracking-widest ${a.text}`}>
-                                                                            {a.label}
+                                                                            {t(a.label)}
                                                                         </span>
                                                                         {event.subId && (
                                                                             <span className="text-[10px] font-mono text-slate-500">{event.subId}</span>
@@ -487,7 +489,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                                 <div className="flex items-center gap-2 shrink-0">
                                                                     {event.status && (
                                                                         <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase border ${getStatusChipClass(event.status)}`}>
-                                                                            {event.status}
+                                                                            {t(event.status)}
                                                                         </span>
                                                                     )}
                                                                     <time className="text-[10px] text-slate-500 uppercase tracking-widest font-black tabular-nums whitespace-nowrap">
@@ -505,10 +507,10 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                     <EmptyState
                                         icon="fa-clock-rotate-left"
                                         accent="sky"
-                                        heading={timelineEvents.length === 0 ? 'No service history' : 'No matching events'}
+                                        heading={timelineEvents.length === 0 ? t('No service history') : t('No matching events')}
                                         description={timelineEvents.length === 0
-                                            ? 'Operations, service requests, and awards will appear here as they accumulate.'
-                                            : 'No events match the current filter. Try switching to All.'}
+                                            ? t('Operations, service requests, and awards will appear here as they accumulate.')
+                                            : t('No events match the current filter. Try switching to All.')}
                                         compact
                                     />
                                 )}
@@ -521,7 +523,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                         <div className="space-y-6 lg:overflow-y-auto lg:min-h-0 custom-scrollbar lg:pr-1">
                             <MemberIdCard user={user} accent="sky" />
 
-                            <SectionCard title="Security Clearance" icon="fa-user-shield" accent="emerald">
+                            <SectionCard title={t('Security Clearance')} icon="fa-user-shield" accent="emerald">
                                 {isHydrating ? (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between gap-3">
@@ -538,7 +540,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                     <div className="space-y-4 animate-fade-in">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">Classification</p>
+                                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-1">{t('Classification')}</p>
                                                 <h4 className="text-base font-black text-white uppercase tracking-tight truncate">{user.clearanceLevel.name}</h4>
                                             </div>
                                             <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-black text-white shadow-lg border-2 border-slate-900 shrink-0 ${getClearanceColor(user.clearanceLevel.level)}`}>
@@ -549,7 +551,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                             <p className="text-xs text-slate-400 leading-relaxed">{user.clearanceLevel.description}</p>
                                         )}
                                         <div>
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-2">Limiting Markers</p>
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-black mb-2">{t('Limiting Markers')}</p>
                                             {(user.limitingMarkers && user.limitingMarkers.length > 0) ? (
                                                 <div className="flex flex-wrap gap-2">
                                                     {user.limitingMarkers.map(m => (
@@ -560,19 +562,19 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-slate-500 italic">No limiting markers applied.</p>
+                                                <p className="text-xs text-slate-500 italic">{t('No limiting markers applied.')}</p>
                                             )}
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-slate-500 italic">No clearance assigned.</p>
+                                    <p className="text-xs text-slate-500 italic">{t('No clearance assigned.')}</p>
                                 )}
                             </SectionCard>
                         </div>
                     </div>
                 ) : activeTab === 'history' ? (
                     <div className="space-y-6">
-                        <SectionCard title="Specializations" icon="fa-tags" accent="sky">
+                        <SectionCard title={t('Specializations')} icon="fa-tags" accent="sky">
                             {isHydrating ? (
                                 <div className="flex flex-wrap gap-2">
                                     <Skeleton className="h-6 w-20" />
@@ -590,10 +592,10 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                         </span>
                                     ))}
                                 </div>
-                            ) : <p className="text-slate-500 italic text-sm">No specializations set.</p>}
+                            ) : <p className="text-slate-500 italic text-sm">{t('No specializations set.')}</p>}
                         </SectionCard>
 
-                        <SectionCard title="Certifications" icon="fa-certificate" accent="emerald">
+                        <SectionCard title={t('Certifications')} icon="fa-certificate" accent="emerald">
                             {isHydrating ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <Skeleton className="h-12" />
@@ -613,10 +615,10 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                         </div>
                                     ))}
                                 </div>
-                            ) : <p className="text-slate-500 italic text-sm">No certifications on file.</p>}
+                            ) : <p className="text-slate-500 italic text-sm">{t('No certifications on file.')}</p>}
                         </SectionCard>
 
-                        <SectionCard title="Commendations" icon="fa-medal" accent="amber">
+                        <SectionCard title={t('Commendations')} icon="fa-medal" accent="amber">
                             {isHydrating ? (
                                 <div className="space-y-2">
                                     <Skeleton className="h-20" />
@@ -632,20 +634,20 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                             <div className="flex-1 min-w-0">
                                                 <h4 className="font-bold text-white text-sm">{c.name}</h4>
                                                 {c.reason && <p className="text-xs text-slate-400 italic mt-1">&ldquo;{c.reason}&rdquo;</p>}
-                                                <p className="text-[10px] text-slate-600 mt-2 font-mono uppercase">Awarded {fmt(c.awardedAt)}</p>
+                                                <p className="text-[10px] text-slate-600 mt-2 font-mono uppercase">{t('Awarded {date}', { date: fmt(c.awardedAt) })}</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            ) : <p className="text-slate-500 italic text-sm">No commendations awarded.</p>}
+                            ) : <p className="text-slate-500 italic text-sm">{t('No commendations awarded.')}</p>}
                         </SectionCard>
 
                         {/* Conduct — self always; cross-view requires user:manage:conduct_record. */}
                         {canSeeConduct && (
-                            <SectionCard title="Conduct Record" icon="fa-gavel" accent="rose">
+                            <SectionCard title={t('Conduct Record')} icon="fa-gavel" accent="rose">
                                 <p className="text-[10px] text-slate-500 italic flex items-center gap-1.5 -mt-1">
                                     <i className="fa-solid fa-lock text-slate-600" aria-hidden />
-                                    Visible to you and administrators only.
+                                    {t('Visible to you and administrators only.')}
                                 </p>
                                 {isHydrating ? (
                                     <div className="space-y-2">
@@ -657,11 +659,11 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                             <div key={entry.id} className="bg-slate-950/40 border border-slate-800 p-4 rounded-lg">
                                                 <div className="flex justify-between items-start mb-2 gap-3">
                                                     <span className={`px-2.5 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-wider ${getConductChipClass(entry.type)}`}>
-                                                        {entry.type}
+                                                        {t(entry.type, { context: 'conduct-record-type' })}
                                                     </span>
                                                     <div className="text-right shrink-0">
                                                         <p className="text-[10px] text-slate-400 font-mono uppercase tracking-widest">{fmt(entry.createdAt)}</p>
-                                                        <p className="text-[10px] text-slate-500">by {entry.enteredBy?.name || 'Unknown'}</p>
+                                                        <p className="text-[10px] text-slate-500">{t('by {name}', { name: entry.enteredBy?.name || t('Unknown') })}</p>
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-slate-300 leading-relaxed wrap-break-word">{entry.reason}</p>
@@ -669,7 +671,7 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-slate-500 italic text-sm">No conduct entries on record.</p>
+                                    <p className="text-slate-500 italic text-sm">{t('No conduct entries on record.')}</p>
                                 )}
                             </SectionCard>
                         )}
@@ -679,9 +681,9 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                     // and Government assignments. Newest first, with a colored dot
                     // (sky=HR, amber=Gov), duration calc, and current/past chip.
                     <div className="max-w-3xl">
-                        <SectionCard title="Position History" icon="fa-briefcase" accent="sky">
+                        <SectionCard title={t('Position History')} icon="fa-briefcase" accent="sky">
                             {positionHistory === null ? (
-                                <ol className="relative border-l border-slate-800 ml-3 space-y-5" aria-busy="true" aria-label="Loading position history">
+                                <ol className="relative border-l border-slate-800 ml-3 space-y-5" aria-busy="true" aria-label={t('Loading position history')}>
                                     {[0, 1, 2].map(i => (
                                         <li key={i} className="relative pl-6 min-w-0">
                                             <span className="absolute left-[-13px] top-0 w-6 h-6 rounded-full bg-slate-800/60 border border-slate-700 ring-4 ring-slate-900/60" />
@@ -695,23 +697,23 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                 <EmptyState
                                     icon="fa-briefcase"
                                     accent="sky"
-                                    heading="No position assignments on record"
-                                    description="HR and government position assignments will appear here as they accumulate. Talk to your command if you expect to see entries here."
+                                    heading={t('No position assignments on record')}
+                                    description={t('HR and government position assignments will appear here as they accumulate. Talk to your command if you expect to see entries here.')}
                                     compact
                                 />
                             ) : (
                                     <>
                                         <div className="grid grid-cols-3 gap-3 mb-5">
                                             <div className="bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-center">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Current</div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t('Current')}</div>
                                                 <div className="mt-1 text-lg font-black text-emerald-300 tabular-nums">{positionHistoryCounts.current}</div>
                                             </div>
                                             <div className="bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-center">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">HR</div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t('HR')}</div>
                                                 <div className="mt-1 text-lg font-black text-sky-300 tabular-nums">{positionHistoryCounts.hr}</div>
                                             </div>
                                             <div className="bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-center">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Government</div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t('Government')}</div>
                                                 <div className="mt-1 text-lg font-black text-amber-300 tabular-nums">{positionHistoryCounts.gov}</div>
                                             </div>
                                         </div>
@@ -722,10 +724,10 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                 const end = entry.endedAt ? new Date(entry.endedAt) : new Date();
                                                 const days = Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
                                                 const durationLabel = days < 30
-                                                    ? `${days} day${days !== 1 ? 's' : ''}`
+                                                    ? (days === 1 ? t('{days} day', { days }) : t('{days} days', { days }))
                                                     : days < 365
-                                                        ? `${Math.floor(days / 30)} mo`
-                                                        : `${(days / 365).toFixed(1)} yr`;
+                                                        ? t('{months} mo', { months: Math.floor(days / 30) })
+                                                        : t('{years} yr', { years: (days / 365).toFixed(1) });
                                                 const isHr = entry.kind === 'hr';
                                                 const dotClasses = isHr
                                                     ? 'bg-sky-500/15 border-sky-500/40 text-sky-300'
@@ -743,14 +745,14 @@ const MyServiceRecordView: React.FC<MyServiceRecordViewProps> = ({ user: propUse
                                                                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                                                                     <span className="text-sm font-bold text-white truncate">{entry.positionName}</span>
                                                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-black tracking-widest border ${kindBadge}`}>
-                                                                        {isHr ? 'HR' : 'Gov'}
+                                                                        {isHr ? t('HR') : t('Gov')}
                                                                     </span>
                                                                     {!entry.endedAt && (
-                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-black tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Current</span>
+                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-black tracking-widest bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">{t('Current')}</span>
                                                                     )}
                                                                 </div>
                                                                 <div className="text-right text-[10px] text-slate-500 font-mono whitespace-nowrap shrink-0">
-                                                                    <div>{fmt.date(entry.startedAt)} → {entry.endedAt ? fmt.date(entry.endedAt) : 'present'}</div>
+                                                                    <div>{fmt.date(entry.startedAt)} → {entry.endedAt ? fmt.date(entry.endedAt) : t('present')}</div>
                                                                     <div className="text-slate-600 mt-0.5">{durationLabel}{entry.endReason ? ` · ${entry.endReason}` : ''}</div>
                                                                 </div>
                                                             </div>

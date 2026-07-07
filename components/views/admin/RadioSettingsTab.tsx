@@ -6,11 +6,13 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { RadioChannel, RadioConfig } from '../../../types';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const RadioSettingsTab: React.FC = () => {
     const { rpcAction } = useData();
     const { radioConfig, updateRadioConfig, radioChannels = [], deleteRadioChannel } = useConfig();
     const { confirm, addToast } = useNotification();
+    const { t } = useI18n();
     const [config, setConfig] = useState<RadioConfig>(radioConfig);
     const [isSavingConfig, setIsSavingConfig] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -76,7 +78,7 @@ const RadioSettingsTab: React.FC = () => {
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save radio configuration settings." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save radio configuration settings.') });
         } finally {
             setIsSavingConfig(false);
         }
@@ -87,7 +89,7 @@ const RadioSettingsTab: React.FC = () => {
             await rpcAction('admin:update_radio_channel', { id, name, color });
         } catch (err) {
             console.error(err);
-            addToast("Update Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to update the radio channel." });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to update the radio channel.') });
         }
     };
 
@@ -125,7 +127,7 @@ const RadioSettingsTab: React.FC = () => {
             setNewColor('#38bdf8');
         } catch (err: any) {
             console.error(err);
-            addToast("Add Channel Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: `Could not create the radio channel: ${err.message}` });
+            addToast(t('Add Channel Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Could not create the radio channel: {error}', { error: err.message }) });
         } finally {
             setIsAdding(false);
         }
@@ -133,9 +135,9 @@ const RadioSettingsTab: React.FC = () => {
 
     const handleDeleteChannel = async (id: string, name: string) => {
         const confirmed = await confirm({
-            title: 'Delete Radio Channel',
-            message: `Are you sure you want to permanently delete the radio frequency "${name}"?`,
-            confirmText: 'Delete',
+            title: t('Delete Radio Channel'),
+            message: t('Are you sure you want to permanently delete the radio frequency "{name}"?', { name }),
+            confirmText: t('Delete'),
             variant: 'danger'
         });
         if (!confirmed) return;
@@ -145,7 +147,7 @@ const RadioSettingsTab: React.FC = () => {
             await deleteRadioChannel(id);
         } catch (err) {
             console.error(err);
-            addToast("Delete Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to delete the radio channel." });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to delete the radio channel.') });
         } finally {
             setDeletingId(null);
         }
@@ -221,19 +223,19 @@ const RadioSettingsTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Radio Frequencies"
+                title={t('Radio Frequencies')}
                 icon="fa-solid fa-tower-cell"
                 accent="amber"
-                subtitle="Configure voice radio channels and LiveKit room mappings."
+                subtitle={t('Configure voice radio channels and LiveKit room mappings.')}
             />
 
             {!radioConfig.configured && (
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
                     <i className="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
                     <div>
-                        <p className="text-sm font-bold text-amber-400">LiveKit Not Configured</p>
+                        <p className="text-sm font-bold text-amber-400">{t('LiveKit Not Configured')}</p>
                         <p className="text-xs text-slate-400 mt-1">
-                            Voice radio requires LiveKit API credentials. Set <strong className="text-slate-300">LIVEKIT_API_KEY</strong>, <strong className="text-slate-300">LIVEKIT_API_SECRET</strong>, and <strong className="text-slate-300">LIVEKIT_URL</strong> in your server's <strong className="text-slate-300">.env</strong> file. Until configured, radio frequencies below will not be functional.
+                            {t('Voice radio requires LiveKit API credentials. Set')} <strong className="text-slate-300">LIVEKIT_API_KEY</strong>, <strong className="text-slate-300">LIVEKIT_API_SECRET</strong> {t('and')} <strong className="text-slate-300">LIVEKIT_URL</strong> {t("in your server's")} <strong className="text-slate-300">.env</strong> {t('file. Until configured, radio frequencies below will not be functional.')}
                         </p>
                     </div>
                 </div>
@@ -243,35 +245,35 @@ const RadioSettingsTab: React.FC = () => {
             <div className="bg-slate-900/50 rounded-lg p-6 border border-slate-700/50">
                 <h2 className="text-xl text-white flex items-center mb-4">
                     <i className="fa-solid fa-walkie-talkie h-6 w-6 mr-3 text-slate-400"></i>
-                    Radio System Configuration
+                    {t('Radio System Configuration')}
                 </h2>
-                <p className="text-sm text-slate-400 mb-6">Manage default boot frequencies and global comms settings.</p>
+                <p className="text-sm text-slate-400 mb-6">{t('Manage default boot frequencies and global comms settings.')}</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label htmlFor="channelName" className="block text-sm font-medium text-slate-300 mb-2">Default Boot Frequency ID</label>
+                        <label htmlFor="channelName" className="block text-sm font-medium text-slate-300 mb-2">{t('Default Boot Frequency ID')}</label>
                         <select
                             id="channelName"
                             value={config.channelName}
                             onChange={(e) => setConfig(prev => ({ ...prev, channelName: e.target.value }))}
                             className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono"
                         >
-                            <option value="">- Select Default -</option>
+                            <option value="">{t('- Select Default -')}</option>
                             {localChannels.map(c => <option key={c.id} value={c.id}>{c.name} ({c.id})</option>)}
                         </select>
-                        <p className="text-xs text-slate-500 mt-1">New users will tune to this frequency on power-up.</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('New users will tune to this frequency on power-up.')}</p>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Push-to-Talk Key</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">{t('Push-to-Talk Key')}</label>
                         <div className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-slate-400 font-mono text-sm cursor-not-allowed">
-                            Right Control
+                            {t('Right Control')}
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-6 flex justify-end">
                     <button onClick={handleUpdateConfig} disabled={isSavingConfig || isSaved} className={`px-6 py-2 text-sm font-semibold text-white rounded-md border border-slate-600 transition-colors w-32 text-center ${isSavingConfig ? 'bg-slate-800 cursor-wait' : isSaved ? 'bg-green-600 border-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                        {isSavingConfig ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? 'Saved!' : 'Save Config'}
+                        {isSavingConfig ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? t('Saved!') : t('Save Config')}
                     </button>
                 </div>
             </div>
@@ -280,17 +282,17 @@ const RadioSettingsTab: React.FC = () => {
             <div className={`bg-slate-900/50 rounded-lg p-6 border border-slate-700/50`}>
                 <h2 className="text-xl text-white flex items-center mb-4">
                     <i className="fa-solid fa-tower-broadcast h-6 w-6 mr-3 text-slate-400"></i>
-                    Frequency Matrix
+                    {t('Frequency Matrix')}
                 </h2>
-                <p className="text-sm text-slate-400 mb-6">Manage preset tactical frequencies. Drag rows to reorder.</p>
+                <p className="text-sm text-slate-400 mb-6">{t('Manage preset tactical frequencies. Drag rows to reorder.')}</p>
 
                 {/* Create New Channel Form */}
                 <form onSubmit={handleAddChannel} className="bg-slate-800/40 border border-slate-700 p-4 rounded-lg mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
-                        <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">New Channel ID</label>
+                        <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">{t('New Channel ID')}</label>
                         <input
                             type="text"
-                            placeholder="e.g. tac-1"
+                            placeholder={t('e.g. tac-1')}
                             value={newId}
                             onChange={(e) => setNewId(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-sm px-3 py-2 text-white text-sm outline-hidden focus:ring-1 focus:ring-slate-400/50"
@@ -298,10 +300,10 @@ const RadioSettingsTab: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">Display Name</label>
+                        <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">{t('Display Name')}</label>
                         <input
                             type="text"
-                            placeholder="e.g. Tactical One"
+                            placeholder={t('e.g. Tactical One')}
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 rounded-sm px-3 py-2 text-white text-sm outline-hidden focus:ring-1 focus:ring-slate-400/50"
@@ -310,7 +312,7 @@ const RadioSettingsTab: React.FC = () => {
                     </div>
                     <div className="flex space-x-2">
                         <div className="flex-1">
-                            <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">Color</label>
+                            <label className="block text-[10px] text-slate-500 uppercase font-black mb-1">{t('Color')}</label>
                             <div className="flex items-center space-x-2 bg-slate-800 border border-slate-700 rounded-sm px-2 py-1">
                                 <input
                                     type="color"
@@ -327,7 +329,7 @@ const RadioSettingsTab: React.FC = () => {
                         disabled={isAdding}
                         className="w-full bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white font-bold py-2 rounded-sm transition-colors disabled:opacity-50"
                     >
-                        {isAdding ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Add Channel'}
+                        {isAdding ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Add Channel')}
                     </button>
                 </form>
 
@@ -358,11 +360,11 @@ const RadioSettingsTab: React.FC = () => {
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-600 cursor-grab active:cursor-grabbing hover:text-slate-400">
                                         <i className="fa-solid fa-grip-vertical"></i>
                                     </div>
-                                    <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">ID / Slug</label>
+                                    <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">{t('ID / Slug')}</label>
                                     <code className="bg-black/30 px-2 py-1 rounded-sm text-slate-300 text-xs w-fit">{channel.id}</code>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Display Name</label>
+                                    <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">{t('Display Name')}</label>
                                     <input
                                         type="text"
                                         defaultValue={channel.name}
@@ -376,7 +378,7 @@ const RadioSettingsTab: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="w-32">
-                                        <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Color</label>
+                                        <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">{t('Color')}</label>
                                         <input
                                             type="color"
                                             defaultValue={channel.color}
@@ -385,9 +387,9 @@ const RadioSettingsTab: React.FC = () => {
                                         />
                                     </div>
                                     <div className="text-right flex flex-col items-end">
-                                        <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">Type</label>
+                                        <label className="block text-[10px] text-slate-500 uppercase font-bold mb-1">{t('Type')}</label>
                                         <span className={`text-[9px] px-2 py-0.5 rounded-sm uppercase font-black ${channel.isPreset ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-slate-700 text-slate-400'}`}>
-                                            {channel.isPreset ? 'System Preset' : 'Custom'}
+                                            {channel.isPreset ? t('System Preset') : t('Custom')}
                                         </span>
                                     </div>
                                 </div>
@@ -396,7 +398,7 @@ const RadioSettingsTab: React.FC = () => {
                                         onClick={() => handleDeleteChannel(channel.id, channel.name)}
                                         disabled={deletingId === channel.id || channel.isPreset}
                                         className={`p-2 rounded-md transition-colors ${channel.isPreset ? 'text-slate-600 cursor-not-allowed' : 'text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100'}`}
-                                        title={channel.isPreset ? "System presets cannot be deleted" : "Delete frequency"}
+                                        title={channel.isPreset ? t('System presets cannot be deleted') : t('Delete frequency')}
                                     >
                                         {deletingId === channel.id ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-trash-can"></i>}
                                     </button>
@@ -407,7 +409,7 @@ const RadioSettingsTab: React.FC = () => {
                     {localChannels.length === 0 && (
                         <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-lg">
                             <i className="fa-solid fa-tower-cell text-4xl text-slate-700 mb-2"></i>
-                            <p className="text-slate-500 italic text-sm">No radio frequencies configured.</p>
+                            <p className="text-slate-500 italic text-sm">{t('No radio frequencies configured.')}</p>
                         </div>
                     )}
                 </div>

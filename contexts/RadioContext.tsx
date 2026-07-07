@@ -8,6 +8,7 @@ import { RadioChannel } from '../types';
 import { playCachedSound } from '../lib/audioCache';
 import { attachMicLevelMeter, MicLevelMeter } from '../lib/audio/micLevel';
 import { debugLog } from '../lib/debugLog';
+import { useI18n } from '../i18n/I18nContext';
 
 interface RadioContextType {
     isConnected: boolean;
@@ -36,6 +37,7 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const { currentUser } = useAuth();
     const { brandingConfig, radioChannels, rpcAction } = useData();
     const { subscribePTT } = useHIDPTT();
+    const { t } = useI18n();
 
     const [isEnabled, setIsEnabled] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
@@ -321,10 +323,10 @@ export const RadioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setRoom(newRoom);
         } catch (err: any) {
             console.error("Radio Error:", err);
-            setError(err.message || 'Link error');
+            setError(err.message || t('Link error'));
             setIsConnecting(false);
         }
-    }, [currentUser, isEnabled, isConnected, isConnecting, room, disconnect, rpcAction, updateParticipantList, currentChannel, stopMicMeter]);
+    }, [currentUser, isEnabled, isConnected, isConnecting, room, disconnect, rpcAction, updateParticipantList, currentChannel, stopMicMeter, t]);
 
     const setChannel = useCallback(async (channel: RadioChannel) => {
         try {

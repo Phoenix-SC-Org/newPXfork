@@ -24,7 +24,7 @@ interface Props {
 
 const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, onClick }) => {
     const { confirm } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
 
     const statusA = ACCENTS[warrantStatusAccent(warrant.status)];
     const statusIcon = warrantStatusIcon(warrant.status);
@@ -103,7 +103,7 @@ const WarrantCard: React.FC<Props> = ({ warrant, canManage, onUpdate, onDelete, 
                     <div className="p-3 rounded-lg bg-slate-950/40 border border-white/5">
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Reward Value')}</p>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-lime-400 font-mono tracking-tight leading-none">{warrant.uecReward.toLocaleString()}</span>
+                            <span className="text-2xl font-black text-lime-400 font-mono tracking-tight leading-none">{warrant.uecReward.toLocaleString(locale)}</span>
                             <span className="text-[10px] font-bold text-lime-400/70 uppercase tracking-widest">aUEC</span>
                         </div>
                     </div>

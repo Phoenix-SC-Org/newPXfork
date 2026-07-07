@@ -14,7 +14,7 @@ interface Props {
 export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }: Props) {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [accountId, setAccountId] = useState<number>(accounts[0]?.id ?? 0);
     const [direction, setDirection] = useState<'credit' | 'debit'>('credit');
     const [amount, setAmount] = useState<string>('');
@@ -69,7 +69,7 @@ export default function RecordAdjustmentModal({ accounts, onClose, onSubmitted }
                     >
                         {accounts.map((a) => (
                             <option key={a.id} value={a.id}>
-                                {a.name} · {a.balanceCached.toLocaleString()} aUEC
+                                {a.name} · {a.balanceCached.toLocaleString(locale)} aUEC
                             </option>
                         ))}
                     </select>

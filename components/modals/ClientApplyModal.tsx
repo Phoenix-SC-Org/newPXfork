@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface ClientApplyModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ const ClientApplyModal: React.FC<ClientApplyModalProps> = ({ isOpen, onClose }) 
     const { rpcAction, refreshHR } = useData();
     const { currentUser } = useAuth();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [statement, setStatement] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +24,7 @@ const ClientApplyModal: React.FC<ClientApplyModalProps> = ({ isOpen, onClose }) 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!statement.trim()) {
-            addToast("Validation Error", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "Please provide a statement of interest." });
+            addToast(t('Validation Error'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t('Please provide a statement of interest.') });
             return;
         }
 
@@ -44,18 +46,18 @@ const ClientApplyModal: React.FC<ClientApplyModalProps> = ({ isOpen, onClose }) 
             onClose();
         } catch (err) {
             console.error("Failed to submit application:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while submitting your application. Please try again." });
+            addToast(t('Error'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while submitting your application. Please try again.') });
         } finally {
             setIsLoading(false);
         }
-    }, [statement, rpcAction, refreshHR, onClose, currentUser, addToast]);
+    }, [statement, rpcAction, refreshHR, onClose, currentUser, addToast, t]);
 
     return (
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Membership Application"
-            subtitle="Join the Team"
+            title={t('Membership Application')}
+            subtitle={t('Join the Team')}
             icon="fa-solid fa-file-signature"
             color="sky"
             width="max-w-md"
@@ -63,21 +65,21 @@ const ClientApplyModal: React.FC<ClientApplyModalProps> = ({ isOpen, onClose }) 
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     <div className="bg-sky-900/10 border border-sky-500/20 p-4 rounded-xl text-sm text-sky-200">
-                        <p className="mb-2 font-bold">Submit your application to Human Resources.</p>
+                        <p className="mb-2 font-bold">{t('Submit your application to Human Resources.')}</p>
                         <ul className="list-disc pl-4 text-xs space-y-1 opacity-80">
-                            <li>Your RSI Handle and Discord ID will be automatically attached.</li>
-                            <li>A Case Officer will review your file and contact you via Discord.</li>
+                            <li>{t('Your RSI Handle and Discord ID will be automatically attached.')}</li>
+                            <li>{t('A Case Officer will review your file and contact you via Discord.')}</li>
                         </ul>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Statement of Interest</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{t('Statement of Interest')}</label>
                         <textarea
                             value={statement}
                             onChange={(e) => setStatement(e.target.value)}
                             rows={6}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 outline-hidden transition-all resize-none"
-                            placeholder="Tell us why you want to join, your experience level, and what roles you are interested in..."
+                            placeholder={t('Tell us why you want to join, your experience level, and what roles you are interested in...')}
                             required
                             disabled={isLoading}
                         />
@@ -86,13 +88,13 @@ const ClientApplyModal: React.FC<ClientApplyModalProps> = ({ isOpen, onClose }) 
 
                 {/* Footer */}
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2 bg-sky-500/10 text-sky-400 border border-sky-500/50 hover:bg-sky-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Submit Application'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Submit Application')}
                     </button>
                 </div>
             </form>

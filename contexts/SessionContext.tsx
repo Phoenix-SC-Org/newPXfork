@@ -33,6 +33,7 @@ import { useData } from './DataContext';
 import { useDataCore } from './DataCoreContext';
 import { useRequests } from './RequestsContext';
 import { useUI } from './UIContext';
+import { useI18n } from '../i18n/I18nContext';
 import { getSupabase } from '../lib/supabaseClient';
 import {
     formatUserDateTime,
@@ -127,6 +128,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { hydrateFullState, discordConfig, brandingConfig, allUsers, fetchUserDetail } = useData();
     const { setIsTogglingDuty, addToast, playSound, setEamMessage, setOperationAlert } = useUI();
     const { simpleAction: coreSimpleAction, registerRealtimeAuth } = useDataCore();
+    const { t } = useI18n();
     // RequestsContext exposes registerRefreshUser so its deleteRequest can
     // trigger a full session refresh after the RPC.
     const { registerRefreshUser: registerReqsRefreshUser } = useRequests();
@@ -498,7 +500,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (isStaff) {
                     debugLog("[Auth] New Request Alert Triggered", req.id);
                     playSound(brandingConfig.newRequestSoundUrl);
-                    addToast(`New ${req.service_type} Request`, <i className="fa-solid fa-satellite-dish"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: "A new service request has been submitted.", requestId: req.id, silent: true });
+                    addToast(t('New {serviceType} Request', { serviceType: req.service_type }), <i className="fa-solid fa-satellite-dish"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: t("A new service request has been submitted."), requestId: req.id, silent: true });
                 }
             })
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'service_requests' }, (payload: any) => {
@@ -516,13 +518,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         'Refused': 'bg-red-500/10 text-red-400 border-red-500/50',
                     };
 
-                    const msg = `Mission Status: ${newReq.status}`;
+                    const msg = t('Mission Status: {status}', { status: t(newReq.status) });
                     const style = statusColors[newReq.status] || "bg-sky-500/10 text-sky-400 border-sky-500/50";
                     const icon = <i className="fa-solid fa-satellite-dish"></i>;
 
                     if (statusColors[newReq.status]) {
                         playSound(brandingConfig.assignmentSoundUrl);
-                        addToast(msg, icon, style, { description: "Your mission status has been updated.", requestId: newReq.id, silent: true });
+                        addToast(msg, icon, style, { description: t("Your mission status has been updated."), requestId: newReq.id, silent: true });
                     }
                 }
 
@@ -531,12 +533,12 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     // Notify if status changes to Cancelled/Failed (important for dispatch)
                     if (newReq.status === 'Cancelled' || newReq.status === 'Failed' || newReq.status === 'Refused') {
                         playSound(brandingConfig.newRequestSoundUrl); // Use attention sound
-                        addToast(`Request ${newReq.status}`, <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "A service request requires attention.", requestId: newReq.id, silent: true });
+                        addToast(t('Request {status}', { status: t(newReq.status) }), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("A service request requires attention."), requestId: newReq.id, silent: true });
                     }
                     // Notify if status changes to Completed (Success)
                     if (newReq.status === 'Success') {
                         playSound(brandingConfig.assignmentSoundUrl);
-                        addToast(`Request Completed`, <i className="fa-solid fa-circle-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "A service request has been completed successfully.", requestId: newReq.id, silent: true });
+                        addToast(t('Request Completed'), <i className="fa-solid fa-circle-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t("A service request has been completed successfully."), requestId: newReq.id, silent: true });
                     }
                 }
             })
@@ -588,7 +590,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 const msg = payload.payload?.message;
                 if (msg) {
                     playSound(brandingConfig.newRequestSoundUrl);
-                    addToast("System Broadcast", <i className="fa-solid fa-bullhorn"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: msg, silent: true });
+                    addToast(t("System Broadcast"), <i className="fa-solid fa-bullhorn"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: msg, silent: true });
                 }
             })
             // Also listen for settings changes as backup
@@ -616,10 +618,10 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (!detail || detail.userId !== currentUser.id) return;
             if (detail.action === 'assigned') {
                 playSound(brandingConfig.assignmentSoundUrl);
-                addToast(`Assigned to Request`, <i className="fa-solid fa-user-tag"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "You have been assigned to a service request.", requestId: detail.requestId, silent: true });
+                addToast(t('Assigned to Request'), <i className="fa-solid fa-user-tag"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t("You have been assigned to a service request."), requestId: detail.requestId, silent: true });
             } else if (detail.action === 'unassigned') {
                 playSound(brandingConfig.assignmentSoundUrl);
-                addToast(`Unassigned from Request`, <i className="fa-solid fa-user-slash"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: "You have been removed from a service request.", requestId: detail.requestId, silent: true });
+                addToast(t('Unassigned from Request'), <i className="fa-solid fa-user-slash"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: t("You have been removed from a service request."), requestId: detail.requestId, silent: true });
             }
         };
         window.addEventListener('app:realtime:responder-change', onResponderChange);
@@ -659,7 +661,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             window.removeEventListener('app:realtime:responder-change', onResponderChange);
             window.removeEventListener('app:realtime:user-update', onUserUpdate);
         };
-    }, [currentUser, brandingConfig, addToast, playSound, setEamMessage, setOperationAlert, fetchUserDetail, realtimeToken]);
+    }, [currentUser, brandingConfig, addToast, playSound, setEamMessage, setOperationAlert, fetchUserDetail, realtimeToken, t]);
 
     // Generate the CSRF nonce, store the client (sessionStorage) half, AND mint
     // the server (HttpOnly cookie) half before redirecting. Returns null if the
@@ -671,22 +673,22 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             await apiService.beginOAuth(nonce);
             return nonce;
         } catch {
-            addToast("Sign-in Unavailable", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Could not start the secure sign-in handshake. Please try again." });
+            addToast(t("Sign-in Unavailable"), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Could not start the secure sign-in handshake. Please try again.") });
             return null;
         }
-    }, [addToast]);
+    }, [addToast, t]);
 
     const login = useCallback(async () => {
         const clientId = discordConfig?.clientId;
         if (!clientId) {
-            addToast("Discord Not Configured", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Discord OAuth has not been set up. Contact your administrator." });
+            addToast(t("Discord Not Configured"), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Discord OAuth has not been set up. Contact your administrator.") });
             return;
         }
         const nonce = await beginOAuth();
         if (!nonce) return;
         const redirectUri = encodeURIComponent(window.location.origin);
         window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=login:${nonce}`;
-    }, [discordConfig, addToast, beginOAuth]);
+    }, [discordConfig, addToast, beginOAuth, t]);
 
     const logout = useCallback(async () => {
         // Tell the server to end this session (so a stolen token stops working), then
@@ -727,7 +729,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const handleFinalizeAdminSetup = useCallback(async (claimKey?: string) => {
         const clientId = discordConfig?.clientId;
         if (!clientId) {
-            addToast("Discord Not Configured", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Discord OAuth has not been set up. Contact your administrator." });
+            addToast(t("Discord Not Configured"), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Discord OAuth has not been set up. Contact your administrator.") });
             return;
         }
         const nonce = await beginOAuth();
@@ -736,7 +738,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Pass claimKey and CSRF nonce in state
         const state = claimKey ? `admin_setup:${claimKey}:${nonce}` : `admin_setup::${nonce}`;
         window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
-    }, [discordConfig, addToast, beginOAuth]);
+    }, [discordConfig, addToast, beginOAuth, t]);
 
     // Adapter for the `(action, payload, refresh: boolean)` shape: translate
     // `refresh === true` into a refreshUser call and forward the rest to
@@ -821,10 +823,12 @@ export const useSession = (): SessionContextValue => {
  */
 export const useFormatDate = () => {
     const { currentUser } = useSession();
+    const { locale } = useI18n();
     const prefs = useMemo<FormatPrefs>(() => ({
         timezone: currentUser?.timezone,
         dateFormat: currentUser?.dateFormat,
-    }), [currentUser?.timezone, currentUser?.dateFormat]);
+        locale,
+    }), [currentUser?.timezone, currentUser?.dateFormat, locale]);
 
     const formatDateTime = useCallback(
         (iso?: string | null, presetOverride?: DateFormatPreset) =>

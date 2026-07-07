@@ -5,6 +5,7 @@ import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 
 /** Assigns the chosen unit to all selected users. Pass-through to admin:bulk_assign_unit. */
 const BulkAssignUnitModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { units } = useMembers();
     const [unitId, setUnitId] = useState<number | null>(null);
     const bulk = useBulkProgress<number>();
@@ -41,25 +43,25 @@ const BulkAssignUnitModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
 
     return (
         <BulkActionShell
-            title="Assign Unit"
-            subtitle="All selected members will be moved to the chosen unit."
+            title={t('Assign Unit')}
+            subtitle={t('All selected members will be moved to the chosen unit.')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel="Assign"
+            confirmLabel={t('Assign')}
             confirmDisabled={unitId == null}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
         >
             {!isRunning && !isFinished && (
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">Unit</label>
+                    <label className="text-sm font-bold text-white">{t('Unit')}</label>
                     <select
                         value={unitId ?? ''}
                         onChange={(e) => setUnitId(e.target.value ? Number(e.target.value) : null)}
                         className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:border-sky-500/50"
                     >
-                        <option value="">— Select a unit —</option>
+                        <option value="">{t('— Select a unit —')}</option>
                         {(units || []).map((u) => (
                             <option key={u.id} value={u.id}>{u.name}</option>
                         ))}

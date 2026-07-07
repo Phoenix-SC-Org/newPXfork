@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useI18n } from '../../i18n/I18nContext';
 
 // Generic minimum shape every result must satisfy. Concrete results may
 // carry many more fields; the combobox only needs id/name/source.
@@ -54,16 +55,22 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
     onChange,
     initialScope = 'both',
     showScopeToggle = false,
-    placeholder = 'Search catalog…',
+    placeholder,
     limit = 50,
     helpText,
     renderItem,
     disabled = false,
     allowClear = true,
     defaultItems,
-    defaultItemsLabel = 'Your org catalog',
+    defaultItemsLabel,
 }: Props<T>) {
+    const { t } = useI18n();
     const { rpcAction } = useData();
+
+    // Generic defaults for caller-overridable labels; callers pass their own
+    // (already translated) strings, so only the defaults are wrapped here.
+    const placeholderText = placeholder ?? t('Search catalog…');
+    const defaultItemsLabelText = defaultItemsLabel ?? t('Your org catalog');
 
     const [query, setQuery] = useState('');
     const [scope, setScope] = useState<'custom' | 'platform' | 'both'>(initialScope);
@@ -135,13 +142,13 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
             })
             .catch((err: any) => {
                 if (seq !== requestSeqRef.current) return;
-                setError(err?.message || 'Search failed');
+                setError(err?.message || t('Search failed'));
                 setResults([]);
             })
             .finally(() => {
                 if (seq === requestSeqRef.current) setLoading(false);
             });
-    }, [debouncedQuery, scope, open, rpcAction, rpcName, limit]);
+    }, [debouncedQuery, scope, open, rpcAction, rpcName, limit, t]);
 
     const handleSelect = useCallback((item: T) => {
         onChange(item);
@@ -217,7 +224,7 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                         onChange={(e) => { setQuery(e.target.value); if (!open) setOpen(true); if (value) onChange(null); }}
                         onFocus={() => setOpen(true)}
                         onKeyDown={handleKey}
-                        placeholder={placeholder}
+                        placeholder={placeholderText}
                         disabled={disabled}
                         className="w-full bg-slate-900 border border-white/10 rounded-lg pl-9 pr-9 py-2 text-sm text-white focus:outline-hidden focus:border-orange-500/40 disabled:opacity-40"
                     />
@@ -227,7 +234,7 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                             type="button"
                             onClick={() => { onChange(null); setQuery(''); setResults([]); inputRef.current?.focus(); }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
-                            aria-label="Clear"
+                            aria-label={t('Clear')}
                         >
                             <i className="fa-solid fa-xmark" />
                         </button>
@@ -241,7 +248,7 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                             onChange={(e) => setScope(e.target.checked ? 'both' : 'custom')}
                             className="accent-orange-500"
                         />
-                        Platform
+                        {t('Platform')}
                     </label>
                 )}
             </div>
@@ -252,7 +259,7 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                     {!debouncedQuery && showDefaults && (
                         <>
                             <div className="px-3 py-2 bg-black/30 text-[10px] font-mono uppercase tracking-widest text-slate-500 sticky top-0 border-b border-white/5">
-                                {defaultItemsLabel} · {visibleItems.length}
+                                {defaultItemsLabelText} · {visibleItems.length}
                             </div>
                             <div className="divide-y divide-white/5">
                                 {visibleItems.map((r, i) => (renderItem ? renderItem(r) : renderRow(r, i)))}
@@ -260,11 +267,11 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                         </>
                     )}
                     {!debouncedQuery && !showDefaults && (
-                        <div className="px-3 py-3 text-xs text-slate-500 italic">Start typing to search…</div>
+                        <div className="px-3 py-3 text-xs text-slate-500 italic">{t('Start typing to search…')}</div>
                     )}
                     {debouncedQuery && loading && (
                         <div className="px-3 py-3 text-xs text-slate-500 flex items-center gap-2">
-                            <i className="fa-solid fa-spinner animate-spin" /> Searching…
+                            <i className="fa-solid fa-spinner animate-spin" /> {t('Searching…')}
                         </div>
                     )}
                     {debouncedQuery && !loading && error && (
@@ -272,7 +279,7 @@ export default function CatalogSearchCombobox<T extends ComboboxItem>({
                     )}
                     {debouncedQuery && !loading && !error && results.length === 0 && (
                         <div className="px-3 py-3 text-xs text-slate-500 italic">
-                            No matches{showScopeToggle && scope === 'custom' ? ' — try expanding to the platform catalog.' : '.'}
+                            {showScopeToggle && scope === 'custom' ? t('No matches — try expanding to the platform catalog.') : t('No matches.')}
                         </div>
                     )}
                     {debouncedQuery && results.length > 0 && (

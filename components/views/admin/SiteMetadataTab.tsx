@@ -5,8 +5,10 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { OpenGraphConfig } from '../../../types';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const SiteMetadataTab: React.FC = () => {
+    const { t } = useI18n();
     const { openGraphConfig, updateOpenGraphConfig } = useConfig();
     const { addToast } = useNotification();
     const [config, setConfig] = useState<OpenGraphConfig>(openGraphConfig);
@@ -44,7 +46,7 @@ const SiteMetadataTab: React.FC = () => {
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save site metadata settings. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save site metadata settings. Please try again.') });
         } finally {
             setIsSaving(false);
         }
@@ -53,55 +55,55 @@ const SiteMetadataTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Site Metadata & Open Graph"
+                title={t('Site Metadata & Open Graph')}
                 icon="fa-solid fa-share-nodes"
                 accent="indigo"
-                subtitle="Configure the title, description, and images that identify this site."
+                subtitle={t('Configure the title, description, and images that identify this site.')}
             />
 
-            <SectionPanel title="Open Graph & SEO" icon="fa-solid fa-share-nodes">
+            <SectionPanel title={t('Open Graph & SEO')} icon="fa-solid fa-share-nodes">
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div className="md:col-span-3 space-y-6">
                         <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">Meta Title</label>
+                            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">{t('Meta Title')}</label>
                             <input
                                 type="text"
                                 id="title"
                                 name="title"
                                 value={config.title}
                                 onChange={handleChange}
-                                placeholder="e.g., My Organization Dashboard"
+                                placeholder={t('e.g., My Organization Dashboard')}
                                 className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white"
                             />
                         </div>
                         <div>
-                            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">Meta Description</label>
+                            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">{t('Meta Description')}</label>
                             <textarea
                                 id="description"
                                 name="description"
                                 value={config.description}
                                 onChange={handleChange}
                                 rows={3}
-                                placeholder="e.g., An immersive portal for organization members..."
+                                placeholder={t('e.g., An immersive portal for organization members...')}
                                 className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white text-sm"
                             />
                         </div>
                         <div>
-                            <label htmlFor="keywords" className="block text-sm font-medium text-slate-300 mb-2">Keywords (Comma Separated)</label>
+                            <label htmlFor="keywords" className="block text-sm font-medium text-slate-300 mb-2">{t('Keywords (Comma Separated)')}</label>
                             <input
                                 type="text"
                                 id="keywords"
                                 name="keywords"
                                 value={config.keywords || ''}
                                 onChange={handleChange}
-                                placeholder="e.g., Star Citizen, Security, Org, Dashboard"
+                                placeholder={t('e.g., Star Citizen, Security, Org, Dashboard')}
                                 className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white text-sm"
                             />
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="themeColor" className="block text-sm font-medium text-slate-300 mb-2">Theme Color</label>
+                                <label htmlFor="themeColor" className="block text-sm font-medium text-slate-300 mb-2">{t('Theme Color')}</label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="color"
@@ -122,7 +124,7 @@ const SiteMetadataTab: React.FC = () => {
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="twitterCard" className="block text-sm font-medium text-slate-300 mb-2">Twitter Card Type</label>
+                                <label htmlFor="twitterCard" className="block text-sm font-medium text-slate-300 mb-2">{t('Twitter Card Type')}</label>
                                 <select 
                                     id="twitterCard" 
                                     name="twitterCard" 
@@ -130,14 +132,14 @@ const SiteMetadataTab: React.FC = () => {
                                     onChange={handleChange}
                                     className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white text-sm"
                                 >
-                                    <option value="summary_large_image">Large Image (Recommended)</option>
-                                    <option value="summary">Summary (Small)</option>
+                                    <option value="summary_large_image">{t('Large Image (Recommended)')}</option>
+                                    <option value="summary">{t('Summary (Small)')}</option>
                                 </select>
                             </div>
                         </div>
 
                          <div>
-                            <label htmlFor="faviconUrl" className="block text-sm font-medium text-slate-300 mb-2">Favicon URL (Browser Tab)</label>
+                            <label htmlFor="faviconUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Favicon URL (Browser Tab)')}</label>
                              <div className="flex gap-4 items-center">
                                  <input
                                     type="text"
@@ -152,7 +154,7 @@ const SiteMetadataTab: React.FC = () => {
                                     {config.faviconUrl && !faviconError ? (
                                         <img 
                                             src={config.faviconUrl} 
-                                            alt="Favicon" 
+                                            alt={t('Favicon')}
                                             className="max-w-full max-h-full"
                                             onError={() => setErroredFaviconUrl(config.faviconUrl || null)}
                                         />
@@ -161,10 +163,10 @@ const SiteMetadataTab: React.FC = () => {
                                     )}
                                 </div>
                              </div>
-                             <p className="text-xs text-slate-500 mt-1">Recommended: 32x32px or 64x64px PNG/ICO</p>
+                             <p className="text-xs text-slate-500 mt-1">{t('Recommended: 32x32px or 64x64px PNG/ICO')}</p>
                         </div>
                          <div>
-                            <label htmlFor="pwaIconUrl" className="block text-sm font-medium text-slate-300 mb-2">App Icon URL (PWA / Mobile Home Screen)</label>
+                            <label htmlFor="pwaIconUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('App Icon URL (PWA / Mobile Home Screen)')}</label>
                              <div className="flex gap-4 items-center">
                                  <input
                                     type="text"
@@ -179,7 +181,7 @@ const SiteMetadataTab: React.FC = () => {
                                     {config.pwaIconUrl && !pwaIconError ? (
                                         <img 
                                             src={config.pwaIconUrl} 
-                                            alt="App Icon" 
+                                            alt={t('App Icon')}
                                             className="w-full h-full object-cover"
                                             onError={() => setErroredPwaIconUrl(config.pwaIconUrl || null)}
                                         />
@@ -189,11 +191,11 @@ const SiteMetadataTab: React.FC = () => {
                                 </div>
                              </div>
                              <p className="text-xs text-slate-500 mt-1">
-                                Used for "Add to Home Screen". Recommended: <strong>512x512px PNG</strong> (Maskable/Transparent).
+                                {t('Used for "Add to Home Screen". Recommended:')} <strong>{t('512x512px PNG')}</strong> {t('(Maskable/Transparent).')}
                             </p>
                         </div>
                         <div>
-                            <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-2">Open Graph Image URL (Social Share)</label>
+                            <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Open Graph Image URL (Social Share)')}</label>
                              <input
                                 type="text"
                                 id="imageUrl"
@@ -206,12 +208,12 @@ const SiteMetadataTab: React.FC = () => {
                         </div>
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-300 mb-2">OG Image Preview</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">{t('OG Image Preview')}</label>
                         <div className="w-full aspect-video bg-slate-800 rounded-md border border-slate-700 overflow-hidden flex items-center justify-center relative">
                            {config.imageUrl && !imageError ? (
                                <img 
                                    src={config.imageUrl} 
-                                   alt="Open Graph Image Preview" 
+                                   alt={t('Open Graph Image Preview')}
                                    className="w-full h-full object-cover" 
                                    onError={() => setErroredImageUrl(config.imageUrl || null)}
                                />
@@ -219,9 +221,9 @@ const SiteMetadataTab: React.FC = () => {
                                <div className="text-center p-4">
                                    <i className="fa-solid fa-image text-3xl text-slate-600 mb-2"></i>
                                    <p className="text-xs text-slate-500">
-                                       {imageError ? 'Invalid Image URL' : 'No Image Set'}
+                                       {imageError ? t('Invalid Image URL') : t('No Image Set')}
                                    </p>
-                                   <p className="text-[10px] text-slate-600 mt-2">Recommended: 1200x630px</p>
+                                   <p className="text-[10px] text-slate-600 mt-2">{t('Recommended: 1200x630px')}</p>
                                </div>
                            )}
                         </div>
@@ -230,7 +232,7 @@ const SiteMetadataTab: React.FC = () => {
 
                 <div className="mt-6 flex justify-end">
                     <button onClick={handleSave} disabled={isSaving || isSaved} className={`px-6 py-2 text-sm font-semibold text-white rounded-md border border-slate-600 transition-colors w-32 text-center ${isSaving ? 'bg-slate-800 cursor-wait' : isSaved ? 'bg-green-600 border-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}>
-                        {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? 'Saved!' : 'Save Settings'}
+                        {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? t('Saved!') : t('Save Settings')}
                     </button>
                 </div>
             </SectionPanel>
@@ -238,21 +240,21 @@ const SiteMetadataTab: React.FC = () => {
             <div className="bg-amber-900/10 rounded-lg p-6 border border-amber-500/20">
                 <h3 className="text-lg font-bold text-amber-500 flex items-center mb-2">
                     <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                    Updates Not Reflecting?
+                    {t('Updates Not Reflecting?')}
                 </h3>
                 <p className="text-sm text-slate-300 mb-4">
-                    Social media platforms (Discord, Twitter, LinkedIn) aggressively cache metadata. Updating settings here will update the internal system and PWA manifest immediately, but <strong>external links may take days to update unless you force a refresh</strong>.
+                    {t('Social media platforms (Discord, Twitter, LinkedIn) aggressively cache metadata. Updating settings here will update the internal system and PWA manifest immediately, but')} <strong>{t('external links may take days to update unless you force a refresh')}</strong>.
                 </p>
-                <p className="text-sm text-slate-300 mb-2">Use the official validator tools to clear the cache for your link:</p>
+                <p className="text-sm text-slate-300 mb-2">{t('Use the official validator tools to clear the cache for your link:')}</p>
                 <div className="flex flex-wrap gap-3">
                     <a href="https://cards-dev.twitter.com/validator" target="_blank" rel="noopener noreferrer" className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-600 px-3 py-2 rounded-sm flex items-center">
-                        <i className="fa-brands fa-twitter mr-2"></i> Twitter Card Validator
+                        <i className="fa-brands fa-twitter mr-2"></i> {t('Twitter Card Validator')}
                     </a>
                     <a href="https://www.linkedin.com/post-inspector/" target="_blank" rel="noopener noreferrer" className="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-600 px-3 py-2 rounded-sm flex items-center">
-                        <i className="fa-brands fa-linkedin mr-2"></i> LinkedIn Inspector
+                        <i className="fa-brands fa-linkedin mr-2"></i> {t('LinkedIn Inspector')}
                     </a>
                     <a href="https://developers.facebook.com/tools/debug/" target="_blank" rel="noopener noreferrer" className="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-600 px-3 py-2 rounded-sm flex items-center">
-                        <i className="fa-brands fa-facebook mr-2"></i> Facebook/Meta Debugger
+                        <i className="fa-brands fa-facebook mr-2"></i> {t('Facebook/Meta Debugger')}
                     </a>
                 </div>
             </div>

@@ -90,7 +90,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoginClick, brandingConfig, ann
                                 <i className="fa-solid fa-triangle-exclamation text-amber-400 text-sm mt-0.5 shrink-0"></i>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-[11px] font-bold text-amber-300 uppercase tracking-widest mb-1">{t('Login failed')}</p>
-                                    <p className="text-xs text-amber-100/90 leading-relaxed">{authError}</p>
+                                    {/* Statische Sentinel-Fehlertexte werden hier übersetzt; server-
+                                        gelieferte Meldungen fallen unverändert (englisch) durch. */}
+                                    <p className="text-xs text-amber-100/90 leading-relaxed">{t(authError)}</p>
                                 </div>
                                 {onDismissAuthError && (
                                     <button

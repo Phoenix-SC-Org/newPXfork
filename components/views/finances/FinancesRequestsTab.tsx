@@ -13,7 +13,7 @@ interface Props {
 export default function FinancesRequestsTab({ entries, onRefresh }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [working, setWorking] = useState<string | null>(null);
 
     const pending = useMemo(
@@ -25,7 +25,7 @@ export default function FinancesRequestsTab({ entries, onRefresh }: Props) {
 
     const approve = async (entry: LedgerEntry) => {
         const typeLabel = t(entry.entryType, { context: 'finance' });
-        const amountLabel = Math.abs(entry.amount).toLocaleString();
+        const amountLabel = Math.abs(entry.amount).toLocaleString(locale);
         const ok = await confirm({
             title: t('Confirm {type}?', { type: typeLabel }),
             message: entry.memo
@@ -57,7 +57,7 @@ export default function FinancesRequestsTab({ entries, onRefresh }: Props) {
     const reject = async (entry: LedgerEntry) => {
         const reason = window.prompt(t('Reject {type} of {amount} aUEC. Reason (shown to the submitter):', {
             type: t(entry.entryType, { context: 'finance' }),
-            amount: Math.abs(entry.amount).toLocaleString(),
+            amount: Math.abs(entry.amount).toLocaleString(locale),
         }));
         if (reason === null) return;
         setWorking(entry.id);

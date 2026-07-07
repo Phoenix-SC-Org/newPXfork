@@ -20,13 +20,13 @@ const TYPE_LABEL: Record<TreasuryAccount['type'], string> = {
 export default function FinancesAccountsTab({ accounts, onCreate, onRefresh }: Props) {
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [working, setWorking] = useState<number | null>(null);
 
     const archive = async (account: TreasuryAccount) => {
         const ok = await confirm({
             title: t('Archive {name}?', { name: account.name }),
-            message: t('The account will be hidden from new deposits/withdrawals. Its balance ({balance} aUEC) and history are preserved.', { balance: account.balanceCached.toLocaleString() }),
+            message: t('The account will be hidden from new deposits/withdrawals. Its balance ({balance} aUEC) and history are preserved.', { balance: account.balanceCached.toLocaleString(locale) }),
             confirmText: t('Archive'),
             variant: 'warning',
         });
@@ -78,7 +78,7 @@ export default function FinancesAccountsTab({ accounts, onCreate, onRefresh }: P
                             <i className="fa-solid fa-vault text-amber-300/70" />
                         </div>
                         <div className="text-2xl font-black font-mono text-white mb-2">
-                            {a.balanceCached.toLocaleString()} <span className="text-xs text-slate-500 font-normal">aUEC</span>
+                            {a.balanceCached.toLocaleString(locale)} <span className="text-xs text-slate-500 font-normal">aUEC</span>
                         </div>
                         {a.description && <div className="text-[11px] text-slate-500 mb-3 line-clamp-3">{a.description}</div>}
                         <div className="flex-1" />

@@ -6,6 +6,7 @@ import { User, ServiceRequestStatus } from '../../../types';
 import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type SortKey = 'totalMissions' | 'totalUec' | 'largestPayout' | 'avgRating' | 'medigel';
 
@@ -25,6 +26,7 @@ interface LeaderboardStat {
 const LeaderboardView: React.FC = () => {
     const { hydratedServiceRequests } = useData();
     const { members } = useMembers();
+    const { t, locale } = useI18n();
     const [sortKey, setSortKey] = useState<SortKey>('totalMissions');
 
     const leaderboardData = useMemo<LeaderboardStat[]>(() => {
@@ -138,26 +140,26 @@ const LeaderboardView: React.FC = () => {
     }, [leaderboardData]);
 
     const sortTabs: Array<{ key: SortKey; label: string; icon: string }> = [
-        { key: 'totalMissions', label: 'Missions', icon: 'fa-check-double' },
-        { key: 'totalUec', label: 'Total UEC', icon: 'fa-coins' },
-        { key: 'largestPayout', label: 'Top Payout', icon: 'fa-sack-dollar' },
-        { key: 'medigel', label: 'Medigel', icon: 'fa-kit-medical' },
-        { key: 'avgRating', label: 'Satisfaction', icon: 'fa-star' },
+        { key: 'totalMissions', label: t('Missions'), icon: 'fa-check-double' },
+        { key: 'totalUec', label: t('Total UEC'), icon: 'fa-coins' },
+        { key: 'largestPayout', label: t('Top Payout'), icon: 'fa-sack-dollar' },
+        { key: 'medigel', label: t('Medigel'), icon: 'fa-kit-medical' },
+        { key: 'avgRating', label: t('Satisfaction'), icon: 'fa-star' },
     ];
 
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · LEADERBOARD"
+                chipLabel={t('MODULE · LEADERBOARD')}
                 chipIcon="fa-trophy"
                 chipAccent="amber"
-                title="Service Leaderboard"
-                subtitle="Operational performance and ratings. Rankings refresh as missions resolve."
+                title={t('Service Leaderboard')}
+                subtitle={t('Operational performance and ratings. Rankings refresh as missions resolve.')}
                 statsCols={3}
                 stats={<>
-                    <HeroStat icon="fa-check-double" label="Missions Completed" value={heroStats.totalMissions} accent="emerald" emphasize={heroStats.totalMissions > 0} />
-                    <HeroStat icon="fa-sack-dollar" label="Total UEC Earned" value={heroStats.totalUec.toLocaleString()} accent="amber" emphasize={heroStats.totalUec > 0} />
-                    <HeroStat icon="fa-user-group" label="Active Operators" value={heroStats.activeOperators} accent="cyan" emphasize={heroStats.activeOperators > 0} />
+                    <HeroStat icon="fa-check-double" label={t('Missions Completed')} value={heroStats.totalMissions} accent="emerald" emphasize={heroStats.totalMissions > 0} />
+                    <HeroStat icon="fa-sack-dollar" label={t('Total UEC Earned')} value={heroStats.totalUec.toLocaleString(locale)} accent="amber" emphasize={heroStats.totalUec > 0} />
+                    <HeroStat icon="fa-user-group" label={t('Active Operators')} value={heroStats.activeOperators} accent="cyan" emphasize={heroStats.activeOperators > 0} />
                 </>}
                 tabs={sortTabs.map(tab => (
                     <button
@@ -177,7 +179,7 @@ const LeaderboardView: React.FC = () => {
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
                 {sortedData.map((stat, index) => {
-                    const avgRating = stat.ratingCount > 0 ? (stat.ratingSum / stat.ratingCount).toFixed(1) : 'N/A';
+                    const avgRating = stat.ratingCount > 0 ? (stat.ratingSum / stat.ratingCount).toFixed(1) : t('N/A');
                     const isTop = index < 3;
 
                     return (
@@ -191,7 +193,7 @@ const LeaderboardView: React.FC = () => {
                                 </div>
                                 <div className="min-w-0">
                                     <p className="font-bold text-white truncate text-lg">{stat.user.name}</p>
-                                    <p className="text-xs text-slate-500 font-mono uppercase tracking-wider">{stat.user.rank?.name || 'Member'}</p>
+                                    <p className="text-xs text-slate-500 font-mono uppercase tracking-wider">{stat.user.rank?.name || t('Member')}</p>
                                 </div>
                             </div>
 
@@ -199,25 +201,25 @@ const LeaderboardView: React.FC = () => {
 
                                 {sortKey === 'medigel' ? (
                                     <div className="text-right">
-                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">Consumed</p>
+                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('Consumed')}</p>
                                         <p className="text-xl font-black text-red-400 font-mono">{stat.totalMedigel.toFixed(1)} L</p>
                                     </div>
                                 ) : (
                                     <div className="text-right">
-                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">Completed</p>
+                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('Completed')}</p>
                                         <p className="text-xl font-black text-white">{stat.totalMissions}</p>
                                     </div>
                                 )}
 
                                 {(sortKey === 'totalMissions' || sortKey === 'avgRating' || sortKey === 'medigel') && (
                                     <div className="text-right hidden md:block min-w-[80px]">
-                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">Outcome</p>
+                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('Outcome')}</p>
                                         <div className="flex items-center justify-end gap-3 text-sm font-mono mt-0.5">
-                                            <span className="text-green-400 flex items-center gap-1" title="Successful Missions">
+                                            <span className="text-green-400 flex items-center gap-1" title={t('Successful Missions')}>
                                                 <i className="fa-solid fa-check text-[10px]"></i> {stat.totalMissions}
                                             </span>
                                             <span className="text-slate-600">/</span>
-                                            <span className="text-red-400 flex items-center gap-1" title="Failed/Aborted Missions">
+                                            <span className="text-red-400 flex items-center gap-1" title={t('Failed/Aborted Missions')}>
                                                 <i className="fa-solid fa-xmark text-[10px]"></i> {stat.failures}
                                             </span>
                                         </div>
@@ -226,21 +228,21 @@ const LeaderboardView: React.FC = () => {
 
                                 {(sortKey === 'totalUec' || sortKey === 'largestPayout') && (
                                     <div className="text-right">
-                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{sortKey === 'totalUec' ? 'Total Earned' : 'Top Payout'}</p>
+                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{sortKey === 'totalUec' ? t('Total Earned') : t('Top Payout')}</p>
                                         <p className="text-xl font-black text-lime-400 font-mono">
-                                            {(sortKey === 'totalUec' ? stat.totalUec : stat.largestPayout).toLocaleString()}
+                                            {(sortKey === 'totalUec' ? stat.totalUec : stat.largestPayout).toLocaleString(locale)}
                                         </p>
                                     </div>
                                 )}
 
                                 {(sortKey === 'avgRating' || sortKey === 'totalMissions' || sortKey === 'medigel') && (
                                     <div className="text-right">
-                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">Rating</p>
+                                        <p className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('Rating')}</p>
                                         <div className="flex items-center justify-end gap-1">
                                             <span className="text-xl font-black text-amber-400">{avgRating}</span>
                                             <i className="fa-solid fa-star text-amber-400 text-xs mb-1"></i>
                                         </div>
-                                        {stat.ratingCount > 0 && <p className="text-[9px] text-slate-600 text-right">{stat.ratingCount} Votes</p>}
+                                        {stat.ratingCount > 0 && <p className="text-[9px] text-slate-600 text-right">{stat.ratingCount === 1 ? t('{count} Vote', { count: stat.ratingCount }) : t('{count} Votes', { count: stat.ratingCount })}</p>}
                                     </div>
                                 )}
                             </div>
@@ -253,13 +255,13 @@ const LeaderboardView: React.FC = () => {
                         <EmptyState
                             icon="fa-trophy"
                             accent="amber"
-                            heading="No mission data yet"
+                            heading={t('No mission data yet')}
                             description={
                                 sortKey === 'avgRating'
-                                    ? 'No rated missions found. Client ratings appear here once requests are resolved.'
+                                    ? t('No rated missions found. Client ratings appear here once requests are resolved.')
                                     : sortKey === 'medigel'
-                                        ? 'No medigel consumption has been logged yet.'
-                                        : 'Rankings will appear here as operators complete missions.'
+                                        ? t('No medigel consumption has been logged yet.')
+                                        : t('Rankings will appear here as operators complete missions.')
                             }
                         />
                     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ACCENTS, AccentKey } from './accents';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     label: string;
@@ -12,9 +13,10 @@ interface Props {
 }
 
 export default function MetricCard({ label, value, sub, icon, accent = 'sky', onClick, emphasize }: Props) {
+    const { locale } = useI18n();
     const a = ACCENTS[accent];
     const clickable = !!onClick;
-    const displayValue = typeof value === 'number' ? value.toLocaleString() : value;
+    const displayValue = typeof value === 'number' ? value.toLocaleString(locale) : value;
 
     return (
         <button

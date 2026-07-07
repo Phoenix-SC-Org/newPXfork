@@ -6,6 +6,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import WindowFrame from '../layout/WindowFrame';
 import AwardIconInput from '../common/AwardIconInput';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface SpecializationModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface SpecializationModalProps {
 const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClose, tag }) => {
     const { addSpecializationTag, updateSpecializationTag } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('');
@@ -72,10 +74,10 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
             onClose();
         } catch (err) {
             console.error("Failed to save specialization tag:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the tag. Please try again." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while saving the tag. Please try again.") });
             setIsLoading(false);
         }
-    }, [name, description, icon, imageUrl, iconMode, isEditing, tag, addSpecializationTag, updateSpecializationTag, onClose, addToast]);
+    }, [name, description, icon, imageUrl, iconMode, isEditing, tag, addSpecializationTag, updateSpecializationTag, onClose, addToast, t]);
 
     const inputClass = "w-full bg-slate-950/50 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500/50 outline-hidden transition-all";
     const labelClass = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
@@ -84,8 +86,8 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Tag' : 'Create Tag'}
-            subtitle="Specialization"
+            title={isEditing ? t('Edit Tag') : t('Create Tag')}
+            subtitle={t('Specialization')}
             icon="fa-solid fa-tags"
             color="sky"
             width="max-w-lg"
@@ -93,19 +95,19 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
                     <div>
-                        <label className={labelClass}>Tag Name</label>
+                        <label className={labelClass}>{t('Tag Name')}</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Combat Pilot"
+                            placeholder={t('e.g., Combat Pilot')}
                             className={inputClass}
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Icon (Optional)</label>
+                        <label className={labelClass}>{t('Icon (Optional)')}</label>
                         <AwardIconInput
                             icon={icon}
                             onIconChange={setIcon}
@@ -120,12 +122,12 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
                         />
                     </div>
                     <div>
-                        <label className={labelClass}>Description (Optional)</label>
+                        <label className={labelClass}>{t('Description (Optional)')}</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={3}
-                            placeholder="e.g., Certified for advanced combat flight maneuvers."
+                            placeholder={t('e.g., Certified for advanced combat flight maneuvers.')}
                             className={`${inputClass} resize-none`}
                             disabled={isLoading}
                         />
@@ -133,13 +135,13 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
                 </div>
 
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Tag')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Tag'))}
                     </button>
                 </div>
             </form>

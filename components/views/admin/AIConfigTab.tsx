@@ -5,8 +5,10 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { AIConfig } from '../../../types';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const AIConfigTab: React.FC = () => {
+    const { t } = useI18n();
     const { aiConfig, updateAIConfig } = useConfig();
     const { addToast } = useNotification();
     const [config, setConfig] = useState<AIConfig>({ enabled: false, model: 'gemini-2.5-flash' });
@@ -40,7 +42,7 @@ const AIConfigTab: React.FC = () => {
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save AI settings." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save AI settings.') });
         } finally {
             setIsSaving(false);
         }
@@ -49,18 +51,18 @@ const AIConfigTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="AI Integration Settings"
+                title={t('AI Integration Settings')}
                 icon="fa-solid fa-robot"
                 accent="purple"
-                subtitle="Configure the integration with Google Gemini for automated intelligence summaries."
+                subtitle={t('Configure the integration with Google Gemini for automated intelligence summaries.')}
             />
 
-            <SectionPanel title="Gemini Configuration" icon="fa-solid fa-robot">
+            <SectionPanel title={t('Gemini Configuration')} icon="fa-solid fa-robot">
                 <div className="space-y-6 max-w-xl">
                     <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-700">
                         <div>
-                            <h3 className="font-medium text-white">Enable AI Features</h3>
-                            <p className="text-xs text-slate-400">Allow the system to generate dossier summaries using Gemini.</p>
+                            <h3 className="font-medium text-white">{t('Enable AI Features')}</h3>
+                            <p className="text-xs text-slate-400">{t('Allow the system to generate dossier summaries using Gemini.')}</p>
                         </div>
                         <button
                             onClick={() => setConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
@@ -71,30 +73,30 @@ const AIConfigTab: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-300 mb-2 uppercase tracking-wider">Tactical Model Selection</label>
+                        <label className="block text-sm font-bold text-slate-300 mb-2 uppercase tracking-wider">{t('Tactical Model Selection')}</label>
                         <select
                             value={config.model}
                             onChange={(e) => setConfig(prev => ({ ...prev, model: e.target.value }))}
                             className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-hidden font-mono text-sm"
                             disabled={!config.enabled}
                         >
-                            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended - Fast)</option>
-                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Highest Quota)</option>
-                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (High Reasoning - Low Quota)</option>
+                            <option value="gemini-2.5-flash">{t('Gemini 2.5 Flash (Recommended - Fast)')}</option>
+                            <option value="gemini-2.5-flash-lite">{t('Gemini 2.5 Flash Lite (Highest Quota)')}</option>
+                            <option value="gemini-2.5-pro">{t('Gemini 2.5 Pro (High Reasoning - Low Quota)')}</option>
                         </select>
                         <div className="mt-4 p-3 bg-black/40 rounded-sm border border-slate-800 text-[10px] text-slate-500 leading-relaxed uppercase tracking-widest">
                             <i className="fa-solid fa-circle-info mr-2 text-slate-400"></i>
-                            Flash models provide up to 15 RPM on the free tier. Pro models are restricted to 2 RPM.
-                            Switch to <span className="text-white">Flash-Lite</span> if you continue to encounter quota errors.
+                            {t('Flash models provide up to 15 RPM on the free tier. Pro models are restricted to 2 RPM.')}{' '}
+                            {t('Switch to')} <span className="text-white">Flash-Lite</span> {t('if you continue to encounter quota errors.')}
                         </div>
                     </div>
 
                     <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
                         <div className="flex items-center gap-2 mb-1">
                             <i className="fa-solid fa-key text-purple-400 text-xs"></i>
-                            <h3 className="font-medium text-white text-sm">API Key</h3>
+                            <h3 className="font-medium text-white text-sm">{t('API Key')}</h3>
                         </div>
-                        <p className="text-xs text-slate-400">Set the Gemini API key via the <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded-sm text-slate-300">GEMINI_API_KEY</code> variable in your server's <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded-sm text-slate-300">.env</code> file. It is encrypted at rest and never exposed to the browser.</p>
+                        <p className="text-xs text-slate-400">{t('Set the Gemini API key via the')} <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded-sm text-slate-300">GEMINI_API_KEY</code> {t("variable in your server's")} <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded-sm text-slate-300">.env</code> {t('file. It is encrypted at rest and never exposed to the browser.')}</p>
                     </div>
 
                     <div className="flex justify-end pt-4">
@@ -103,7 +105,7 @@ const AIConfigTab: React.FC = () => {
                             disabled={isSaving || isSaved}
                             className={`px-6 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg transition-all w-40 text-center shadow-lg ${isSaving ? 'bg-purple-800 cursor-wait' : isSaved ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700 shadow-purple-900/20'}`}
                         >
-                            {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? 'Protocol Saved' : 'Commit Config'}
+                            {isSaving ? <i className="fa-solid fa-spinner animate-spin" /> : isSaved ? t('Protocol Saved') : t('Commit Config')}
                         </button>
                     </div>
                 </div>

@@ -86,7 +86,7 @@ const DossierView: React.FC<DossierViewProps> = ({
     const fmt = useFormatDate();
     const { confirm: uiConfirm, addToast } = useNotification();
     const { openWindow } = useModalRegistry();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
 
     // Memoise the `? : []` derivations so the empty-array branch keeps a stable reference,
     // letting downstream memos recompute only when the dossier slice actually changes.
@@ -610,7 +610,7 @@ const DossierView: React.FC<DossierViewProps> = ({
                                                         <p className="text-white font-bold text-sm mb-1.5">{wReason}</p>
                                                         <div className="flex items-center gap-4 text-[10px] text-slate-500 font-mono uppercase tracking-wider">
                                                             <span>{t('Filed: {date}', { date: wIssuedAt })}</span>
-                                                            <span className="text-lime-400 font-black">{wReward.toLocaleString()} aUEC</span>
+                                                            <span className="text-lime-400 font-black">{wReward.toLocaleString(locale)} aUEC</span>
                                                         </div>
                                                     </div>
                                                     <div className="w-10 h-10 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center text-red-400 shrink-0">

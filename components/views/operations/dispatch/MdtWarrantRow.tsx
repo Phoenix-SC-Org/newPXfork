@@ -22,7 +22,7 @@ const ACTION_STYLE: Record<WarrantAction | string, { icon: string; className: st
 
 export default function MdtWarrantRow({ warrant }: Props) {
     const fmt = useFormatDate();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const status = warrant.status as WarrantStatus;
     const action = ACTION_STYLE[warrant.action as string] || ACTION_STYLE['Caution'];
     const statusClass = STATUS_STYLE[status] || 'bg-slate-500/10 text-slate-300 border-slate-500/30';
@@ -40,7 +40,7 @@ export default function MdtWarrantRow({ warrant }: Props) {
                     </span>
                     {warrant.uecReward > 0 && (
                         <span className="text-[10px] text-amber-300 font-mono uppercase tracking-widest">
-                            · {warrant.uecReward.toLocaleString()} aUEC
+                            · {warrant.uecReward.toLocaleString(locale)} aUEC
                         </span>
                     )}
                 </div>

@@ -5,6 +5,7 @@ import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 
 /** Assigns the chosen rank to all selected users. */
 const BulkAssignRankModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { ranks } = useMembers();
     const [rankId, setRankId] = useState<number | null>(null);
     const bulk = useBulkProgress<number>();
@@ -44,25 +46,25 @@ const BulkAssignRankModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
 
     return (
         <BulkActionShell
-            title="Assign Rank"
-            subtitle="All selected members will be set to the chosen rank."
+            title={t('Assign Rank')}
+            subtitle={t('All selected members will be set to the chosen rank.')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel="Assign"
+            confirmLabel={t('Assign')}
             confirmDisabled={rankId == null}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
         >
             {!isRunning && !isFinished && (
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">Rank</label>
+                    <label className="text-sm font-bold text-white">{t('Rank')}</label>
                     <select
                         value={rankId ?? ''}
                         onChange={(e) => setRankId(e.target.value ? Number(e.target.value) : null)}
                         className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:border-sky-500/50"
                     >
-                        <option value="">— Select a rank —</option>
+                        <option value="">{t('— Select a rank —')}</option>
                         {sortedRanks.map((r) => (
                             <option key={r.id} value={r.id}>{r.name}</option>
                         ))}

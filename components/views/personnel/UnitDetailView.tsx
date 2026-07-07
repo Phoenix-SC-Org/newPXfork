@@ -3,6 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useMembers } from '../../../contexts/MembersContext';
 import MyUnitView from '../hr/MyUnitView';
 import EmptyState from '../../shared/ui/EmptyState';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface UnitDetailViewProps {
     unitId: number;
@@ -18,6 +19,7 @@ interface UnitDetailViewProps {
 const UnitDetailView: React.FC<UnitDetailViewProps> = ({ unitId, onBack }) => {
     const { units } = useMembers();
     const { currentUser, hasPermission } = useAuth();
+    const { t } = useI18n();
 
     const unit = units.find(u => u.id === unitId);
 
@@ -29,8 +31,8 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({ unitId, onBack }) => {
                     <EmptyState
                         icon="fa-circle-question"
                         accent="slate"
-                        heading="Unit not found"
-                        description="This unit may have been deleted or you don't have access to it."
+                        heading={t('Unit not found')}
+                        description={t("This unit may have been deleted or you don't have access to it.")}
                     />
                 </div>
             </div>
@@ -57,13 +59,13 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({ unitId, onBack }) => {
                             )}
                         </div>
                         <p className="text-sm text-slate-400 leading-relaxed">
-                            This unit is restricted to its members. Contact the unit's leader{unit.leader?.name ? <> (<span className="text-slate-300 font-bold">{unit.leader.name}</span>)</> : null} or an org admin if you need access.
+                            {t("This unit is restricted to its members. Contact the unit's leader")}{unit.leader?.name ? <> (<span className="text-slate-300 font-bold">{unit.leader.name}</span>)</> : null} {t('or an org admin if you need access.')}
                         </p>
                         <button
                             onClick={onBack}
                             className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
                         >
-                            <i className="fa-solid fa-arrow-left mr-2"></i>Back to Org Chart
+                            <i className="fa-solid fa-arrow-left mr-2"></i>{t('Back to Org Chart')}
                         </button>
                     </div>
                 </div>
@@ -79,13 +81,16 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({ unitId, onBack }) => {
     );
 };
 
-const BackButton: React.FC<{ onBack: () => void }> = ({ onBack }) => (
-    <button
-        onClick={onBack}
-        className="self-start mb-4 flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
-    >
-        <i className="fa-solid fa-arrow-left"></i> Back to Org Chart
-    </button>
-);
+const BackButton: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { t } = useI18n();
+    return (
+        <button
+            onClick={onBack}
+            className="self-start mb-4 flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white bg-slate-900/60 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors"
+        >
+            <i className="fa-solid fa-arrow-left"></i> {t('Back to Org Chart')}
+        </button>
+    );
+};
 
 export default UnitDetailView;

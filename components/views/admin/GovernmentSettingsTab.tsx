@@ -11,10 +11,12 @@ import { GovernmentBranchType, PositionFillMethod,
 import { TabPageHeader } from '../../shared/ui';
 import WindowFrame from '../../layout/WindowFrame';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const EMPTY_EDITOR_CONTENT: Record<string, never> = {};
 
 const GovernmentSettingsTab: React.FC = () => {
+    const { t } = useI18n();
     const { currentUser } = useAuth();
     const { rpcAction } = useData();
     const { allUsers } = useMembers();
@@ -102,10 +104,10 @@ const GovernmentSettingsTab: React.FC = () => {
         const newEnabled = !enabled;
         if (!newEnabled && governmentBranches.length > 0) {
             const confirmed = await confirm({
-                title: 'Disable Government Feature',
-                message: 'Disabling will hide the Government section from all members. Government data will be preserved.',
-                confirmText: 'Disable',
-                cancelText: 'Cancel',
+                title: t('Disable Government Feature'),
+                message: t('Disabling will hide the Government section from all members. Government data will be preserved.'),
+                confirmText: t('Disable'),
+                cancelText: t('Cancel'),
                 variant: 'warning'
             });
             if (!confirmed) return;
@@ -114,10 +116,10 @@ const GovernmentSettingsTab: React.FC = () => {
         setIsSaving(true);
         try {
             await rpcAction('gov:update_feature_config', { config: { enabled: newEnabled } });
-            addToast('Settings Updated', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: `Government feature ${newEnabled ? 'enabled' : 'disabled'}.` });
+            addToast(t('Settings Updated'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: newEnabled ? t('Government feature enabled.') : t('Government feature disabled.') });
         } catch (err: any) {
             setEnabled(!newEnabled);
-            addToast('Update Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to update settings.' });
+            addToast(t('Update Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to update settings.') });
         } finally {
             setIsSaving(false);
         }
@@ -125,19 +127,19 @@ const GovernmentSettingsTab: React.FC = () => {
 
     const applyTemplate = async (templateType: string) => {
         const confirmed = await confirm({
-            title: 'Apply Template',
-            message: 'This will replace all current branches and positions with the template defaults. Position holders will be removed. Continue?',
-            confirmText: 'Apply Template',
+            title: t('Apply Template'),
+            message: t('This will replace all current branches and positions with the template defaults. Position holders will be removed. Continue?'),
+            confirmText: t('Apply Template'),
             variant: 'warning'
         });
         if (!confirmed) return;
         setIsLoading(true);
         try {
             await rpcAction('gov:apply_template', { templateType });
-            addToast('Template Applied', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Government structure has been updated.' });
+            addToast(t('Template Applied'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Government structure has been updated.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Template Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to apply template.' });
+            addToast(t('Template Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to apply template.') });
         } finally {
             setIsLoading(false);
         }
@@ -156,10 +158,10 @@ const GovernmentSettingsTab: React.FC = () => {
                 }
             });
             setIsEditingIdentity(false);
-            addToast('Identity Saved', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Government identity updated.' });
+            addToast(t('Identity Saved'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Government identity updated.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to update government identity.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to update government identity.') });
         } finally {
             setIsSaving(false);
         }
@@ -170,10 +172,10 @@ const GovernmentSettingsTab: React.FC = () => {
         try {
             await rpcAction('gov:update_constitution', { content: json });
             setIsEditingConstitution(false);
-            addToast('Constitution Saved', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Constitution updated.' });
+            addToast(t('Constitution Saved'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Constitution updated.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to update constitution.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to update constitution.') });
         }
     };
 
@@ -194,10 +196,10 @@ const GovernmentSettingsTab: React.FC = () => {
                 targetUserId: appointUserId,
             });
             setShowAppointModal(false);
-            addToast('Appointment Confirmed', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: 'Position holder appointed successfully.' });
+            addToast(t('Appointment Confirmed'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('Position holder appointed successfully.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Appointment Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to appoint holder.' });
+            addToast(t('Appointment Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to appoint holder.') });
         } finally {
             setIsLoading(false);
         }
@@ -205,18 +207,18 @@ const GovernmentSettingsTab: React.FC = () => {
 
     const removeHolder = async (holderId: number, holderName: string) => {
         const confirmed = await confirm({
-            title: 'Remove Position Holder',
-            message: `Remove ${holderName} from this position?`,
-            confirmText: 'Remove',
+            title: t('Remove Position Holder'),
+            message: t('Remove {holderName} from this position?', { holderName }),
+            confirmText: t('Remove'),
             variant: 'danger'
         });
         if (!confirmed) return;
         try {
             await rpcAction('gov:remove_holder', { holderId, reason: 'Removed by admin' });
-            addToast('Holder Removed', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: `${holderName} removed from position.` });
+            addToast(t('Holder Removed'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: t('{holderName} removed from position.', { holderName }) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Remove Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to remove holder.' });
+            addToast(t('Remove Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to remove holder.') });
         }
     };
 
@@ -267,10 +269,10 @@ const GovernmentSettingsTab: React.FC = () => {
                 });
             }
             setShowBranchForm(false);
-            addToast('Branch Saved', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: `Branch ${editingBranch ? 'updated' : 'created'}.` });
+            addToast(t('Branch Saved'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: editingBranch ? t('Branch updated.') : t('Branch created.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to save branch.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to save branch.') });
         } finally {
             setIsLoading(false);
         }
@@ -279,16 +281,18 @@ const GovernmentSettingsTab: React.FC = () => {
     const deleteBranch = async (branch: GovernmentBranch) => {
         const positionsInBranch = governmentPositions.filter(p => p.branchId === branch.id).length;
         const message = positionsInBranch > 0
-            ? `Delete "${branch.name}"? ${positionsInBranch} position${positionsInBranch !== 1 ? 's' : ''} will become independent — you'll be able to reassign or remove them afterwards.`
-            : `Delete "${branch.name}"?`;
-        const confirmed = await confirm({ title: 'Delete Branch', message, confirmText: 'Delete', variant: 'danger' });
+            ? (positionsInBranch === 1
+                ? t("Delete \"{name}\"? {count} position will become independent — you'll be able to reassign or remove them afterwards.", { name: branch.name, count: positionsInBranch })
+                : t("Delete \"{name}\"? {count} positions will become independent — you'll be able to reassign or remove them afterwards.", { name: branch.name, count: positionsInBranch }))
+            : t('Delete "{name}"?', { name: branch.name });
+        const confirmed = await confirm({ title: t('Delete Branch'), message, confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         try {
             await rpcAction('gov:delete_branch', { branchId: branch.id });
-            addToast('Branch Deleted', <i className="fa-solid fa-trash" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: `Branch "${branch.name}" removed.` });
+            addToast(t('Branch Deleted'), <i className="fa-solid fa-trash" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: t('Branch "{name}" removed.', { name: branch.name }) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Delete Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to delete branch.' });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to delete branch.') });
         }
     };
 
@@ -350,10 +354,10 @@ const GovernmentSettingsTab: React.FC = () => {
                 await rpcAction('gov:create_position', { positionData: data });
             }
             setShowPositionForm(false);
-            addToast('Position Saved', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: `Position ${editingPosition ? 'updated' : 'created'}.` });
+            addToast(t('Position Saved'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { description: editingPosition ? t('Position updated.') : t('Position created.') });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Save Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to save position.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to save position.') });
         } finally {
             setIsLoading(false);
         }
@@ -366,14 +370,14 @@ const GovernmentSettingsTab: React.FC = () => {
     };
 
     const deletePosition = async (position: GovernmentPosition) => {
-        const confirmed = await confirm({ title: 'Delete Position', message: `Delete "${position.name}"? Current holders will be removed.`, confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Delete Position'), message: t('Delete "{name}"? Current holders will be removed.', { name: position.name }), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         try {
             await rpcAction('gov:delete_position', { positionId: position.id });
-            addToast('Position Deleted', <i className="fa-solid fa-trash" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: `Position "${position.name}" removed.` });
+            addToast(t('Position Deleted'), <i className="fa-solid fa-trash" />, 'bg-slate-500/10 text-slate-300 border-slate-500/40', { description: t('Position "{name}" removed.', { name: position.name }) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Delete Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to delete position.' });
+            addToast(t('Delete Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to delete position.') });
         }
     };
 
@@ -392,7 +396,7 @@ const GovernmentSettingsTab: React.FC = () => {
             await rpcAction('gov:reorder_branches', { orderedIds: reordered.map(b => b.id) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Reorder Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to reorder branches.' });
+            addToast(t('Reorder Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to reorder branches.') });
         }
     };
 
@@ -410,30 +414,30 @@ const GovernmentSettingsTab: React.FC = () => {
             await rpcAction('gov:reorder_positions', { branchId, orderedIds: reordered.map(p => p.id) });
             await refreshGovernment();
         } catch (err: any) {
-            addToast('Reorder Failed', <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || 'Failed to reorder positions.' });
+            addToast(t('Reorder Failed'), <i className="fa-solid fa-circle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err.message || t('Failed to reorder positions.') });
         }
     };
 
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Government"
+                title={t('Government')}
                 icon="fa-solid fa-landmark"
                 accent="indigo"
-                subtitle="Configure branches, positions, elections, and legislation."
+                subtitle={t('Configure branches, positions, elections, and legislation.')}
             />
 
             {enabled ? (
                 <div className="flex items-center gap-3 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-lg text-xs text-indigo-200/80">
                     <i className="fa-solid fa-circle-info text-indigo-400"></i>
-                    <span>Government is enabled. Toggle the feature itself from <span className="text-indigo-300 font-semibold">Admin &rarr; Optional Features</span>.</span>
+                    <span>{t('Government is enabled. Toggle the feature itself from')} <span className="text-indigo-300 font-semibold">{t('Admin → Optional Features')}</span>.</span>
                 </div>
             ) : (
                 <div className="p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-xl text-center">
                     <i className="fa-solid fa-landmark text-3xl text-indigo-400 mb-3"></i>
-                    <h3 className="text-lg font-bold text-white mb-1">Government Feature Disabled</h3>
+                    <h3 className="text-lg font-bold text-white mb-1">{t('Government Feature Disabled')}</h3>
                     <p className="text-sm text-slate-400 mb-4 max-w-md mx-auto leading-relaxed">
-                        Enable Government in <span className="text-indigo-300 font-semibold">Admin &rarr; Optional Features</span> to configure branches, positions, elections, and legislation.
+                        {t('Enable Government in')} <span className="text-indigo-300 font-semibold">{t('Admin → Optional Features')}</span> {t('to configure branches, positions, elections, and legislation.')}
                     </p>
                 </div>
             )}
@@ -442,8 +446,8 @@ const GovernmentSettingsTab: React.FC = () => {
                 <>
                     {/* Quick Template Application */}
                     <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
-                        <h4 className="text-sm font-semibold text-white mb-2">Quick Setup Templates</h4>
-                        <p className="text-xs text-slate-400 mb-3">Apply a template to quickly set up branches and positions. All templates are fully customisable after application.</p>
+                        <h4 className="text-sm font-semibold text-white mb-2">{t('Quick Setup Templates')}</h4>
+                        <p className="text-xs text-slate-400 mb-3">{t('Apply a template to quickly set up branches and positions. All templates are fully customisable after application.')}</p>
                         <div className="flex flex-wrap gap-2">
                             {[
                                 { type: 'military_junta', label: 'Military Junta', icon: 'fa-solid fa-helmet-safety' },
@@ -453,15 +457,15 @@ const GovernmentSettingsTab: React.FC = () => {
                                 { type: 'westminster', label: 'Westminster', icon: 'fa-solid fa-landmark' },
                                 { type: 'technocracy', label: 'Technocracy', icon: 'fa-solid fa-microchip' },
                                 { type: 'pirate_code', label: 'Pirate Code', icon: 'fa-solid fa-skull-crossbones' },
-                            ].map(t => (
+                            ].map(tpl => (
                                 <button
-                                    key={t.type}
-                                    onClick={() => applyTemplate(t.type)}
+                                    key={tpl.type}
+                                    onClick={() => applyTemplate(tpl.type)}
                                     disabled={isLoading}
                                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-md hover:bg-slate-700 transition-colors"
                                 >
-                                    <i className={t.icon}></i>
-                                    {t.label}
+                                    <i className={tpl.icon}></i>
+                                    {t(tpl.label)}
                                 </button>
                             ))}
                         </div>
@@ -471,14 +475,14 @@ const GovernmentSettingsTab: React.FC = () => {
                     {governmentConfig && (
                         <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-semibold text-white">Government Identity</h4>
+                                <h4 className="text-sm font-semibold text-white">{t('Government Identity')}</h4>
                                 {!isEditingIdentity ? (
                                     <button
                                         onClick={() => setIsEditingIdentity(true)}
                                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-md hover:bg-slate-700 transition-colors"
                                     >
                                         <i className="fa-solid fa-pen text-xs"></i>
-                                        Edit
+                                        {t('Edit')}
                                     </button>
                                 ) : (
                                     <div className="flex items-center gap-2">
@@ -486,14 +490,14 @@ const GovernmentSettingsTab: React.FC = () => {
                                             onClick={() => { setIsEditingIdentity(false); setGovName(governmentConfig.name || ''); setGovDescription(governmentConfig.description || ''); setGovType(governmentConfig.governmentType || 'custom'); }}
                                             className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
                                         >
-                                            Cancel
+                                            {t('Cancel')}
                                         </button>
                                         <button
                                             onClick={saveGovernmentIdentity}
                                             disabled={isSaving || !govName.trim()}
                                             className="px-4 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white rounded-md disabled:opacity-40"
                                         >
-                                            {isSaving ? 'Saving...' : 'Save'}
+                                            {isSaving ? t('Saving...') : t('Save')}
                                         </button>
                                     </div>
                                 )}
@@ -501,39 +505,39 @@ const GovernmentSettingsTab: React.FC = () => {
                             {isEditingIdentity ? (
                                 <div className="space-y-3">
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Government Name</label>
+                                        <label className="text-xs text-slate-400 mb-1 block">{t('Government Name')}</label>
                                         <input
                                             value={govName}
                                             onChange={e => setGovName(e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white"
-                                            placeholder="e.g. The Republic of..."
+                                            placeholder={t('e.g. The Republic of...')}
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Government Type</label>
+                                        <label className="text-xs text-slate-400 mb-1 block">{t('Government Type')}</label>
                                         <select
                                             value={govType}
                                             onChange={e => setGovType(e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white"
                                         >
-                                            <option value="military_junta">Military Junta</option>
-                                            <option value="corporate_board">Corporate Board</option>
-                                            <option value="democratic_republic">Democratic Republic</option>
-                                            <option value="constitutional_monarchy">Constitutional Monarchy</option>
-                                            <option value="westminster">Westminster</option>
-                                            <option value="technocracy">Technocracy</option>
-                                            <option value="pirate_code">Pirate Code</option>
-                                            <option value="custom">Custom</option>
+                                            <option value="military_junta">{t('Military Junta')}</option>
+                                            <option value="corporate_board">{t('Corporate Board')}</option>
+                                            <option value="democratic_republic">{t('Democratic Republic')}</option>
+                                            <option value="constitutional_monarchy">{t('Constitutional Monarchy')}</option>
+                                            <option value="westminster">{t('Westminster')}</option>
+                                            <option value="technocracy">{t('Technocracy')}</option>
+                                            <option value="pirate_code">{t('Pirate Code')}</option>
+                                            <option value="custom">{t('Custom')}</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs text-slate-400 mb-1 block">Description</label>
+                                        <label className="text-xs text-slate-400 mb-1 block">{t('Description')}</label>
                                         <textarea
                                             value={govDescription}
                                             onChange={e => setGovDescription(e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white"
                                             rows={2}
-                                            placeholder="A brief description of your government..."
+                                            placeholder={t('A brief description of your government...')}
                                         />
                                     </div>
                                 </div>
@@ -543,10 +547,10 @@ const GovernmentSettingsTab: React.FC = () => {
                                         <i className="fa-solid fa-landmark text-amber-400"></i>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-white">{governmentConfig.name || 'Unnamed Government'}</p>
-                                        <p className="text-xs text-slate-400">{governmentConfig.description || formatGovernmentType(governmentConfig.governmentType)}</p>
+                                        <p className="text-sm font-medium text-white">{governmentConfig.name || t('Unnamed Government')}</p>
+                                        <p className="text-xs text-slate-400">{governmentConfig.description || t(formatGovernmentType(governmentConfig.governmentType))}</p>
                                     </div>
-                                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-sm bg-slate-700 text-slate-400 uppercase">{formatGovernmentType(governmentConfig.governmentType)}</span>
+                                    <span className="ml-auto text-[10px] px-2 py-0.5 rounded-sm bg-slate-700 text-slate-400 uppercase">{t(formatGovernmentType(governmentConfig.governmentType))}</span>
                                 </div>
                             )}
                         </div>
@@ -557,7 +561,7 @@ const GovernmentSettingsTab: React.FC = () => {
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold text-white flex items-center gap-2">
                                 <i className="fa-solid fa-scroll text-amber-400 text-xs"></i>
-                                Constitution
+                                {t('Constitution')}
                             </h4>
                             {!isEditingConstitution && (
                                 <button
@@ -565,13 +569,13 @@ const GovernmentSettingsTab: React.FC = () => {
                                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/50 border border-slate-600/50 rounded-md hover:bg-slate-700 transition-colors"
                                 >
                                     <i className={`fa-solid ${governmentConfig?.constitutionContent ? 'fa-pen' : 'fa-plus'} text-xs`}></i>
-                                    {governmentConfig?.constitutionContent ? 'Edit' : 'Draft Constitution'}
+                                    {governmentConfig?.constitutionContent ? t('Edit') : t('Draft Constitution')}
                                 </button>
                             )}
                         </div>
                         {isEditingConstitution ? (
                             <div>
-                                <p className="text-xs text-slate-400 mb-2">Write your organisation's constitution. This will be visible to all members under the Constitution tab.</p>
+                                <p className="text-xs text-slate-400 mb-2">{t("Write your organisation's constitution. This will be visible to all members under the Constitution tab.")}</p>
                                 <WikiEditor
                                     content={governmentConfig?.constitutionContent || EMPTY_EDITOR_CONTENT}
                                     editable={true}
@@ -587,29 +591,29 @@ const GovernmentSettingsTab: React.FC = () => {
                                 />
                             </div>
                         ) : (
-                            <p className="text-xs text-slate-500 italic">No constitution drafted yet. Click "Draft Constitution" to get started.</p>
+                            <p className="text-xs text-slate-500 italic">{t('No constitution drafted yet. Click "Draft Constitution" to get started.')}</p>
                         )}
                     </div>
 
                     {/* Branches & Positions */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-semibold text-white">Branches &amp; Positions</h4>
+                            <h4 className="text-sm font-semibold text-white">{t('Branches & Positions')}</h4>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => openPositionForm(null)}
                                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-700/40 border border-slate-600 rounded-md hover:bg-slate-700/60 transition-colors"
-                                    title="Create a position that exists outside any branch"
+                                    title={t('Create a position that exists outside any branch')}
                                 >
                                     <i className="fa-solid fa-plus"></i>
-                                    Add Independent Position
+                                    {t('Add Independent Position')}
                                 </button>
                                 <button
                                     onClick={() => openBranchForm()}
                                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md hover:bg-amber-500/20 transition-colors"
                                 >
                                     <i className="fa-solid fa-plus"></i>
-                                    Add Branch
+                                    {t('Add Branch')}
                                 </button>
                             </div>
                         </div>
@@ -620,8 +624,8 @@ const GovernmentSettingsTab: React.FC = () => {
                                     <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/60">
                                         <div className="flex items-center gap-2">
                                             <i className="fa-solid fa-star text-slate-400 text-sm"></i>
-                                            <span className="text-sm font-medium text-white">Independent Positions</span>
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">No Branch</span>
+                                            <span className="text-sm font-medium text-white">{t('Independent Positions')}</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">{t('No Branch')}</span>
                                         </div>
                                     </div>
                                     <div className="divide-y divide-slate-700/30">
@@ -634,7 +638,7 @@ const GovernmentSettingsTab: React.FC = () => {
                                                         <div className="flex items-center gap-2">
                                                             <i className={`${pos.icon || 'fa-solid fa-user'} text-slate-400 text-xs`}></i>
                                                             <span className="text-xs text-white">{pos.name}</span>
-                                                            <span className="text-[10px] px-1 py-0.5 rounded-sm bg-slate-700/50 text-slate-500">{pos.fillMethod}</span>
+                                                            <span className="text-[10px] px-1 py-0.5 rounded-sm bg-slate-700/50 text-slate-500">{t(pos.fillMethod, { context: 'fillMethod' })}</span>
                                                             <span className={`text-[10px] px-1 py-0.5 rounded-sm ${canAppoint ? 'bg-orange-500/10 text-orange-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                                                                 {filledCount}/{pos.maxHolders}
                                                             </span>
@@ -642,14 +646,14 @@ const GovernmentSettingsTab: React.FC = () => {
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             {canAppoint && (
-                                                                <button onClick={() => openAppointModal(pos.id)} className="p-1 text-slate-500 hover:text-emerald-400 transition-colors" title="Appoint holder">
+                                                                <button onClick={() => openAppointModal(pos.id)} className="p-1 text-slate-500 hover:text-emerald-400 transition-colors" title={t('Appoint holder')}>
                                                                     <i className="fa-solid fa-user-plus text-[10px]"></i>
                                                                 </button>
                                                             )}
-                                                            <button onClick={() => openPositionForm(null, pos)} className="p-1 text-slate-500 hover:text-slate-200 transition-colors" title="Edit position">
+                                                            <button onClick={() => openPositionForm(null, pos)} className="p-1 text-slate-500 hover:text-slate-200 transition-colors" title={t('Edit position')}>
                                                                 <i className="fa-solid fa-pen text-[10px]"></i>
                                                             </button>
-                                                            <button onClick={() => deletePosition(pos)} className="p-1 text-slate-500 hover:text-red-400 transition-colors" title="Delete position">
+                                                            <button onClick={() => deletePosition(pos)} className="p-1 text-slate-500 hover:text-red-400 transition-colors" title={t('Delete position')}>
                                                                 <i className="fa-solid fa-trash text-[10px]"></i>
                                                             </button>
                                                         </div>
@@ -666,12 +670,12 @@ const GovernmentSettingsTab: React.FC = () => {
                                                                                 <i className="fa-solid fa-user text-[6px] text-slate-500"></i>
                                                                             </div>
                                                                         )}
-                                                                        <span className="text-[11px] text-slate-300">{holder.user?.name || 'Unknown'}</span>
+                                                                        <span className="text-[11px] text-slate-300">{holder.user?.name || t('Unknown')}</span>
                                                                     </div>
                                                                     <button
-                                                                        onClick={() => removeHolder(holder.id, holder.user?.name || 'this holder')}
+                                                                        onClick={() => removeHolder(holder.id, holder.user?.name || t('this holder'))}
                                                                         className="p-0.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                                                        title="Remove from position"
+                                                                        title={t('Remove from position')}
                                                                     >
                                                                         <i className="fa-solid fa-xmark text-[10px]"></i>
                                                                     </button>
@@ -689,7 +693,7 @@ const GovernmentSettingsTab: React.FC = () => {
                         {governmentBranches.length === 0 ? (
                             <div className="text-center py-8 bg-slate-800/30 border border-slate-700/50 rounded-lg">
                                 <i className="fa-solid fa-building-columns text-2xl text-slate-600 mb-2"></i>
-                                <p className="text-sm text-slate-400">No branches defined. Apply a template or create branches manually.</p>
+                                <p className="text-sm text-slate-400">{t('No branches defined. Apply a template or create branches manually.')}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -705,22 +709,22 @@ const GovernmentSettingsTab: React.FC = () => {
                                                 <div className="flex items-center gap-2">
                                                     <i className={`${branch.icon || 'fa-solid fa-building-columns'} text-amber-400 text-sm`}></i>
                                                     <span className="text-sm font-medium text-white">{branch.name}</span>
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">{branch.branchType}</span>
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-slate-700 text-slate-400">{t(branch.branchType, { context: 'branchType' })}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <button onClick={() => moveBranch(branch.id, -1)} disabled={branchIdx === 0} className="p-1.5 text-slate-400 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors" title="Move up">
+                                                    <button onClick={() => moveBranch(branch.id, -1)} disabled={branchIdx === 0} className="p-1.5 text-slate-400 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors" title={t('Move up')}>
                                                         <i className="fa-solid fa-chevron-up text-xs"></i>
                                                     </button>
-                                                    <button onClick={() => moveBranch(branch.id, 1)} disabled={branchIdx === sortedBranches.length - 1} className="p-1.5 text-slate-400 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors" title="Move down">
+                                                    <button onClick={() => moveBranch(branch.id, 1)} disabled={branchIdx === sortedBranches.length - 1} className="p-1.5 text-slate-400 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-400 transition-colors" title={t('Move down')}>
                                                         <i className="fa-solid fa-chevron-down text-xs"></i>
                                                     </button>
-                                                    <button onClick={() => openPositionForm(branch.id)} className="p-1.5 text-slate-400 hover:text-emerald-400 transition-colors" title="Add position">
+                                                    <button onClick={() => openPositionForm(branch.id)} className="p-1.5 text-slate-400 hover:text-emerald-400 transition-colors" title={t('Add position')}>
                                                         <i className="fa-solid fa-plus text-xs"></i>
                                                     </button>
-                                                    <button onClick={() => openBranchForm(branch)} className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors" title="Edit branch">
+                                                    <button onClick={() => openBranchForm(branch)} className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors" title={t('Edit branch')}>
                                                         <i className="fa-solid fa-pen text-xs"></i>
                                                     </button>
-                                                    <button onClick={() => deleteBranch(branch)} className="p-1.5 text-slate-400 hover:text-red-400 transition-colors" title="Delete branch">
+                                                    <button onClick={() => deleteBranch(branch)} className="p-1.5 text-slate-400 hover:text-red-400 transition-colors" title={t('Delete branch')}>
                                                         <i className="fa-solid fa-trash text-xs"></i>
                                                     </button>
                                                 </div>
@@ -736,28 +740,28 @@ const GovernmentSettingsTab: React.FC = () => {
                                                                     <div className="flex items-center gap-2">
                                                                         <i className={`${pos.icon || 'fa-solid fa-user'} text-slate-400 text-xs`}></i>
                                                                         <span className="text-xs text-white">{pos.name}</span>
-                                                                        <span className="text-[10px] px-1 py-0.5 rounded-sm bg-slate-700/50 text-slate-500">{pos.fillMethod}</span>
+                                                                        <span className="text-[10px] px-1 py-0.5 rounded-sm bg-slate-700/50 text-slate-500">{t(pos.fillMethod, { context: 'fillMethod' })}</span>
                                                                         <span className={`text-[10px] px-1 py-0.5 rounded-sm ${canAppoint ? 'bg-orange-500/10 text-orange-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                                                                             {filledCount}/{pos.maxHolders}
                                                                         </span>
                                                                         {pos.termLengthDays && <span className="text-[10px] text-slate-500">{pos.termLengthDays}d</span>}
                                                                     </div>
                                                                     <div className="flex items-center gap-1">
-                                                                        <button onClick={() => movePosition(pos.id, branch.id, -1)} disabled={posIdx === 0} className="p-1 text-slate-500 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors" title="Move up">
+                                                                        <button onClick={() => movePosition(pos.id, branch.id, -1)} disabled={posIdx === 0} className="p-1 text-slate-500 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors" title={t('Move up')}>
                                                                             <i className="fa-solid fa-chevron-up text-[10px]"></i>
                                                                         </button>
-                                                                        <button onClick={() => movePosition(pos.id, branch.id, 1)} disabled={posIdx === branchPositions.length - 1} className="p-1 text-slate-500 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors" title="Move down">
+                                                                        <button onClick={() => movePosition(pos.id, branch.id, 1)} disabled={posIdx === branchPositions.length - 1} className="p-1 text-slate-500 hover:text-sky-300 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors" title={t('Move down')}>
                                                                             <i className="fa-solid fa-chevron-down text-[10px]"></i>
                                                                         </button>
                                                                         {canAppoint && (
-                                                                            <button onClick={() => openAppointModal(pos.id)} className="p-1 text-slate-500 hover:text-emerald-400 transition-colors" title="Appoint holder">
+                                                                            <button onClick={() => openAppointModal(pos.id)} className="p-1 text-slate-500 hover:text-emerald-400 transition-colors" title={t('Appoint holder')}>
                                                                                 <i className="fa-solid fa-user-plus text-[10px]"></i>
                                                                             </button>
                                                                         )}
-                                                                        <button onClick={() => openPositionForm(branch.id, pos)} className="p-1 text-slate-500 hover:text-slate-200 transition-colors" title="Edit position">
+                                                                        <button onClick={() => openPositionForm(branch.id, pos)} className="p-1 text-slate-500 hover:text-slate-200 transition-colors" title={t('Edit position')}>
                                                                             <i className="fa-solid fa-pen text-[10px]"></i>
                                                                         </button>
-                                                                        <button onClick={() => deletePosition(pos)} className="p-1 text-slate-500 hover:text-red-400 transition-colors" title="Delete position">
+                                                                        <button onClick={() => deletePosition(pos)} className="p-1 text-slate-500 hover:text-red-400 transition-colors" title={t('Delete position')}>
                                                                             <i className="fa-solid fa-trash text-[10px]"></i>
                                                                         </button>
                                                                     </div>
@@ -775,12 +779,12 @@ const GovernmentSettingsTab: React.FC = () => {
                                                                                             <i className="fa-solid fa-user text-[6px] text-slate-500"></i>
                                                                                         </div>
                                                                                     )}
-                                                                                    <span className="text-[11px] text-slate-300">{holder.user?.name || 'Unknown'}</span>
+                                                                                    <span className="text-[11px] text-slate-300">{holder.user?.name || t('Unknown')}</span>
                                                                                 </div>
                                                                                 <button
-                                                                                    onClick={() => removeHolder(holder.id, holder.user?.name || 'this holder')}
+                                                                                    onClick={() => removeHolder(holder.id, holder.user?.name || t('this holder'))}
                                                                                     className="p-0.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                                                                    title="Remove from position"
+                                                                                    title={t('Remove from position')}
                                                                                 >
                                                                                     <i className="fa-solid fa-xmark text-[10px]"></i>
                                                                                 </button>
@@ -793,7 +797,7 @@ const GovernmentSettingsTab: React.FC = () => {
                                                     })}
                                                 </div>
                                             ) : (
-                                                <p className="text-xs text-slate-500 text-center py-3">No positions in this branch</p>
+                                                <p className="text-xs text-slate-500 text-center py-3">{t('No positions in this branch')}</p>
                                             )}
                                         </div>
                                     );
@@ -807,8 +811,8 @@ const GovernmentSettingsTab: React.FC = () => {
             <WindowFrame
                 isOpen={showBranchForm}
                 onClose={() => setShowBranchForm(false)}
-                title={editingBranch ? 'Edit Branch' : 'New Branch'}
-                subtitle="Government Configuration"
+                title={editingBranch ? t('Edit Branch') : t('New Branch')}
+                subtitle={t('Government Configuration')}
                 icon="fa-solid fa-sitemap"
                 color="indigo"
                 width="max-w-md"
@@ -816,27 +820,27 @@ const GovernmentSettingsTab: React.FC = () => {
                 <div className="flex flex-col h-full">
                     <div className="flex-1 overflow-y-auto p-6 space-y-3">
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Name</label>
-                            <input value={branchName} onChange={e => setBranchName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder="e.g. Executive" />
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Name')}</label>
+                            <input value={branchName} onChange={e => setBranchName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder={t('e.g. Executive')} />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Type</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Type')}</label>
                             <select value={branchType} onChange={e => setBranchType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white">
-                                {Object.values(GovernmentBranchType).map(t => <option key={t} value={t}>{t}</option>)}
+                                {Object.values(GovernmentBranchType).map(bt => <option key={bt} value={bt}>{t(bt, { context: 'branchType' })}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Description</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Description')}</label>
                             <textarea value={branchDescription} onChange={e => setBranchDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" rows={2} />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Icon (FontAwesome class)</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Icon (FontAwesome class)')}</label>
                             <input value={branchIcon} onChange={e => setBranchIcon(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder="e.g. fa-solid fa-landmark" />
                         </div>
                     </div>
                     <div className="border-t border-white/10 bg-slate-950/50 px-6 py-4 flex justify-end gap-2 shrink-0">
-                        <button onClick={() => setShowBranchForm(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
-                        <button onClick={saveBranch} disabled={isLoading || !branchName.trim()} className="px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md disabled:opacity-40">Save</button>
+                        <button onClick={() => setShowBranchForm(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">{t('Cancel')}</button>
+                        <button onClick={saveBranch} disabled={isLoading || !branchName.trim()} className="px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md disabled:opacity-40">{t('Save')}</button>
                     </div>
                 </div>
             </WindowFrame>
@@ -844,8 +848,8 @@ const GovernmentSettingsTab: React.FC = () => {
             <WindowFrame
                 isOpen={showPositionForm}
                 onClose={() => setShowPositionForm(false)}
-                title={editingPosition ? 'Edit Position' : 'New Position'}
-                subtitle="Role Configuration"
+                title={editingPosition ? t('Edit Position') : t('New Position')}
+                subtitle={t('Role Configuration')}
                 icon="fa-solid fa-id-badge"
                 color="indigo"
                 width="max-w-lg"
@@ -853,87 +857,87 @@ const GovernmentSettingsTab: React.FC = () => {
                 <div className="flex flex-col h-full">
                     <div className="flex-1 overflow-y-auto p-6 space-y-3">
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Branch</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Branch')}</label>
                             <select
                                 value={branchForNewPosition ?? ''}
                                 onChange={e => setBranchForNewPosition(e.target.value === '' ? null : parseInt(e.target.value))}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white"
                             >
-                                <option value="">— Independent (no branch) —</option>
+                                <option value="">{t('— Independent (no branch) —')}</option>
                                 {governmentBranches.map(b => (
                                     <option key={b.id} value={b.id}>{b.name}</option>
                                 ))}
                             </select>
-                            <p className="text-[10px] text-slate-500 mt-1 italic">Independent positions appear outside any branch in the public overview.</p>
+                            <p className="text-[10px] text-slate-500 mt-1 italic">{t('Independent positions appear outside any branch in the public overview.')}</p>
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Name</label>
-                            <input value={posName} onChange={e => setPosName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder="e.g. Senator" />
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Name')}</label>
+                            <input value={posName} onChange={e => setPosName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder={t('e.g. Senator')} />
                         </div>
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Description</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Description')}</label>
                             <textarea value={posDescription} onChange={e => setPosDescription(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" rows={2} />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Fill Method</label>
+                                <label className="text-xs text-slate-400 mb-1 block">{t('Fill Method')}</label>
                                 <select value={posFillMethod} onChange={e => setPosFillMethod(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white">
-                                    {Object.values(PositionFillMethod).map(m => <option key={m} value={m}>{m}</option>)}
+                                    {Object.values(PositionFillMethod).map(m => <option key={m} value={m}>{t(m, { context: 'fillMethod' })}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Max Holders</label>
+                                <label className="text-xs text-slate-400 mb-1 block">{t('Max Holders')}</label>
                                 <input type="number" min="1" value={posMaxHolders} onChange={e => setPosMaxHolders(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Term Length (days)</label>
-                                <input type="number" min="1" value={posTermDays} onChange={e => setPosTermDays(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder="Indefinite" />
+                                <label className="text-xs text-slate-400 mb-1 block">{t('Term Length (days)')}</label>
+                                <input type="number" min="1" value={posTermDays} onChange={e => setPosTermDays(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder={t('Indefinite')} />
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 mb-1 block">Icon (FontAwesome)</label>
+                                <label className="text-xs text-slate-400 mb-1 block">{t('Icon (FontAwesome)')}</label>
                                 <input value={posIcon} onChange={e => setPosIcon(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white" placeholder="fa-solid fa-user" />
                             </div>
                         </div>
 
                         <div className="border-t border-slate-700/50 pt-3">
-                            <h4 className="text-xs font-semibold text-slate-300 mb-2">Legislative Powers</h4>
+                            <h4 className="text-xs font-semibold text-slate-300 mb-2">{t('Legislative Powers')}</h4>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={posCanPropose} onChange={e => setPosCanPropose(e.target.checked)} className="rounded-sm border-slate-600" />
-                                    Can propose legislation
+                                    {t('Can propose legislation')}
                                 </label>
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={posCanVote} onChange={e => setPosCanVote(e.target.checked)} className="rounded-sm border-slate-600" />
-                                    Can vote on legislation
+                                    {t('Can vote on legislation')}
                                 </label>
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={posCanVeto} onChange={e => setPosCanVeto(e.target.checked)} className="rounded-sm border-slate-600" />
-                                    Has veto power
+                                    {t('Has veto power')}
                                 </label>
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={posCanCallElections} onChange={e => setPosCanCallElections(e.target.checked)} className="rounded-sm border-slate-600" />
-                                    Can call elections
+                                    {t('Can call elections')}
                                 </label>
                                 <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" checked={posCanIssueOrders} onChange={e => setPosCanIssueOrders(e.target.checked)} className="rounded-sm border-slate-600" />
-                                    Can issue executive orders
+                                    {t('Can issue executive orders')}
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div className="border-t border-white/10 bg-slate-950/50 px-6 py-4 flex justify-end gap-2 shrink-0">
-                        <button onClick={() => setShowPositionForm(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
-                        <button onClick={savePosition} disabled={isLoading || !posName.trim()} className="px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md disabled:opacity-40">Save</button>
+                        <button onClick={() => setShowPositionForm(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">{t('Cancel')}</button>
+                        <button onClick={savePosition} disabled={isLoading || !posName.trim()} className="px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md disabled:opacity-40">{t('Save')}</button>
                     </div>
                 </div>
             </WindowFrame>
             <WindowFrame
                 isOpen={showAppointModal}
                 onClose={() => setShowAppointModal(false)}
-                title="Appoint Position Holder"
-                subtitle={appointPosition ? `Appointing to: ${appointPosition.name}` : 'Select a member'}
+                title={t('Appoint Position Holder')}
+                subtitle={appointPosition ? t('Appointing to: {name}', { name: appointPosition.name }) : t('Select a member')}
                 icon="fa-solid fa-user-plus"
                 color="indigo"
                 width="max-w-md"
@@ -941,18 +945,18 @@ const GovernmentSettingsTab: React.FC = () => {
                 <div className="flex flex-col h-full">
                     <div className="flex-1 overflow-y-auto p-6 space-y-3">
                         <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Search Members</label>
+                            <label className="text-xs text-slate-400 mb-1 block">{t('Search Members')}</label>
                             <input
                                 value={appointSearch}
                                 onChange={e => setAppointSearch(e.target.value)}
                                 className="w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm text-white"
-                                placeholder="Search by name or RSI handle..."
+                                placeholder={t('Search by name or RSI handle...')}
                                 autoFocus
                             />
                         </div>
                         <div className="max-h-72 overflow-y-auto space-y-0.5 bg-slate-800/50 rounded-md border border-slate-700/50">
                             {filteredAppointUsers.length === 0 ? (
-                                <p className="text-xs text-slate-500 text-center py-4">No members found</p>
+                                <p className="text-xs text-slate-500 text-center py-4">{t('No members found')}</p>
                             ) : (
                                 filteredAppointUsers.map(user => {
                                     const isSelected = appointUserId === user.id;
@@ -978,7 +982,7 @@ const GovernmentSettingsTab: React.FC = () => {
                                                 <span className="text-xs text-white block truncate">{user.name}</span>
                                                 {user.rsiHandle && <span className="text-[10px] text-slate-500 block truncate">{user.rsiHandle}</span>}
                                             </div>
-                                            {alreadyHolds && <span className="text-[10px] text-slate-500">Already holds</span>}
+                                            {alreadyHolds && <span className="text-[10px] text-slate-500">{t('Already holds')}</span>}
                                             {isSelected && !alreadyHolds && <i className="fa-solid fa-check text-indigo-400 text-xs"></i>}
                                         </button>
                                     );
@@ -987,13 +991,13 @@ const GovernmentSettingsTab: React.FC = () => {
                         </div>
                     </div>
                     <div className="border-t border-white/10 bg-slate-950/50 px-6 py-4 flex justify-end gap-2 shrink-0">
-                        <button onClick={() => setShowAppointModal(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+                        <button onClick={() => setShowAppointModal(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">{t('Cancel')}</button>
                         <button
                             onClick={appointHolder}
                             disabled={isLoading || !appointUserId}
                             className="px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-md disabled:opacity-40"
                         >
-                            {isLoading ? 'Appointing...' : 'Appoint'}
+                            {isLoading ? t('Appointing...') : t('Appoint')}
                         </button>
                     </div>
                 </div>

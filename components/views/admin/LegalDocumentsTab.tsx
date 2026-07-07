@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const DEFAULT_TOS_HTML = `
 <h2 class="text-xl font-semibold text-sky-300 border-b-2 border-sky-500/30 pb-1">1. Introduction to Services</h2>
@@ -115,6 +116,7 @@ const ToolbarButton: React.FC<{ icon: string; cmd: string; arg?: string; title: 
 );
 
 const RichTextEditor: React.FC<{ value: string; onChange: (html: string) => void }> = ({ value, onChange }) => {
+    const { t } = useI18n();
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -142,18 +144,18 @@ const RichTextEditor: React.FC<{ value: string; onChange: (html: string) => void
     return (
         <div className={`border rounded-lg overflow-hidden flex flex-col min-h-[400px] transition-all ${isFocused ? 'border-slate-400 ring-1 ring-slate-400/40' : 'border-slate-700 bg-slate-900/30'}`}>
             <div className="bg-slate-900/60 border-b border-slate-700 p-1 flex space-x-1 flex-wrap">
-                <ToolbarButton icon="fa-heading" cmd="formatBlock" arg="H2" title="Heading" onExec={execCmd} />
-                <ToolbarButton icon="fa-paragraph" cmd="formatBlock" arg="P" title="Paragraph" onExec={execCmd} />
+                <ToolbarButton icon="fa-heading" cmd="formatBlock" arg="H2" title={t("Heading")} onExec={execCmd} />
+                <ToolbarButton icon="fa-paragraph" cmd="formatBlock" arg="P" title={t("Paragraph")} onExec={execCmd} />
                 <div className="w-px h-6 bg-slate-700 mx-2 self-center"></div>
-                <ToolbarButton icon="fa-bold" cmd="bold" title="Bold" onExec={execCmd} />
-                <ToolbarButton icon="fa-italic" cmd="italic" title="Italic" onExec={execCmd} />
-                <ToolbarButton icon="fa-underline" cmd="underline" title="Underline" onExec={execCmd} />
+                <ToolbarButton icon="fa-bold" cmd="bold" title={t("Bold")} onExec={execCmd} />
+                <ToolbarButton icon="fa-italic" cmd="italic" title={t("Italic")} onExec={execCmd} />
+                <ToolbarButton icon="fa-underline" cmd="underline" title={t("Underline")} onExec={execCmd} />
                 <div className="w-px h-6 bg-slate-700 mx-2 self-center"></div>
-                <ToolbarButton icon="fa-list-ul" cmd="insertUnorderedList" title="Bullet List" onExec={execCmd} />
-                <ToolbarButton icon="fa-list-ol" cmd="insertOrderedList" title="Numbered List" onExec={execCmd} />
+                <ToolbarButton icon="fa-list-ul" cmd="insertUnorderedList" title={t("Bullet List")} onExec={execCmd} />
+                <ToolbarButton icon="fa-list-ol" cmd="insertOrderedList" title={t("Numbered List")} onExec={execCmd} />
                 <div className="w-px h-6 bg-slate-700 mx-2 self-center"></div>
-                <ToolbarButton icon="fa-rotate-left" cmd="undo" title="Undo" onExec={execCmd} />
-                <ToolbarButton icon="fa-rotate-right" cmd="redo" title="Redo" onExec={execCmd} />
+                <ToolbarButton icon="fa-rotate-left" cmd="undo" title={t("Undo")} onExec={execCmd} />
+                <ToolbarButton icon="fa-rotate-right" cmd="redo" title={t("Redo")} onExec={execCmd} />
             </div>
             <div
                 ref={editorRef}
@@ -171,6 +173,7 @@ const RichTextEditor: React.FC<{ value: string; onChange: (html: string) => void
 const LegalDocumentsTab: React.FC = () => {
     const { brandingConfig, updateBrandingConfig } = useConfig();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const [tosHtml, setTosHtml] = useState<string>(brandingConfig.termsOfService || '');
     const [isSaving, setIsSaving] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
@@ -190,7 +193,7 @@ const LegalDocumentsTab: React.FC = () => {
     }
 
     const handleLoadDefaultTos = async () => {
-        const confirmed = await confirm({ title: 'Reset Template', message: 'This will overwrite the current Terms of Service text with the default template. Continue?', confirmText: 'Reset', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Reset Template'), message: t('This will overwrite the current Terms of Service text with the default template. Continue?'), confirmText: t('Reset'), variant: 'danger' });
         if (!confirmed) return;
         setTosHtml(DEFAULT_TOS_HTML);
     };
@@ -203,7 +206,7 @@ const LegalDocumentsTab: React.FC = () => {
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save legal documents." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to save legal documents.") });
         } finally {
             setIsSaving(false);
         }
@@ -212,10 +215,10 @@ const LegalDocumentsTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Legal Documents"
+                title={t("Legal Documents")}
                 icon="fa-solid fa-scale-balanced"
                 accent="slate"
-                subtitle="Terms of Service shown to clients on intake and dashboard."
+                subtitle={t("Terms of Service shown to clients on intake and dashboard.")}
             />
 
             <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden">
@@ -225,8 +228,8 @@ const LegalDocumentsTab: React.FC = () => {
                             <i className="fa-solid fa-file-contract text-slate-300 text-sm"></i>
                         </div>
                         <div>
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">Terms of Service</h3>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Shown to clients on request submission and on their dashboard.</p>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">{t('Terms of Service')}</h3>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{t('Shown to clients on request submission and on their dashboard.')}</p>
                         </div>
                     </div>
                     <button
@@ -234,7 +237,7 @@ const LegalDocumentsTab: React.FC = () => {
                         className="text-[10px] font-bold text-slate-300 hover:text-white uppercase tracking-wider px-3 py-1.5 rounded-md border border-slate-700 hover:border-slate-500 transition-colors"
                     >
                         <i className="fa-solid fa-rotate-right mr-1.5"></i>
-                        Reset Template
+                        {t('Reset Template')}
                     </button>
                 </div>
                 <div className="p-5">
@@ -252,7 +255,7 @@ const LegalDocumentsTab: React.FC = () => {
                             ? 'bg-green-500/10 border-green-500/40 text-green-300'
                             : 'bg-slate-700 hover:bg-slate-600 border-slate-600 text-white'}`}
                 >
-                    {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-2" />Saving</> : isSaved ? <><i className="fa-solid fa-check mr-2" />Saved</> : 'Publish Legal Documents'}
+                    {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-2" />{t('Saving')}</> : isSaved ? <><i className="fa-solid fa-check mr-2" />{t('Saved')}</> : t('Publish Legal Documents')}
                 </button>
             </div>
         </div>

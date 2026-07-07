@@ -15,6 +15,7 @@ import { useGlobalSearchResults } from './searchCenter/hooks/useGlobalSearchResu
 import { usePrefetchSearchSubsets } from './searchCenter/hooks/usePrefetchSearchSubsets';
 import { useSearchKeyboardNav } from './searchCenter/hooks/useSearchKeyboardNav';
 import { buildAclContext } from './searchCenter/acl';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const SCROLL_CONTAINER_ID = 'search-scroll';
 
@@ -31,6 +32,7 @@ const SearchCenterView: React.FC = () => {
     const { hrApplicants, hrInterviews, hrJobs } = useHR();
     const { warrants, operations } = useOperations();
     const { hasPermission, currentUser } = useAuth();
+    const { t } = useI18n();
 
     const [intelResults, setIntelResults] = useState<HydratedIntelligenceReport[]>([]);
     const [isSearchingIntel, setIsSearchingIntel] = useState(false);
@@ -94,10 +96,12 @@ const SearchCenterView: React.FC = () => {
         if (!trimmed) return;
         const handle = setTimeout(() => {
             const typesHit = Object.values(counts).filter(n => n > 0).length;
-            setDebouncedAnnouncement(`${totalCount} ${totalCount === 1 ? 'result' : 'results'} across ${typesHit} ${typesHit === 1 ? 'type' : 'types'}`);
+            const resultsText = totalCount === 1 ? t('{count} result', { count: totalCount }) : t('{count} results', { count: totalCount });
+            const typesText = typesHit === 1 ? t('{count} type', { count: typesHit }) : t('{count} types', { count: typesHit });
+            setDebouncedAnnouncement(t('{results} across {types}', { results: resultsText, types: typesText }));
         }, 300);
         return () => clearTimeout(handle);
-    }, [totalCount, counts, globalSearchQuery]);
+    }, [totalCount, counts, globalSearchQuery, t]);
 
     // When the query is empty the live region clears immediately (no debounce);
     // otherwise it shows the most recent debounced message. Deriving this during
@@ -171,7 +175,7 @@ const SearchCenterView: React.FC = () => {
             <div className="flex flex-col gap-4 mb-6">
                 <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight flex items-center">
                     <i className="fa-solid fa-magnifying-glass text-sky-500 mr-3 md:mr-4" aria-hidden />
-                    Global Search Center
+                    {t('Global Search Center')}
                 </h1>
 
                 <div className="relative max-w-4xl">
@@ -179,7 +183,7 @@ const SearchCenterView: React.FC = () => {
                         type="text"
                         value={globalSearchQuery}
                         onChange={(e) => setGlobalSearchQuery(e.target.value)}
-                        placeholder="Search by Handle, Name, Location, ID, or Keywords..."
+                        placeholder={t('Search by Handle, Name, Location, ID, or Keywords...')}
                         className="w-full bg-slate-800 border border-slate-600 rounded-xl py-3 md:py-4 pl-5 pr-12 text-base md:text-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-hidden shadow-xl transition-all"
                         autoFocus
                     />
@@ -196,7 +200,7 @@ const SearchCenterView: React.FC = () => {
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-slate-900/60 text-slate-200 hover:border-sky-500/40 hover:text-sky-300 transition-colors text-sm font-bold uppercase tracking-wider"
                     >
                         <i className="fa-solid fa-filter" aria-hidden />
-                        Filters
+                        {t('Filters')}
                         {filtersApi.activeCount > 0 && (
                             <span className="ml-1 px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-mono font-black">
                                 {filtersApi.activeCount}
@@ -223,14 +227,14 @@ const SearchCenterView: React.FC = () => {
                             <span>
                                 <span className="text-sky-400 font-black">{totalCount}</span>
                                 {' '}
-                                {totalCount === 1 ? 'result' : 'results'}
+                                {totalCount === 1 ? t('result') : t('results')}
                             </span>
                             {keyboardNav.selectedIndex >= 0 && (
                                 <span className="hidden md:inline">
                                     <kbd className="px-1.5 py-0.5 rounded-sm bg-slate-900/60 border border-white/10 text-slate-400">↑↓</kbd>
-                                    {' '}navigate
+                                    {' '}{t('navigate')}
                                     {' '}<kbd className="px-1.5 py-0.5 rounded-sm bg-slate-900/60 border border-white/10 text-slate-400">Enter</kbd>
-                                    {' '}open
+                                    {' '}{t('open')}
                                 </span>
                             )}
                         </div>

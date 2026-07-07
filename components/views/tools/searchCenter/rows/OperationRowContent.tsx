@@ -8,6 +8,7 @@ import {
     timeAgoShort,
 } from '../../../operations/operations/operationStyles';
 import { ACCENTS } from '../../../../shared/ui/accents';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 interface Props {
     operation: HydratedOperation;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const OperationRowContent: React.FC<Props> = ({ operation, onClick, isSelected }) => {
+    const { t } = useI18n();
     const accent = operationStatusAccent(operation.status);
     const isActive = operation.status === OperationStatus.Active;
     const shortId = operation.id.split('-')[1]?.toUpperCase() ?? operation.id.slice(0, 8).toUpperCase();
@@ -43,24 +45,24 @@ const OperationRowContent: React.FC<Props> = ({ operation, onClick, isSelected }
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
                 <span className="px-1.5 py-0.5 rounded-sm border bg-slate-900/60 border-white/10 text-slate-400 font-mono text-[10px] uppercase tracking-wider shrink-0">
-                    {operation.type}
+                    {t(operation.type)}
                 </span>
                 {clearanceA && (
                     <span className={`px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest shrink-0 ${clearanceA.bg} ${clearanceA.border} ${clearanceA.text}`}>
                         <i className="fa-solid fa-shield-halved mr-1" aria-hidden />
-                        LVL {operation.clearanceLevel}
+                        {t('LVL {level}', { level: operation.clearanceLevel })}
                     </span>
                 )}
                 <span className="text-[10px] text-slate-400 truncate min-w-0 flex-1">
                     <i className="fa-solid fa-crown text-amber-500 mr-1" aria-hidden />
-                    {operation.owner?.name || 'Unknown'}
+                    {operation.owner?.name || t('Unknown')}
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono shrink-0">
                     <i className="fa-solid fa-users mr-1" aria-hidden />
                     {activeParticipants}
                 </span>
                 <span className={`px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest shrink-0 ${ACCENTS[accent].bg} ${ACCENTS[accent].border} ${ACCENTS[accent].text}`}>
-                    {operation.status}
+                    {t(operation.status)}
                 </span>
             </div>
         </SearchResultCard>

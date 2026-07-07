@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 export interface BulkAction {
     key: string;
@@ -33,6 +34,7 @@ interface Props {
  */
 const BulkSelectToolbar: React.FC<Props> = ({ selectedCount, onClear, actions }) => {
     const { currentUser } = useAuth();
+    const { t } = useI18n();
     const [overflowOpen, setOverflowOpen] = React.useState(false);
 
     if (selectedCount === 0) return null;
@@ -52,13 +54,13 @@ const BulkSelectToolbar: React.FC<Props> = ({ selectedCount, onClear, actions })
         <div className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-sm border-b border-amber-500/30 px-4 py-2 flex items-center justify-between gap-3 shadow-lg shadow-black/30">
             <div className="flex items-center gap-3 min-w-0">
                 <span className="text-sm font-bold text-white whitespace-nowrap">
-                    <span className="text-amber-300">{selectedCount}</span> selected
+                    <span className="text-amber-300">{selectedCount}</span> {t('selected')}
                 </span>
                 <button
                     onClick={onClear}
                     className="text-xs font-medium text-slate-400 hover:text-white transition-colors whitespace-nowrap"
                 >
-                    Clear
+                    {t('Clear')}
                 </button>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
@@ -73,7 +75,7 @@ const BulkSelectToolbar: React.FC<Props> = ({ selectedCount, onClear, actions })
                         }`}
                     >
                         <i className={`fa-solid ${a.icon}`} />
-                        <span>{a.label}</span>
+                        <span>{t(a.label)}</span>
                     </button>
                 ))}
                 {overflow.length > 0 && (
@@ -82,7 +84,7 @@ const BulkSelectToolbar: React.FC<Props> = ({ selectedCount, onClear, actions })
                             onClick={() => setOverflowOpen((v) => !v)}
                             className="px-3 py-1.5 rounded-md text-xs font-bold transition-colors flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10"
                         >
-                            More
+                            {t('More')}
                             <i className="fa-solid fa-chevron-down text-[10px]" />
                         </button>
                         {overflowOpen && (
@@ -104,7 +106,7 @@ const BulkSelectToolbar: React.FC<Props> = ({ selectedCount, onClear, actions })
                                             }`}
                                         >
                                             <i className={`fa-solid ${a.icon} w-4 text-center`} />
-                                            <span>{a.label}</span>
+                                            <span>{t(a.label)}</span>
                                         </button>
                                     ))}
                                 </div>

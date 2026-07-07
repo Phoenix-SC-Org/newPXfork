@@ -12,6 +12,7 @@ import HeroActionButton from '../../shared/ui/HeroActionButton';
 import { AccentKey } from '../../shared/ui/accents';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface AdminUserDetailViewProps {
     user: User;
@@ -79,6 +80,7 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
     openAwardSingleCommendModal,
     openAddConductEntryModal,
 }) => {
+    const { t } = useI18n();
     const { rpcAction, fetchUserDetail } = useData();
     const {
         allUsers, ranks, units, roles, securityClearances, limitingMarkers,
@@ -225,14 +227,14 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
             setTimeout(() => setIsSaved(false), 2000);
         } catch (err: any) {
             console.error(err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save user record changes." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("Failed to save user record changes.") });
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDeleteConduct = async (entryId: number) => {
-        const confirmed = await confirm({ title: 'Confirm Delete', message: 'Delete this conduct entry?', confirmText: 'Delete', variant: 'danger' });
+        const confirmed = await confirm({ title: t('Confirm Delete'), message: t('Delete this conduct entry?'), confirmText: t('Delete'), variant: 'danger' });
         if (!confirmed) return;
         await rpcAction('admin:delete_conduct_entry', { entryId });
     };
@@ -272,19 +274,19 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                     }`}
                 >
                     <i className={`fa-solid ${tab.icon}`}></i>
-                    {tab.label}
+                    {t(tab.label)}
                 </button>
             ))}
         </div>
     );
 
-    const positionLabel = userToDisplay.position?.name || userToDisplay.jobTitle || 'N/A';
+    const positionLabel = userToDisplay.position?.name || userToDisplay.jobTitle || t('N/A');
     const heroSubtitle = userToDisplay.rsiHandle;
 
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel={`MEMBER RECORD · ID ${userToDisplay.id.toString().padStart(6, '0')}`}
+                chipLabel={t('MEMBER RECORD · ID {id}', { id: userToDisplay.id.toString().padStart(6, '0') })}
                 chipIcon="fa-id-card"
                 chipAccent="sky"
                 chipPulse={userToDisplay.isDuty}
@@ -295,7 +297,7 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                         onClick={onBack}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-sky-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
                     >
-                        <i className="fa-solid fa-arrow-left"></i> Return to Roster
+                        <i className="fa-solid fa-arrow-left"></i> {t('Return to Roster')}
                     </button>
                     <HeroActionButton
                         onClick={handleSave}
@@ -303,18 +305,18 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                         icon={isSaving ? 'fa-circle-notch fa-spin' : isSaved ? 'fa-check' : 'fa-floppy-disk'}
                         disabled={isSaving || isSaved}
                     >
-                        {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save Changes'}
+                        {isSaving ? t('Saving...') : isSaved ? t('Saved') : t('Save Changes')}
                     </HeroActionButton>
                 </>}
                 statsCols={4}
                 stats={<>
-                    <HeroStat icon="fa-medal" label="Rank" value={userToDisplay.rank?.name || 'Unranked'} accent="sky" />
-                    <HeroStat icon="fa-people-group" label="Unit" value={userToDisplay.unit?.name || 'Unassigned'} accent="indigo" />
-                    <HeroStat icon="fa-briefcase" label="Position" value={positionLabel} accent="sky" />
+                    <HeroStat icon="fa-medal" label={t('Rank')} value={userToDisplay.rank?.name || t('Unranked')} accent="sky" />
+                    <HeroStat icon="fa-people-group" label={t('Unit')} value={userToDisplay.unit?.name || t('Unassigned')} accent="indigo" />
+                    <HeroStat icon="fa-briefcase" label={t('Position')} value={positionLabel} accent="sky" />
                     <HeroStat
                         icon="fa-lock"
-                        label="Clearance"
-                        value={userToDisplay.clearanceLevel ? `L${userToDisplay.clearanceLevel.level} ${userToDisplay.clearanceLevel.name}` : 'None'}
+                        label={t('Clearance')}
+                        value={userToDisplay.clearanceLevel ? `L${userToDisplay.clearanceLevel.level} ${userToDisplay.clearanceLevel.name}` : t('None')}
                         accent={clearanceAccent(userToDisplay.clearanceLevel?.level)}
                         emphasize={!!userToDisplay.clearanceLevel}
                     />
@@ -327,48 +329,48 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                     {/* Main column */}
                     <div className="lg:col-span-2 space-y-6">
                         {activeTab === 'profile' && (
-                            <SectionCard title="Assignment & Access" icon="fa-id-card" accent="sky">
+                            <SectionCard title={t('Assignment & Access')} icon="fa-id-card" accent="sky">
                                 <div className="relative">
                                     {isSaving && (
                                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs z-10 rounded-lg flex items-center justify-center -m-2 p-2">
                                             <div className="flex flex-col items-center gap-3">
                                                 <i className="fa-solid fa-circle-notch animate-spin text-sky-300 text-2xl"></i>
-                                                <span className="text-xs font-bold text-sky-300 uppercase tracking-widest">Saving Changes</span>
+                                                <span className="text-xs font-bold text-sky-300 uppercase tracking-widest">{t('Saving Changes')}</span>
                                             </div>
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">System Role</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('System Role')}</label>
                                             <select value={roleId} onChange={e => setRoleId(e.target.value)} disabled={!hasPermission('admin:user:update_role') || isSaving} className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden text-sm">
                                                 {sortedRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Rank</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Rank')}</label>
                                             <select value={rankId} onChange={e => setRankId(e.target.value)} disabled={!hasPermission('admin:user:update') || isSaving} className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden text-sm">
-                                                <option value="">Unranked</option>
+                                                <option value="">{t('Unranked')}</option>
                                                 {sortedRanks.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Unit Assignment</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Unit Assignment')}</label>
                                             <select value={unitId} onChange={e => setUnitId(e.target.value)} disabled={!hasPermission('admin:user:update') || isSaving} className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden text-sm">
-                                                <option value="">Unassigned</option>
+                                                <option value="">{t('Unassigned')}</option>
                                                 {sortedUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Primary Position</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Primary Position')}</label>
                                             <select value={positionId} onChange={e => setPositionId(e.target.value)} disabled={!hasPermission('admin:user:update') || isSaving} className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden text-sm">
-                                                <option value="">No Role</option>
+                                                <option value="">{t('No Role')}</option>
                                                 {sortedPositions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Secondary Position (Optional)</label>
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Secondary Position (Optional)')}</label>
                                             <select value={secondaryPositionId} onChange={e => setSecondaryPositionId(e.target.value)} disabled={!hasPermission('admin:user:update') || isSaving} className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden text-sm">
-                                                <option value="">None</option>
+                                                <option value="">{t('None')}</option>
                                                 {sortedPositions.filter(p => p.id.toString() !== positionId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                             </select>
                                         </div>
@@ -377,27 +379,27 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                     {/* Security Profile */}
                                     <div className="mt-5 bg-slate-950/40 p-4 rounded-lg border border-red-500/15">
                                         <h4 className="text-[10px] font-black text-red-300 uppercase tracking-widest mb-3 flex items-center">
-                                            <i className="fa-solid fa-lock mr-2"></i> Security Profile
+                                            <i className="fa-solid fa-lock mr-2"></i> {t('Security Profile')}
                                         </h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Clearance Level</label>
+                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Clearance Level')}</label>
                                                 <select
                                                     value={clearanceLevelId}
                                                     onChange={e => setClearanceLevelId(e.target.value)}
                                                     disabled={!hasPermission('admin:user:manage_clearance') || isSaving}
                                                     className="w-full bg-slate-950/60 border border-slate-700 rounded-lg p-2.5 text-white focus:border-red-500/40 focus:ring-1 focus:ring-red-500/30 outline-hidden text-sm"
                                                 >
-                                                    <option value="">No Clearance</option>
+                                                    <option value="">{t('No Clearance')}</option>
                                                     {securityClearances.map(c => (
                                                         <option key={c.id} value={c.id}>
-                                                            Level {c.level} {'//'} {c.name}
+                                                            {t('Level {level}', { level: c.level })} {'//'} {c.name}
                                                         </option>
                                                     ))}
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Limiting Markers</label>
+                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('Limiting Markers')}</label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {limitingMarkers.map(m => {
                                                         const isSelected = selectedMarkers.has(m.id);
@@ -416,7 +418,7 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                             </button>
                                                         );
                                                     })}
-                                                    {limitingMarkers.length === 0 && <span className="text-xs text-slate-600 italic">No markers defined.</span>}
+                                                    {limitingMarkers.length === 0 && <span className="text-xs text-slate-600 italic">{t('No markers defined.')}</span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -424,14 +426,14 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
 
                                     <div className="mt-5">
                                         <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">
-                                            Personnel Notes <span className="text-slate-600 font-normal normal-case ml-2">(Visible to member & command)</span>
+                                            {t('Personnel Notes')} <span className="text-slate-600 font-normal normal-case ml-2">{t('(Visible to member & command)')}</span>
                                         </label>
                                         <textarea value={personnelNotes} onChange={e => setPersonnelNotes(e.target.value)} rows={4} className="w-full bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-white text-sm focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden resize-none" disabled={!hasPermission('user:manage:personnel_notes') || isSaving} />
                                     </div>
 
                                     <div className="mt-5">
                                         <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">
-                                            Tenure Start Date <span className="text-slate-600 font-normal normal-case ml-2">(Override for "member since" — leave blank to use account creation date)</span>
+                                            {t('Tenure Start Date')} <span className="text-slate-600 font-normal normal-case ml-2">{t('(Override for "member since" — leave blank to use account creation date)')}</span>
                                         </label>
                                         <input
                                             type="date"
@@ -447,7 +449,7 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                             {isSaving && <i className="fa-solid fa-circle-notch animate-spin"></i>}
                                             {isSaved && <i className="fa-solid fa-check"></i>}
                                             {!isSaving && !isSaved && <i className="fa-solid fa-floppy-disk"></i>}
-                                            {isSaving ? 'Saving...' : isSaved ? 'Saved Successfully' : 'Save Changes'}
+                                            {isSaving ? t('Saving...') : isSaved ? t('Saved Successfully') : t('Save Changes')}
                                         </button>
                                     </div>
                                 </div>
@@ -457,13 +459,13 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                         {activeTab === 'awards' && (
                             <div className="space-y-6">
                                 <SectionCard
-                                    title="Certifications"
+                                    title={t('Certifications')}
                                     icon="fa-certificate"
                                     accent="emerald"
                                     actions={
                                         <button onClick={() => openAwardSingleCertModal(userToDisplay)}
                                             className="text-[10px] font-bold text-emerald-300 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">
-                                            <i className="fa-solid fa-plus mr-1"></i> Award Cert
+                                            <i className="fa-solid fa-plus mr-1"></i> {t('Award Cert')}
                                         </button>
                                     }
                                 >
@@ -476,7 +478,7 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                         <span className="font-bold text-slate-200 text-sm">{cert.name}</span>
                                                     </div>
                                                     <button
-                                                        onClick={async () => { const confirmed = await confirm({ title: 'Confirm Revoke', message: 'Revoke this certification?', confirmText: 'Revoke', variant: 'danger' }); if (confirmed) revokeCertification(userToDisplay.id, cert.id); }}
+                                                        onClick={async () => { const confirmed = await confirm({ title: t('Confirm Revoke'), message: t('Revoke this certification?'), confirmText: t('Revoke'), variant: 'danger' }); if (confirmed) revokeCertification(userToDisplay.id, cert.id); }}
                                                         className="text-slate-600 hover:text-red-400 p-1"
                                                     >
                                                         <i className="fa-solid fa-trash-can text-xs"></i>
@@ -484,17 +486,17 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : <p className="text-slate-500 italic text-sm">No certifications on file.</p>}
+                                    ) : <p className="text-slate-500 italic text-sm">{t('No certifications on file.')}</p>}
                                 </SectionCard>
 
                                 <SectionCard
-                                    title="Commendations"
+                                    title={t('Commendations')}
                                     icon="fa-medal"
                                     accent="amber"
                                     actions={
                                         <button onClick={() => openAwardSingleCommendModal(userToDisplay)}
                                             className="text-[10px] font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">
-                                            <i className="fa-solid fa-plus mr-1"></i> Award Medal
+                                            <i className="fa-solid fa-plus mr-1"></i> {t('Award Medal')}
                                         </button>
                                     }
                                 >
@@ -509,32 +511,32 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                         <div className="flex justify-between items-start gap-3">
                                                             <h4 className="font-bold text-white">{c.name}</h4>
                                                             <button
-                                                                onClick={async () => { const confirmed = await confirm({ title: 'Confirm Revoke', message: 'Revoke this commendation?', confirmText: 'Revoke', variant: 'danger' }); if (confirmed) revokeCommendation(c.id); }}
+                                                                onClick={async () => { const confirmed = await confirm({ title: t('Confirm Revoke'), message: t('Revoke this commendation?'), confirmText: t('Revoke'), variant: 'danger' }); if (confirmed) revokeCommendation(c.id); }}
                                                                 className="text-slate-600 hover:text-red-400 p-1 shrink-0"
                                                             >
                                                                 <i className="fa-solid fa-trash-can text-xs"></i>
                                                             </button>
                                                         </div>
                                                         <p className="text-sm text-slate-400 italic mt-1 wrap-break-word">"{c.reason}"</p>
-                                                        <p className="text-[10px] text-slate-600 mt-2 font-mono uppercase">Awarded {fmt(c.awardedAt)}</p>
+                                                        <p className="text-[10px] text-slate-600 mt-2 font-mono uppercase">{t('Awarded {date}', { date: fmt(c.awardedAt) })}</p>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : <p className="text-slate-500 italic text-sm">No commendations awarded.</p>}
+                                    ) : <p className="text-slate-500 italic text-sm">{t('No commendations awarded.')}</p>}
                                 </SectionCard>
                             </div>
                         )}
 
                         {activeTab === 'conduct' && (
                             <SectionCard
-                                title="Conduct Record"
+                                title={t('Conduct Record')}
                                 icon="fa-gavel"
                                 accent="red"
                                 actions={
                                     <button onClick={() => openAddConductEntryModal(userToDisplay)}
                                         className="text-[10px] font-bold text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors">
-                                        <i className="fa-solid fa-plus mr-1"></i> Add Entry
+                                        <i className="fa-solid fa-plus mr-1"></i> {t('Add Entry')}
                                     </button>
                                 }
                             >
@@ -547,22 +549,22 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${entry.type === ConductRecordType.Commendation ? 'bg-emerald-500/10 text-emerald-400' :
                                                                 entry.type === ConductRecordType.Infraction ? 'bg-red-500/10 text-red-400' :
                                                                     'bg-amber-500/10 text-amber-400'
-                                                            }`}>{entry.type}</span>
+                                                            }`}>{t(entry.type, { context: 'conduct' })}</span>
                                                         <span className="text-xs text-slate-500 font-mono">{fmt(entry.createdAt)}</span>
                                                     </div>
                                                     <button onClick={() => handleDeleteConduct(entry.id)} className="text-slate-600 hover:text-red-400 p-1"><i className="fa-solid fa-trash-can text-xs"></i></button>
                                                 </div>
                                                 <p className="text-sm text-slate-300 wrap-break-word">{entry.reason}</p>
-                                                <p className="text-[10px] text-slate-600 mt-2 uppercase">Logged By: {entry.enteredBy?.name || 'Unknown'}</p>
+                                                <p className="text-[10px] text-slate-600 mt-2 uppercase">{t('Logged By:')} {entry.enteredBy?.name || t('Unknown')}</p>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-slate-500 italic text-sm">No conduct entries recorded.</p>}
+                                ) : <p className="text-slate-500 italic text-sm">{t('No conduct entries recorded.')}</p>}
                             </SectionCard>
                         )}
 
                         {activeTab === 'hr-history' && (
-                            <SectionCard title="HR Case History" icon="fa-folder-tree" accent="sky">
+                            <SectionCard title={t('HR Case History')} icon="fa-folder-tree" accent="sky">
                                 {linkedHRFiles.length > 0 ? (
                                     <div className="space-y-3">
                                         {linkedHRFiles.map(app => (
@@ -574,27 +576,27 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
                                                                     app.status === ApplicationStatus.Rejected ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                                         'bg-slate-500/10 text-slate-300 border-slate-500/20'
                                                                 }`}>
-                                                                {app.status}
+                                                                {t(app.status, { context: 'application' })}
                                                             </span>
                                                             <span className="text-slate-300 text-sm font-bold truncate">{formatReferralSource(app.referralSource)}</span>
                                                         </div>
-                                                        <p className="text-[10px] text-slate-500 font-mono mt-1">CASE: {app.id.split('-')[0]}</p>
+                                                        <p className="text-[10px] text-slate-500 font-mono mt-1">{t('CASE:')} {app.id.split('-')[0]}</p>
                                                     </div>
                                                     <button
                                                         onClick={() => handleViewCase(app)}
                                                         className="text-[10px] font-bold text-sky-300 hover:text-sky-200 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-3 py-1.5 rounded-sm uppercase tracking-wider transition-colors shrink-0"
                                                     >
-                                                        View File
+                                                        {t('View File')}
                                                     </button>
                                                 </div>
                                                 <p className="text-sm text-slate-300 italic bg-slate-950/40 p-2 rounded-sm mt-2 wrap-break-word">"{app.notes}"</p>
-                                                <p className="text-[10px] text-slate-600 mt-2 text-right">Filed: {fmt(app.createdAt)}</p>
+                                                <p className="text-[10px] text-slate-600 mt-2 text-right">{t('Filed: {date}', { date: fmt(app.createdAt) })}</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-lg">
-                                        <p className="text-slate-500 font-medium italic">No HR case files linked to this member.</p>
+                                        <p className="text-slate-500 font-medium italic">{t('No HR case files linked to this member.')}</p>
                                     </div>
                                 )}
                             </SectionCard>
@@ -603,29 +605,29 @@ const AdminUserDetailView: React.FC<AdminUserDetailViewProps> = ({
 
                     {/* Right sidebar */}
                     <div className="space-y-6 lg:sticky lg:top-0 lg:self-start">
-                        <SectionCard title="Reputation" icon="fa-star" accent="amber">
+                        <SectionCard title={t('Reputation')} icon="fa-star" accent="amber">
                             <div className="text-center py-2">
                                 <div className="text-3xl font-black text-white mb-1">{userToDisplay.reputation}</div>
-                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Current Score</div>
+                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('Current Score')}</div>
                             </div>
                             <div className="space-y-2 pt-2">
                                 <button onClick={() => openAdjustReputationModal(userToDisplay)} className="w-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-bold py-2.5 rounded-lg transition-colors uppercase tracking-wider border border-amber-500/30">
-                                    <i className="fa-solid fa-sliders mr-1.5"></i> Adjust Manually
+                                    <i className="fa-solid fa-sliders mr-1.5"></i> {t('Adjust Manually')}
                                 </button>
                                 <button onClick={() => openReputationHistoryModal(userToDisplay)} className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-white text-xs font-bold py-2.5 rounded-lg transition-colors border border-slate-700 uppercase tracking-wider">
-                                    <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> View History
+                                    <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> {t('View History')}
                                 </button>
                                 <button onClick={() => openRatingHistoryModal(userToDisplay)} className="w-full bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-white text-xs font-bold py-2.5 rounded-lg transition-colors border border-slate-700 uppercase tracking-wider">
-                                    <i className="fa-solid fa-comments mr-1.5"></i> Client Ratings
+                                    <i className="fa-solid fa-comments mr-1.5"></i> {t('Client Ratings')}
                                 </button>
                             </div>
                         </SectionCard>
 
-                        <SectionCard title="Admin Notes (Private)" icon="fa-lock" accent="red">
-                            <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={6} className="w-full bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-white text-sm focus:border-red-500/40 focus:ring-1 focus:ring-red-500/30 outline-hidden resize-none" placeholder="Internal notes visible only to admins..." disabled={!hasPermission('admin:user:update')} />
+                        <SectionCard title={t('Admin Notes (Private)')} icon="fa-lock" accent="red">
+                            <textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} rows={6} className="w-full bg-slate-950/40 border border-slate-800 rounded-lg p-3 text-white text-sm focus:border-red-500/40 focus:ring-1 focus:ring-red-500/30 outline-hidden resize-none" placeholder={t('Internal notes visible only to admins...')} disabled={!hasPermission('admin:user:update')} />
                             <div className="flex justify-end">
                                 <button onClick={handleSave} disabled={isSaving || isSaved} className="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-wider disabled:opacity-50">
-                                    {isSaved ? <><i className="fa-solid fa-check mr-1"></i> Saved</> : <><i className="fa-solid fa-floppy-disk mr-1"></i> Save Note</>}
+                                    {isSaved ? <><i className="fa-solid fa-check mr-1"></i> {t('Saved')}</> : <><i className="fa-solid fa-floppy-disk mr-1"></i> {t('Save Note')}</>}
                                 </button>
                             </div>
                         </SectionCard>

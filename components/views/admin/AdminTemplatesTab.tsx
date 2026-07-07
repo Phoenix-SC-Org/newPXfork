@@ -5,18 +5,20 @@ import { useHR } from '../../../contexts/HRContext';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const AdminTemplatesTab: React.FC = () => {
     const { rpcAction, refreshHR } = useData();
     const { hrTemplates } = useHR();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const { openCreateTemplateModal } = useModalRegistry();
 
     const handleDelete = async (id: number) => {
         const confirmed = await confirm({
-            title: 'Delete Template',
-            message: 'Are you sure you want to delete this template?',
-            confirmText: 'Delete',
+            title: t('Delete Template'),
+            message: t('Are you sure you want to delete this template?'),
+            confirmText: t('Delete'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -30,15 +32,15 @@ const AdminTemplatesTab: React.FC = () => {
                 <div>
                     <h2 className="text-xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
                         <i className="fa-solid fa-clipboard-question text-emerald-300"></i>
-                        Interview Templates
+                        {t('Interview Templates')}
                     </h2>
-                    <p className="text-sm text-slate-400 mt-1">Standardized recruitment questionnaires.</p>
+                    <p className="text-sm text-slate-400 mt-1">{t('Standardized recruitment questionnaires.')}</p>
                 </div>
                 <button
                     onClick={() => openCreateTemplateModal()}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/40 rounded-lg shadow-lg shadow-emerald-900/30 transition whitespace-nowrap"
                 >
-                    <i className="fa-solid fa-plus"></i>New Template
+                    <i className="fa-solid fa-plus"></i>{t('New Template')}
                 </button>
             </div>
 
@@ -50,12 +52,12 @@ const AdminTemplatesTab: React.FC = () => {
                                 <div className="min-w-0">
                                     <h3 className="text-base font-black text-white group-hover:text-emerald-200 transition-colors uppercase tracking-tight">{template.name}</h3>
                                     <span className="inline-flex items-center gap-1.5 text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-sm uppercase tracking-widest font-black mt-1">
-                                        <i className="fa-solid fa-list-check text-[9px]"></i>{template.questions?.length || 0} questions
+                                        <i className="fa-solid fa-list-check text-[9px]"></i>{t('{count} questions', { count: template.questions?.length || 0 })}
                                     </span>
                                 </div>
                                 <div className="flex gap-1 shrink-0">
-                                    <button onClick={() => openCreateTemplateModal(template)} className="p-2 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="Edit"><i className="fa-solid fa-pencil text-sm"></i></button>
-                                    <button onClick={() => handleDelete(template.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-sm transition-colors" title="Delete"><i className="fa-solid fa-trash-can text-sm"></i></button>
+                                    <button onClick={() => openCreateTemplateModal(template)} className="p-2 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t("Edit")}><i className="fa-solid fa-pencil text-sm"></i></button>
+                                    <button onClick={() => handleDelete(template.id)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-sm transition-colors" title={t("Delete")}><i className="fa-solid fa-trash-can text-sm"></i></button>
                                 </div>
                             </div>
                             <p className="text-sm text-slate-400 italic leading-relaxed">"{template.description}"</p>
@@ -65,7 +67,7 @@ const AdminTemplatesTab: React.FC = () => {
                                     className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-emerald-300 transition-colors flex items-center gap-2"
                                 >
                                     <i className="fa-solid fa-list-check"></i>
-                                    View / Edit Questions
+                                    {t('View / Edit Questions')}
                                 </button>
                             </div>
                         </div>
@@ -76,8 +78,8 @@ const AdminTemplatesTab: React.FC = () => {
                     <EmptyState
                         icon="fa-clipboard-question"
                         accent="emerald"
-                        heading="No interview templates"
-                        description="Create a template to standardize interview questions across recruitment cases."
+                        heading={t("No interview templates")}
+                        description={t("Create a template to standardize interview questions across recruitment cases.")}
                     />
                 </div>
             )}

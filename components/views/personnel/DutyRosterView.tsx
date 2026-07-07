@@ -14,6 +14,7 @@ import FilterPopover from '../../shared/FilterPopover';
 import SortableColumnHeader from '../../shared/SortableColumnHeader';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Helper types for the flattened list
 type RosterItemType = 'unit' | 'member';
@@ -31,6 +32,7 @@ type SortDir = 'asc' | 'desc';
 
 const DutyRosterView: React.FC = () => {
     const { members, units, ranks } = useMembers();
+    const { t } = useI18n();
     const { confirm } = useNotification();
     const { viewMemberProfile } = useNavigation();
     const { hasPermission, toggleDutyStatus } = useAuth();
@@ -50,9 +52,9 @@ const DutyRosterView: React.FC = () => {
     const handleToggleDuty = async (member: User) => {
         if (togglingId !== null) return;
         const ok = await confirm({
-            title: member.isDuty ? 'Force Off Duty' : 'Force On Duty',
-            message: `Toggle duty status for ${member.name}?`,
-            confirmText: member.isDuty ? 'Set Off Duty' : 'Set On Duty',
+            title: member.isDuty ? t('Force Off Duty') : t('Force On Duty'),
+            message: t('Toggle duty status for {name}?', { name: member.name }),
+            confirmText: member.isDuty ? t('Set Off Duty') : t('Set On Duty'),
             variant: member.isDuty ? 'warning' : 'info',
         });
         if (!ok) return;
@@ -175,7 +177,7 @@ const DutyRosterView: React.FC = () => {
                 result.push({
                     id: 'unit-unassigned',
                     type: 'unit',
-                    data: { id: 0, name: 'Unassigned Personnel', sortOrder: 9999 } as OrganizationalUnit,
+                    data: { id: 0, name: t('Unassigned Personnel'), sortOrder: 9999 } as OrganizationalUnit,
                     level: 0
                 });
                 unassigned.forEach(m => {
@@ -188,7 +190,7 @@ const DutyRosterView: React.FC = () => {
         processUnassigned();
 
         return result;
-    }, [unitTree, membersByUnitId, memberMatches, isLoading, rosterMode]);
+    }, [unitTree, membersByUnitId, memberMatches, isLoading, rosterMode, t]);
 
     // 2b. Flat mode: a single sortable list of all matching members. No unit
     // grouping rows; the Unit column is rendered alongside Rank instead.
@@ -243,9 +245,9 @@ const DutyRosterView: React.FC = () => {
         : hierarchicalRoster.filter(r => r.type === 'member').length;
 
     const viewModeTabs: Array<{ key: 'on-duty' | 'off-duty' | 'all'; label: string; icon: string; count: number }> = [
-        { key: 'on-duty', label: 'On Duty', icon: 'fa-bolt', count: onDutyCount },
-        { key: 'off-duty', label: 'Off Duty', icon: 'fa-moon', count: members.length - onDutyCount },
-        { key: 'all', label: 'All', icon: 'fa-users', count: members.length },
+        { key: 'on-duty', label: t('On Duty'), icon: 'fa-bolt', count: onDutyCount },
+        { key: 'off-duty', label: t('Off Duty'), icon: 'fa-moon', count: members.length - onDutyCount },
+        { key: 'all', label: t('All'), icon: 'fa-users', count: members.length },
     ];
 
     const sortedRanks = useMemo(() => [...ranks].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)), [ranks]);
@@ -253,16 +255,16 @@ const DutyRosterView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · DUTY ROSTER"
+                chipLabel={t('MODULE · DUTY ROSTER')}
                 chipIcon="fa-users"
                 chipAccent="emerald"
-                title="Duty Roster"
-                subtitle="Operational status and unit hierarchy. Toggle duty, inspect profiles, and review personnel structure."
+                title={t('Duty Roster')}
+                subtitle={t('Operational status and unit hierarchy. Toggle duty, inspect profiles, and review personnel structure.')}
                 statsCols={3}
                 stats={<>
-                    <HeroStat icon="fa-bolt" label="On Duty" value={onDutyCount} accent="emerald" emphasize={onDutyCount > 0} />
-                    <HeroStat icon="fa-moon" label="Off Duty" value={members.length - onDutyCount} accent="slate" />
-                    <HeroStat icon="fa-users" label="Total Personnel" value={members.length} accent="cyan" />
+                    <HeroStat icon="fa-bolt" label={t('On Duty')} value={onDutyCount} accent="emerald" emphasize={onDutyCount > 0} />
+                    <HeroStat icon="fa-moon" label={t('Off Duty')} value={members.length - onDutyCount} accent="slate" />
+                    <HeroStat icon="fa-users" label={t('Total Personnel')} value={members.length} accent="cyan" />
                 </>}
                 tabs={viewModeTabs.map(tab => (
                     <button
@@ -297,12 +299,12 @@ const DutyRosterView: React.FC = () => {
                                 }`}
                             >
                                 <i className={`fa-solid ${m === 'hierarchy' ? 'fa-sitemap' : 'fa-list'} mr-1.5`}></i>
-                                {m === 'hierarchy' ? 'Hierarchy' : 'Flat'}
+                                {m === 'hierarchy' ? t('Hierarchy') : t('Flat')}
                             </button>
                         ))}
                     </div>
                     <FilterPopover
-                        label="Unit"
+                        label={t('Unit')}
                         icon="fa-people-group"
                         options={units.map(u => ({ id: u.id, name: u.name }))}
                         selected={unitFilter}
@@ -310,7 +312,7 @@ const DutyRosterView: React.FC = () => {
                         onClear={() => setUnitFilter(new Set())}
                     />
                     <FilterPopover
-                        label="Rank"
+                        label={t('Rank')}
                         icon="fa-medal"
                         options={sortedRanks.map(r => ({ id: r.id, name: r.name }))}
                         selected={rankFilter}
@@ -319,7 +321,7 @@ const DutyRosterView: React.FC = () => {
                     />
                     {(unitFilter.size > 0 || rankFilter.size > 0) && (
                         <span className="text-[10px] text-slate-500 ml-auto font-mono">
-                            {filteredCount} match{filteredCount === 1 ? '' : 'es'}
+                            {filteredCount === 1 ? t('{count} match', { count: filteredCount }) : t('{count} matches', { count: filteredCount })}
                         </span>
                     )}
                 </div>
@@ -328,7 +330,7 @@ const DutyRosterView: React.FC = () => {
                     <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                     <input
                         type="search"
-                        placeholder="Search personnel by name, handle, or rank…"
+                        placeholder={t('Search personnel by name, handle, or rank…')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
@@ -350,11 +352,11 @@ const DutyRosterView: React.FC = () => {
                         />
                     ) : (
                         <div className="flex bg-white/5 border-b border-white/5 px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0">
-                            <div className="flex-1">Identity</div>
-                            <div className="w-48 hidden @3xl/roster:block">Rank</div>
-                            <div className="w-44 hidden @5xl/roster:block">Position</div>
-                            <div className="w-32 text-center hidden @xl/roster:block">Status</div>
-                            <div className="w-24 text-right">Actions</div>
+                            <div className="flex-1">{t('Identity')}</div>
+                            <div className="w-48 hidden @3xl/roster:block">{t('Rank')}</div>
+                            <div className="w-44 hidden @5xl/roster:block">{t('Position')}</div>
+                            <div className="w-32 text-center hidden @xl/roster:block">{t('Status')}</div>
+                            <div className="w-24 text-right">{t('Actions')}</div>
                         </div>
                     )}
 
@@ -362,7 +364,7 @@ const DutyRosterView: React.FC = () => {
                         <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/60 backdrop-blur-xs">
                             <div className="flex flex-col items-center">
                                 <i className="fa-solid fa-circle-notch animate-spin text-3xl text-emerald-400 mb-3"></i>
-                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">Loading Roster...</span>
+                                <span className="text-[10px] font-black text-emerald-300 uppercase tracking-widest">{t('Loading Roster...')}</span>
                             </div>
                         </div>
                     ) : rosterMode === 'flat' ? (
@@ -387,8 +389,8 @@ const DutyRosterView: React.FC = () => {
                                     <EmptyState
                                         icon="fa-user-slash"
                                         accent="emerald"
-                                        heading="No personnel found"
-                                        description="Try a different search term or clear your filters."
+                                        heading={t('No personnel found')}
+                                        description={t('Try a different search term or clear your filters.')}
                                         compact
                                     />
                                 </div>
@@ -451,11 +453,11 @@ const DutyRosterView: React.FC = () => {
                                                 </div>
                                                 <div className="w-32 text-center hidden @xl/roster:block">
                                                     <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider ${member.isDuty ? 'bg-green-500/10 text-green-400' : 'text-slate-600'}`}>
-                                                        {member.isDuty ? 'Active' : 'Offline'}
+                                                        {member.isDuty ? t('Active') : t('Offline')}
                                                     </span>
                                                 </div>
                                                 <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => viewMemberProfile(member)} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
+                                                    <button onClick={() => viewMemberProfile(member)} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
                                                         <i className="fa-solid fa-id-card"></i>
                                                     </button>
                                                     {canManageDuty && (
@@ -463,7 +465,7 @@ const DutyRosterView: React.FC = () => {
                                                             onClick={() => handleToggleDuty(member)}
                                                             disabled={togglingId === member.id}
                                                             className={`p-1.5 rounded-sm transition-colors disabled:opacity-60 disabled:cursor-wait ${member.isDuty ? 'text-red-400 hover:bg-red-500/10' : 'text-green-400 hover:bg-green-500/10'}`}
-                                                            title={member.isDuty ? "Force Off Duty" : "Force On Duty"}
+                                                            title={member.isDuty ? t('Force Off Duty') : t('Force On Duty')}
                                                         >
                                                             <i className={`fa-solid ${togglingId === member.id ? 'fa-circle-notch animate-spin' : 'fa-power-off'}`}></i>
                                                         </button>
@@ -478,8 +480,8 @@ const DutyRosterView: React.FC = () => {
                                     <EmptyState
                                         icon="fa-user-slash"
                                         accent="emerald"
-                                        heading="No personnel found"
-                                        description={searchTerm || unitFilter.size > 0 || rankFilter.size > 0 ? 'Try a different search term or clear filters.' : 'No personnel match the selected view.'}
+                                        heading={t('No personnel found')}
+                                        description={searchTerm || unitFilter.size > 0 || rankFilter.size > 0 ? t('Try a different search term or clear filters.') : t('No personnel match the selected view.')}
                                         compact
                                     />
                                 </div>
@@ -497,26 +499,29 @@ const FlatColumnHeaders: React.FC<{
     sortKey: FlatSortKey;
     sortDir: SortDir;
     onSort: (key: FlatSortKey) => void;
-}> = ({ sortKey, sortDir, onSort }) => (
-    <div className="flex items-center bg-white/5 border-b border-white/5 px-4 py-3 shrink-0">
-        <div className="flex-1">
-            <SortableColumnHeader label="Name" sortKey="name" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+}> = ({ sortKey, sortDir, onSort }) => {
+    const { t } = useI18n();
+    return (
+        <div className="flex items-center bg-white/5 border-b border-white/5 px-4 py-3 shrink-0">
+            <div className="flex-1">
+                <SortableColumnHeader label={t('Name')} sortKey="name" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+            </div>
+            <div className="w-44 hidden @3xl/roster:block">
+                <SortableColumnHeader label={t('Rank')} sortKey="rank" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+            </div>
+            <div className="w-44 hidden @4xl/roster:block">
+                <SortableColumnHeader label={t('Position')} sortKey="position" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+            </div>
+            <div className="w-44 hidden @5xl/roster:block">
+                <SortableColumnHeader label={t('Unit')} sortKey="unit" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+            </div>
+            <div className="w-28 hidden @xl/roster:flex justify-center">
+                <SortableColumnHeader label={t('Status')} sortKey="isDuty" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
+            </div>
+            <div className="w-24 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('Actions')}</div>
         </div>
-        <div className="w-44 hidden @3xl/roster:block">
-            <SortableColumnHeader label="Rank" sortKey="rank" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
-        </div>
-        <div className="w-44 hidden @4xl/roster:block">
-            <SortableColumnHeader label="Position" sortKey="position" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
-        </div>
-        <div className="w-44 hidden @5xl/roster:block">
-            <SortableColumnHeader label="Unit" sortKey="unit" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
-        </div>
-        <div className="w-28 hidden @xl/roster:flex justify-center">
-            <SortableColumnHeader label="Status" sortKey="isDuty" activeKey={sortKey} sortDir={sortDir} onSort={onSort} accent="emerald" showInactiveIndicator />
-        </div>
-        <div className="w-24 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">Actions</div>
-    </div>
-);
+    );
+};
 
 const FlatMemberRow: React.FC<{
     member: User;
@@ -524,7 +529,9 @@ const FlatMemberRow: React.FC<{
     togglingId: number | null;
     onView: () => void;
     onToggleDuty: () => void;
-}> = ({ member, canManageDuty, togglingId, onView, onToggleDuty }) => (
+}> = ({ member, canManageDuty, togglingId, onView, onToggleDuty }) => {
+    const { t } = useI18n();
+    return (
     <div className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group">
         <div className="flex-1 flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
@@ -545,15 +552,15 @@ const FlatMemberRow: React.FC<{
             <span className="truncate">{member.position?.name || <span className="text-slate-600 italic">—</span>}</span>
         </div>
         <div className="w-44 hidden @5xl/roster:flex items-center text-xs text-slate-400 truncate">
-            {member.unit?.name || <span className="text-slate-600 italic">Unassigned</span>}
+            {member.unit?.name || <span className="text-slate-600 italic">{t('Unassigned')}</span>}
         </div>
         <div className="w-28 text-center hidden @xl/roster:block">
             <span className={`px-2 py-0.5 rounded-sm text-[10px] font-black uppercase tracking-wider ${member.isDuty ? 'bg-green-500/10 text-green-400' : 'text-slate-600'}`}>
-                {member.isDuty ? 'Active' : 'Offline'}
+                {member.isDuty ? t('Active') : t('Offline')}
             </span>
         </div>
         <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-            <button onClick={onView} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
+            <button onClick={onView} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
                 <i className="fa-solid fa-id-card"></i>
             </button>
             {canManageDuty && (
@@ -561,13 +568,14 @@ const FlatMemberRow: React.FC<{
                     onClick={onToggleDuty}
                     disabled={togglingId === member.id}
                     className={`p-1.5 rounded-sm transition-colors disabled:opacity-60 disabled:cursor-wait ${member.isDuty ? 'text-red-400 hover:bg-red-500/10' : 'text-green-400 hover:bg-green-500/10'}`}
-                    title={member.isDuty ? "Force Off Duty" : "Force On Duty"}
+                    title={member.isDuty ? t('Force Off Duty') : t('Force On Duty')}
                 >
                     <i className={`fa-solid ${togglingId === member.id ? 'fa-circle-notch animate-spin' : 'fa-power-off'}`}></i>
                 </button>
             )}
         </div>
     </div>
-);
+    );
+};
 
 export default DutyRosterView;

@@ -7,6 +7,7 @@ import { User, UserRole } from '../../types';
 import WindowFrame from '../layout/WindowFrame';
 import { VirtualizedList } from '../ui/VirtualizedList';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface BulkAssignClearanceModalProps {
     isOpen: boolean;
@@ -24,6 +25,7 @@ const FilterPopover: React.FC<{
     onToggle: (id: number) => void;
     onClear: () => void;
 }> = ({ label, icon, options, selected, onToggle, onClear }) => {
+    const { t } = useI18n();
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -35,9 +37,9 @@ const FilterPopover: React.FC<{
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
     const count = selected.size;
-    const summary = count === 0 ? `All ${label}s` : count === 1
-        ? options.find(o => selected.has(o.id))?.name || `1 ${label}`
-        : `${count} ${label}s`;
+    const summary = count === 0 ? t('All {label}s', { label: t(label) }) : count === 1
+        ? options.find(o => selected.has(o.id))?.name || t('1 {label}', { label: t(label) })
+        : t('{count} {label}s', { count, label: t(label) });
     return (
         <div ref={ref} className="relative">
             <button type="button" onClick={() => setOpen(o => !o)}
@@ -55,11 +57,11 @@ const FilterPopover: React.FC<{
                     {count > 0 && (
                         <button type="button" onClick={onClear}
                             className="w-full text-left text-[10px] font-bold text-slate-500 hover:text-amber-300 uppercase tracking-wider px-2 py-1 rounded-sm hover:bg-slate-800/50 transition-colors mb-1">
-                            <i className="fa-solid fa-xmark mr-1"></i>Clear all
+                            <i className="fa-solid fa-xmark mr-1"></i>{t('Clear all')}
                         </button>
                     )}
                     {options.length === 0 ? (
-                        <p className="text-[11px] text-slate-600 italic p-2">No {label.toLowerCase()}s.</p>
+                        <p className="text-[11px] text-slate-600 italic p-2">{t('No {label}s.', { label: t(label) })}</p>
                     ) : options.map(opt => (
                         <label key={opt.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:text-white p-1.5 rounded-sm hover:bg-slate-800/50 transition-colors">
                             <input type="checkbox" checked={selected.has(opt.id)} onChange={() => onToggle(opt.id)}
@@ -78,6 +80,7 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
     const { allUsers, units, securityClearances, limitingMarkers } = useMembers();
     const { addToast, confirm } = useNotification();
     const { hasPermission } = useAuth();
+    const { t } = useI18n();
 
     const [selected, setSelected] = useState<Set<number>>(() => new Set());
     const [search, setSearch] = useState('');
@@ -178,26 +181,28 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
 
     const summarizeAction = (): string => {
         const parts: string[] = [];
-        if (levelChoice === 'clear') parts.push('clear clearance level');
+        if (levelChoice === 'clear') parts.push(t('clear clearance level'));
         else if (levelChoice !== 'unchanged') {
             const lvl = securityClearances.find(c => c.id.toString() === levelChoice);
-            if (lvl) parts.push(`set Level ${lvl.level} (${lvl.name})`);
+            if (lvl) parts.push(t('set Level {level} ({name})', { level: lvl.level, name: lvl.name }));
         }
         const codes = Array.from(markerIds).map(id => limitingMarkers.find(m => m.id === id)?.code).filter(Boolean);
         if (markerMode === 'replace') {
-            parts.push(codes.length > 0 ? `replace markers with [${codes.join(', ')}]` : 'clear all markers');
+            parts.push(codes.length > 0 ? t('replace markers with [{codes}]', { codes: codes.join(', ') }) : t('clear all markers'));
         } else if (codes.length > 0) {
-            parts.push(`add markers [${codes.join(', ')}]`);
+            parts.push(t('add markers [{codes}]', { codes: codes.join(', ') }));
         }
-        return parts.length > 0 ? parts.join(' and ') : '(no changes)';
+        return parts.length > 0 ? parts.join(' ' + t('and') + ' ') : t('(no changes)');
     };
 
     const handleSubmit = async () => {
         if (!canSubmit) return;
         const confirmed = await confirm({
-            title: 'Apply Bulk Clearance Update',
-            message: `Apply: ${summarizeAction()} to ${selected.size} member${selected.size === 1 ? '' : 's'}?`,
-            confirmText: 'Apply',
+            title: t('Apply Bulk Clearance Update'),
+            message: selected.size === 1
+                ? t('Apply: {action} to {count} member?', { action: summarizeAction(), count: selected.size })
+                : t('Apply: {action} to {count} members?', { action: summarizeAction(), count: selected.size }),
+            confirmText: t('Apply', { context: 'bulk-clearance' }),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -219,24 +224,24 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
             await refreshMainState();
             if (updated < total) {
                 addToast(
-                    'Partial update',
+                    t('Partial update'),
                     <i className="fa-solid fa-triangle-exclamation"></i>,
                     'bg-amber-500/10 text-amber-300 border-amber-500/50',
-                    { description: `Updated ${updated} of ${total} members. See console for skipped users.` }
+                    { description: t('Updated {updated} of {total} members. See console for skipped users.', { updated, total }) }
                 );
             } else {
                 addToast(
-                    'Clearance updated',
+                    t('Clearance updated'),
                     <i className="fa-solid fa-check"></i>,
                     'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-                    { description: `${updated} member${updated === 1 ? '' : 's'} updated.` }
+                    { description: updated === 1 ? t('{count} member updated.', { count: updated }) : t('{count} members updated.', { count: updated }) }
                 );
             }
             onClose();
         } catch (err: any) {
             console.error('[BulkAssignClearance] failed:', err);
-            addToast('Update Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not apply the bulk update.' });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50',
+                { description: err?.message || t('Could not apply the bulk update.') });
         } finally {
             setSubmitting(false);
         }
@@ -250,8 +255,8 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Bulk Assign Clearance"
-            subtitle="Apply clearance level + markers to multiple members"
+            title={t('Bulk Assign Clearance')}
+            subtitle={t('Apply clearance level + markers to multiple members')}
             icon="fa-solid fa-users-gear"
             color="red"
             width="max-w-3xl"
@@ -261,18 +266,18 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                     {/* Member picker */}
                     <div>
                         <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
-                            <label className={labelClass} style={{ marginBottom: 0 }}>Members ({selected.size} selected)</label>
+                            <label className={labelClass} style={{ marginBottom: 0 }}>{t('Members ({count} selected)', { count: selected.size })}</label>
                             <button type="button" onClick={handleSelectAllVisible}
                                 className="text-[10px] font-bold text-red-300 hover:text-red-200 uppercase tracking-wider"
                                 disabled={visibleMembers.length === 0}>
-                                {allVisibleSelected ? 'Deselect visible' : 'Select all visible'}
+                                {allVisibleSelected ? t('Deselect visible') : t('Select all visible')}
                             </button>
                         </div>
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <div className="relative flex-1 min-w-[180px]">
                                 <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                                 <input type="search" value={search} onChange={e => setSearch(e.target.value)}
-                                    placeholder="Search by name, handle, rank…"
+                                    placeholder={t('Search by name, handle, rank…')}
                                     className="w-full bg-slate-900/60 text-white pl-9 pr-3 py-2 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 text-sm focus:ring-1 focus:ring-red-500/50 focus:border-red-500/40 transition-all" />
                             </div>
                             <FilterPopover
@@ -286,7 +291,7 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                         </div>
                         <div id="bulk-clearance-list" className="bg-slate-950/40 border border-slate-800 rounded-lg max-h-[300px] overflow-y-auto custom-scrollbar">
                             {visibleMembers.length === 0 ? (
-                                <p className="p-6 text-center text-xs text-slate-500 italic">No members match the current filters.</p>
+                                <p className="p-6 text-center text-xs text-slate-500 italic">{t('No members match the current filters.')}</p>
                             ) : (
                                 <VirtualizedList<User>
                                     items={visibleMembers}
@@ -302,7 +307,7 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-bold text-slate-200 truncate">{member.name}</p>
                                                     <p className="text-[10px] text-slate-500 font-mono truncate">
-                                                        {member.rank?.name || 'Unranked'} · {member.unit?.name || 'Unassigned'}
+                                                        {member.rank?.name || t('Unranked')} · {member.unit?.name || t('Unassigned')}
                                                     </p>
                                                 </div>
                                                 {member.clearanceLevel && (
@@ -320,21 +325,21 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
 
                     {/* Clearance level */}
                     <div>
-                        <label className={labelClass}>Clearance Level</label>
+                        <label className={labelClass}>{t('Clearance Level')}</label>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             <LevelChoice
                                 value="unchanged"
                                 current={levelChoice}
                                 onChange={setLevelChoice}
-                                label="No change"
-                                hint="Leave each member's level alone"
+                                label={t('No change')}
+                                hint={t("Leave each member's level alone")}
                             />
                             <LevelChoice
                                 value="clear"
                                 current={levelChoice}
                                 onChange={setLevelChoice}
-                                label="Clear"
-                                hint="Remove level"
+                                label={t('Clear')}
+                                hint={t('Remove level')}
                                 accent="amber"
                             />
                             {securityClearances.map(c => (
@@ -353,7 +358,7 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                     {/* Markers */}
                     <div>
                         <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
-                            <label className={labelClass} style={{ marginBottom: 0 }}>Limiting Markers</label>
+                            <label className={labelClass} style={{ marginBottom: 0 }}>{t('Limiting Markers')}</label>
                             <div className="flex items-center gap-1 bg-slate-900/60 rounded-lg border border-slate-700 p-0.5">
                                 {(['replace', 'add'] as const).map(mode => (
                                     <button key={mode} type="button" onClick={() => setMarkerMode(mode)}
@@ -362,18 +367,18 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                                                 ? 'bg-red-500/20 text-red-200 border border-red-500/30'
                                                 : 'text-slate-500 hover:text-slate-300 border border-transparent'
                                         }`}>
-                                        {mode === 'replace' ? 'Replace' : 'Add'}
+                                        {mode === 'replace' ? t('Replace') : t('Add')}
                                     </button>
                                 ))}
                             </div>
                         </div>
                         <p className="text-[10px] text-slate-500 italic mb-2">
                             {markerMode === 'replace'
-                                ? 'Each member\'s markers will be REPLACED with the selected set (existing markers cleared).'
-                                : 'Selected markers will be ADDED to each member; existing markers are not removed.'}
+                                ? t("Each member's markers will be REPLACED with the selected set (existing markers cleared).")
+                                : t('Selected markers will be ADDED to each member; existing markers are not removed.')}
                         </p>
                         {limitingMarkers.length === 0 ? (
-                            <p className="text-[11px] text-slate-600 italic">No limiting markers defined.</p>
+                            <p className="text-[11px] text-slate-600 italic">{t('No limiting markers defined.')}</p>
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {limitingMarkers.map(m => {
@@ -391,7 +396,7 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
                                             </div>
                                             {m.syncRestricted && (
                                                 <span className="text-[8px] bg-red-500/10 text-red-300 border border-red-500/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold shrink-0">
-                                                    No Sync
+                                                    {t('No Sync')}
                                                 </span>
                                             )}
                                         </button>
@@ -404,18 +409,18 @@ const BulkAssignClearanceModal: React.FC<BulkAssignClearanceModalProps> = ({ isO
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex items-center justify-between gap-3 rounded-b-xl">
                     <span className="text-[10px] text-slate-500 italic truncate">
-                        {selected.size === 0 ? 'Pick members above to enable Apply.' : summarizeAction()}
+                        {selected.size === 0 ? t('Pick members above to enable Apply.') : summarizeAction()}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
                         <button onClick={onClose} disabled={submitting}
                             className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors">
-                            Cancel
+                            {t('Cancel')}
                         </button>
                         <button onClick={handleSubmit} disabled={!canSubmit}
                             className="flex items-center gap-2 px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 border border-red-500/40 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-red-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
                             {submitting
-                                ? <><i className="fa-solid fa-spinner animate-spin"></i> Applying</>
-                                : <><i className="fa-solid fa-users-gear"></i> Apply to {selected.size}</>}
+                                ? <><i className="fa-solid fa-spinner animate-spin"></i> {t('Applying')}</>
+                                : <><i className="fa-solid fa-users-gear"></i> {t('Apply to {count}', { count: selected.size })}</>}
                         </button>
                     </div>
                 </div>

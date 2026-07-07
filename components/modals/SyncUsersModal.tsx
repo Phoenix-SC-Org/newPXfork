@@ -4,6 +4,7 @@ import { useData } from '../../contexts/DataContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { User } from '../../types';
 import WindowFrame from '../layout/WindowFrame';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface SyncUsersModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface SyncUsersModalProps {
 const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
     const { rpcAction } = useData();
     const { allUsers } = useMembers();
+    const { t, locale } = useI18n();
     const [isRunning, setIsRunning] = useState(false);
     // Append-only log lines. Each carries a monotonically-increasing `id`
     // (minted at append time) so React has a stable, unique key without falling
@@ -66,15 +68,15 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
     }, [logs]);
 
     const addLog = useCallback((message: string) => {
-        const timestamp = new Date().toLocaleTimeString();
+        const timestamp = new Date().toLocaleTimeString(locale);
         const id = logIdRef.current++;
         setLogs(prev => [...prev, { id, text: `[${timestamp}] ${message}` }]);
-    }, []);
+    }, [locale]);
 
     const processNextUser = useCallback(async () => {
         if (currentIndex >= usersToSync.length) {
             setIsRunning(false);
-            addLog("--- SYNC COMPLETE ---");
+            addLog(t('--- SYNC COMPLETE ---'));
             return;
         }
 
@@ -86,7 +88,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
             addLog(`[${currentIndex + 1}/${usersToSync.length}] ${user.name}: ${result}`);
 
         } catch (error: any) {
-            addLog(`[${currentIndex + 1}/${usersToSync.length}] ${user.name}: FAILED - ${error.message || 'Unknown error'}`);
+            addLog(`[${currentIndex + 1}/${usersToSync.length}] ${user.name}: ${t('FAILED')} - ${error.message || t('Unknown error')}`);
         }
 
         setCompletedCount(prev => prev + 1);
@@ -96,7 +98,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
             setCurrentIndex(prev => prev + 1);
             isProcessingRef.current = false;
         }, 1500);
-    }, [currentIndex, usersToSync, rpcAction, addLog]);
+    }, [currentIndex, usersToSync, rpcAction, addLog, t]);
 
     useEffect(() => {
         if (isRunning && !isProcessingRef.current) {
@@ -108,7 +110,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
         // Freeze the user list so live updates don't shift indices
         setSnapshot([...allUsers]);
         setIsRunning(true);
-        addLog(`Starting sync for ${allUsers.length} users...`);
+        addLog(t('Starting sync for {count} users...', { count: allUsers.length }));
     };
 
     const progress = usersToSync.length > 0 ? (completedCount / usersToSync.length) * 100 : 0;
@@ -117,8 +119,8 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Sync User Database"
-            subtitle="Identity & Role Propagation"
+            title={t('Sync User Database')}
+            subtitle={t('Identity & Role Propagation')}
             icon="fa-solid fa-rotate"
             color="sky"
             width="max-w-2xl"
@@ -126,7 +128,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
             <div className="flex flex-col h-full bg-slate-900/50">
                 <div className="p-6 space-y-4 flex-1 overflow-hidden flex flex-col">
                     <p className="text-slate-300 text-sm">
-                        This process will iterate through all {usersToSync.length} users in the database, updating their <strong className="text-white">Display Name</strong>, <strong className="text-white">Avatar</strong>, and syncing their <strong className="text-white">Rank</strong> based on current Discord status.
+                        {t('This process will iterate through all {count} users in the database, updating their', { count: usersToSync.length })} <strong className="text-white">{t('Display Name')}</strong>, <strong className="text-white">{t('Avatar')}</strong> {t('and syncing their')} <strong className="text-white">{t('Rank')}</strong> {t('based on current Discord status.')}
                     </p>
 
                     <div className="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-700">
@@ -136,7 +138,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
                         ></div>
                     </div>
                     <p className="text-xs text-right text-slate-400 font-mono">
-                        {completedCount} / {usersToSync.length} Users Processed
+                        {t('{completed} / {total} Users Processed', { completed: completedCount, total: usersToSync.length })}
                     </p>
 
                     <div
@@ -144,7 +146,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
                         className="h-80 bg-slate-950/80 border border-slate-800 rounded-lg p-4 overflow-y-auto font-mono text-xs space-y-1 shadow-inner custom-scrollbar"
                     >
                         {logs.length === 0 ? (
-                            <span className="text-slate-600 italic">Ready to start. Click 'Start Sync' to begin.</span>
+                            <span className="text-slate-600 italic">{t("Ready to start. Click 'Start Sync' to begin.")}</span>
                         ) : (
                             logs.map((log) => (
                                 <div key={log.id} className="text-emerald-400 border-b border-white/5 pb-0.5 mb-0.5 last:border-0 wrap-break-word">
@@ -153,7 +155,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
                             ))
                         )}
                         {isRunning && (
-                            <div className="text-sky-400 animate-pulse">_ Updating identity & roles...</div>
+                            <div className="text-sky-400 animate-pulse">{t('_ Updating identity & roles...')}</div>
                         )}
                     </div>
                 </div>
@@ -162,7 +164,7 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
                     {!isRunning ? (
                         <>
                             <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors mr-3">
-                                {completedCount > 0 ? 'Close' : 'Cancel'}
+                                {completedCount > 0 ? t('Close') : t('Cancel')}
                             </button>
                             <button
                                 type="button"
@@ -170,13 +172,13 @@ const SyncUsersModal: React.FC<SyncUsersModalProps> = ({ isOpen, onClose }) => {
                                 disabled={usersToSync.length === 0}
                                 className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Start Sync
+                                {t('Start Sync')}
                             </button>
                         </>
                     ) : (
                         <button className="px-6 py-2 bg-slate-800 text-slate-400 rounded-lg text-xs font-bold uppercase tracking-wider cursor-wait flex items-center gap-2" disabled>
                             <i className="fa-solid fa-spinner animate-spin"></i>
-                            Syncing...
+                            {t('Syncing...')}
                         </button>
                     )}
                 </div>

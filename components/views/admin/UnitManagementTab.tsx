@@ -7,10 +7,12 @@ import { OrganizationalUnit } from '../../../types';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 type UnitNode = OrganizationalUnit & { children: UnitNode[], memberCount: number };
 
 const UnitManagementTab: React.FC = () => {
+    const { t } = useI18n();
     const { isFetching } = useData();
     const { units, allUsers, deleteUnit, updateUnit } = useMembers();
     const { addToast, confirm } = useNotification();
@@ -78,34 +80,34 @@ const UnitManagementTab: React.FC = () => {
     const handleDelete = async (unit: UnitNode) => {
         if (unit.memberCount > 0) {
             await confirm({
-                title: 'Cannot Delete',
-                message: `Cannot delete "${unit.name}" as it is assigned to ${unit.memberCount} member(s). Please reassign them first.`,
-                confirmText: 'OK',
+                title: t('Cannot Delete'),
+                message: t('Cannot delete "{name}" as it is assigned to {count} member(s). Please reassign them first.', { name: unit.name, count: unit.memberCount }),
+                confirmText: t('OK'),
                 variant: 'info'
             });
             return;
         }
         if (unit.children.length > 0) {
             await confirm({
-                title: 'Cannot Delete',
-                message: `Cannot delete "${unit.name}" as it is the parent of ${unit.children.length} other unit(s). Please reassign or delete child units first.`,
-                confirmText: 'OK',
+                title: t('Cannot Delete'),
+                message: t('Cannot delete "{name}" as it is the parent of {count} other unit(s). Please reassign or delete child units first.', { name: unit.name, count: unit.children.length }),
+                confirmText: t('OK'),
                 variant: 'info'
             });
             return;
         }
         const confirmed = await confirm({
-            title: 'Delete Unit',
-            message: `Permanently delete the unit "${unit.name}"? Past operations, tasks, command-node assignments, and transfer requests that referenced this unit will be preserved but unlinked. Unit posts will be deleted. This cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Unit'),
+            message: t('Permanently delete the unit "{name}"? Past operations, tasks, command-node assignments, and transfer requests that referenced this unit will be preserved but unlinked. Unit posts will be deleted. This cannot be undone.', { name: unit.name }),
+            confirmText: t('Delete'),
             variant: 'danger'
         });
         if (confirmed) {
             try {
                 await deleteUnit(unit.id);
-                addToast("Unit Deleted", <i className="fa-solid fa-trash-can"></i>, "bg-slate-500/10 text-slate-300 border-slate-500/50", { description: `${unit.name} has been permanently deleted.` });
+                addToast(t('Unit Deleted'), <i className="fa-solid fa-trash-can"></i>, "bg-slate-500/10 text-slate-300 border-slate-500/50", { description: t('{name} has been permanently deleted.', { name: unit.name }) });
             } catch (err: any) {
-                addToast("Delete Failed", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || "Failed to delete the unit." });
+                addToast(t('Delete Failed'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: err?.message || t('Failed to delete the unit.') });
             }
         }
     };
@@ -169,7 +171,7 @@ const UnitManagementTab: React.FC = () => {
             // Case 1: Reparenting (Inside)
             if (dropTarget.position === 'inside') {
                 await updateUnit({ ...draggedUnit, parentUnitId: targetUnit.id });
-                addToast("Unit Moved", <i className="fa-solid fa-folder-tree"></i>, "bg-slate-500/10 text-slate-300 border-slate-500/50", { description: `Moved ${draggedUnit.name} into ${targetUnit.name}.` });
+                addToast(t('Unit Moved'), <i className="fa-solid fa-folder-tree"></i>, "bg-slate-500/10 text-slate-300 border-slate-500/50", { description: t('Moved {source} into {target}.', { source: draggedUnit.name, target: targetUnit.name }) });
             }
             // Case 2: Reordering (Before/After)
             else {
@@ -192,11 +194,11 @@ const UnitManagementTab: React.FC = () => {
                 }));
 
                 await Promise.all(updates);
-                addToast("Unit Reordered", <i className="fa-solid fa-sort"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: `${draggedUnit.name} has been repositioned successfully.` });
+                addToast(t('Unit Reordered'), <i className="fa-solid fa-sort"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t('{name} has been repositioned successfully.', { name: draggedUnit.name }) });
             }
         } catch (err) {
             console.error("Move failed:", err);
-            addToast("Move Failed", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to move the unit in the hierarchy." });
+            addToast(t('Move Failed'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to move the unit in the hierarchy.') });
         } finally {
             setIsUpdating(false);
             setDropTarget(null);
@@ -241,8 +243,8 @@ const UnitManagementTab: React.FC = () => {
                             </div>
                             <div className="min-w-0">
                                 <p className={`text-sm font-bold truncate ${level === 0 ? 'text-white' : 'text-slate-200'}`}>{unit.name}</p>
-                                {level === 0 && <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Top Level Command</span>}
-                                <span className="text-[10px] text-slate-500 md:hidden">{unit.memberCount} personnel</span>
+                                {level === 0 && <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{t('Top Level Command')}</span>}
+                                <span className="text-[10px] text-slate-500 md:hidden">{t('{count} personnel', { count: unit.memberCount })}</span>
                             </div>
                         </div>
                     </div>
@@ -258,10 +260,10 @@ const UnitManagementTab: React.FC = () => {
                     </div>
 
                     <div className="w-24 md:w-32 text-right md:opacity-0 md:group-hover:opacity-100 transition-opacity flex justify-end gap-2">
-                        <button onClick={() => openUnitModal(unit)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                        <button onClick={() => openUnitModal(unit)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t('Edit')}>
                             <i className="fa-solid fa-pencil"></i>
                         </button>
-                        <button onClick={() => handleDelete(unit)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title="Delete">
+                        <button onClick={() => handleDelete(unit)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title={t('Delete')}>
                             <i className="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
@@ -274,13 +276,13 @@ const UnitManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Organizational Units"
+                title={t('Organizational Units')}
                 icon="fa-solid fa-sitemap"
                 accent="cyan"
-                subtitle="Manage unit structure and hierarchy. Drag and drop to reorder or reparent."
+                subtitle={t('Manage unit structure and hierarchy. Drag and drop to reorder or reparent.')}
                 meta={isFetching['main'] && (
                     <span className="text-slate-300 animate-pulse text-xs font-bold flex items-center gap-1">
-                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...
+                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing...')}
                     </span>
                 )}
                 actions={
@@ -289,7 +291,7 @@ const UnitManagementTab: React.FC = () => {
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search units..."
+                                placeholder={t('Search units...')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -300,7 +302,7 @@ const UnitManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Unit
+                            {t('Create Unit')}
                         </button>
                     </div>
                 }
@@ -309,31 +311,31 @@ const UnitManagementTab: React.FC = () => {
             <div className={`bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden ${isUpdating ? 'opacity-60 pointer-events-none' : ''}`}>
                 <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
                     <div className="w-10 hidden md:block"></div>
-                    <div className="flex-1">Unit Hierarchy</div>
-                    <div className="w-24 text-center hidden md:block">Order</div>
-                    <div className="w-32 text-center hidden md:block">Personnel</div>
-                    <div className="w-24 md:w-32 text-right">Actions</div>
+                    <div className="flex-1">{t('Unit Hierarchy')}</div>
+                    <div className="w-24 text-center hidden md:block">{t('Order')}</div>
+                    <div className="w-32 text-center hidden md:block">{t('Personnel')}</div>
+                    <div className="w-24 md:w-32 text-right">{t('Actions')}</div>
                 </div>
                 <div className="divide-y divide-slate-700/50">
                     {filteredTree.length > 0 ? (
                         filteredTree.map(node => renderUnitRow(node))
                     ) : (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No units found.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No units found.')}</p>
                         </div>
                     )}
                 </div>
             </div>
             {searchTerm ? (
-                <p className="text-xs text-amber-500 italic text-center mt-4">Drag and drop reordering is disabled while searching.</p>
+                <p className="text-xs text-amber-500 italic text-center mt-4">{t('Drag and drop reordering is disabled while searching.')}</p>
             ) : (
                 <p className="text-center text-xs text-slate-600 mt-4 italic">
                     {isUpdating ? (
-                        <span className="text-slate-300"><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> Updating unit structure...</span>
+                        <span className="text-slate-300"><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> {t('Updating unit structure...')}</span>
                     ) : (
                         <>
                             <i className="fa-solid fa-lightbulb mr-1 text-amber-500/50"></i>
-                            Tip: Drag a unit onto another to set it as a child, or between rows to reorder.
+                            {t('Tip: Drag a unit onto another to set it as a child, or between rows to reorder.')}
                         </>
                     )}
                 </p>

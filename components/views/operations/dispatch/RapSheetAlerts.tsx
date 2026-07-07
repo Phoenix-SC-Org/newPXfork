@@ -16,7 +16,7 @@ interface Props {
  *   - Low reputation on a registered subject (≤ 15)
  */
 export default function RapSheetAlerts({ activeWarrants, highestThreat, subject }: Props) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const showWarrant = activeWarrants.length > 0;
     const showThreat = highestThreat === 'Critical' || highestThreat === 'High';
     const showLowTrust = !!subject && (subject.reputation ?? 100) <= 15;
@@ -37,7 +37,7 @@ export default function RapSheetAlerts({ activeWarrants, highestThreat, subject 
                         <div className="text-sm text-white truncate">
                             {t('{count} outstanding', { count: activeWarrants.length })}
                             {activeWarrants[0]?.action ? ` · ${t(activeWarrants[0].action, { context: 'warrantAction' })}` : ''}
-                            {activeWarrants[0]?.uecReward ? ` · ${t('{amount} aUEC reward', { amount: activeWarrants[0].uecReward.toLocaleString() })}` : ''}
+                            {activeWarrants[0]?.uecReward ? ` · ${t('{amount} aUEC reward', { amount: activeWarrants[0].uecReward.toLocaleString(locale) })}` : ''}
                         </div>
                     </div>
                 </div>

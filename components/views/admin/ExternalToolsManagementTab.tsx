@@ -5,6 +5,7 @@ import { ExternalTool } from '../../../types';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const UNCATEGORISED_LABEL = 'General';
 
@@ -12,6 +13,7 @@ const ExternalToolsManagementTab: React.FC = () => {
     const { externalTools, deleteExternalTool, reorderExternalTool } = useConfig();
     const { confirm } = useNotification();
     const { openExternalToolModal } = useModalRegistry();
+    const { t } = useI18n();
     const [searchTerm, setSearchTerm] = useState('');
     const [reorderingId, setReorderingId] = useState<number | null>(null);
 
@@ -44,7 +46,7 @@ const ExternalToolsManagementTab: React.FC = () => {
     }, [externalTools, searchTerm]);
 
     const handleDelete = async (tool: ExternalTool) => {
-        if (await confirm({ title: 'Delete External Tool', message: `Are you sure you want to delete the external tool "${tool.title}"?`, confirmText: 'Delete', variant: 'danger' })) {
+        if (await confirm({ title: t('Delete External Tool'), message: t('Are you sure you want to delete the external tool "{title}"?', { title: tool.title }), confirmText: t('Delete'), variant: 'danger' })) {
             deleteExternalTool(tool.id);
         }
     };
@@ -80,17 +82,17 @@ const ExternalToolsManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="External Tools"
+                title={t("External Tools")}
                 icon="fa-solid fa-toolbox"
                 accent="cyan"
-                subtitle="Manage third-party resources and links. Group tools with categories; reorder within a category using the arrows."
+                subtitle={t("Manage third-party resources and links. Group tools with categories; reorder within a category using the arrows.")}
                 actions={
                     <div className="flex gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search tools..."
+                                placeholder={t("Search tools...")}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -101,7 +103,7 @@ const ExternalToolsManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Tool
+                            {t('Create Tool')}
                         </button>
                     </div>
                 }
@@ -109,14 +111,14 @@ const ExternalToolsManagementTab: React.FC = () => {
 
             {grouped.length === 0 ? (
                 <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 p-12 text-center">
-                    <p className="text-slate-500 font-medium italic">No tools match your criteria.</p>
+                    <p className="text-slate-500 font-medium italic">{t('No tools match your criteria.')}</p>
                 </div>
             ) : grouped.map(group => (
                 <div key={group.key} className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                     <div className="flex items-center justify-between bg-slate-800/60 px-4 py-2.5 border-b border-slate-700/50">
                         <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.18em] flex items-center gap-2">
                             <i className="fa-solid fa-folder-open text-cyan-500/60 text-xs"></i>
-                            {group.key}
+                            {group.key === UNCATEGORISED_LABEL ? t(UNCATEGORISED_LABEL) : group.key}
                             <span className="text-slate-600 font-mono">({group.tools.length})</span>
                         </p>
                     </div>
@@ -133,7 +135,7 @@ const ExternalToolsManagementTab: React.FC = () => {
                                             onClick={() => move(tool, 'up')}
                                             disabled={isFirst || reorderingId !== null}
                                             className="text-slate-500 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] p-0.5"
-                                            title="Move up within category"
+                                            title={t("Move up within category")}
                                         >
                                             <i className="fa-solid fa-chevron-up"></i>
                                         </button>
@@ -141,7 +143,7 @@ const ExternalToolsManagementTab: React.FC = () => {
                                             onClick={() => move(tool, 'down')}
                                             disabled={isLast || reorderingId !== null}
                                             className="text-slate-500 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed text-[10px] p-0.5"
-                                            title="Move down within category"
+                                            title={t("Move down within category")}
                                         >
                                             <i className="fa-solid fa-chevron-down"></i>
                                         </button>
@@ -168,7 +170,7 @@ const ExternalToolsManagementTab: React.FC = () => {
                                     <div className="w-48 hidden lg:flex flex-wrap gap-1">
                                         {tool.audience.slice(0, 3).map((role) => (
                                             <span key={role} className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded-sm border border-slate-700 uppercase font-bold">
-                                                {role}
+                                                {t(role)}
                                             </span>
                                         ))}
                                         {tool.audience.length > 3 && (
@@ -177,10 +179,10 @@ const ExternalToolsManagementTab: React.FC = () => {
                                     </div>
 
                                     <div className="w-24 text-right flex justify-end gap-2">
-                                        <button onClick={() => openExternalToolModal(tool)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                        <button onClick={() => openExternalToolModal(tool)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t("Edit")}>
                                             <i className="fa-solid fa-pencil"></i>
                                         </button>
-                                        <button onClick={() => handleDelete(tool)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title="Delete">
+                                        <button onClick={() => handleDelete(tool)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title={t("Delete")}>
                                             <i className="fa-solid fa-trash-can"></i>
                                         </button>
                                     </div>

@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function QmOverviewTab({ overview, lowStock, lowStockLoading, onOpenArmory, onOpenIssuances }: Props) {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     // Low-stock detail is served by a bounded qm:list_low_stock RPC (top N
     // SKUs at or below the threshold) so the overview never has to pull the
     // full inventory list just to surface a handful of cards.
@@ -23,7 +23,7 @@ export default function QmOverviewTab({ overview, lowStock, lowStockLoading, onO
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
                     label={t('Total Items')}
-                    value={overview.totalItems.toLocaleString()}
+                    value={overview.totalItems.toLocaleString(locale)}
                     sub={overview.distinctSkus === 1
                         ? t('{count} distinct SKU', { count: overview.distinctSkus })
                         : t('{count} distinct SKUs', { count: overview.distinctSkus })}
@@ -34,7 +34,7 @@ export default function QmOverviewTab({ overview, lowStock, lowStockLoading, onO
                 />
                 <MetricCard
                     label={t('On Issue')}
-                    value={overview.itemsOnIssue.toLocaleString()}
+                    value={overview.itemsOnIssue.toLocaleString(locale)}
                     sub={t('Items currently held by members')}
                     icon="fa-people-carry-box"
                     accent="sky"

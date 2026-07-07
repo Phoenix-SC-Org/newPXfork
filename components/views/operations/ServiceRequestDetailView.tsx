@@ -268,7 +268,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
     const { serviceTypes } = useConfig();
     const { warrants } = useOperations();
     const { confirm, addToast } = useNotification();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
     // Always read latest from live data if present (so background refreshes flow in)
@@ -652,7 +652,7 @@ const ServiceRequestDetailView: React.FC<ServiceRequestDetailViewProps> = ({
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('UEC Earned')}</p>
                                             <div className="flex items-center gap-2">
                                                 <i className="fa-solid fa-coins text-amber-400" aria-hidden />
-                                                <span className="text-white font-black font-mono">{(request.uecEarned || 0).toLocaleString()}</span>
+                                                <span className="text-white font-black font-mono">{(request.uecEarned || 0).toLocaleString(locale)}</span>
                                             </div>
                                         </div>
                                         <div className="p-3 rounded-lg border border-white/5 bg-slate-950/40">

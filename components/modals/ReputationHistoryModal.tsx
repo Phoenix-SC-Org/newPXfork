@@ -4,6 +4,7 @@ import { User, HydratedReputationHistoryEntry } from '../../types';
 import { useData } from '../../contexts/DataContext';
 import { useFormatDate } from '../../contexts/AuthContext';
 import WindowFrame from '../layout/WindowFrame';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface ReputationHistoryModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface ReputationHistoryModalProps {
 const ReputationHistoryModal: React.FC<ReputationHistoryModalProps> = ({ isOpen, onClose, user }) => {
     const { getReputationHistory } = useData();
     const fmt = useFormatDate();
+    const { t } = useI18n();
     const [history, setHistory] = useState<HydratedReputationHistoryEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +45,7 @@ const ReputationHistoryModal: React.FC<ReputationHistoryModalProps> = ({ isOpen,
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Reputation History"
+            title={t('Reputation History')}
             subtitle={user.name}
             icon="fa-solid fa-scale-balanced"
             color="indigo"
@@ -54,10 +56,10 @@ const ReputationHistoryModal: React.FC<ReputationHistoryModalProps> = ({ isOpen,
                     {isLoading ? (
                         <div className="text-center text-slate-400 py-10 flex flex-col items-center">
                             <i className="fa-solid fa-spinner animate-spin text-2xl text-indigo-500 mb-2"></i>
-                            <span className="text-xs uppercase tracking-widest">Loading Record...</span>
+                            <span className="text-xs uppercase tracking-widest">{t('Loading Record...')}</span>
                         </div>
                     ) : history.length === 0 ? (
-                        <div className="text-center text-slate-500 py-10 italic">No reputation history found for this user.</div>
+                        <div className="text-center text-slate-500 py-10 italic">{t('No reputation history found for this user.')}</div>
                     ) : (
                         <div className="space-y-4">
                             {history.map(entry => (
@@ -96,7 +98,7 @@ const ReputationHistoryModal: React.FC<ReputationHistoryModalProps> = ({ isOpen,
                     )}
                 </div>
                 <div className="flex justify-end p-4 bg-slate-900/80 border-t border-white/5 rounded-b-xl backdrop-blur-sm">
-                    <button type="button" onClick={onClose} className="px-6 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">Close Record</button>
+                    <button type="button" onClick={onClose} className="px-6 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">{t('Close Record')}</button>
                 </div>
             </div>
         </WindowFrame>

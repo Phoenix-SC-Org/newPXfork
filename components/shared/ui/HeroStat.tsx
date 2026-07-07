@@ -1,5 +1,6 @@
 import React from 'react';
 import { ACCENTS, AccentKey } from './accents';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     label: string;
@@ -19,9 +20,10 @@ interface Props {
  * fit comfortably next to a callsign chip + title.
  */
 export default function HeroStat({ label, value, sub, icon, accent = 'sky', emphasize, onClick }: Props) {
+    const { locale } = useI18n();
     const a = ACCENTS[accent];
     const clickable = !!onClick;
-    const displayValue = typeof value === 'number' ? value.toLocaleString() : value;
+    const displayValue = typeof value === 'number' ? value.toLocaleString(locale) : value;
 
     return (
         <button

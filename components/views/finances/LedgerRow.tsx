@@ -39,8 +39,8 @@ interface Props {
 
 export default function LedgerRow({ entry, accounts, onApprove, onReject, onReverse, dense }: Props) {
     const fmt = useFormatDate();
-    const { t } = useI18n();
-    const formatRelative = (iso: string): string => formatRelativeTime(iso, fmt.prefs);
+    const { t, locale } = useI18n();
+    const formatRelative = (iso: string): string => formatRelativeTime(iso, fmt.prefs, t);
     const accent = TYPE_ACCENT[entry.entryType];
     const a = ACCENTS[accent];
     const account = accounts?.find((acc) => acc.id === entry.accountId);
@@ -81,7 +81,7 @@ export default function LedgerRow({ entry, accounts, onApprove, onReject, onReve
                 <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
                     <div className="text-right">
                         <div className={`text-base font-black font-mono ${entry.amount > 0 ? 'text-emerald-300' : entry.amount < 0 ? 'text-rose-300' : 'text-slate-300'}`}>
-                            {sign}{magnitude.toLocaleString()} <span className="text-[10px] text-slate-500 font-normal">aUEC</span>
+                            {sign}{magnitude.toLocaleString(locale)} <span className="text-[10px] text-slate-500 font-normal">aUEC</span>
                         </div>
                         <div className="text-[10px] text-slate-500 font-mono">{formatRelative(entry.createdAt)}</div>
                     </div>

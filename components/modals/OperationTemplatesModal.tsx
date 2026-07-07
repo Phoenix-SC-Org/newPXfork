@@ -27,7 +27,7 @@ function countTemplate(p: OperationTemplatePayload): { phases: number; tasks: nu
 }
 
 const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpen, onClose }) => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const { operationTemplates, deleteOperationTemplate, importOperationTemplate, updateOperationTemplate } = useOperations();
     const { hasPermission } = useAuth();
     const { addToast, confirm } = useNotification();
@@ -306,7 +306,7 @@ const OperationTemplatesModal: React.FC<OperationTemplatesModalProps> = ({ isOpe
                                                         <p className="text-xs text-slate-400 mt-1">{tpl.description}</p>
                                                     )}
                                                     <p className="text-[10px] text-slate-600 mt-1.5">
-                                                        {tpl.createdByName ? t('By {name}', { name: tpl.createdByName }) : t('Unknown author')} · {new Date(tpl.createdAt).toLocaleDateString()}
+                                                        {tpl.createdByName ? t('By {name}', { name: tpl.createdByName }) : t('Unknown author')} · {new Date(tpl.createdAt).toLocaleDateString(locale)}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">

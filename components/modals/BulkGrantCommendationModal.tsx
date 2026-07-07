@@ -5,6 +5,7 @@ import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
  * after-action recognition where everyone gets credit for the same op.
  */
 const BulkGrantCommendationModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { commendations } = useMembers();
     const [commendationId, setCommendationId] = useState<number | null>(null);
     const [reason, setReason] = useState('');
@@ -50,12 +52,12 @@ const BulkGrantCommendationModal: React.FC<Props> = ({ selectedUsers, onClose })
 
     return (
         <BulkActionShell
-            title="Grant Commendation"
-            subtitle="The chosen commendation will be awarded to every selected member."
+            title={t('Grant Commendation')}
+            subtitle={t('The chosen commendation will be awarded to every selected member.')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel="Grant"
+            confirmLabel={t('Grant')}
             confirmDisabled={commendationId == null}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
@@ -63,13 +65,13 @@ const BulkGrantCommendationModal: React.FC<Props> = ({ selectedUsers, onClose })
             {!isRunning && !isFinished && (
                 <div className="space-y-3">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-white">Commendation</label>
+                        <label className="text-sm font-bold text-white">{t('Commendation')}</label>
                         <select
                             value={commendationId ?? ''}
                             onChange={(e) => setCommendationId(e.target.value ? Number(e.target.value) : null)}
                             className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white focus:outline-none focus:border-sky-500/50"
                         >
-                            <option value="">— Select a commendation —</option>
+                            <option value="">{t('— Select a commendation —')}</option>
                             {(commendations || []).map((c) => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -77,13 +79,13 @@ const BulkGrantCommendationModal: React.FC<Props> = ({ selectedUsers, onClose })
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-white">
-                            Reason <span className="text-slate-500 font-normal">(optional, shared across batch)</span>
+                            {t('Reason')} <span className="text-slate-500 font-normal">{t('(optional, shared across batch)')}</span>
                         </label>
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={3}
-                            placeholder="e.g. Outstanding performance during Operation X on…"
+                            placeholder={t('e.g. Outstanding performance during Operation X on…')}
                             className="w-full px-3 py-2 bg-slate-800 border border-white/10 rounded-md text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500/50 resize-none"
                         />
                     </div>

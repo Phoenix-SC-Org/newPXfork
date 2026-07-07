@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import apiService from '../../services/apiService';
 import type { PlatformLocation } from '../../types';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface LocationInputProps {
     value: string;
@@ -13,6 +14,7 @@ const MAX_SUGGESTIONS = 10;
 const DEBOUNCE_MS = 250;
 
 const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, disabled }) => {
+    const { t } = useI18n();
     const [inputValue, setInputValue] = useState(value);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -117,7 +119,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, disabled
                 value={inputValue}
                 onChange={handleInputChange}
                 onFocus={() => setShowSuggestions(inputValue.trim().length >= MIN_QUERY_LEN)}
-                placeholder="e.g., Stanton > Crusader > Yela > Grim HEX"
+                placeholder={t('e.g., Stanton > Crusader > Yela > Grim HEX')}
                 className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-hidden"
                 required
                 disabled={disabled}
@@ -127,7 +129,7 @@ const LocationInput: React.FC<LocationInputProps> = ({ value, onChange, disabled
                 <ul className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
                     {loading && suggestions.length === 0 && (
                         <li className="px-4 py-2 text-sm text-slate-500 italic">
-                            <i className="fa-solid fa-spinner fa-spin mr-2" /> Searching…
+                            <i className="fa-solid fa-spinner fa-spin mr-2" /> {t('Searching…')}
                         </li>
                     )}
                     {suggestions.map((suggestion) => (

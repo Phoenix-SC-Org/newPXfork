@@ -9,8 +9,10 @@ import { useHIDPTT } from '../../contexts/HIDPTTContext';
 import { RadioChannel, UserRole, ServiceRequestStatus } from '../../types';
 import TXLevelMeter from './TXLevelMeter';
 import { useNavigation } from '../../contexts/NavigationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 const RadioWidget: React.FC = () => {
+    const { t } = useI18n();
     const {
         isConnected, isConnecting, currentChannel, setChannel,
         isTransmitting, volume, setVolume, isMuted, toggleMute,
@@ -180,7 +182,7 @@ const RadioWidget: React.FC = () => {
                     <div className="bg-slate-900 p-3 flex justify-between items-center border-b border-slate-800">
                         <div className="flex items-center space-x-2">
                             <div className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-600"></div>
-                            <span className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-600">Tactical Radio Unit</span>
+                            <span className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-600">{t('Tactical Radio Unit')}</span>
                         </div>
                         <button onClick={() => setIsRadioOpen(false)} className="text-slate-500 hover:text-white transition-colors">
                             <i className="fa-solid fa-xmark text-sm"></i>
@@ -191,14 +193,14 @@ const RadioWidget: React.FC = () => {
                             <i className="fa-solid fa-walkie-talkie text-xl text-slate-600"></i>
                         </div>
                         <div className="text-center space-y-1.5">
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Radio Offline</p>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Radio Offline')}</p>
                             <p className="text-[10px] text-slate-600 leading-relaxed max-w-[220px]">
-                                LiveKit voice infrastructure has not been configured by the organization admin.
+                                {t('LiveKit voice infrastructure has not been configured by the organization admin.')}
                             </p>
                         </div>
                         <div className="flex items-center gap-1.5 text-[9px] text-slate-700 uppercase font-bold tracking-wider">
                             <i className="fa-solid fa-lock text-[8px]"></i>
-                            Admin setup required
+                            {t('Admin setup required')}
                         </div>
                     </div>
                 </div>
@@ -213,14 +215,14 @@ const RadioWidget: React.FC = () => {
                 <div className="bg-slate-900 p-3 flex justify-between items-center border-b border-slate-800">
                     <div className="flex items-center space-x-2">
                         <div className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${isEnabled ? (isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse') : 'bg-red-950 border border-red-500/20'}`}></div>
-                        <span className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">Tactical Radio Unit</span>
+                        <span className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('Tactical Radio Unit')}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                         <button
                             onClick={() => togglePower(!isEnabled)}
                             className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-sm border transition-all ${isEnabled ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20' : 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'}`}
                         >
-                            {isEnabled ? 'SYSTEM OFF' : 'SYSTEM ON'}
+                            {isEnabled ? t('SYSTEM OFF') : t('SYSTEM ON')}
                         </button>
                         <button onClick={() => setIsRadioOpen(false)} className="text-slate-500 hover:text-white transition-colors">
                             <i className="fa-solid fa-xmark text-sm"></i>
@@ -240,7 +242,7 @@ const RadioWidget: React.FC = () => {
                                 <div className="relative z-10 space-y-2 animate-fade-in flex flex-col h-full">
                                     <div className="flex justify-between items-start shrink-0">
                                         <div className="flex items-center space-x-2">
-                                            <p className="text-[9px] text-sky-400/60 uppercase font-black tracking-widest">Active Comm</p>
+                                            <p className="text-[9px] text-sky-400/60 uppercase font-black tracking-widest">{t('Active Comm')}</p>
                                             <div className="flex space-x-0.5">
                                                 {[1, 2, 3, 4, 5].map(i => (
                                                     <div key={i} className={`w-0.5 h-1.5 rounded-full ${isConnected ? (i <= 4 ? 'bg-green-500' : 'bg-green-500/20') : 'bg-slate-700'}`}></div>
@@ -260,7 +262,7 @@ const RadioWidget: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 overflow-hidden relative mt-2 border-t border-sky-500/10 pt-2">
-                                        <p className="text-[9px] text-sky-500/50 font-black uppercase tracking-widest mb-1">{participants.length} LINKED UNITS</p>
+                                        <p className="text-[9px] text-sky-500/50 font-black uppercase tracking-widest mb-1">{participants.length === 1 ? t('{count} LINKED UNIT', { count: participants.length }) : t('{count} LINKED UNITS', { count: participants.length })}</p>
                                         <div className="flex flex-wrap content-start gap-1.5 h-full overflow-y-auto custom-scrollbar pr-1 pb-1">
                                             {participants.map(p => {
                                                 const isSpeaking = activeSpeakers.includes(p) || (p === currentUser?.name && isTransmitting);
@@ -297,8 +299,8 @@ const RadioWidget: React.FC = () => {
                                         <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-bounce [animation-delay:-0.15s]"></div>
                                         <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-bounce"></div>
                                     </div>
-                                    <p className="text-sky-400 text-[10px] uppercase font-black tracking-[0.3em]">{channels.length > 0 ? 'Scanning...' : 'No Signal'}</p>
-                                    {channels.length === 0 && <p className="text-[9px] text-slate-500 uppercase">No Available Channels</p>}
+                                    <p className="text-sky-400 text-[10px] uppercase font-black tracking-[0.3em]">{channels.length > 0 ? t('Scanning...') : t('No Signal')}</p>
+                                    {channels.length === 0 && <p className="text-[9px] text-slate-500 uppercase">{t('No Available Channels')}</p>}
                                 </div>
                             )
                         ) : (
@@ -306,12 +308,12 @@ const RadioWidget: React.FC = () => {
                                 <div className="flex space-x-1">
                                     {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>)}
                                 </div>
-                                <p className="text-slate-700 text-[10px] uppercase font-black tracking-[0.3em]">Hardware Standby</p>
+                                <p className="text-slate-700 text-[10px] uppercase font-black tracking-[0.3em]">{t('Hardware Standby')}</p>
                                 <button
                                     onClick={() => togglePower(true)}
                                     className="text-[9px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-1.5 rounded-sm border border-slate-700 active:scale-95 transition-all uppercase tracking-widest"
                                 >
-                                    Init Link
+                                    {t('Init Link')}
                                 </button>
                             </div>
                         )}
@@ -319,7 +321,7 @@ const RadioWidget: React.FC = () => {
                         {isConnecting && isEnabled && (
                             <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center z-20">
                                 <div className="w-full h-[2px] bg-sky-500/40 animate-[scan_1s_linear_infinite]"></div>
-                                <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest animate-pulse mt-2">Syncing Link...</p>
+                                <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest animate-pulse mt-2">{t('Syncing Link...')}</p>
                             </div>
                         )}
                     </div>
@@ -351,7 +353,7 @@ const RadioWidget: React.FC = () => {
 
                     {isEnabled && channels.length === 0 && (
                         <div className="text-center py-4 bg-slate-900/30 rounded-sm border border-slate-800 border-dashed">
-                            <p className="text-[10px] text-slate-500">No available frequencies for your role.</p>
+                            <p className="text-[10px] text-slate-500">{t('No available frequencies for your role.')}</p>
                         </div>
                     )}
 
@@ -359,7 +361,7 @@ const RadioWidget: React.FC = () => {
                         <button
                             onClick={toggleMute}
                             className={`w-12 h-10 rounded-lg flex items-center justify-center transition-all border ${isMuted ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-                            title={isMuted ? "Unmute Mic" : "Mute Mic"}
+                            title={isMuted ? t('Unmute Mic') : t('Mute Mic')}
                         >
                             <i className={`fa-solid ${isMuted ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
                         </button>
@@ -382,16 +384,16 @@ const RadioWidget: React.FC = () => {
                                 <div className="flex items-center gap-1.5">
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                                         <i className="fa-solid fa-gamepad mr-1.5 text-[8px]"></i>
-                                        Device PTT
+                                        {t('Device PTT')}
                                     </span>
                                     <span className="text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                                        Experimental
+                                        {t('Experimental')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {pairedDeviceName && !isBinding && (
                                         <button onClick={unpair} className="text-[8px] text-red-400/60 hover:text-red-400 uppercase tracking-wider transition-colors">
-                                            Remove
+                                            {t('Remove')}
                                         </button>
                                     )}
                                 </div>
@@ -402,14 +404,14 @@ const RadioWidget: React.FC = () => {
                                 onClick={() => setShowHIDInfo(prev => !prev)}
                                 className="w-full flex items-center justify-between text-[9px] text-slate-500 hover:text-slate-400 transition-colors"
                             >
-                                <span className="font-semibold uppercase tracking-wider"><i className="fa-solid fa-circle-info mr-1 text-[8px]"></i>How It Works</span>
+                                <span className="font-semibold uppercase tracking-wider"><i className="fa-solid fa-circle-info mr-1 text-[8px]"></i>{t('How It Works')}</span>
                                 <i className={`fa-solid fa-chevron-${showHIDInfo ? 'up' : 'down'} text-[7px]`}></i>
                             </button>
                             {showHIDInfo && (
                                 <div className="text-[9px] text-slate-500 bg-slate-900/60 rounded-sm p-2 space-y-1.5 border border-slate-800/50 leading-relaxed">
-                                    <p className="text-slate-400">Bind a button on a controller or USB device as your PTT key instead of using the on-screen button or Right Ctrl.</p>
-                                    <p className="text-slate-500"><strong className="text-sky-400/70">Controller</strong> — Xbox, PlayStation, HOTAS, joystick. Works on all browsers. Best for dual-monitor setups where the dashboard stays visible.</p>
-                                    <p className="text-slate-500"><strong className="text-sky-400/70">HID Device</strong> — USB foot pedals, macro pads, dedicated PTT hardware. Chrome/Edge only. Can work while another app is focused.</p>
+                                    <p className="text-slate-400">{t('Bind a button on a controller or USB device as your PTT key instead of using the on-screen button or Right Ctrl.')}</p>
+                                    <p className="text-slate-500"><strong className="text-sky-400/70">{t('Controller')}</strong> — {t('Xbox, PlayStation, HOTAS, joystick. Works on all browsers. Best for dual-monitor setups where the dashboard stays visible.')}</p>
+                                    <p className="text-slate-500"><strong className="text-sky-400/70">{t('HID Device')}</strong> — {t('USB foot pedals, macro pads, dedicated PTT hardware. Chrome/Edge only. Can work while another app is focused.')}</p>
                                 </div>
                             )}
 
@@ -418,28 +420,28 @@ const RadioWidget: React.FC = () => {
                                 onClick={() => setShowHIDLimits(prev => !prev)}
                                 className="w-full flex items-center justify-between text-[9px] text-slate-500 hover:text-slate-400 transition-colors"
                             >
-                                <span className="font-semibold uppercase tracking-wider"><i className="fa-solid fa-triangle-exclamation mr-1 text-[8px] text-amber-500/60"></i>Limitations</span>
+                                <span className="font-semibold uppercase tracking-wider"><i className="fa-solid fa-triangle-exclamation mr-1 text-[8px] text-amber-500/60"></i>{t('Limitations')}</span>
                                 <i className={`fa-solid fa-chevron-${showHIDLimits ? 'up' : 'down'} text-[7px]`}></i>
                             </button>
                             {showHIDLimits && (
                                 <div className="text-[9px] text-slate-500 bg-slate-900/60 rounded-sm p-2 space-y-1.5 border border-slate-800/50 leading-relaxed">
-                                    <p className="text-slate-400 font-semibold">Controller (Gamepad API)</p>
+                                    <p className="text-slate-400 font-semibold">{t('Controller (Gamepad API)')}</p>
                                     <div className="flex flex-col gap-0.5 pl-1">
-                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>Xbox, PlayStation, HOTAS, joysticks</span>
-                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>Works in all major browsers</span>
-                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>Only works while the dashboard tab is visible</span>
-                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>Won't work while another app (e.g. Star Citizen) is focused on a single monitor</span>
+                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>{t('Xbox, PlayStation, HOTAS, joysticks')}</span>
+                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>{t('Works in all major browsers')}</span>
+                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>{t('Only works while the dashboard tab is visible')}</span>
+                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>{t("Won't work while another app (e.g. Star Citizen) is focused on a single monitor")}</span>
                                     </div>
-                                    <p className="text-slate-400 font-semibold pt-1">HID Device (WebHID API)</p>
+                                    <p className="text-slate-400 font-semibold pt-1">{t('HID Device (WebHID API)')}</p>
                                     <div className="flex flex-col gap-0.5 pl-1">
-                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>Works while another app is focused</span>
-                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>Elgato Stream Deck, Elgato Pedal, custom HID hardware</span>
-                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>Chrome &amp; Edge only</span>
-                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>Keyboards, mice, and game controllers are blocked by the browser</span>
-                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>Most USB foot pedals report as keyboards and are also blocked</span>
+                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>{t('Works while another app is focused')}</span>
+                                        <span className="text-green-400/70"><i className="fa-solid fa-check text-[7px] mr-1"></i>{t('Elgato Stream Deck, Elgato Pedal, custom HID hardware')}</span>
+                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>{t('Chrome & Edge only')}</span>
+                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>{t('Keyboards, mice, and game controllers are blocked by the browser')}</span>
+                                        <span className="text-red-400/70"><i className="fa-solid fa-xmark text-[7px] mr-1"></i>{t('Most USB foot pedals report as keyboards and are also blocked')}</span>
                                     </div>
-                                    <p className="text-slate-400 font-semibold pt-1">Recommended Setup</p>
-                                    <p className="text-slate-500 pl-1">Use a <strong className="text-slate-400">second monitor</strong> with the dashboard visible and bind a controller button. Or use an Elgato Stream Deck / Pedal via HID for true background PTT.</p>
+                                    <p className="text-slate-400 font-semibold pt-1">{t('Recommended Setup')}</p>
+                                    <p className="text-slate-500 pl-1">{t('Use a')} <strong className="text-slate-400">{t('second monitor')}</strong> {t('with the dashboard visible and bind a controller button. Or use an Elgato Stream Deck / Pedal via HID for true background PTT.')}</p>
                                 </div>
                             )}
 
@@ -460,7 +462,7 @@ const RadioWidget: React.FC = () => {
                                         onClick={cancelBinding}
                                         className="w-full py-1 text-[9px] text-slate-500 hover:text-slate-300 bg-slate-800/50 rounded-sm border border-slate-700/50 transition-all uppercase tracking-wider"
                                     >
-                                        Cancel
+                                        {t('Cancel')}
                                     </button>
                                 </div>
                             ) : pairedDeviceName ? (
@@ -471,7 +473,7 @@ const RadioWidget: React.FC = () => {
                                             <span className="text-[10px] text-slate-400 truncate max-w-[160px]">{pairedDeviceName}</span>
                                         </div>
                                         <span className={`text-[8px] font-bold uppercase tracking-wider transition-all ${isPTTActive ? 'text-green-400' : 'text-slate-700'}`}>
-                                            {isPTTActive ? 'ACTIVE' : 'IDLE'}
+                                            {isPTTActive ? t('ACTIVE') : t('IDLE')}
                                         </span>
                                     </div>
                                     {boundButtonLabel && (
@@ -482,13 +484,13 @@ const RadioWidget: React.FC = () => {
                                             onClick={bindGamepad}
                                             className="flex-1 py-1 text-[8px] text-sky-400/60 hover:text-sky-400 uppercase tracking-wider bg-slate-800/30 rounded-sm border border-slate-700/30 hover:border-sky-500/30 transition-all"
                                         >
-                                            Rebind Controller
+                                            {t('Rebind Controller')}
                                         </button>
                                         <button
                                             onClick={bindHID}
                                             className="flex-1 py-1 text-[8px] text-sky-400/60 hover:text-sky-400 uppercase tracking-wider bg-slate-800/30 rounded-sm border border-slate-700/30 hover:border-sky-500/30 transition-all"
                                         >
-                                            Rebind HID
+                                            {t('Rebind HID')}
                                         </button>
                                     </div>
                                 </div>
@@ -499,14 +501,14 @@ const RadioWidget: React.FC = () => {
                                         className="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-sky-400 bg-slate-800/50 hover:bg-slate-800 rounded-sm border border-slate-700/50 hover:border-sky-500/30 transition-all"
                                     >
                                         <i className="fa-solid fa-gamepad mr-1.5"></i>
-                                        Controller
+                                        {t('Controller')}
                                     </button>
                                     <button
                                         onClick={bindHID}
                                         className="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-sky-400 bg-slate-800/50 hover:bg-slate-800 rounded-sm border border-slate-700/50 hover:border-sky-500/30 transition-all"
                                     >
                                         <i className="fa-solid fa-usb mr-1.5"></i>
-                                        HID Device
+                                        {t('HID Device')}
                                     </button>
                                 </div>
                             )}
@@ -525,13 +527,13 @@ const RadioWidget: React.FC = () => {
                             {isTransmitting ? (
                                 <span className="flex items-center justify-center">
                                     <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping mr-4"></span>
-                                    LIVE TX
+                                    {t('LIVE TX')}
                                 </span>
                             ) : (
-                                'PUSH TO TALK'
+                                t('PUSH TO TALK')
                             )}
                         </button>
-                        <p className="text-[9px] text-center text-slate-600 uppercase font-black mt-2 tracking-widest">Hold to Transmit</p>
+                        <p className="text-[9px] text-center text-slate-600 uppercase font-black mt-2 tracking-widest">{t('Hold to Transmit')}</p>
                     </div>
                 </div>
             </div>

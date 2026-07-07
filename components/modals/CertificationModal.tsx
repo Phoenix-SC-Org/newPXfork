@@ -6,6 +6,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import WindowFrame from '../layout/WindowFrame';
 import AwardIconInput from '../common/AwardIconInput';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface CertificationModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface CertificationModalProps {
 const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose, certification }) => {
     const { addCertification, updateCertification } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [icon, setIcon] = useState('');
@@ -74,10 +76,10 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
             onClose();
         } catch (err) {
             console.error("Failed to save certification:", err);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while saving the certification. Please try again." });
+            addToast(t("Save Failed"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while saving the certification. Please try again.") });
             setIsLoading(false);
         }
-    }, [name, description, icon, imageUrl, iconMode, isEditing, certification, addCertification, updateCertification, onClose, addToast]);
+    }, [name, description, icon, imageUrl, iconMode, isEditing, certification, addCertification, updateCertification, onClose, addToast, t]);
 
     if (!isOpen) return null;
 
@@ -85,8 +87,8 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Certification' : 'Create Certification'}
-            subtitle="Credentials Management"
+            title={isEditing ? t('Edit Certification') : t('Create Certification')}
+            subtitle={t('Credentials Management')}
             icon="fa-solid fa-certificate"
             color="sky"
             width="max-w-lg"
@@ -95,20 +97,20 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
                 {/* Body */}
                 <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
                     <div>
-                        <label htmlFor="certName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Certification Name</label>
+                        <label htmlFor="certName" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Certification Name')}</label>
                         <input
                             type="text"
                             id="certName"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g., Basic Flight Certification"
+                            placeholder={t('e.g., Basic Flight Certification')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
                             required
                             disabled={isLoading}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Icon (Optional)</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Icon (Optional)')}</label>
                         <AwardIconInput
                             icon={icon}
                             onIconChange={setIcon}
@@ -123,13 +125,13 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
                         />
                     </div>
                     <div>
-                        <label htmlFor="certDescription" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description (Optional)</label>
+                        <label htmlFor="certDescription" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('Description (Optional)')}</label>
                         <textarea
                             id="certDescription"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={3}
-                            placeholder="e.g., Passed basic flight and combat maneuvers training."
+                            placeholder={t('e.g., Passed basic flight and combat maneuvers training.')}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all resize-none"
                             disabled={isLoading}
                         />
@@ -138,13 +140,13 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
 
                 {/* Footer */}
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? 'Save Changes' : 'Create Certification')}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : (isEditing ? t('Save Changes') : t('Create Certification'))}
                     </button>
                 </div>
             </form>

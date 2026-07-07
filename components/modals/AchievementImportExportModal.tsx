@@ -4,6 +4,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import { useConfig } from '../../contexts/ConfigContext';
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 export type AchievementKind = 'specializations' | 'certifications' | 'commendations';
 
@@ -64,6 +65,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
     const { specializationTags, certifications, commendations } = useMembers();
     const { brandingConfig } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [tab, setTab] = useState<'export' | 'import'>('export');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,12 +143,12 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
             const result = await rpcAction(meta.previewAction, { items: parsedItems });
             setPreview(result as PreviewResult);
         } catch (err: any) {
-            addToast('Preview Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not preview the import.' });
+            addToast(t('Preview Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not preview the import.') });
             setPreview(null);
         } finally {
             setLoadingPreview(false);
         }
-    }, [rpcAction, meta.previewAction, addToast, setLoadingPreview, setPreview]);
+    }, [rpcAction, meta.previewAction, addToast, setLoadingPreview, setPreview, t]);
 
     const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -157,15 +159,15 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
             try {
                 const text = String(reader.result || '');
                 const parsed = JSON.parse(text);
-                if (!parsed || typeof parsed !== 'object') throw new Error('File is not a JSON object.');
-                if (parsed.schemaVersion !== 1) throw new Error(`Unsupported schemaVersion: ${parsed.schemaVersion}. Expected 1.`);
-                if (parsed.type && parsed.type !== kind) throw new Error(`File is for "${parsed.type}", but this dialog is importing "${kind}".`);
-                if (!Array.isArray(parsed.items)) throw new Error('File is missing an "items" array.');
+                if (!parsed || typeof parsed !== 'object') throw new Error(t('File is not a JSON object.'));
+                if (parsed.schemaVersion !== 1) throw new Error(t('Unsupported schemaVersion: {version}. Expected 1.', { version: parsed.schemaVersion }));
+                if (parsed.type && parsed.type !== kind) throw new Error(t('File is for "{fileType}", but this dialog is importing "{kind}".', { fileType: parsed.type, kind }));
+                if (!Array.isArray(parsed.items)) throw new Error(t('File is missing an "items" array.'));
                 setItems(parsed.items);
                 setProgress(null);
                 loadPreview(parsed.items);
             } catch (err: any) {
-                addToast('Invalid File', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not read JSON.' });
+                addToast(t('Invalid File'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not read JSON.') });
                 setItems(null);
                 setPreview(null);
             }
@@ -208,15 +210,15 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
             }
             await refreshMainState();
             addToast(
-                cancelRef.current ? 'Import Cancelled' : 'Import Complete',
+                cancelRef.current ? t('Import Cancelled') : t('Import Complete'),
                 <i className={`fa-solid ${cancelRef.current ? 'fa-ban' : 'fa-check'}`}></i>,
                 cancelRef.current
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/50'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-                { description: `${totalInserted} added, ${totalUpdated} updated${totalErrors.length ? `, ${totalErrors.length} errors` : ''}.` },
+                { description: t('{inserted} added, {updated} updated', { inserted: totalInserted, updated: totalUpdated }) + (totalErrors.length ? t(', {count} errors', { count: totalErrors.length }) : '') + '.' },
             );
         } catch (err: any) {
-            addToast('Import Failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Import aborted.' });
+            addToast(t('Import Failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Import aborted.') });
         } finally {
             setImporting(false);
         }
@@ -224,8 +226,8 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
 
     const handleCancelImport = () => { cancelRef.current = true; };
 
-    const headerLabel = `${meta.title} — Import / Export`;
-    const subtitle = 'Catalog only — per-user awards are not included.';
+    const headerLabel = `${t(meta.title)} — Import / Export`;
+    const subtitle = t('Catalog only — per-user awards are not included.');
 
     return (
         <WindowFrame
@@ -258,12 +260,13 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                 {tab === 'export' && (
                     <div className="p-5 space-y-4">
                         <p className="text-sm text-slate-300">
-                            Downloads a JSON file containing every {meta.pluralLabel.slice(0, -1)} definition in this organisation
-                            ({exportableItems.length} item{exportableItems.length === 1 ? '' : 's'}).
-                            Server-managed fields like IDs and timestamps are stripped so the file imports cleanly into another org.
+                            {exportableItems.length === 1
+                                ? t('Downloads a JSON file containing every {type} definition in this organisation ({count} item).', { type: t(meta.pluralLabel.slice(0, -1)), count: exportableItems.length })
+                                : t('Downloads a JSON file containing every {type} definition in this organisation ({count} items).', { type: t(meta.pluralLabel.slice(0, -1)), count: exportableItems.length })}
+                            {' '}{t('Server-managed fields like IDs and timestamps are stripped so the file imports cleanly into another org.')}
                         </p>
                         <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30">
-                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-2">File contents</p>
+                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-2">{t('File contents')}</p>
                             <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
                                 <li>name, description, icon, imageUrl</li>
                                 <li>schemaVersion, exportedAt, exportedFromOrg</li>
@@ -275,7 +278,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                                 disabled={exportableItems.length === 0}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <i className="fa-solid fa-download"></i> Download JSON
+                                <i className="fa-solid fa-download"></i> {t('Download JSON')}
                             </button>
                         </div>
                     </div>
@@ -285,7 +288,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                 {tab === 'import' && (
                     <div className="p-5 space-y-4">
                         <p className="text-sm text-slate-300">
-                            Upload a {meta.pluralLabel} JSON file (exported from this or another myRSI org). Existing entries are matched by <strong>name</strong> — descriptions, icons, and images update; missing names are added. Nothing is deleted.
+                            {t('Upload a {type} JSON file (exported from this or another myRSI org). Existing entries are matched by', { type: t(meta.pluralLabel) })} <strong>{t('name')}</strong> {t('— descriptions, icons, and images update; missing names are added. Nothing is deleted.')}
                         </p>
 
                         <div className="flex items-center gap-3">
@@ -295,38 +298,38 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                                 disabled={importing}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/60 text-slate-300 border border-slate-700 hover:text-white hover:border-purple-500/30 text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
                             >
-                                <i className="fa-solid fa-folder-open"></i> Pick JSON File
+                                <i className="fa-solid fa-folder-open"></i> {t('Pick JSON File')}
                             </button>
                             {fileName && <span className="text-xs text-slate-400 truncate">{fileName}</span>}
                         </div>
 
                         {loadingPreview && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 flex items-center gap-2 text-xs text-slate-400">
-                                <i className="fa-solid fa-circle-notch animate-spin"></i> Computing diff…
+                                <i className="fa-solid fa-circle-notch animate-spin"></i> {t('Computing diff…')}
                             </div>
                         )}
 
                         {preview && !loadingPreview && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 space-y-3">
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <Stat label="Total" value={preview.total} color="text-slate-200" />
-                                    <Stat label="New" value={preview.newCount} color="text-emerald-400" />
-                                    <Stat label="Update" value={preview.updateCount} color="text-amber-400" />
-                                    <Stat label="Skip" value={preview.skipCount} color="text-slate-500" />
+                                    <Stat label={t('Total')} value={preview.total} color="text-slate-200" />
+                                    <Stat label={t('New')} value={preview.newCount} color="text-emerald-400" />
+                                    <Stat label={t('Update')} value={preview.updateCount} color="text-amber-400" />
+                                    <Stat label={t('Skip')} value={preview.skipCount} color="text-slate-500" />
                                 </div>
                                 {preview.invalid.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">{preview.invalid.length} invalid row{preview.invalid.length === 1 ? '' : 's'} (will be skipped)</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{preview.invalid.length === 1 ? t('{count} invalid row (will be skipped)', { count: preview.invalid.length }) : t('{count} invalid rows (will be skipped)', { count: preview.invalid.length })}</summary>
                                         <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar text-slate-400">
                                             {preview.invalid.map((bad) => (
-                                                <li key={bad.index}>Row {bad.index + 1}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
+                                                <li key={bad.index}>{t('Row {n}', { n: bad.index + 1 })}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
                                             ))}
                                         </ul>
                                     </details>
                                 )}
                                 {preview.conflicts.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">{preview.conflicts.length} change{preview.conflicts.length === 1 ? '' : 's'} to existing entries</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{preview.conflicts.length === 1 ? t('{count} change to existing entries', { count: preview.conflicts.length }) : t('{count} changes to existing entries', { count: preview.conflicts.length })}</summary>
                                         <ul className="mt-2 space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                                             {preview.conflicts.map((c) => (
                                                 <li key={c.name} className="bg-slate-900/60 rounded-md p-2 border border-slate-700/30">
@@ -349,7 +352,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                         {progress && (
                             <div className="bg-slate-900/40 rounded-lg p-4 border border-slate-700/30 space-y-2">
                                 <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest font-black">
-                                    <span>Progress</span>
+                                    <span>{t('Progress')}</span>
                                     <span>{progress.processed} / {progress.total}</span>
                                 </div>
                                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -359,14 +362,14 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                                     />
                                 </div>
                                 <p className="text-[11px] text-slate-400">
-                                    {progress.inserted} added, {progress.updated} updated{progress.errors.length ? `, ${progress.errors.length} error${progress.errors.length === 1 ? '' : 's'}` : ''}.
+                                    {t('{inserted} added, {updated} updated', { inserted: progress.inserted, updated: progress.updated })}{progress.errors.length ? (progress.errors.length === 1 ? t(', {count} error', { count: progress.errors.length }) : t(', {count} errors', { count: progress.errors.length })) : ''}.
                                 </p>
                                 {progress.errors.length > 0 && (
                                     <details className="text-xs">
-                                        <summary className="text-amber-400 cursor-pointer">View errors</summary>
+                                        <summary className="text-amber-400 cursor-pointer">{t('View errors')}</summary>
                                         <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar text-slate-400">
                                             {progress.errors.map((bad) => (
-                                                <li key={bad.index}>Row {bad.index + 1}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
+                                                <li key={bad.index}>{t('Row {n}', { n: bad.index + 1 })}{bad.name ? ` — ${bad.name}` : ''}: {bad.reason}</li>
                                             ))}
                                         </ul>
                                     </details>
@@ -380,7 +383,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                                     onClick={handleCancelImport}
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wider transition-colors"
                                 >
-                                    <i className="fa-solid fa-ban"></i> Cancel
+                                    <i className="fa-solid fa-ban"></i> {t('Cancel')}
                                 </button>
                             ) : (
                                 <button
@@ -388,7 +391,7 @@ const AchievementImportExportModal: React.FC<AchievementImportExportModalProps> 
                                     disabled={!items || !preview || importing || (preview.newCount + preview.updateCount === 0)}
                                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[10px] font-bold uppercase tracking-wider hover:bg-purple-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <i className="fa-solid fa-play"></i> Start Import
+                                    <i className="fa-solid fa-play"></i> {t('Start Import')}
                                 </button>
                             )}
                         </div>

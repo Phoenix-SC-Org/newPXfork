@@ -5,6 +5,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import { UserRole } from '../../types';
 import { useNotification } from '../../contexts/NotificationContext';
 import { debugLog } from '../../lib/debugLog';
+import { useI18n } from '../../i18n/I18nContext';
 
 // Architectural note: this component used to subscribe directly to the org
 // realtime channel (`db-changes-{orgId}`) for its broadcast handlers. That
@@ -20,6 +21,7 @@ const NotificationListener: React.FC = () => {
     const { hydratedServiceRequests } = useData();
     const { brandingConfig } = useConfig();
     const { addToast, playSound } = useNotification();
+    const { t } = useI18n();
 
     // Use refs to avoid stale closure issues
     const currentUserRef = useRef(currentUser);
@@ -27,9 +29,11 @@ const NotificationListener: React.FC = () => {
     const playSoundRef = useRef(playSound);
     const brandingConfigRef = useRef(brandingConfig);
     const hydratedRequestsRef = useRef(hydratedServiceRequests);
+    const tRef = useRef(t);
 
     useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
     useEffect(() => { addToastRef.current = addToast; }, [addToast]);
+    useEffect(() => { tRef.current = t; }, [t]);
     useEffect(() => { playSoundRef.current = playSound; }, [playSound]);
     useEffect(() => { brandingConfigRef.current = brandingConfig; }, [brandingConfig]);
     useEffect(() => { hydratedRequestsRef.current = hydratedServiceRequests; }, [hydratedServiceRequests]);
@@ -68,7 +72,7 @@ const NotificationListener: React.FC = () => {
             if (isStaff && user && requestClientId !== user.id) {
                 debugLog("NotificationListener: SHOWING TOAST for staff new request");
                 toast(
-                    'New Priority Request',
+                    tRef.current('New Priority Request'),
                     <i className="fa-solid fa-satellite-dish"></i>,
                     'bg-sky-600 text-white shadow-sky-900/50',
                     { requestId: newRequest?.id, silent: true }
@@ -97,7 +101,7 @@ const NotificationListener: React.FC = () => {
                 if (user && createdById === user.id) return;
 
                 toast(
-                    `New Intel Bulletin`,
+                    tRef.current('New Intel Bulletin'),
                     <i className="fa-solid fa-satellite-dish"></i>,
                     'bg-sky-600 text-white',
                     { silent: true }
@@ -135,7 +139,7 @@ const NotificationListener: React.FC = () => {
                 if (statusColors[updatedRequest?.status]) {
                     debugLog("NotificationListener: SHOWING TOAST for client status update");
                     toast(
-                        `Mission Status: ${updatedRequest.status}`,
+                        tRef.current('Mission Status: {status}', { status: tRef.current(updatedRequest.status) }),
                         <i className="fa-solid fa-satellite-dish"></i>,
                         statusColors[updatedRequest.status],
                         { requestId: updatedRequest?.id, silent: true }
@@ -189,16 +193,16 @@ const NotificationListener: React.FC = () => {
 
             if (detail.action === 'assigned') {
                 if (isClient) {
-                    toast(`Responder assigned to your request`, <i className="fa-solid fa-user-plus"></i>, 'bg-sky-500/10 text-sky-400 border-sky-500/50', { requestId: detail.requestId, silent: true });
+                    toast(tRef.current('Responder assigned to your request'), <i className="fa-solid fa-user-plus"></i>, 'bg-sky-500/10 text-sky-400 border-sky-500/50', { requestId: detail.requestId, silent: true });
                 } else {
-                    toast(`New responder added to your mission`, <i className="fa-solid fa-user-plus"></i>, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { requestId: detail.requestId, silent: true });
+                    toast(tRef.current('New responder added to your mission'), <i className="fa-solid fa-user-plus"></i>, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50', { requestId: detail.requestId, silent: true });
                 }
                 if (config?.assignmentSoundUrl) sound(config.assignmentSoundUrl);
             } else if (detail.action === 'unassigned') {
                 if (isClient) {
-                    toast(`Responder removed from your request`, <i className="fa-solid fa-user-minus"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { requestId: detail.requestId, silent: true });
+                    toast(tRef.current('Responder removed from your request'), <i className="fa-solid fa-user-minus"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { requestId: detail.requestId, silent: true });
                 } else {
-                    toast(`Teammate removed from your mission`, <i className="fa-solid fa-user-minus"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { requestId: detail.requestId, silent: true });
+                    toast(tRef.current('Teammate removed from your mission'), <i className="fa-solid fa-user-minus"></i>, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { requestId: detail.requestId, silent: true });
                 }
                 if (config?.assignmentSoundUrl) sound(config.assignmentSoundUrl);
             }

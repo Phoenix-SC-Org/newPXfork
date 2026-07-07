@@ -12,9 +12,11 @@ import {
     getDateFormatPresets,
     type DateFormatPreset,
 } from '../../../lib/time';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const ProfileView: React.FC = () => {
     const { currentUser, initiateRsiHandleUpdate, syncCurrentUserRoles, subscribeToPush, isPushActive, checkPushSubscription, updateDisplayName, updateUserPreferences } = useAuth();
+    const { t } = useI18n();
     const { addToast, confirm } = useNotification();
     const { openDeleteAccountModal } = useModalRegistry();
     const { rpcAction } = useData();
@@ -114,17 +116,17 @@ const ProfileView: React.FC = () => {
         try {
             await updateDisplayName(next);
             addToast(
-                next ? 'Display name saved' : 'Reverted to Discord name',
+                next ? t('Display name saved') : t('Reverted to Discord name'),
                 <i className="fa-solid fa-check"></i>,
                 'bg-green-500/10 text-green-400 border-green-500/50',
             );
             setIsEditingDisplayName(false);
         } catch (err: any) {
             addToast(
-                'Update failed',
+                t('Update failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not save display name.' },
+                { description: err?.message || t('Could not save display name.') },
             );
         } finally {
             setIsSavingDisplayName(false);
@@ -137,17 +139,17 @@ const ProfileView: React.FC = () => {
         try {
             await updateDisplayName(null);
             addToast(
-                'Reverted to Discord name',
+                t('Reverted to Discord name'),
                 <i className="fa-solid fa-check"></i>,
                 'bg-green-500/10 text-green-400 border-green-500/50',
             );
             setIsEditingDisplayName(false);
         } catch (err: any) {
             addToast(
-                'Update failed',
+                t('Update failed'),
                 <i className="fa-solid fa-xmark"></i>,
                 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: err?.message || 'Could not clear display name.' },
+                { description: err?.message || t('Could not clear display name.') },
             );
         } finally {
             setIsSavingDisplayName(false);
@@ -160,7 +162,7 @@ const ProfileView: React.FC = () => {
         const tzChanged = (currentUser?.timezone || null) !== tzToSave;
         const fmtChanged = (currentUser?.dateFormat || null) !== fmtToSave;
         if (!tzChanged && !fmtChanged) {
-            addToast('No changes to save', <i className="fa-solid fa-circle-info"></i>, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
+            addToast(t('No changes to save'), <i className="fa-solid fa-circle-info"></i>, 'bg-slate-500/10 text-slate-300 border-slate-500/40');
             return;
         }
         setIsSavingPrefs(true);
@@ -169,9 +171,9 @@ const ProfileView: React.FC = () => {
                 ...(tzChanged ? { timezone: tzToSave } : {}),
                 ...(fmtChanged ? { dateFormat: fmtToSave } : {}),
             });
-            addToast('Time preferences saved', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50');
+            addToast(t('Time preferences saved'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50');
         } catch (err: any) {
-            addToast('Save failed', <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || 'Could not save preferences.' });
+            addToast(t('Save failed'), <i className="fa-solid fa-xmark"></i>, 'bg-red-500/10 text-red-400 border-red-500/50', { description: err?.message || t('Could not save preferences.') });
         } finally {
             setIsSavingPrefs(false);
         }
@@ -197,7 +199,7 @@ const ProfileView: React.FC = () => {
             // App component will redirect to verification view automatically upon context update
         } catch (err) {
             console.error(err);
-            addToast("Update Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to update your RSI handle." });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to update your RSI handle.') });
             setRsiHandle(currentUser.rsiHandle);
             setIsEditing(false);
             setIsSaving(false);
@@ -234,7 +236,7 @@ const ProfileView: React.FC = () => {
             if (typeof result === 'string' && result.startsWith('SYNC_COOLDOWN:')) {
                 const remainingMin = parseInt(result.split(':')[1], 10);
                 startCooldownTimer(remainingMin);
-                addToast("Sync Cooldown", <i className="fa-solid fa-clock"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: `Try again in ${remainingMin} minute${remainingMin !== 1 ? 's' : ''}.` });
+                addToast(t('Sync Cooldown'), <i className="fa-solid fa-clock"></i>, "bg-amber-500/10 text-amber-400 border-amber-500/50", { description: remainingMin === 1 ? t('Try again in {count} minute.', { count: remainingMin }) : t('Try again in {count} minutes.', { count: remainingMin }) });
                 return;
             }
 
@@ -246,7 +248,7 @@ const ProfileView: React.FC = () => {
 
         } catch (error: any) {
             console.error("Failed to sync roles:", error);
-            addToast("Sync Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while syncing your roles. Please try again." });
+            addToast(t('Sync Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('An error occurred while syncing your roles. Please try again.') });
         } finally {
             setIsSyncing(false);
         }
@@ -261,47 +263,47 @@ const ProfileView: React.FC = () => {
 
         try {
             // Step 1: Browser Support
-            addLog("Checking browser capability...");
+            addLog(t('Checking browser capability...'));
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                throw new Error("Browser does not support Push Notifications.");
+                throw new Error(t('Browser does not support Push Notifications.'));
             }
-            addLog("✅ Browser compatible.");
+            addLog(t('✅ Browser compatible.'));
             setDiagStep(2);
             await new Promise(r => setTimeout(r, 500));
 
             // Step 2: Permissions
-            addLog("Checking permissions...");
+            addLog(t('Checking permissions...'));
             if (Notification.permission === 'denied') {
-                throw new Error("Notifications are blocked in browser settings.");
+                throw new Error(t('Notifications are blocked in browser settings.'));
             }
             if (Notification.permission === 'default') {
-                addLog("⚠️ Permission not yet granted. Requesting...");
+                addLog(t('⚠️ Permission not yet granted. Requesting...'));
             } else {
-                addLog("✅ Permission granted.");
+                addLog(t('✅ Permission granted.'));
             }
             setDiagStep(3);
             await new Promise(r => setTimeout(r, 500));
 
             // Step 3: Service Worker & Subscription
-            addLog("Registering Uplink...");
+            addLog(t('Registering Uplink...'));
             await subscribeToPush();
-            addLog("✅ Device registration successful.");
+            addLog(t('✅ Device registration successful.'));
             setDiagStep(4);
             await new Promise(r => setTimeout(r, 500));
 
             // Step 4: Server Verification
-            addLog("Verifying with Command...");
+            addLog(t('Verifying with Command...'));
             const isServerAware = await checkPushSubscription();
             if (isServerAware) {
-                addLog("✅ Command acknowledges link. Ready.");
+                addLog(t('✅ Command acknowledges link. Ready.'));
             } else {
-                throw new Error("Server could not verify subscription.");
+                throw new Error(t('Server could not verify subscription.'));
             }
             setDiagStep(5); // Complete
-            addToast("Device Registered", <i className="fa-solid fa-circle-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: "Push notifications are now active on this device." });
+            addToast(t('Device Registered'), <i className="fa-solid fa-circle-check"></i>, "bg-green-500/10 text-green-400 border-green-500/50", { description: t('Push notifications are now active on this device.') });
 
         } catch (err: any) {
-            addLog(`❌ ERROR: ${err.message}`);
+            addLog(t('❌ ERROR: {message}', { message: err.message }));
             setDiagStep(0); // Fail state
         } finally {
             setIsDiagnosing(false);
@@ -309,11 +311,11 @@ const ProfileView: React.FC = () => {
     };
 
     const handleTestSignal = async () => {
-        addToast("Test Signal", <i className="fa-solid fa-satellite-dish"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: "Requesting test signal from command..." });
+        addToast(t('Test Signal'), <i className="fa-solid fa-satellite-dish"></i>, "bg-sky-500/10 text-sky-400 border-sky-500/50", { description: t('Requesting test signal from command...') });
         try {
             await rpcAction('user:test_push', { userId: currentUser.id });
         } catch (e: any) {
-            addToast("Signal Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: `${e.message || 'Unknown network error'}. Ensure you have 'Registered' this specific browser first.` });
+            addToast(t('Signal Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("{message}. Ensure you have 'Registered' this specific browser first.", { message: e.message || t('Unknown network error') }) });
         }
     };
 
@@ -333,12 +335,12 @@ const ProfileView: React.FC = () => {
                 <div className="relative px-4 sm:px-8 pt-10 pb-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                         <div className="min-w-0">
-                            <CallsignChip label="MODULE · MY ACCOUNT" icon="fa-id-card" accent="sky" pulse />
+                            <CallsignChip label={t('MODULE · MY ACCOUNT')} icon="fa-id-card" accent="sky" pulse />
                             <h1 className="mt-3 text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                                My Account
+                                {t('My Account')}
                             </h1>
                             <p className="mt-2 text-sm text-slate-400 max-w-2xl">
-                                Identity, account settings, and device registration. Manage how the platform recognizes you.
+                                {t('Identity, account settings, and device registration. Manage how the platform recognizes you.')}
                             </p>
                         </div>
                     </div>
@@ -356,7 +358,7 @@ const ProfileView: React.FC = () => {
                             <img src={currentUser.avatarUrl} alt={currentUser.name} className="relative w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-slate-900 object-cover shadow-xl" />
                             {currentUser.rank?.iconUrl && (
                                 <div className="absolute bottom-0 right-0 bg-slate-900 rounded-full p-1.5 border border-slate-700 shadow-lg" title={currentUser.rank.name}>
-                                    <img src={currentUser.rank.iconUrl} className="w-8 h-8 object-contain" alt="Rank" />
+                                    <img src={currentUser.rank.iconUrl} className="w-8 h-8 object-contain" alt={t('Rank')} />
                                 </div>
                             )}
                         </div>
@@ -373,19 +375,19 @@ const ProfileView: React.FC = () => {
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="bg-slate-950/40 p-3 rounded-xl border border-white/10">
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Unit</p>
-                                    <p className="text-white font-bold truncate text-sm">{currentUser.unit?.name || 'Unassigned'}</p>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">{t('Unit')}</p>
+                                    <p className="text-white font-bold truncate text-sm">{currentUser.unit?.name || t('Unassigned')}</p>
                                 </div>
                                 <div className="bg-slate-950/40 p-3 rounded-xl border border-white/10">
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Position</p>
-                                    <p className="text-white font-bold truncate text-sm">{currentUser.position?.name || 'Standard'}</p>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">{t('Position')}</p>
+                                    <p className="text-white font-bold truncate text-sm">{currentUser.position?.name || t('Standard')}</p>
                                 </div>
                                 <div className="bg-slate-950/40 p-3 rounded-xl border border-white/10">
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Clearance</p>
-                                    <p className="text-white font-bold truncate text-sm">{currentUser.clearanceLevel?.name || 'None'}</p>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">{t('Clearance')}</p>
+                                    <p className="text-white font-bold truncate text-sm">{currentUser.clearanceLevel?.name || t('None')}</p>
                                 </div>
                                 <div className="bg-slate-950/40 p-3 rounded-xl border border-white/10">
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Reputation</p>
+                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1.5">{t('Reputation')}</p>
                                     <p className={`font-black text-xl font-mono leading-none ${getReputationClass(currentUser.reputation)}`}>{currentUser.reputation}</p>
                                 </div>
                             </div>
@@ -400,16 +402,16 @@ const ProfileView: React.FC = () => {
                             <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
                                 <i className="fa-solid fa-sliders text-sm"></i>
                             </div>
-                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">Account Settings</h3>
+                            <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Account Settings')}</h3>
                         </div>
 
                         <div className="p-5 space-y-6">
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RSI Handle</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('RSI Handle')}</label>
                                     {!isEditing && (
                                         <button onClick={() => setIsEditing(true)} className="text-sky-300 hover:text-sky-200 text-[10px] font-black uppercase tracking-widest transition-colors">
-                                            Change
+                                            {t('Change')}
                                         </button>
                                     )}
                                 </div>
@@ -424,14 +426,14 @@ const ProfileView: React.FC = () => {
                                         />
                                         <div className="flex gap-2">
                                             <button onClick={initiateSave} disabled={isSaving} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50">
-                                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> Verify & Save</>}
+                                                {isSaving ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> {t('Verify & Save')}</>}
                                             </button>
                                             <button onClick={() => { setIsEditing(false); setRsiHandle(currentUser.rsiHandle); }} className="flex-1 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
-                                                Cancel
+                                                {t('Cancel')}
                                             </button>
                                         </div>
                                         <p className="text-[10px] text-amber-400 leading-tight">
-                                            <i className="fa-solid fa-triangle-exclamation mr-1"></i> Changing your handle requires re-verification.
+                                            <i className="fa-solid fa-triangle-exclamation mr-1"></i> {t('Changing your handle requires re-verification.')}
                                         </p>
                                     </div>
                                 ) : (
@@ -443,13 +445,13 @@ const ProfileView: React.FC = () => {
 
                             <div className="pt-4 border-t border-slate-800">
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Display Name</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Display Name')}</label>
                                     {!isEditingDisplayName && (
                                         <button
                                             onClick={() => { setDisplayNameDraft(currentUser.displayName || ''); setIsEditingDisplayName(true); }}
                                             className="text-sky-300 hover:text-sky-200 text-[10px] font-black uppercase tracking-widest transition-colors"
                                         >
-                                            {currentUser.displayName ? 'Change' : 'Customize'}
+                                            {currentUser.displayName ? t('Change') : t('Customize')}
                                         </button>
                                     )}
                                 </div>
@@ -471,16 +473,16 @@ const ProfileView: React.FC = () => {
                                                 disabled={isSavingDisplayName}
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50"
                                             >
-                                                {isSavingDisplayName ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> Save</>}
+                                                {isSavingDisplayName ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> {t('Save')}</>}
                                             </button>
                                             {currentUser.displayName && (
                                                 <button
                                                     onClick={clearDisplayName}
                                                     disabled={isSavingDisplayName}
                                                     className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50"
-                                                    title={`Revert to Discord name (${currentUser.discordName || 'unknown'})`}
+                                                    title={t('Revert to Discord name ({name})', { name: currentUser.discordName || t('Unknown') })}
                                                 >
-                                                    Reset
+                                                    {t('Reset')}
                                                 </button>
                                             )}
                                             <button
@@ -488,11 +490,11 @@ const ProfileView: React.FC = () => {
                                                 disabled={isSavingDisplayName}
                                                 className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white rounded-lg transition-colors disabled:opacity-50"
                                             >
-                                                Cancel
+                                                {t('Cancel')}
                                             </button>
                                         </div>
                                         <p className="text-[10px] text-slate-500 leading-tight">
-                                            Shown throughout the app instead of your Discord name. Up to 32 characters. Leave blank and Save, or tap Reset, to fall back to Discord.
+                                            {t('Shown throughout the app instead of your Discord name. Up to 32 characters. Leave blank and Save, or tap Reset, to fall back to Discord.')}
                                         </p>
                                     </div>
                                 ) : (
@@ -501,10 +503,10 @@ const ProfileView: React.FC = () => {
                                             <p className="text-slate-200 font-bold truncate">{currentUser.name}</p>
                                             {currentUser.displayName ? (
                                                 <p className="text-[10px] text-slate-500 mt-0.5">
-                                                    Custom override · Discord: <span className="font-mono text-slate-400">{currentUser.discordName || '—'}</span>
+                                                    {t('Custom override · Discord:')} <span className="font-mono text-slate-400">{currentUser.discordName || '—'}</span>
                                                 </p>
                                             ) : (
-                                                <p className="text-[10px] text-slate-500 mt-0.5">From Discord · set a custom name to override</p>
+                                                <p className="text-[10px] text-slate-500 mt-0.5">{t('From Discord · set a custom name to override')}</p>
                                             )}
                                         </div>
                                     </div>
@@ -512,7 +514,7 @@ const ProfileView: React.FC = () => {
                             </div>
 
                             <div className="pt-4 border-t border-slate-800">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Rank Synchronization</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">{t('Rank Synchronization')}</label>
                                 <div className="flex flex-col sm:flex-row gap-4 items-start">
                                     <button
                                         onClick={handleSyncRoles}
@@ -529,10 +531,10 @@ const ProfileView: React.FC = () => {
                                             syncSuccess ? <i className="fa-solid fa-check" /> :
                                                 syncCooldown ? <i className="fa-solid fa-clock" /> :
                                                     <i className="fa-brands fa-discord" />}
-                                        {isSyncing ? 'Syncing...' : syncSuccess ? 'Synced' : syncCooldown ? <span className="font-mono">{cooldownTime >= 60 ? `${Math.floor(cooldownTime / 60)}m ${cooldownTime % 60}s` : `${cooldownTime}s`}</span> : 'Sync Roles'}
+                                        {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : syncCooldown ? <span className="font-mono">{cooldownTime >= 60 ? `${Math.floor(cooldownTime / 60)}m ${cooldownTime % 60}s` : `${cooldownTime}s`}</span> : t('Sync Roles')}
                                     </button>
                                     <p className="text-xs text-slate-400 leading-relaxed">
-                                        Pull your latest roles from the Discord server to update your Rank and Permissions on the dashboard.
+                                        {t('Pull your latest roles from the Discord server to update your Rank and Permissions on the dashboard.')}
                                     </p>
                                 </div>
                             </div>
@@ -545,17 +547,17 @@ const ProfileView: React.FC = () => {
                                 <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
                                     <i className="fa-solid fa-tower-cell text-sm"></i>
                                 </div>
-                                <h3 className="font-bold text-white text-sm uppercase tracking-wider">Communications Uplink</h3>
+                                <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Communications Uplink')}</h3>
                             </div>
                             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-widest ${isPushActive ? 'bg-green-500/10 text-green-300 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
                                 <span className={`h-1.5 w-1.5 rounded-full ${isPushActive ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></span>
-                                {isPushActive ? 'Online' : 'Offline'}
+                                {isPushActive ? t('Online') : t('Offline')}
                             </span>
                         </div>
 
                         <div className="p-5 space-y-4">
                             <p className="text-xs text-slate-400 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-700/50">
-                                Register this device to receive critical mission alerts and EAM broadcasts even when the dashboard is closed.
+                                {t('Register this device to receive critical mission alerts and EAM broadcasts even when the dashboard is closed.')}
                             </p>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
@@ -564,7 +566,7 @@ const ProfileView: React.FC = () => {
                                     className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50"
                                 >
                                     {isDiagnosing ? <i className="fa-solid fa-circle-notch animate-spin"></i> : <i className="fa-solid fa-mobile-screen"></i>}
-                                    Register Device
+                                    {t('Register Device')}
                                 </button>
                                 <button
                                     onClick={handleTestSignal}
@@ -572,7 +574,7 @@ const ProfileView: React.FC = () => {
                                     className="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-300 bg-slate-900/60 border border-slate-700 rounded-lg hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50"
                                 >
                                     <i className="fa-solid fa-satellite-dish"></i>
-                                    Test Signal
+                                    {t('Test Signal')}
                                 </button>
                             </div>
 
@@ -583,7 +585,7 @@ const ProfileView: React.FC = () => {
                                             {log.text}
                                         </div>
                                     ))}
-                                    {isDiagnosing && <div className="text-sky-300 animate-pulse">_ Checking protocols...</div>}
+                                    {isDiagnosing && <div className="text-sky-300 animate-pulse">{t('_ Checking protocols...')}</div>}
                                 </div>
                             )}
                         </div>
@@ -595,20 +597,20 @@ const ProfileView: React.FC = () => {
                         <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
                             <i className="fa-solid fa-clock text-sm"></i>
                         </div>
-                        <h3 className="font-bold text-white text-sm uppercase tracking-wider">Time Preferences</h3>
+                        <h3 className="font-bold text-white text-sm uppercase tracking-wider">{t('Time Preferences')}</h3>
                     </div>
                     <div className="p-5 space-y-6">
                         <p className="text-xs text-slate-400 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-700/50">
-                            Pick the timezone and date format the dashboard should use when showing times to you. Other members keep their own preferences.
+                            {t('Pick the timezone and date format the dashboard should use when showing times to you. Other members keep their own preferences.')}
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Timezone</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Timezone')}</label>
                                     {tzDraft !== browserTz && (
                                         <button onClick={resetTzToBrowser} className="text-sky-300 hover:text-sky-200 text-[10px] font-black uppercase tracking-widest transition-colors">
-                                            Detect from browser
+                                            {t('Detect from browser')}
                                         </button>
                                     )}
                                 </div>
@@ -618,24 +620,24 @@ const ProfileView: React.FC = () => {
                                     disabled={isSavingPrefs}
                                     className="w-full bg-slate-950/40 border border-slate-700 rounded-lg p-3 text-white text-sm focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/30 outline-hidden transition-all disabled:opacity-50"
                                 >
-                                    <optgroup label="Common">
+                                    <optgroup label={t('Common')}>
                                         {commonTimezones.map(z => (
                                             <option key={`common-${z.value}`} value={z.value}>{z.label}</option>
                                         ))}
                                     </optgroup>
-                                    <optgroup label="All zones">
+                                    <optgroup label={t('All zones')}>
                                         {allTimezones.map(z => (
                                             <option key={`all-${z}`} value={z}>{z}</option>
                                         ))}
                                     </optgroup>
                                 </select>
                                 <p className="text-[10px] text-slate-500 mt-2 leading-tight">
-                                    Browser detected: <span className="font-mono text-slate-400">{browserTz}</span>
+                                    {t('Browser detected:')} <span className="font-mono text-slate-400">{browserTz}</span>
                                 </p>
                             </div>
 
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Date Format</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">{t('Date Format')}</label>
                                 <div className="space-y-2">
                                     {datePresets.map(p => {
                                         const selected = formatDraft === p.key;
@@ -649,8 +651,8 @@ const ProfileView: React.FC = () => {
                                                 className={`w-full text-left p-3 rounded-lg border transition-all flex items-center justify-between gap-3 ${selected ? 'bg-sky-500/10 border-sky-500/40 text-white' : 'bg-slate-950/40 border-slate-700 text-slate-300 hover:border-slate-600'} disabled:opacity-50`}
                                             >
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold truncate">{p.label}</p>
-                                                    <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">Now: {preview}</p>
+                                                    <p className="text-xs font-bold truncate">{t(p.label)}</p>
+                                                    <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">{t('Now: {preview}', { preview })}</p>
                                                 </div>
                                                 {selected && <i className="fa-solid fa-check text-sky-300 text-sm shrink-0"></i>}
                                             </button>
@@ -666,7 +668,7 @@ const ProfileView: React.FC = () => {
                                 disabled={isSavingPrefs}
                                 className="flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-sky-600 hover:bg-sky-500 border border-sky-500/40 rounded-lg shadow-lg shadow-sky-900/30 transition disabled:opacity-50"
                             >
-                                {isSavingPrefs ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> Save Preferences</>}
+                                {isSavingPrefs ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-check"></i> {t('Save Preferences')}</>}
                             </button>
                         </div>
                     </div>
@@ -677,7 +679,7 @@ const ProfileView: React.FC = () => {
                         <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400">
                             <i className="fa-solid fa-triangle-exclamation text-sm"></i>
                         </div>
-                        <h3 className="font-black text-red-300 text-sm uppercase tracking-widest">Danger Zone</h3>
+                        <h3 className="font-black text-red-300 text-sm uppercase tracking-widest">{t('Danger Zone')}</h3>
                     </div>
                     <div className="p-5">
                         <button
@@ -685,9 +687,9 @@ const ProfileView: React.FC = () => {
                             disabled={currentUser.role === 'Admin'}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-widest text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 rounded-lg shadow-lg shadow-red-900/20 transition-colors disabled:bg-slate-900/60 disabled:border-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         >
-                            <i className="fa-solid fa-trash"></i> Delete Account
+                            <i className="fa-solid fa-trash"></i> {t('Delete Account')}
                         </button>
-                        {currentUser.role === 'Admin' && <p className="text-[10px] text-red-400/60 text-center mt-2 italic">Admins cannot delete their own account.</p>}
+                        {currentUser.role === 'Admin' && <p className="text-[10px] text-red-400/60 text-center mt-2 italic">{t('Admins cannot delete their own account.')}</p>}
                     </div>
                 </div>
             </div>
@@ -700,16 +702,16 @@ const ProfileView: React.FC = () => {
                                 <i className="fa-solid fa-shield-halved"></i>
                             </div>
                             <div>
-                                <h3 className="text-base font-black text-white uppercase tracking-tight">Confirm Handle Change</h3>
-                                <p className="text-amber-300/80 text-[10px] font-mono uppercase tracking-widest mt-0.5">Security Protocol</p>
+                                <h3 className="text-base font-black text-white uppercase tracking-tight">{t('Confirm Handle Change')}</h3>
+                                <p className="text-amber-300/80 text-[10px] font-mono uppercase tracking-widest mt-0.5">{t('Security Protocol')}</p>
                             </div>
                         </div>
                         <div className="p-5 space-y-4">
                             <p className="text-slate-300 text-sm">
-                                Are you sure you want to change your handle to <strong className="text-white font-mono">{rsiHandle}</strong>?
+                                {t('Are you sure you want to change your handle to')} <strong className="text-white font-mono">{rsiHandle}</strong>?
                             </p>
                             <p className="text-slate-400 text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-700/50 leading-relaxed">
-                                You will be logged out of the terminal immediately and must complete the verification process on RobertsSpaceIndustries.com to regain access.
+                                {t('You will be logged out of the terminal immediately and must complete the verification process on RobertsSpaceIndustries.com to regain access.')}
                             </p>
                         </div>
                         <div className="p-4 bg-slate-950/60 border-t border-white/5 flex justify-end gap-3 rounded-b-xl">
@@ -717,13 +719,13 @@ const ProfileView: React.FC = () => {
                                 onClick={() => setShowHandleConfirm(false)}
                                 className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
                             >
-                                Abort
+                                {t('Abort')}
                             </button>
                             <button
                                 onClick={confirmSave}
                                 className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white bg-amber-600 hover:bg-amber-500 border border-amber-500/40 rounded-lg shadow-lg shadow-amber-900/30 transition"
                             >
-                                <i className="fa-solid fa-check"></i> Confirm & Verify
+                                <i className="fa-solid fa-check"></i> {t('Confirm & Verify')}
                             </button>
                         </div>
                     </div>

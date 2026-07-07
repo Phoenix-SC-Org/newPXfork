@@ -6,6 +6,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import WindowFrame from '../layout/WindowFrame';
 import AwardIcon from '../common/AwardIcon';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface ManageSpecializationsModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ const ManageSpecializationsModal: React.FC<ManageSpecializationsModalProps> = ({
     const { currentUser, updateUserSpecializations } = useAuth();
     const { specializationTags } = useMembers();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
     const [isLoading, setIsLoading] = useState(false);
 
@@ -58,7 +60,7 @@ const ManageSpecializationsModal: React.FC<ManageSpecializationsModalProps> = ({
             onClose();
         } catch (err) {
             console.error("Failed to update specializations:", err);
-            addToast("Error", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "An error occurred while updating specializations. Please try again." });
+            addToast(t("Error"), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t("An error occurred while updating specializations. Please try again.") });
         } finally {
             setIsLoading(false);
         }
@@ -70,8 +72,8 @@ const ManageSpecializationsModal: React.FC<ManageSpecializationsModalProps> = ({
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title="Manage My Specializations"
-            subtitle="Skills & Competencies"
+            title={t('Manage My Specializations')}
+            subtitle={t('Skills & Competencies')}
             icon="fa-solid fa-tags"
             color="sky"
             width="max-w-lg"
@@ -79,7 +81,7 @@ const ManageSpecializationsModal: React.FC<ManageSpecializationsModalProps> = ({
             <div className="flex flex-col h-full">
                 <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                     <div className="p-3 bg-slate-900/50 border border-slate-700/50 rounded-lg text-xs text-slate-400">
-                        Select up to <strong>four</strong> specializations that best represent your primary skills.
+                        {t('Select up to')} <strong>{t('four')}</strong> {t('specializations that best represent your primary skills.')}
                     </div>
 
                     <div className="grid grid-cols-1 gap-2">
@@ -110,24 +112,24 @@ const ManageSpecializationsModal: React.FC<ManageSpecializationsModalProps> = ({
                                 );
                             })
                         ) : (
-                            <p className="text-slate-500 text-center py-4 text-xs">No specializations configured.</p>
+                            <p className="text-slate-500 text-center py-4 text-xs">{t('No specializations configured.')}</p>
                         )}
                     </div>
                 </div>
 
                 <div className="p-4 border-t border-white/5 bg-slate-900/50 flex justify-between items-center rounded-b-xl">
                     <p className={`text-[10px] font-black uppercase tracking-widest ${limitReached ? 'text-amber-500' : 'text-slate-500'}`}>
-                        {selectedIds.size} / 4 Selected
+                        {t('{count} / 4 Selected', { count: selectedIds.size })}
                     </p>
                     <div className="flex gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold uppercase text-slate-400 hover:text-white transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                         <button
                             type="button"
                             onClick={handleSave}
                             className="px-6 py-2 bg-sky-500/10 text-sky-400 border border-sky-500/50 hover:bg-sky-500/20 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                             disabled={isLoading}
                         >
-                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save'}
+                            {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save')}
                         </button>
                     </div>
                 </div>

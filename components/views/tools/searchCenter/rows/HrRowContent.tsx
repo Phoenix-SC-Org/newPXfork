@@ -9,6 +9,7 @@ import {
 import { AccentKey } from '../../../../shared/ui/accents';
 import SearchResultCard from '../SearchResultCard';
 import { timeAgoShort } from '../../../intel/intelStyles';
+import { useI18n } from '../../../../../i18n/I18nContext';
 
 type HrSubtype = 'application' | 'interview' | 'posting';
 
@@ -62,6 +63,7 @@ const postingAccent = (status: JobPostingStatus): AccentKey => {
 };
 
 const HrRowContent: React.FC<Props> = ({ subtype, data, onClick, isSelected }) => {
+    const { t } = useI18n();
     let accent: AccentKey;
     let title: string;
     let timestamp: string;
@@ -74,7 +76,7 @@ const HrRowContent: React.FC<Props> = ({ subtype, data, onClick, isSelected }) =
         accent = applicationAccent(a.status);
         title = a.applicantName || a.rsiHandle;
         timestamp = a.createdAt;
-        summary = a.referralSource ? `Source: ${a.referralSource}` : (a.notes || a.rsiHandle);
+        summary = a.referralSource ? t('Source: {source}', { source: a.referralSource }) : (a.notes || a.rsiHandle);
         statusLabel = a.status;
         if (accent === 'emerald') statusAccentClasses = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
         else if (accent === 'amber') statusAccentClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-300';
@@ -82,9 +84,9 @@ const HrRowContent: React.FC<Props> = ({ subtype, data, onClick, isSelected }) =
     } else if (subtype === 'interview') {
         const i = data as HydratedHRInterview;
         accent = 'amber';
-        title = i.applicantName || `Interview #${i.id.slice(0, 6)}`;
+        title = i.applicantName || t('Interview #{id}', { id: i.id.slice(0, 6) });
         timestamp = i.scheduledAt;
-        summary = `${i.template?.name || 'Interview'} · ${i.interviewer?.name || 'TBD'}`;
+        summary = `${i.template?.name || t('Interview')} · ${i.interviewer?.name || t('TBD')}`;
         statusLabel = i.status;
         statusAccentClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-300';
     } else {
@@ -107,7 +109,7 @@ const HrRowContent: React.FC<Props> = ({ subtype, data, onClick, isSelected }) =
         >
             <div className="flex items-center gap-2 min-w-0">
                 <span className="px-1.5 py-0.5 rounded-sm border bg-amber-500/10 border-amber-500/30 text-amber-300 font-black text-[9px] uppercase tracking-widest shrink-0">
-                    HR · {subtypeLabel[subtype]}
+                    HR · {t(subtypeLabel[subtype], { context: 'hr' })}
                 </span>
                 <h3 className="text-white font-bold text-sm truncate">{title}</h3>
                 {timestamp && (
@@ -126,7 +128,7 @@ const HrRowContent: React.FC<Props> = ({ subtype, data, onClick, isSelected }) =
                 </p>
                 {statusLabel && (
                     <span className={`px-1.5 py-0.5 rounded-sm border font-black text-[9px] uppercase tracking-widest shrink-0 ${statusAccentClasses}`}>
-                        {statusLabel}
+                        {t(statusLabel, { context: 'status' })}
                     </span>
                 )}
             </div>

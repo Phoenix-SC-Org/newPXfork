@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface Props {
 const DRAG_DISMISS_THRESHOLD = 100;
 
 export default function BottomSheet({ isOpen, onClose, title, maxHeight = '85vh', children }: Props) {
+    const { t } = useI18n();
     const [dragOffset, setDragOffset] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const dragStartYRef = useRef<number | null>(null);
@@ -114,7 +116,7 @@ export default function BottomSheet({ isOpen, onClose, title, maxHeight = '85vh'
                         <button
                             onClick={onClose}
                             className="text-slate-500 hover:text-white text-sm w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-colors"
-                            aria-label="Close"
+                            aria-label={t('Close')}
                         >
                             <i className="fa-solid fa-xmark" />
                         </button>

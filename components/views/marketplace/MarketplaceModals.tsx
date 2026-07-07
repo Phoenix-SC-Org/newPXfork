@@ -173,7 +173,7 @@ export const ListingDetailModal: React.FC<{
     onDelete: () => Promise<void>;
     onReport: (payload: { reasonCategory: string; details?: string }) => Promise<void>;
 }> = ({ listing, meId, canContract, onClose, onPropose, onDelete, onReport }) => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const isOwner = listing.sellerId === meId;
     const isItem = listing.kind === 'item';
     const remaining = listing.quantity != null ? Math.max(0, listing.quantity - listing.quantityClaimed) : null;
@@ -201,7 +201,7 @@ export const ListingDetailModal: React.FC<{
                 <div className="flex flex-wrap items-center gap-2">
                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-sm border ${meta.chip}`}><i className={`fa-solid ${meta.icon} mr-1`} aria-hidden />{t(meta.label)}</span>
                     {listing.categoryName && <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm border bg-slate-700/30 text-slate-300 border-slate-600/40">{listing.categoryName}</span>}
-                    <span className="ml-auto text-lg font-black text-lime-400 font-mono">{listing.priceUec != null ? fmtUec(listing.priceUec) : t('Negotiable')}</span>
+                    <span className="ml-auto text-lg font-black text-lime-400 font-mono">{listing.priceUec != null ? fmtUec(listing.priceUec, locale) : t('Negotiable')}</span>
                 </div>
                 <div className="flex flex-wrap gap-4 text-xs text-slate-400">
                     <span className="inline-flex items-center gap-1.5">{listing.seller?.avatarUrl && <img src={listing.seller.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}{listing.seller?.name || t('User #{id}', { id: listing.sellerId })}</span>

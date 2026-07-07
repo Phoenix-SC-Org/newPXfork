@@ -4,6 +4,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { TabPageHeader } from '../../shared/ui';
 import apiService from '../../../services/apiService';
 import { useSession } from '../../../contexts/SessionContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface ImportHeaderPreview {
     version: number;
@@ -45,6 +46,7 @@ function parseImportUsers(ndjson: string): ImportUserOption[] {
 }
 
 const OrgImportTab: React.FC = () => {
+    const { t, locale } = useI18n();
     const { addToast, confirm } = useNotification();
     const { currentUser } = useSession();
 
@@ -68,13 +70,13 @@ const OrgImportTab: React.FC = () => {
     // The server re-parses and is authoritative.
     const sniffHeader = (text: string): ImportHeaderPreview | string => {
         const firstLine = text.split(/\r?\n/).find((l) => l.trim().length > 0);
-        if (!firstLine) return 'File is empty.';
+        if (!firstLine) return t('File is empty.');
         let obj: { kind?: unknown; version?: unknown; tableOrder?: unknown; manifest?: unknown } & Record<string, unknown>;
         try { obj = JSON.parse(firstLine.trim()); }
-        catch { return 'First line is not valid JSON — is this a myrsi.org organization export (.ndjson)?'; }
-        if (obj.kind !== 'header') return 'First line is not an export header.';
-        if (obj.version !== 1) return `Unsupported export version ${String(obj.version)} (this instance imports version 1).`;
-        if (!Array.isArray(obj.tableOrder) || !obj.manifest) return 'Export header is missing tableOrder/manifest.';
+        catch { return t('First line is not valid JSON — is this a myrsi.org organization export (.ndjson)?'); }
+        if (obj.kind !== 'header') return t('First line is not an export header.');
+        if (obj.version !== 1) return t('Unsupported export version {version} (this instance imports version 1).', { version: String(obj.version) });
+        if (!Array.isArray(obj.tableOrder) || !obj.manifest) return t('Export header is missing tableOrder/manifest.');
         return obj as unknown as ImportHeaderPreview;
     };
 
@@ -96,7 +98,7 @@ const OrgImportTab: React.FC = () => {
             const mine = us.find((u) => u.discordId && u.discordId === currentUser?.discordId);
             setMergeUserId(mine ? mine.id : null);
         };
-        reader.onerror = () => setParseError('Could not read file.');
+        reader.onerror = () => setParseError(t('Could not read file.'));
         reader.readAsText(file);
     };
 
@@ -116,13 +118,13 @@ const OrgImportTab: React.FC = () => {
     const handleImport = async () => {
         if (!ndjson || !header) return;
         const confirmed = await confirm({
-            title: 'Confirm Organization Import',
-            message:
-                `Import ${totalRows.toLocaleString()} rows across ${nonEmptyTables.length} tables from ` +
-                `"${header.sourceOrg?.name || 'unknown source'}". This is a ONE-TIME bootstrap and will be ` +
-                `REFUSED if this instance already contains data. Members re-link to their accounts on first ` +
-                `Discord login. Continue?`,
-            confirmText: 'Run Import',
+            title: t('Confirm Organization Import'),
+            message: t('Import {rows} rows across {tables} tables from "{source}". This is a ONE-TIME bootstrap and will be REFUSED if this instance already contains data. Members re-link to their accounts on first Discord login. Continue?', {
+                rows: totalRows.toLocaleString(locale),
+                tables: nonEmptyTables.length,
+                source: header.sourceOrg?.name || t('unknown source'),
+            }),
+            confirmText: t('Run Import'),
             variant: 'danger',
         });
         if (!confirmed) return;
@@ -131,24 +133,24 @@ const OrgImportTab: React.FC = () => {
         const pushLog = (line: string) => setLogLines((l) => [...l, { id: logIdRef.current++, text: line }]);
         try {
             await apiService.importOrgStream(ndjson, (evt: any) => {
-                if (evt.type === 'start') pushLog(`Importing ${evt.totalRows.toLocaleString()} rows across ${evt.totalTables} tables…`);
+                if (evt.type === 'start') pushLog(t('Importing {rows} rows across {tables} tables…', { rows: evt.totalRows.toLocaleString(locale), tables: evt.totalTables }));
                 else if (evt.type === 'phase') pushLog(`• ${evt.phase}…`);
                 else if (evt.type === 'table') {
-                    pushLog(`✓ ${evt.table} (${evt.inserted.toLocaleString()})`);
+                    pushLog(`✓ ${evt.table} (${evt.inserted.toLocaleString(locale)})`);
                     if (evt.totalRows > 0) setPct(Math.min(100, Math.round((evt.rowsInserted / evt.totalRows) * 100)));
                 } else if (evt.type === 'warning') pushLog(`⚠ ${evt.message}`);
                 else if (evt.type === 'done') {
                     setPct(100); setResult(evt.result as ImportResult);
-                    addToast('Import complete', <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
-                        { description: `Inserted ${evt.result.rowsInserted.toLocaleString()} rows. Reload to see imported data.` });
+                    addToast(t('Import complete'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50',
+                        { description: t('Inserted {rows} rows. Reload to see imported data.', { rows: evt.result.rowsInserted.toLocaleString(locale) }) });
                 } else if (evt.type === 'error') {
                     pushLog(`✗ ${evt.message}`);
-                    addToast('Import failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: evt.message });
+                    addToast(t('Import failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: evt.message });
                 }
             }, mergeUserId ?? undefined);
         } catch (err) {
-            addToast('Import failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50',
-                { description: (err as Error)?.message || 'Could not import organization data.' });
+            addToast(t('Import failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50',
+                { description: (err as Error)?.message || t('Could not import organization data.') });
         } finally {
             setIsImporting(false);
         }
@@ -159,22 +161,22 @@ const OrgImportTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Import Organization Data"
+                title={t('Import Organization Data')}
                 icon="fa-solid fa-database"
                 accent="amber"
-                subtitle="Bootstrap this self-hosted instance from a full-organization export (.ndjson) downloaded from the hosted myrsi.org customer portal. One-time only — refused if this instance already has data."
+                subtitle={t('Bootstrap this self-hosted instance from a full-organization export (.ndjson) downloaded from the hosted myrsi.org customer portal. One-time only — refused if this instance already has data.')}
             />
 
             <div className="bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden">
                 <div className="px-6 py-4 bg-slate-800/50 border-b border-slate-700/50 flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Export File</h3>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('Export File')}</h3>
                     <input ref={fileInputRef} type="file" accept=".ndjson,.jsonl,.json,text/plain" className="hidden" onChange={handleFileSelected} />
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isImporting}
                         className="text-[10px] bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-3 py-1 rounded-sm font-bold uppercase transition-colors disabled:opacity-50"
                     >
-                        <i className="fa-solid fa-folder-open mr-1"></i>Choose File
+                        <i className="fa-solid fa-folder-open mr-1"></i>{t('Choose File')}
                     </button>
                 </div>
 
@@ -186,16 +188,16 @@ const OrgImportTab: React.FC = () => {
                     )}
 
                     {!header && !parseError && (
-                        <p className="text-xs text-slate-500">No file selected. Choose an organization export (.ndjson) generated from the hosted customer portal.</p>
+                        <p className="text-xs text-slate-500">{t('No file selected. Choose an organization export (.ndjson) generated from the hosted customer portal.')}</p>
                     )}
 
                     {header && (
                         <>
                             <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-2 text-xs text-slate-300 space-y-1">
-                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">File:</span>{filename}</div>
-                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">Source org:</span>{header.sourceOrg?.name || '—'}</div>
-                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">Total rows:</span>{totalRows.toLocaleString()}</div>
-                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">Tables:</span>{nonEmptyTables.length}</div>
+                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">{t('File:')}</span>{filename}</div>
+                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">{t('Source org:')}</span>{header.sourceOrg?.name || '—'}</div>
+                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">{t('Total rows:')}</span>{totalRows.toLocaleString(locale)}</div>
+                                <div><span className="text-slate-500 uppercase tracking-wider mr-2">{t('Tables:')}</span>{nonEmptyTables.length}</div>
                             </div>
 
                             <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-700/40">
@@ -204,7 +206,7 @@ const OrgImportTab: React.FC = () => {
                                         {nonEmptyTables.map((t) => (
                                             <tr key={t} className="border-b border-slate-800/50">
                                                 <td className="px-3 py-1.5 text-slate-300 font-mono">{t}</td>
-                                                <td className="px-3 py-1.5 text-right text-slate-400">{(header.manifest[t] || 0).toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right text-slate-400">{(header.manifest[t] || 0).toLocaleString(locale)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -213,22 +215,20 @@ const OrgImportTab: React.FC = () => {
 
                             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
                                 <i className="fa-solid fa-circle-info mr-2"></i>
-                                Import is refused if this instance already contains users/requests/operations/etc.
-                                Catalog references (ships, items) are re-linked against this instance's synced
-                                catalogs — run the Database Tools catalog syncs first for best coverage.
+                                {t("Import is refused if this instance already contains users/requests/operations/etc. Catalog references (ships, items) are re-linked against this instance's synced catalogs — run the Database Tools catalog syncs first for best coverage.")}
                             </div>
 
                             {users.length > 0 && (
                                 <div className="rounded-lg border border-sky-500/20 bg-sky-500/10 px-3 py-2">
-                                    <label className="block text-[11px] font-semibold text-sky-300 mb-1 uppercase tracking-wider">Which of these is you?</label>
-                                    <p className="text-[11px] text-slate-400 mb-2">Your admin account is merged with this member's records — kept as Admin, same Discord login — so you aren't duplicated. Required, since this instance already has your admin account.</p>
+                                    <label className="block text-[11px] font-semibold text-sky-300 mb-1 uppercase tracking-wider">{t('Which of these is you?')}</label>
+                                    <p className="text-[11px] text-slate-400 mb-2">{t("Your admin account is merged with this member's records — kept as Admin, same Discord login — so you aren't duplicated. Required, since this instance already has your admin account.")}</p>
                                     <select
                                         value={mergeUserId ?? ''}
                                         onChange={(e) => setMergeUserId(e.target.value ? Number(e.target.value) : null)}
                                         disabled={isImporting}
                                         className="w-full bg-slate-900 border border-white/10 rounded-sm px-3 py-2 text-xs text-slate-200"
                                     >
-                                        <option value="">— Select your member —</option>
+                                        <option value="">{t('— Select your member —')}</option>
                                         {users.map((u) => (
                                             <option key={u.id} value={u.id}>{u.label}{u.sub ? ` · ${u.sub}` : ''}</option>
                                         ))}
@@ -241,9 +241,9 @@ const OrgImportTab: React.FC = () => {
                                     disabled={isImporting || (users.length > 0 && mergeUserId == null)}
                                     className="text-[10px] bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-sm font-bold uppercase transition-colors disabled:opacity-50"
                                 >
-                                    {isImporting ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i>Importing…</> : <><i className="fa-solid fa-upload mr-1"></i>Run Import</>}
+                                    {isImporting ? <><i className="fa-solid fa-spinner animate-spin mr-1"></i>{t('Importing…')}</> : <><i className="fa-solid fa-upload mr-1"></i>{t('Run Import')}</>}
                                 </button>
-                                <button onClick={clear} disabled={isImporting} className="text-[10px] bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-sm font-bold uppercase transition-colors disabled:opacity-50">Clear</button>
+                                <button onClick={clear} disabled={isImporting} className="text-[10px] bg-slate-700 hover:bg-slate-600 border border-slate-600 text-white px-4 py-2 rounded-sm font-bold uppercase transition-colors disabled:opacity-50">{t('Clear')}</button>
                             </div>
 
                             {(isImporting || logLines.length > 0) && (
@@ -261,17 +261,17 @@ const OrgImportTab: React.FC = () => {
 
                     {result && (
                         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 space-y-1">
-                            <div><i className="fa-solid fa-check mr-2"></i>Imported {result.rowsInserted.toLocaleString()} rows across {result.tablesProcessed} tables. Sequences reset: {result.sequencesReset.length}.</div>
-                            {result.rowsSkipped > 0 && <div className="text-amber-300">Skipped {result.rowsSkipped} rows from unrecognized tables.</div>}
+                            <div><i className="fa-solid fa-check mr-2"></i>{t('Imported {rows} rows across {tables} tables. Sequences reset: {sequences}.', { rows: result.rowsInserted.toLocaleString(locale), tables: result.tablesProcessed, sequences: result.sequencesReset.length })}</div>
+                            {result.rowsSkipped > 0 && <div className="text-amber-300">{t('Skipped {count} rows from unrecognized tables.', { count: result.rowsSkipped })}</div>}
                             {result.warnings.length > 0 && (
                                 <details className="mt-1">
-                                    <summary className="cursor-pointer text-amber-300">{result.warnings.length} warning(s)</summary>
+                                    <summary className="cursor-pointer text-amber-300">{t('{count} warning(s)', { count: result.warnings.length })}</summary>
                                     <ul className="mt-1 list-disc list-inside text-amber-200/80 space-y-0.5">
                                         {warningRows.map((w) => <li key={w.id}>{w.text}</li>)}
                                     </ul>
                                 </details>
                             )}
-                            <div className="text-slate-300 pt-1">Reload the app to load the imported data.</div>
+                            <div className="text-slate-300 pt-1">{t('Reload the app to load the imported data.')}</div>
                         </div>
                     )}
                 </div>

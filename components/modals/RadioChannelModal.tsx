@@ -5,6 +5,7 @@ import { useData } from '../../contexts/DataContext';
 import { RadioChannel } from '../../types';
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface RadioChannelModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ interface RadioChannelModalProps {
 const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, channel, onSuccess }) => {
     const { rpcAction } = useData();
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [id, setId] = useState('');
     const [name, setName] = useState('');
     const [color, setColor] = useState('#38bdf8');
@@ -67,7 +69,7 @@ const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, 
             onClose();
         } catch (error) {
             console.error(error);
-            addToast("Save Failed", <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save channel. Please try again." });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save channel. Please try again.') });
         } finally {
             setIsLoading(false);
         }
@@ -80,8 +82,8 @@ const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, 
         <WindowFrame
             isOpen={isOpen}
             onClose={onClose}
-            title={isEditing ? 'Edit Frequency' : 'New Frequency'}
-            subtitle="Signal Configuration"
+            title={isEditing ? t('Edit Frequency') : t('New Frequency')}
+            subtitle={t('Signal Configuration')}
             icon="fa-solid fa-tower-broadcast"
             color="sky"
             width="max-w-md"
@@ -89,7 +91,7 @@ const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, 
             <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 <div className="p-6 space-y-5">
                     <div>
-                        <label className={labelClass}>Channel ID</label>
+                        <label className={labelClass}>{t('Channel ID')}</label>
                         <input
                             type="text"
                             value={id}
@@ -99,24 +101,24 @@ const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, 
                             disabled={isEditing || isLoading}
                             required
                         />
-                        {!isEditing && <p className="text-[10px] text-slate-600 mt-1 italic">Unique identifier (slug), lower case, no spaces.</p>}
+                        {!isEditing && <p className="text-[10px] text-slate-600 mt-1 italic">{t('Unique identifier (slug), lower case, no spaces.')}</p>}
                     </div>
 
                     <div>
-                        <label className={labelClass}>Display Name</label>
+                        <label className={labelClass}>{t('Display Name')}</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className={inputClass}
-                            placeholder="e.g. Tactical One"
+                            placeholder={t('e.g. Tactical One')}
                             disabled={isLoading}
                             required
                         />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Signal Color</label>
+                        <label className={labelClass}>{t('Signal Color')}</label>
                         <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-lg p-2">
                             <input
                                 type="color"
@@ -131,13 +133,13 @@ const RadioChannelModal: React.FC<RadioChannelModalProps> = ({ isOpen, onClose, 
                 </div>
 
                 <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-white/5 rounded-b-2xl shrink-0 gap-3">
-                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>Cancel</button>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" disabled={isLoading}>{t('Cancel')}</button>
                     <button
                         type="submit"
                         className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all shadow-lg shadow-sky-900/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:shadow-none"
                         disabled={isLoading}
                     >
-                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'Save Frequency'}
+                        {isLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : t('Save Frequency')}
                     </button>
                 </div>
             </form>

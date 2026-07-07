@@ -4,6 +4,7 @@ import apiService from '../../services/apiService';
 import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 import { useNotification } from '../../contexts/NotificationContext';
 
@@ -17,6 +18,7 @@ interface Props {
  * there is no member cap, so every selected client is promoted.
  */
 const BulkPromoteToMemberModal: React.FC<Props> = ({ selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const { refreshMainState } = useData();
     const { addToast } = useNotification();
     const bulk = useBulkProgress<number>();
@@ -34,20 +36,20 @@ const BulkPromoteToMemberModal: React.FC<Props> = ({ selectedUsers, onClose }) =
     // render (in an effect, before the auto-close effect) so the auto-close can
     // read current props/state without listing them as triggers — it must fire
     // only on bulk.state transitions, not when aggregate/onClose/refresh change.
-    const completionRef = useRef({ targetIds, aggregate: bulk.aggregate, addToast, refreshMainState, onClose });
+    const completionRef = useRef({ targetIds, aggregate: bulk.aggregate, addToast, refreshMainState, onClose, t });
     useEffect(() => {
-        completionRef.current = { targetIds, aggregate: bulk.aggregate, addToast, refreshMainState, onClose };
+        completionRef.current = { targetIds, aggregate: bulk.aggregate, addToast, refreshMainState, onClose, t };
     });
 
     useEffect(() => {
         if (bulk.state === 'done' || bulk.state === 'cancelled') {
-            const { targetIds, aggregate, addToast, refreshMainState, onClose } = completionRef.current;
+            const { targetIds, aggregate, addToast, refreshMainState, onClose, t } = completionRef.current;
             const total = targetIds.length;
             const wasCancelled = bulk.state === 'cancelled';
-            const parts: string[] = [`Promoted ${aggregate.updated}`];
-            if (aggregate.skipped > 0) parts.push(`${aggregate.skipped} skipped`);
+            const parts: string[] = [t('Promoted {count}', { count: aggregate.updated })];
+            if (aggregate.skipped > 0) parts.push(t('{count} skipped', { count: aggregate.skipped }));
             const msg = wasCancelled
-                ? `Cancelled — updated ${aggregate.updated} of ${total}`
+                ? t('Cancelled — updated {updated} of {total}', { updated: aggregate.updated, total })
                 : parts.join(', ');
             addToast(
                 msg,
@@ -65,12 +67,12 @@ const BulkPromoteToMemberModal: React.FC<Props> = ({ selectedUsers, onClose }) =
 
     return (
         <BulkActionShell
-            title="Promote to Member"
-            subtitle="Selected Clients will gain Member-tier access"
+            title={t('Promote to Member')}
+            subtitle={t('Selected Clients will gain Member-tier access')}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel={`Promote ${targetIds.length}`}
+            confirmLabel={t('Promote {count}', { count: targetIds.length })}
             confirmDisabled={targetIds.length === 0}
             busy={isRunning}
             hideFooter={isRunning || isFinished}

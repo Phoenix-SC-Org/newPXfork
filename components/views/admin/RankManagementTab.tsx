@@ -7,8 +7,10 @@ import { Rank } from '../../../types';
 import { TabPageHeader } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useModalRegistry } from '../../../contexts/ModalRegistryContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const RankManagementTab: React.FC = () => {
+    const { t } = useI18n();
     const { isFetching } = useData();
     const { ranks, allUsers, deleteRank, updateRank } = useMembers();
     const { addToast, confirm } = useNotification();
@@ -44,17 +46,17 @@ const RankManagementTab: React.FC = () => {
     const handleDelete = async (rank: Rank & { memberCount: number }) => {
         if (rank.memberCount > 0) {
             await confirm({
-                title: 'Cannot Delete',
-                message: `Cannot delete "${rank.name}" as it is assigned to ${rank.memberCount} member(s). Please reassign them first.`,
-                confirmText: 'OK',
+                title: t('Cannot Delete'),
+                message: t('Cannot delete "{name}" as it is assigned to {count} member(s). Please reassign them first.', { name: rank.name, count: rank.memberCount }),
+                confirmText: t('OK'),
                 variant: 'info'
             });
             return;
         }
         const confirmed = await confirm({
-            title: 'Delete Rank',
-            message: `Are you sure you want to permanently delete the rank "${rank.name}"? This action cannot be undone.`,
-            confirmText: 'Delete',
+            title: t('Delete Rank'),
+            message: t('Are you sure you want to permanently delete the rank "{name}"? This action cannot be undone.', { name: rank.name }),
+            confirmText: t('Delete'),
             variant: 'danger'
         });
         if (confirmed) {
@@ -124,7 +126,7 @@ const RankManagementTab: React.FC = () => {
         setDropTargetId(null);
         setDropPosition(null);
 
-        addToast('Reordering Ranks', <i className="fa-solid fa-spinner animate-spin"></i>, 'bg-slate-500/10 text-slate-300 border-slate-500/50', { description: 'Saving new rank precedence order...' });
+        addToast(t('Reordering Ranks'), <i className="fa-solid fa-spinner animate-spin"></i>, 'bg-slate-500/10 text-slate-300 border-slate-500/50', { description: t('Saving new rank precedence order...') });
 
         const updates = newOrder.map((rank, index) => ({
             ...rank,
@@ -133,10 +135,10 @@ const RankManagementTab: React.FC = () => {
 
         try {
             await Promise.all(updates.map(r => updateRank(r)));
-            addToast('Ranks Reordered', <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: 'Rank precedence order updated successfully.' });
+            addToast(t('Ranks Reordered'), <i className="fa-solid fa-check"></i>, 'bg-green-500/10 text-green-400 border-green-500/50', { description: t('Rank precedence order updated successfully.') });
         } catch (err) {
             console.error("Failed to reorder ranks:", err);
-            addToast("Reorder Failed", <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: "Failed to save the new rank order." });
+            addToast(t('Reorder Failed'), <i className="fa-solid fa-triangle-exclamation"></i>, "bg-red-500/10 text-red-400 border-red-500/50", { description: t('Failed to save the new rank order.') });
         } finally {
             setIsUpdating(false);
         }
@@ -145,13 +147,13 @@ const RankManagementTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Rank Structure"
+                title={t('Rank Structure')}
                 icon="fa-solid fa-ranking-star"
                 accent="amber"
-                subtitle="Configure hierarchy and insignias. Drag rows to reorder precedence."
+                subtitle={t('Configure hierarchy and insignias. Drag rows to reorder precedence.')}
                 meta={isFetching['main'] && (
                     <span className="text-slate-300 animate-pulse text-xs font-bold flex items-center gap-1">
-                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> Syncing...
+                        <i className="fa-solid fa-arrows-rotate fa-spin"></i> {t('Syncing...')}
                     </span>
                 )}
                 actions={
@@ -160,7 +162,7 @@ const RankManagementTab: React.FC = () => {
                             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search ranks..."
+                                placeholder={t('Search ranks...')}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-slate-900/60 border border-slate-700 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder:text-slate-500 focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden text-sm font-medium transition-all"
@@ -171,7 +173,7 @@ const RankManagementTab: React.FC = () => {
                             className="flex items-center justify-center bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-600 transition-colors shadow-lg text-sm whitespace-nowrap"
                         >
                             <i className="fa-solid fa-plus mr-2" />
-                            Create Rank
+                            {t('Create Rank')}
                         </button>
                     </div>
                 }
@@ -180,12 +182,12 @@ const RankManagementTab: React.FC = () => {
             <div className={`bg-slate-900/40 rounded-xl border border-slate-700/50 overflow-hidden ${isUpdating ? 'opacity-60 pointer-events-none' : ''}`}>
                 <div className="flex bg-slate-800/60 p-4 border-b border-slate-700/50 text-xs font-black text-slate-500 uppercase tracking-widest">
                     <div className="w-10"></div>
-                    <div className="w-16">Insignia</div>
-                    <div className="w-24 text-center">Precedence</div>
-                    <div className="flex-1">Rank Name</div>
-                    <div className="w-32 hidden md:block">System ID</div>
-                    <div className="w-32 text-center">Personnel</div>
-                    <div className="w-32 text-right">Actions</div>
+                    <div className="w-16">{t('Insignia')}</div>
+                    <div className="w-24 text-center">{t('Precedence')}</div>
+                    <div className="flex-1">{t('Rank Name')}</div>
+                    <div className="w-32 hidden md:block">{t('System ID')}</div>
+                    <div className="w-32 text-center">{t('Personnel')}</div>
+                    <div className="w-32 text-right">{t('Actions')}</div>
                 </div>
 
                 <div className="divide-y divide-slate-700/50">
@@ -243,10 +245,10 @@ const RankManagementTab: React.FC = () => {
                                 </div>
 
                                 <div className="w-32 text-right flex justify-end gap-2">
-                                    <button onClick={() => openRankModal(rank)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title="Edit">
+                                    <button onClick={() => openRankModal(rank)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-sm transition-colors" title={t('Edit')}>
                                         <i className="fa-solid fa-pencil"></i>
                                     </button>
-                                    <button onClick={() => handleDelete(rank)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title="Delete">
+                                    <button onClick={() => handleDelete(rank)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-sm transition-colors" title={t('Delete')}>
                                         <i className="fa-solid fa-trash-can"></i>
                                     </button>
                                 </div>
@@ -256,18 +258,18 @@ const RankManagementTab: React.FC = () => {
 
                     {displayedRanks.length === 0 && (
                         <div className="p-12 text-center">
-                            <p className="text-slate-500 font-medium italic">No ranks found.</p>
+                            <p className="text-slate-500 font-medium italic">{t('No ranks found.')}</p>
                         </div>
                     )}
                 </div>
             </div>
             <p className="text-center text-xs text-slate-600 mt-4 italic">
                 {isUpdating ? (
-                    <span className="text-slate-300"><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> Reordering ranks...</span>
+                    <span className="text-slate-300"><i className="fa-solid fa-circle-notch animate-spin mr-2"></i> {t('Reordering ranks...')}</span>
                 ) : (
                     <>
                         <i className="fa-solid fa-lightbulb mr-1 text-amber-500/50"></i>
-                        Tip: Drag and drop rows to change rank precedence.
+                        {t('Tip: Drag and drop rows to change rank precedence.')}
                     </>
                 )}
             </p>

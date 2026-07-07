@@ -59,7 +59,7 @@ const WarrantDetailModal: React.FC<WarrantDetailModalProps> = ({ isOpen, onClose
     const { intelTargetIndex } = useIntel();
     const { addToast } = useNotification();
     const { setActiveView } = useNavigation();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const fmt = useFormatDate();
     const actionStyles = getActionStyles(warrant.action);
     const canManage = hasPermission('warrant:manage');
@@ -228,7 +228,7 @@ const WarrantDetailModal: React.FC<WarrantDetailModalProps> = ({ isOpen, onClose
                     <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/50">
                         <p className="text-[10px] uppercase font-black text-slate-500 tracking-wider mb-1">{t('Reward Value')}</p>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-lime-400 font-mono tracking-tight">{warrant.uecReward.toLocaleString()}</span>
+                            <span className="text-2xl font-black text-lime-400 font-mono tracking-tight">{warrant.uecReward.toLocaleString(locale)}</span>
                             <span className="text-[10px] font-bold text-lime-400/70">aUEC</span>
                         </div>
                     </div>

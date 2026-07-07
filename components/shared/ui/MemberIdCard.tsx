@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../../../types';
 import { ACCENTS, AccentKey } from './accents';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
     user: User;
@@ -15,6 +16,7 @@ interface Props {
  * chrome.
  */
 export default function MemberIdCard({ user, accent = 'emerald' }: Props) {
+    const { t } = useI18n();
     const a = ACCENTS[accent];
 
     // Tint helpers for the avatar ring + rank chip. Map common AccentKeys to
@@ -64,10 +66,10 @@ export default function MemberIdCard({ user, accent = 'emerald' }: Props) {
     const tenureLabel = tenureDays === null
         ? null
         : tenureDays < 30
-            ? `${tenureDays} day${tenureDays !== 1 ? 's' : ''}`
+            ? (tenureDays === 1 ? t('{count} day', { count: tenureDays }) : t('{count} days', { count: tenureDays }))
             : tenureDays < 365
-                ? `${Math.floor(tenureDays / 30)} mo`
-                : `${(tenureDays / 365).toFixed(1)} yr`;
+                ? t('{count} mo', { count: Math.floor(tenureDays / 30) })
+                : t('{count} yr', { count: (tenureDays / 365).toFixed(1) });
 
     return (
         <div className="relative bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden shadow-lg">
@@ -88,31 +90,31 @@ export default function MemberIdCard({ user, accent = 'emerald' }: Props) {
 
                 <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-wider ${a.bg} ${a.border} ${a.text}`}>
-                        {user.rank?.name || 'Unranked'}
+                        {user.rank?.name || t('Unranked')}
                     </span>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border text-[10px] font-black uppercase tracking-wider ${user.isDuty ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-slate-500/10 text-slate-400 border-slate-500/30'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${user.isDuty ? 'bg-green-400 animate-pulse' : 'bg-slate-500'}`} />
-                        {user.isDuty ? 'On Duty' : 'Off Duty'}
+                        {user.isDuty ? t('On Duty') : t('Off Duty')}
                     </span>
                 </div>
             </div>
 
             <div className="relative z-10 border-t border-slate-800/80 divide-y divide-slate-800/80">
                 <div className="flex items-center justify-between gap-3 px-5 py-3 min-w-0">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">Unit</span>
-                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{user.unit?.name || 'Unassigned'}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">{t('Unit')}</span>
+                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{user.unit?.name || t('Unassigned')}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 px-5 py-3 min-w-0">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">Primary Position</span>
-                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{user.position?.name || 'Unassigned'}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">{t('Primary Position')}</span>
+                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{user.position?.name || t('Unassigned')}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 px-5 py-3 min-w-0">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">System Role</span>
-                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{user.role}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">{t('System Role')}</span>
+                    <span className="text-sm font-bold text-white truncate min-w-0 text-right">{t(user.role)}</span>
                 </div>
                 {tenureLabel && (
                     <div className="flex items-center justify-between gap-3 px-5 py-3 min-w-0">
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">Tenure</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-black shrink-0">{t('Tenure')}</span>
                         <span className="text-sm font-bold text-white tabular-nums truncate min-w-0 text-right">{tenureLabel}</span>
                     </div>
                 )}

@@ -15,6 +15,7 @@ import {
     ApplicationStatus,
 } from '../../../../types';
 import { PrefetchState } from './hooks/usePrefetchSearchSubsets';
+import { useI18n } from '../../../../i18n/I18nContext';
 
 interface Props {
     api: SearchFiltersApi;
@@ -37,6 +38,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
     onCloseDrawer,
     asDrawer,
 }) => {
+    const { t } = useI18n();
     const { filters, activeCount, selectedTypeCount, toggleType, setAllTypes, setSubFilter, clearAll } = api;
     const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -76,9 +78,9 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('personnel', { tier: e.target.value as 'all' | 'staff' | 'clients' })}
                             className={subInputCls}
                         >
-                            <option value="all">All Tiers</option>
-                            <option value="staff">Staff Only</option>
-                            <option value="clients">Clients Only</option>
+                            <option value="all">{t('All Tiers')}</option>
+                            <option value="staff">{t('Staff Only')}</option>
+                            <option value="clients">{t('Clients Only')}</option>
                         </select>
                         <label className={checkboxCls}>
                             <input
@@ -87,7 +89,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onChange={e => setSubFilter('personnel', { onlyOnDuty: e.target.checked })}
                                 className="accent-sky-500"
                             />
-                            On Duty Only
+                            {t('On Duty Only')}
                         </label>
                     </div>
                 );
@@ -99,10 +101,10 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('mission', { status: e.target.value as SearchFiltersState['mission']['status'] })}
                             className={subInputCls}
                         >
-                            <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
+                            <option value="all">{t('All Statuses')}</option>
+                            <option value="pending">{t('Pending')}</option>
+                            <option value="active">{t('Active')}</option>
+                            <option value="completed">{t('Completed')}</option>
                         </select>
                     </div>
                 );
@@ -114,10 +116,10 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('warrant', { status: e.target.value as SearchFiltersState['warrant']['status'] })}
                             className={subInputCls}
                         >
-                            <option value="all">All Statuses</option>
-                            <option value={WarrantStatus.Active}>Active</option>
-                            <option value={WarrantStatus.Standing}>Standing</option>
-                            <option value="closed">Closed (Claimed/Cancelled)</option>
+                            <option value="all">{t('All Statuses')}</option>
+                            <option value={WarrantStatus.Active}>{t('Active')}</option>
+                            <option value={WarrantStatus.Standing}>{t('Standing')}</option>
+                            <option value="closed">{t('Closed (Claimed/Cancelled)')}</option>
                         </select>
                     </div>
                 );
@@ -129,9 +131,9 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('operation', { status: e.target.value as SearchFiltersState['operation']['status'] })}
                             className={subInputCls}
                         >
-                            <option value="all">All Statuses</option>
+                            <option value="all">{t('All Statuses')}</option>
                             {Object.values(OperationStatus).map(s => (
-                                <option key={s} value={s}>{s}</option>
+                                <option key={s} value={s}>{t(s)}</option>
                             ))}
                         </select>
                         <label className={checkboxCls}>
@@ -141,7 +143,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onChange={e => setSubFilter('operation', { classifiedOnly: e.target.checked })}
                                 className="accent-sky-500"
                             />
-                            Classified Only
+                            {t('Classified Only')}
                         </label>
                     </div>
                 );
@@ -153,9 +155,9 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('intel', { threat: e.target.value as SearchFiltersState['intel']['threat'] })}
                             className={subInputCls}
                         >
-                            <option value="all">All Threat Levels</option>
+                            <option value="all">{t('All Threat Levels')}</option>
                             {Object.values(IntelThreatLevel).map(l => (
-                                <option key={l} value={l}>{l}</option>
+                                <option key={l} value={l}>{t(l)}</option>
                             ))}
                         </select>
                         <label className={checkboxCls}>
@@ -165,7 +167,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onChange={e => setSubFilter('intel', { classifiedOnly: e.target.checked })}
                                 className="accent-sky-500"
                             />
-                            Classified Only
+                            {t('Classified Only')}
                         </label>
                     </div>
                 );
@@ -178,7 +180,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onClick={prefetch.retryHr}
                                 className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono"
                             >
-                                HR data unavailable — retry
+                                {t('HR data unavailable — retry')}
                             </button>
                         </div>
                     );
@@ -190,10 +192,10 @@ const SearchFiltersPanel: React.FC<Props> = ({
                             onChange={e => setSubFilter('hr', { subtype: e.target.value as 'all' | HrSubtype })}
                             className={subInputCls}
                         >
-                            <option value="all">All HR Records</option>
-                            <option value="application">Applications</option>
-                            <option value="interview">Interviews</option>
-                            <option value="posting">Job Postings</option>
+                            <option value="all">{t('All HR Records')}</option>
+                            <option value="application">{t('Applications')}</option>
+                            <option value="interview">{t('Interviews')}</option>
+                            <option value="posting">{t('Job Postings')}</option>
                         </select>
                         {filters.hr.subtype !== 'interview' && (
                             <select
@@ -201,24 +203,24 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onChange={e => setSubFilter('hr', { status: e.target.value })}
                                 className={subInputCls}
                             >
-                                <option value="all">All Statuses</option>
+                                <option value="all">{t('All Statuses')}</option>
                                 {filters.hr.subtype === 'posting' ? (
                                     <>
-                                        <option value="Open">Open</option>
-                                        <option value="Draft">Draft</option>
-                                        <option value="Closed">Closed</option>
-                                        <option value="Filled">Filled</option>
+                                        <option value="Open">{t('Open', { context: 'status' })}</option>
+                                        <option value="Draft">{t('Draft')}</option>
+                                        <option value="Closed">{t('Closed')}</option>
+                                        <option value="Filled">{t('Filled')}</option>
                                     </>
                                 ) : (
                                     Object.values(ApplicationStatus).map(s => (
-                                        <option key={s} value={s}>{s}</option>
+                                        <option key={s} value={s}>{t(s)}</option>
                                     ))
                                 )}
                             </select>
                         )}
                         {prefetch.hr === 'loading' && (
                             <p className="text-[10px] text-slate-500 italic font-mono">
-                                <i className="fa-solid fa-circle-notch animate-spin mr-1" /> Loading HR data...
+                                <i className="fa-solid fa-circle-notch animate-spin mr-1" /> {t('Loading HR data...')}
                             </p>
                         )}
                     </div>
@@ -231,7 +233,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onClick={prefetch.retryWiki}
                                 className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono"
                             >
-                                Wiki data unavailable — retry
+                                {t('Wiki data unavailable — retry')}
                             </button>
                         </div>
                     );
@@ -245,11 +247,11 @@ const SearchFiltersPanel: React.FC<Props> = ({
                                 onChange={e => setSubFilter('wiki', { classifiedOnly: e.target.checked })}
                                 className="accent-sky-500"
                             />
-                            Classified Only
+                            {t('Classified Only')}
                         </label>
                         {prefetch.wiki === 'loading' && (
                             <p className="text-[10px] text-slate-500 italic font-mono">
-                                <i className="fa-solid fa-circle-notch animate-spin mr-1" /> Loading wiki...
+                                <i className="fa-solid fa-circle-notch animate-spin mr-1" /> {t('Loading wiki...')}
                             </p>
                         )}
                     </div>
@@ -265,9 +267,9 @@ const SearchFiltersPanel: React.FC<Props> = ({
         <div className="flex flex-col gap-5 p-5 h-full overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-white">Filters</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-white">{t('Filters')}</h2>
                     {activeCount > 0 && (
-                        <p className="text-[10px] text-sky-400 font-mono mt-0.5">{activeCount} active</p>
+                        <p className="text-[10px] text-sky-400 font-mono mt-0.5">{t('{count} active', { count: activeCount })}</p>
                     )}
                 </div>
                 <button
@@ -275,49 +277,49 @@ const SearchFiltersPanel: React.FC<Props> = ({
                     disabled={activeCount === 0}
                     className="text-[10px] uppercase font-black tracking-widest text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                    Clear All
+                    {t('Clear All')}
                 </button>
             </div>
 
             <div>
-                <h3 className={sectionH}>Result Types</h3>
+                <h3 className={sectionH}>{t('Result Types')}</h3>
                 <div className="flex items-center gap-2 mb-2">
                     <button
                         onClick={() => setAllTypes(true)}
                         disabled={selectedTypeCount === visibleTypes.length}
                         className="text-[10px] px-2 py-0.5 rounded-sm border bg-slate-900/60 border-white/10 text-slate-300 hover:border-sky-500/40 hover:text-sky-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase font-black tracking-widest"
                     >
-                        All
+                        {t('All')}
                     </button>
                     <button
                         onClick={() => setAllTypes(false)}
                         disabled={selectedTypeCount === 0}
                         className="text-[10px] px-2 py-0.5 rounded-sm border bg-slate-900/60 border-white/10 text-slate-300 hover:border-sky-500/40 hover:text-sky-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors uppercase font-black tracking-widest"
                     >
-                        None
+                        {t('None')}
                     </button>
                 </div>
                 <div className="space-y-1">
-                    {visibleTypes.map(t => (
-                        <div key={t}>
+                    {visibleTypes.map(searchType => (
+                        <div key={searchType}>
                             <label className={checkboxCls}>
                                 <input
                                     type="checkbox"
-                                    checked={filters.types[t]}
-                                    onChange={() => toggleType(t)}
+                                    checked={filters.types[searchType]}
+                                    onChange={() => toggleType(searchType)}
                                     className="accent-sky-500"
                                 />
-                                <i className={`fa-solid ${SEARCH_TYPE_ICONS[t]} text-slate-500 w-4 text-center`} aria-hidden />
-                                {SEARCH_TYPE_LABELS[t]}
+                                <i className={`fa-solid ${SEARCH_TYPE_ICONS[searchType]} text-slate-500 w-4 text-center`} aria-hidden />
+                                {t(SEARCH_TYPE_LABELS[searchType])}
                             </label>
-                            {renderSubFilter(t)}
+                            {renderSubFilter(searchType)}
                         </div>
                     ))}
                 </div>
             </div>
 
             <div className="text-[10px] text-slate-600 font-mono uppercase tracking-widest mt-auto pt-3 border-t border-white/5">
-                Sort: most recent first
+                {t('Sort: most recent first')}
             </div>
         </div>
     );
@@ -336,7 +338,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                     ref={drawerRef}
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Search filters"
+                    aria-label={t('Search filters')}
                     className={`fixed left-0 top-0 bottom-0 z-50 w-[320px] max-w-[85vw] bg-slate-950 border-r border-white/10 shadow-2xl transition-transform duration-200 ease-out ${
                         isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
@@ -344,7 +346,7 @@ const SearchFiltersPanel: React.FC<Props> = ({
                     <div className="absolute top-3 right-3 z-10">
                         <button
                             onClick={onCloseDrawer}
-                            aria-label="Close filters"
+                            aria-label={t('Close filters')}
                             className="w-8 h-8 rounded-lg border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white hover:border-white/20 transition-colors"
                         >
                             <i className="fa-solid fa-xmark" />

@@ -8,6 +8,7 @@ import HeroStat from '../../shared/ui/HeroStat';
 import EmptyState from '../../shared/ui/EmptyState';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useNavigation } from '../../../contexts/NavigationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 // Org chart view. Renders the unit hierarchy as a connected tree:
 // indentation + L-shaped connector lines (├ / └ style) + per-tier accent +
@@ -18,6 +19,7 @@ import { useNavigation } from '../../../contexts/NavigationContext';
 const OrganisationView: React.FC = () => {
     const { units, members } = useMembers();
     const { currentUser, hasPermission } = useAuth();
+    const { t } = useI18n();
     const { addToast } = useNotification();
     const { viewUnitDetail } = useNavigation();
     const [search, setSearch] = useState('');
@@ -108,10 +110,10 @@ const OrganisationView: React.FC = () => {
         const restricted = !!unit.isRestricted && !isMember && !canViewAll;
         if (restricted) {
             addToast(
-                'Restricted Unit',
+                t('Restricted Unit'),
                 <i className="fa-solid fa-lock"></i>,
                 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-                { description: `${unit.name} is restricted to its members. Contact the unit leader or an admin for access.` }
+                { description: t('{name} is restricted to its members. Contact the unit leader or an admin for access.', { name: unit.name }) }
             );
             return;
         }
@@ -121,16 +123,16 @@ const OrganisationView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · ORGANISATION"
+                chipLabel={t('MODULE · ORGANISATION')}
                 chipIcon="fa-sitemap"
                 chipAccent="indigo"
-                title="Organisation"
-                subtitle="Browse the unit hierarchy. Open any unit to view its members, feed, and operations."
+                title={t('Organisation')}
+                subtitle={t('Browse the unit hierarchy. Open any unit to view its members, feed, and operations.')}
                 statsCols={3}
                 stats={<>
-                    <HeroStat icon="fa-people-group" label="Units" value={stats.units} accent="indigo" emphasize={stats.units > 0} />
-                    <HeroStat icon="fa-users" label="Personnel" value={stats.members} accent="cyan" emphasize={stats.members > 0} />
-                    <HeroStat icon="fa-lock" label="Restricted" value={stats.restricted} accent="amber" emphasize={stats.restricted > 0} />
+                    <HeroStat icon="fa-people-group" label={t('Units')} value={stats.units} accent="indigo" emphasize={stats.units > 0} />
+                    <HeroStat icon="fa-users" label={t('Personnel')} value={stats.members} accent="cyan" emphasize={stats.members > 0} />
+                    <HeroStat icon="fa-lock" label={t('Restricted')} value={stats.restricted} accent="amber" emphasize={stats.restricted > 0} />
                 </>}
             />
 
@@ -140,7 +142,7 @@ const OrganisationView: React.FC = () => {
                         <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
                         <input
                             type="search"
-                            placeholder="Search units by name or motto…"
+                            placeholder={t('Search units by name or motto…')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full bg-slate-900/60 text-white pl-12 pr-4 py-2.5 rounded-lg border border-slate-700 outline-hidden placeholder:text-slate-600 font-mono text-sm focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/40 transition-all"
@@ -152,14 +154,14 @@ const OrganisationView: React.FC = () => {
                             onClick={expandAll}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-indigo-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
                         >
-                            <i className="fa-solid fa-angles-down"></i> Expand
+                            <i className="fa-solid fa-angles-down"></i> {t('Expand')}
                         </button>
                         <button
                             type="button"
                             onClick={collapseAll}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-900/60 text-slate-300 border border-slate-700 hover:text-white hover:border-indigo-500/30 text-[10px] font-black uppercase tracking-wider transition-colors"
                         >
-                            <i className="fa-solid fa-angles-up"></i> Collapse
+                            <i className="fa-solid fa-angles-up"></i> {t('Collapse')}
                         </button>
                     </div>
                 </div>
@@ -169,8 +171,8 @@ const OrganisationView: React.FC = () => {
                         <EmptyState
                             icon="fa-sitemap"
                             accent="indigo"
-                            heading={search ? 'No units match your search' : 'No units defined'}
-                            description={search ? 'Try a different keyword or clear the search.' : 'An admin can create units in the Org Management settings.'}
+                            heading={search ? t('No units match your search') : t('No units defined')}
+                            description={search ? t('Try a different keyword or clear the search.') : t('An admin can create units in the Org Management settings.')}
                         />
                     </div>
                 ) : (
@@ -226,6 +228,7 @@ const TIER = [
 const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
     node, depth, isRoot, memberCounts, subtreeCounts, myUnitId, canViewAll, collapsed, onToggle, onClick,
 }) => {
+    const { t } = useI18n();
     const isMember = node.id === myUnitId;
     const restricted = !!node.isRestricted && !isMember && !canViewAll;
     const ownCount = memberCounts.get(node.id) || 0;
@@ -244,7 +247,7 @@ const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
                 <button
                     type="button"
                     onClick={hasChildren ? () => onToggle(node.id) : undefined}
-                    aria-label={hasChildren ? (isCollapsed ? `Expand ${node.name}` : `Collapse ${node.name}`) : undefined}
+                    aria-label={hasChildren ? (isCollapsed ? t('Expand {name}', { name: node.name }) : t('Collapse {name}', { name: node.name })) : undefined}
                     aria-expanded={hasChildren ? !isCollapsed : undefined}
                     tabIndex={hasChildren ? 0 : -1}
                     className={`shrink-0 w-5 sm:w-6 self-stretch flex items-start justify-center pt-[18px] ${
@@ -280,7 +283,7 @@ const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
                             </span>
                             {isRoot ? (
                                 <span className={`text-[9px] font-black ${tier.text} ${tier.bg} border border-current/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider`}>
-                                    Root
+                                    {t('Root')}
                                 </span>
                             ) : (
                                 <span className={`hidden sm:inline-block text-[9px] font-mono ${tier.text} opacity-60`}>
@@ -289,12 +292,12 @@ const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
                             )}
                             {isMember && (
                                 <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
-                                    Your Unit
+                                    {t('Your Unit')}
                                 </span>
                             )}
                             {restricted && (
                                 <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
-                                    <i className="fa-solid fa-lock text-[8px]"></i> Restricted
+                                    <i className="fa-solid fa-lock text-[8px]"></i> {t('Restricted')}
                                 </span>
                             )}
                         </div>
@@ -314,7 +317,9 @@ const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
                         )}
                         <span
                             className="text-slate-500 flex items-center gap-1"
-                            title={hasChildren ? `${ownCount} direct, ${subtreeTotal} including sub-units` : `${ownCount} members`}
+                            title={hasChildren
+                                ? t('{own} direct, {total} including sub-units', { own: ownCount, total: subtreeTotal })
+                                : (ownCount === 1 ? t('{count} member', { count: ownCount }) : t('{count} members', { count: ownCount }))}
                         >
                             <i className="fa-solid fa-users text-[9px]"></i>
                             <span className="text-slate-300">{ownCount}</span>
@@ -323,7 +328,7 @@ const UnitTreeBranch: React.FC<UnitTreeBranchProps> = ({
                             )}
                         </span>
                         {hasChildren && (
-                            <span className={`flex items-center gap-1 ${tier.text} opacity-70`} title={`${node.children.length} sub-unit${node.children.length === 1 ? '' : 's'}`}>
+                            <span className={`flex items-center gap-1 ${tier.text} opacity-70`} title={node.children.length === 1 ? t('{count} sub-unit', { count: node.children.length }) : t('{count} sub-units', { count: node.children.length })}>
                                 <i className="fa-solid fa-code-fork text-[9px]"></i>
                                 {node.children.length}
                             </span>

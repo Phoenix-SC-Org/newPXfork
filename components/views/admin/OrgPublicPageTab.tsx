@@ -5,6 +5,7 @@ import MinimalRichEditor from '../../shared/editor/MinimalRichEditor';
 import { tryParseTiptapJson } from '../../../lib/tiptapValidate';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const inputCls = "w-full bg-slate-900/60 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden transition-all";
 const inputMonoCls = inputCls + " font-mono";
@@ -45,6 +46,7 @@ const TestimonialPickerModal: React.FC<{
     onClose: () => void;
 }> = ({ currentIds, onAdd, onClose }) => {
     const { listTestimonialCandidates } = useConfig();
+    const { t } = useI18n();
     const [items, setItems] = useState<TestimonialCandidate[]>([]);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState('');
@@ -60,9 +62,9 @@ const TestimonialPickerModal: React.FC<{
     const fetchPage = useCallback(async (nextOffset: number, searchTerm: string) => {
         await listTestimonialCandidates({ search: searchTerm, limit, offset: nextOffset })
             .then((res) => { setItems(res.items || []); setTotal(res.total || 0); })
-            .catch((e: any) => { setItems([]); setTotal(0); setLoadError(e?.message || 'Failed to load testimonials.'); })
+            .catch((e: any) => { setItems([]); setTotal(0); setLoadError(e?.message || t('Failed to load testimonials.')); })
             .finally(() => { setLoading(false); });
-    }, [listTestimonialCandidates]);
+    }, [listTestimonialCandidates, t]);
     // Wrapper for user-initiated loads (search/prev/next): show the spinner and clear any
     // prior error synchronously before fetching, matching the original load() semantics.
     const load = useCallback(async (nextOffset: number, searchTerm: string) => {
@@ -88,57 +90,57 @@ const TestimonialPickerModal: React.FC<{
             <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-3xl w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                     <div>
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-100">Pick Testimonials</h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{remaining} of 6 slots remaining · Previews are what visitors will see — no client names.</p>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-100">{t('Pick Testimonials')}</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{t('{remaining} of 6 slots remaining · Previews are what visitors will see — no client names.', { remaining })}</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white" aria-label="Close">
+                    <button onClick={onClose} className="text-slate-400 hover:text-white" aria-label={t('Close')}>
                         <i className="fa-solid fa-xmark text-lg" />
                     </button>
                 </div>
                 <form onSubmit={handleSearch} className="p-4 border-b border-slate-800 flex gap-2">
                     <input
                         type="text"
-                        placeholder="Search feedback text…"
+                        placeholder={t('Search feedback text…')}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className={inputCls}
                     />
-                    <button type="submit" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg">Search</button>
+                    <button type="submit" className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg">{t('Search')}</button>
                 </form>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {loading && <p className="text-slate-400 text-sm text-center py-6">Loading…</p>}
+                    {loading && <p className="text-slate-400 text-sm text-center py-6">{t('Loading…')}</p>}
                     {!loading && loadError && (
                         <p className="text-red-400 text-sm text-center py-6">{loadError}</p>
                     )}
                     {!loading && !loadError && items.length === 0 && (
-                        <p className="text-slate-500 text-sm text-center py-6">No rated service requests with written feedback yet.</p>
+                        <p className="text-slate-500 text-sm text-center py-6">{t('No rated service requests with written feedback yet.')}</p>
                     )}
-                    {items.map((t) => {
-                        const isSelected = current.has(t.id);
+                    {items.map((tc) => {
+                        const isSelected = current.has(tc.id);
                         const isFull = remaining <= 0;
                         const disabled = isSelected || isFull;
                         return (
-                            <div key={t.id} className={`p-3 rounded-lg border ${isSelected ? 'border-sky-500/40 bg-sky-500/5' : 'border-slate-700 bg-slate-800/40'}`}>
+                            <div key={tc.id} className={`p-3 rounded-lg border ${isSelected ? 'border-sky-500/40 bg-sky-500/5' : 'border-slate-700 bg-slate-800/40'}`}>
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1 text-xs text-slate-400">
-                                            <Stars n={t.rating} />
+                                            <Stars n={tc.rating} />
                                             <span>·</span>
-                                            <span className="truncate">{t.serviceType}</span>
+                                            <span className="truncate">{tc.serviceType}</span>
                                             <span>·</span>
-                                            <span>{t.ratedAt}</span>
+                                            <span>{tc.ratedAt}</span>
                                         </div>
-                                        <p className="text-sm text-slate-200 leading-relaxed wrap-break-word">{truncate(t.quote, 240)}</p>
+                                        <p className="text-sm text-slate-200 leading-relaxed wrap-break-word">{truncate(tc.quote, 240)}</p>
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => onAdd(t.id)}
+                                        onClick={() => onAdd(tc.id)}
                                         disabled={disabled}
                                         className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded border shrink-0 ${disabled
                                             ? 'border-slate-700 text-slate-500 cursor-not-allowed'
                                             : 'border-sky-500/40 text-sky-300 hover:bg-sky-500/10'}`}
                                     >
-                                        {isSelected ? 'Added' : isFull ? 'Full' : 'Add'}
+                                        {isSelected ? t('Added') : isFull ? t('Full') : t('Add')}
                                     </button>
                                 </div>
                             </div>
@@ -146,20 +148,20 @@ const TestimonialPickerModal: React.FC<{
                     })}
                 </div>
                 <div className="p-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
-                    <span>{total} total candidates</span>
+                    <span>{t('{total} total candidates', { total })}</span>
                     <div className="flex gap-2">
                         <button
                             type="button"
                             disabled={offset === 0 || loading}
                             onClick={() => { const n = Math.max(0, offset - limit); setOffset(n); load(n, search); }}
                             className="px-3 py-1 border border-slate-700 rounded-sm disabled:opacity-40"
-                        >Prev</button>
+                        >{t('Prev')}</button>
                         <button
                             type="button"
                             disabled={offset + limit >= total || loading}
                             onClick={() => { const n = offset + limit; setOffset(n); load(n, search); }}
                             className="px-3 py-1 border border-slate-700 rounded-sm disabled:opacity-40"
-                        >Next</button>
+                        >{t('Next')}</button>
                     </div>
                 </div>
             </div>
@@ -170,6 +172,7 @@ const TestimonialPickerModal: React.FC<{
 const OrgPublicPageTab: React.FC = () => {
     const { publicPageConfig, updatePublicPageConfig, listTestimonialCandidates } = useConfig();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [config, setConfig] = useState<PublicPageConfig>(publicPageConfig);
     const [isSaving, setIsSaving] = useState(false);
@@ -260,23 +263,23 @@ const OrgPublicPageTab: React.FC = () => {
     };
 
     const validate = (): string | null => {
-        if ((config.motto || '').length > 120) return 'Motto must be 120 characters or fewer.';
-        if ((config.blurb || '').length > 4000) return 'Blurb must be 4000 characters or fewer.';
-        if (config.heroImageUrl && !/^https:\/\//i.test(config.heroImageUrl)) return 'Hero image URL must start with https://';
-        if (config.profileImageUrl && !/^https:\/\//i.test(config.profileImageUrl)) return 'Profile image URL must start with https://';
-        if (config.links.length > 10) return 'At most 10 external links are allowed.';
+        if ((config.motto || '').length > 120) return t('Motto must be 120 characters or fewer.');
+        if ((config.blurb || '').length > 4000) return t('Blurb must be 4000 characters or fewer.');
+        if (config.heroImageUrl && !/^https:\/\//i.test(config.heroImageUrl)) return t('Hero image URL must start with https://');
+        if (config.profileImageUrl && !/^https:\/\//i.test(config.profileImageUrl)) return t('Profile image URL must start with https://');
+        if (config.links.length > 10) return t('At most 10 external links are allowed.');
         for (const l of config.links) {
-            if (!l.label || !l.url) return 'Every link needs a label and a URL.';
-            if (!LINK_URL_RE.test(l.url)) return `Link "${l.label}" must start with https:// or discord://`;
+            if (!l.label || !l.url) return t('Every link needs a label and a URL.');
+            if (!LINK_URL_RE.test(l.url)) return t('Link "{label}" must start with https:// or discord://', { label: l.label });
         }
-        if (config.featuredTestimonialIds.length > 6) return 'At most 6 featured testimonials are allowed.';
+        if (config.featuredTestimonialIds.length > 6) return t('At most 6 featured testimonials are allowed.');
         return null;
     };
 
     const handleSave = async () => {
         const err = validate();
         if (err) {
-            addToast('Invalid Public Page Config', <i className="fa-solid fa-triangle-exclamation" />, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: err });
+            addToast(t('Invalid Public Page Config'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-amber-500/10 text-amber-400 border-amber-500/50', { description: err });
             return;
         }
         setIsSaving(true);
@@ -285,7 +288,7 @@ const OrgPublicPageTab: React.FC = () => {
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         } catch (e: any) {
-            addToast('Save Failed', <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e?.message || 'Failed to save public page config.' });
+            addToast(t('Save Failed'), <i className="fa-solid fa-xmark" />, 'bg-red-500/10 text-red-400 border-red-500/50', { description: e?.message || t('Failed to save public page config.') });
         } finally {
             setIsSaving(false);
         }
@@ -297,51 +300,51 @@ const OrgPublicPageTab: React.FC = () => {
     return (
         <div className="p-4 md:p-8 space-y-6 animate-fade-in">
             <TabPageHeader
-                title="Public Landing Page"
+                title={t('Public Landing Page')}
                 icon="fa-solid fa-globe"
                 accent="sky"
-                subtitle="Replace the default Discord login screen with a branded landing page for visitors who aren't signed in."
+                subtitle={t("Replace the default Discord login screen with a branded landing page for visitors who aren't signed in.")}
             />
 
 
-            <SectionPanel title="Visibility" icon="fa-solid fa-eye">
+            <SectionPanel title={t('Visibility')} icon="fa-solid fa-eye">
                 <Toggle
                     checked={!!config.enabled}
                     onChange={(v) => update('enabled', v)}
-                    label="Enable public landing page"
-                    hint="When enabled, logged-out visitors see your landing page instead of the Discord login screen. Internal users can still reach the login screen at /login."
+                    label={t('Enable public landing page')}
+                    hint={t('When enabled, logged-out visitors see your landing page instead of the Discord login screen. Internal users can still reach the login screen at /login.')}
                 />
             </SectionPanel>
 
-            <SectionPanel title="Content" icon="fa-solid fa-pen">
+            <SectionPanel title={t('Content')} icon="fa-solid fa-pen">
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Motto <span className="text-[10px] text-slate-500 font-mono">({mottoLen}/120)</span></label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">{t('Motto')} <span className="text-[10px] text-slate-500 font-mono">({mottoLen}/120)</span></label>
                         <input
                             type="text"
                             maxLength={120}
                             value={config.motto || ''}
                             onChange={(e) => update('motto', e.target.value)}
-                            placeholder="A short tagline for your org"
+                            placeholder={t('A short tagline for your org')}
                             className={inputCls}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Blurb <span className="text-[10px] text-slate-500 font-mono">({blurbLen}/4000)</span></label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">{t('Blurb')} <span className="text-[10px] text-slate-500 font-mono">({blurbLen}/4000)</span></label>
                         {/* Tiptap editor (minimal toolbar). Stored as Tiptap JSON
                             serialized to a string; legacy plain-text blurbs are
                             upgraded automatically on first save. */}
                         <BlurbEditor value={config.blurb || ''} onChange={(v) => update('blurb', v)} />
-                        <p className="text-[10px] text-slate-500 mt-1">Bold, italics, headings, lists, and links are supported. Other formatting is stripped on save.</p>
+                        <p className="text-[10px] text-slate-500 mt-1">{t('Bold, italics, headings, lists, and links are supported. Other formatting is stripped on save.')}</p>
                     </div>
                 </div>
             </SectionPanel>
 
-            <SectionPanel title="Imagery" icon="fa-solid fa-image" note="Banner image behind the profile header and a circular avatar overlapping it. The avatar falls back to your Organization Identity logo when unset.">
+            <SectionPanel title={t('Imagery')} icon="fa-solid fa-image" note={t('Banner image behind the profile header and a circular avatar overlapping it. The avatar falls back to your Organization Identity logo when unset.')}>
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
-                            <label className="block text-sm font-medium text-slate-300">Hero Banner Image URL</label>
+                            <label className="block text-sm font-medium text-slate-300">{t('Hero Banner Image URL')}</label>
                             <input
                                 type="url"
                                 value={config.heroImageUrl || ''}
@@ -349,22 +352,22 @@ const OrgPublicPageTab: React.FC = () => {
                                 placeholder="https://example.com/banner.jpg"
                                 className={inputMonoCls}
                             />
-                            <p className="text-[10px] text-slate-500">Must start with https://. Recommended: a wide 2560×640 image. Leave blank for the default gradient.</p>
+                            <p className="text-[10px] text-slate-500">{t('Must start with https://. Recommended: a wide 2560×640 image. Leave blank for the default gradient.')}</p>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-300 mb-2 text-center">Banner Preview</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-2 text-center">{t('Banner Preview')}</label>
                             <div className="w-full aspect-4/1 bg-slate-950/60 rounded-xl border border-slate-700 flex items-center justify-center overflow-hidden shadow-inner">
                                 {config.heroImageUrl ? (
-                                    <img src={config.heroImageUrl} alt="Banner preview" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget.style.display = 'none'); }} />
+                                    <img src={config.heroImageUrl} alt={t('Banner preview')} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget.style.display = 'none'); }} />
                                 ) : (
-                                    <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">No image set</span>
+                                    <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">{t('No image set')}</span>
                                 )}
                             </div>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
-                            <label className="block text-sm font-medium text-slate-300">Profile Image URL</label>
+                            <label className="block text-sm font-medium text-slate-300">{t('Profile Image URL')}</label>
                             <input
                                 type="url"
                                 value={config.profileImageUrl || ''}
@@ -372,15 +375,15 @@ const OrgPublicPageTab: React.FC = () => {
                                 placeholder="https://example.com/avatar.png"
                                 className={inputMonoCls}
                             />
-                            <p className="text-[10px] text-slate-500">Must start with https://. Square image (512×512+). Leave blank to reuse your Organization Identity logo.</p>
+                            <p className="text-[10px] text-slate-500">{t('Must start with https://. Square image (512×512+). Leave blank to reuse your Organization Identity logo.')}</p>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-300 mb-2 text-center">Profile Preview</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-2 text-center">{t('Profile Preview')}</label>
                             <div className="w-full aspect-square max-w-[140px] mx-auto bg-slate-950/60 rounded-full border-4 border-slate-700 flex items-center justify-center overflow-hidden shadow-inner">
                                 {config.profileImageUrl ? (
-                                    <img src={config.profileImageUrl} alt="Profile preview" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget.style.display = 'none'); }} />
+                                    <img src={config.profileImageUrl} alt={t('Profile preview')} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget.style.display = 'none'); }} />
                                 ) : (
-                                    <span className="text-[9px] text-slate-500 font-mono uppercase tracking-widest text-center p-2">Falls back to org logo</span>
+                                    <span className="text-[9px] text-slate-500 font-mono uppercase tracking-widest text-center p-2">{t('Falls back to org logo')}</span>
                                 )}
                             </div>
                         </div>
@@ -388,39 +391,39 @@ const OrgPublicPageTab: React.FC = () => {
                 </div>
             </SectionPanel>
 
-            <SectionPanel title="Modules" icon="fa-solid fa-layer-group" note="Toggle the sections that appear on your landing page">
+            <SectionPanel title={t('Modules')} icon="fa-solid fa-layer-group" note={t('Toggle the sections that appear on your landing page')}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Toggle checked={config.modules.stats} onChange={(v) => updateModule('stats', v)} label="Service Request Stats" hint="Total completed, average rating, response time, last 30 days." />
-                    <Toggle checked={config.modules.testimonials} onChange={(v) => updateModule('testimonials', v)} label="Client Testimonials" hint="Up to 6 hand-picked anonymous quotes." />
-                    <Toggle checked={config.modules.services} onChange={(v) => updateModule('services', v)} label="Services Offered" hint="Grid of your active service types." />
-                    <Toggle checked={config.modules.links} onChange={(v) => updateModule('links', v)} label="External Links" hint="Discord invite, RSI page, website, etc." />
+                    <Toggle checked={config.modules.stats} onChange={(v) => updateModule('stats', v)} label={t('Service Request Stats')} hint={t('Total completed, average rating, response time, last 30 days.')} />
+                    <Toggle checked={config.modules.testimonials} onChange={(v) => updateModule('testimonials', v)} label={t('Client Testimonials')} hint={t('Up to 6 hand-picked anonymous quotes.')} />
+                    <Toggle checked={config.modules.services} onChange={(v) => updateModule('services', v)} label={t('Services Offered')} hint={t('Grid of your active service types.')} />
+                    <Toggle checked={config.modules.links} onChange={(v) => updateModule('links', v)} label={t('External Links')} hint={t('Discord invite, RSI page, website, etc.')} />
                 </div>
             </SectionPanel>
 
             {config.modules.testimonials && (
-                <SectionPanel title="Featured Testimonials" icon="fa-solid fa-comment-dots" note="Select 3–6 quotes to show publicly. All testimonials are displayed anonymously — no client names are ever published.">
+                <SectionPanel title={t('Featured Testimonials')} icon="fa-solid fa-comment-dots" note={t('Select 3–6 quotes to show publicly. All testimonials are displayed anonymously — no client names are ever published.')}>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-slate-400 font-mono uppercase tracking-widest">{config.featuredTestimonialIds.length} / 6 featured</p>
+                            <p className="text-xs text-slate-400 font-mono uppercase tracking-widest">{t('{count} / 6 featured', { count: config.featuredTestimonialIds.length })}</p>
                             <button
                                 type="button"
                                 disabled={config.featuredTestimonialIds.length >= 6}
                                 onClick={() => setPickerOpen(true)}
                                 className="px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-sm border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <i className="fa-solid fa-plus mr-1.5" /> Add Testimonial
+                                <i className="fa-solid fa-plus mr-1.5" /> {t('Add Testimonial')}
                             </button>
                         </div>
                         {config.featuredTestimonialIds.length === 0 && (
-                            <p className="text-sm text-slate-500 italic">No testimonials selected yet.</p>
+                            <p className="text-sm text-slate-500 italic">{t('No testimonials selected yet.')}</p>
                         )}
                         {config.featuredTestimonialIds.map((id, idx) => {
                             const preview = previewById[id];
                             return (
                                 <div key={id} className="p-3 rounded-lg border border-slate-700 bg-slate-800/40 flex items-start gap-3">
                                     <div className="flex flex-col gap-1 pt-1">
-                                        <button type="button" onClick={() => moveTestimonial(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label="Move up"><i className="fa-solid fa-chevron-up text-xs" /></button>
-                                        <button type="button" onClick={() => moveTestimonial(idx, 1)} disabled={idx === config.featuredTestimonialIds.length - 1} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label="Move down"><i className="fa-solid fa-chevron-down text-xs" /></button>
+                                        <button type="button" onClick={() => moveTestimonial(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label={t('Move up')}><i className="fa-solid fa-chevron-up text-xs" /></button>
+                                        <button type="button" onClick={() => moveTestimonial(idx, 1)} disabled={idx === config.featuredTestimonialIds.length - 1} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label={t('Move down')}><i className="fa-solid fa-chevron-down text-xs" /></button>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         {preview ? (
@@ -435,14 +438,14 @@ const OrgPublicPageTab: React.FC = () => {
                                                 <p className="text-sm text-slate-200 leading-relaxed wrap-break-word">{truncate(preview.quote, 240)}</p>
                                             </>
                                         ) : (
-                                            <p className="text-sm text-slate-500 italic">Preview unavailable. Testimonial may have been deleted — the public page will silently skip it.</p>
+                                            <p className="text-sm text-slate-500 italic">{t('Preview unavailable. Testimonial may have been deleted — the public page will silently skip it.')}</p>
                                         )}
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => removeTestimonial(id)}
                                         className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-sm border border-red-500/40 text-red-300 hover:bg-red-500/10 shrink-0"
-                                    >Remove</button>
+                                    >{t('Remove')}</button>
                                 </div>
                             );
                         })}
@@ -451,26 +454,26 @@ const OrgPublicPageTab: React.FC = () => {
             )}
 
             {config.modules.links && (
-                <SectionPanel title="External Links" icon="fa-solid fa-link" note="Up to 10 links. URLs must start with https:// or discord://">
+                <SectionPanel title={t('External Links')} icon="fa-solid fa-link" note={t('Up to 10 links. URLs must start with https:// or discord://')}>
                     <div className="space-y-3">
-                        {config.links.length === 0 && <p className="text-sm text-slate-500 italic">No links added yet.</p>}
+                        {config.links.length === 0 && <p className="text-sm text-slate-500 italic">{t('No links added yet.')}</p>}
                         {config.links.map((link, idx) => (
                             <div key={link.id} className="p-3 rounded-lg border border-slate-700 bg-slate-800/40 flex items-start gap-3">
                                 <div className="flex flex-col gap-1 pt-1">
-                                    <button type="button" onClick={() => moveLink(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label="Move up"><i className="fa-solid fa-chevron-up text-xs" /></button>
-                                    <button type="button" onClick={() => moveLink(idx, 1)} disabled={idx === config.links.length - 1} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label="Move down"><i className="fa-solid fa-chevron-down text-xs" /></button>
+                                    <button type="button" onClick={() => moveLink(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label={t('Move up')}><i className="fa-solid fa-chevron-up text-xs" /></button>
+                                    <button type="button" onClick={() => moveLink(idx, 1)} disabled={idx === config.links.length - 1} className="text-slate-400 hover:text-white disabled:opacity-30" aria-label={t('Move down')}><i className="fa-solid fa-chevron-down text-xs" /></button>
                                 </div>
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <input type="text" placeholder="Label" maxLength={40} value={link.label} onChange={(e) => updateLink(idx, { label: e.target.value })} className={inputCls} />
+                                    <input type="text" placeholder={t('Label')} maxLength={40} value={link.label} onChange={(e) => updateLink(idx, { label: e.target.value })} className={inputCls} />
                                     <input type="text" placeholder="https://…" value={link.url} onChange={(e) => updateLink(idx, { url: e.target.value })} className={inputMonoCls} />
-                                    <input type="text" placeholder="Optional icon (e.g. fa-brands fa-discord)" value={link.icon || ''} onChange={(e) => updateLink(idx, { icon: e.target.value })} className={inputMonoCls + ' md:col-span-2'} />
+                                    <input type="text" placeholder={t('Optional icon (e.g. fa-brands fa-discord)')} value={link.icon || ''} onChange={(e) => updateLink(idx, { icon: e.target.value })} className={inputMonoCls + ' md:col-span-2'} />
                                 </div>
-                                <button type="button" onClick={() => removeLink(idx)} className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-sm border border-red-500/40 text-red-300 hover:bg-red-500/10 shrink-0">Remove</button>
+                                <button type="button" onClick={() => removeLink(idx)} className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest rounded-sm border border-red-500/40 text-red-300 hover:bg-red-500/10 shrink-0">{t('Remove')}</button>
                             </div>
                         ))}
                         {config.links.length < 10 && (
                             <button type="button" onClick={addLink} className="px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-sm border border-sky-500/40 text-sky-300 hover:bg-sky-500/10">
-                                <i className="fa-solid fa-plus mr-1.5" /> Add Link
+                                <i className="fa-solid fa-plus mr-1.5" /> {t('Add Link')}
                             </button>
                         )}
                     </div>
@@ -487,7 +490,7 @@ const OrgPublicPageTab: React.FC = () => {
                             ? 'bg-green-500/10 border-green-500/40 text-green-300'
                             : 'bg-slate-700 hover:bg-slate-600 border-slate-600 text-white'}`}
                 >
-                    {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-2" />Saving</> : isSaved ? <><i className="fa-solid fa-check mr-2" />Saved</> : 'Save Public Page'}
+                    {isSaving ? <><i className="fa-solid fa-spinner animate-spin mr-2" />{t('Saving')}</> : isSaved ? <><i className="fa-solid fa-check mr-2" />{t('Saved')}</> : t('Save Public Page')}
                 </button>
             </div>
 
@@ -510,6 +513,7 @@ export default OrgPublicPageTab;
 // plain text) and the editor's content-as-object API; legacy text upgrades to
 // JSON transparently on first save.
 const BlurbEditor: React.FC<{ value: string; onChange: (next: string) => void }> = ({ value, onChange }) => {
+    const { t } = useI18n();
     // Seed the editor once at mount; the editor manages its own state thereafter.
     // Re-seeding from `value` on every change would reset the user's caret position
     // mid-edit, so this deliberately captures the initial `value` only.
@@ -533,7 +537,7 @@ const BlurbEditor: React.FC<{ value: string; onChange: (next: string) => void }>
         <MinimalRichEditor
             content={initialContent}
             editable
-            placeholder="Describe your organization, services, mission…"
+            placeholder={t('Describe your organization, services, mission…')}
             onChange={(json) => onChange(JSON.stringify(json))}
         />
     );

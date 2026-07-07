@@ -6,12 +6,14 @@ import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import EmptyState from '../../shared/ui/EmptyState';
 import { ExternalTool } from '../../../types';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const UNCATEGORISED_LABEL = 'General';
 
 const ExternalToolsView: React.FC = () => {
     const { externalTools } = useConfig();
     const { currentUser } = useAuth();
+    const { t } = useI18n();
 
     const visibleTools = useMemo(
         () => currentUser ? externalTools.filter(tool => tool.audience.includes(currentUser.role)) : [],
@@ -47,12 +49,12 @@ const ExternalToolsView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · EXTERNAL TOOLS"
+                chipLabel={t('MODULE · EXTERNAL TOOLS')}
                 chipIcon="fa-toolbox"
                 chipAccent="cyan"
-                title="External Tools"
-                subtitle="Third-party resources and utilities curated for your access level."
-                actions={<HeroStat icon="fa-link" label="Available" value={visibleTools.length} accent="cyan" emphasize={visibleTools.length > 0} />}
+                title={t('External Tools')}
+                subtitle={t('Third-party resources and utilities curated for your access level.')}
+                actions={<HeroStat icon="fa-link" label={t('Available')} value={visibleTools.length} accent="cyan" emphasize={visibleTools.length > 0} />}
             />
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-8">
@@ -62,7 +64,7 @@ const ExternalToolsView: React.FC = () => {
                             {showHeaders && (
                                 <h2 className="text-[10px] font-black text-cyan-300/80 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                                     <i className="fa-solid fa-folder-open text-cyan-500/60 text-xs"></i>
-                                    {group.key}
+                                    {group.key === UNCATEGORISED_LABEL ? t('General') : group.key}
                                     <span className="text-slate-600 font-mono">({group.tools.length})</span>
                                 </h2>
                             )}
@@ -96,8 +98,8 @@ const ExternalToolsView: React.FC = () => {
                         <EmptyState
                             icon="fa-folder-open"
                             accent="cyan"
-                            heading="No external tools available"
-                            description="No third-party tools have been configured for your access level. Contact an administrator to request access."
+                            heading={t('No external tools available')}
+                            description={t('No third-party tools have been configured for your access level. Contact an administrator to request access.')}
                         />
                     </div>
                 )}

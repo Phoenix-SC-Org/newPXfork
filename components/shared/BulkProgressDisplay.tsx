@@ -1,5 +1,6 @@
 import React from 'react';
 import type { BulkState, BulkResult } from '../../hooks/useBulkProgress';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface Props {
     state: BulkState;
@@ -27,6 +28,7 @@ const BulkProgressDisplay: React.FC<Props> = ({
     onCancel,
     error,
 }) => {
+    const { t } = useI18n();
     const pct = total === 0 ? 0 : Math.min(100, Math.round((processed / total) * 100));
 
     return (
@@ -36,25 +38,25 @@ const BulkProgressDisplay: React.FC<Props> = ({
                     <div className="text-sm text-white">
                         {state === 'running' && (
                             <>
-                                Processing <span className="font-bold">{processed}</span> of {total}…
+                                {t('Processing')} <span className="font-bold">{processed}</span> {t('of {total}…', { total })}
                             </>
                         )}
                         {state === 'done' && (
                             <span className="text-emerald-300">
                                 <i className="fa-solid fa-circle-check mr-2" />
-                                Complete — {aggregate.updated} updated{aggregate.skipped > 0 ? `, ${aggregate.skipped} skipped` : ''}.
+                                {t('Complete — {updated} updated', { updated: aggregate.updated })}{aggregate.skipped > 0 ? t(', {skipped} skipped', { skipped: aggregate.skipped }) : ''}.
                             </span>
                         )}
                         {state === 'cancelled' && (
                             <span className="text-amber-300">
                                 <i className="fa-solid fa-circle-stop mr-2" />
-                                Cancelled — {aggregate.updated} of {total} were updated.
+                                {t('Cancelled — {updated} of {total} were updated.', { updated: aggregate.updated, total })}
                             </span>
                         )}
                         {state === 'error' && (
                             <span className="text-rose-300">
                                 <i className="fa-solid fa-triangle-exclamation mr-2" />
-                                Error
+                                {t('Error')}
                             </span>
                         )}
                     </div>
@@ -63,7 +65,7 @@ const BulkProgressDisplay: React.FC<Props> = ({
                             onClick={onCancel}
                             className="text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors"
                         >
-                            Cancel
+                            {t('Cancel')}
                         </button>
                     )}
                 </div>
@@ -79,11 +81,11 @@ const BulkProgressDisplay: React.FC<Props> = ({
 
             <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-slate-800 border border-white/5 rounded px-3 py-2">
-                    <div className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Updated</div>
+                    <div className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">{t('Updated')}</div>
                     <div className="text-white font-bold text-base">{aggregate.updated}</div>
                 </div>
                 <div className="bg-slate-800 border border-white/5 rounded px-3 py-2">
-                    <div className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">Skipped</div>
+                    <div className="text-slate-500 uppercase tracking-wider text-[10px] font-bold">{t('Skipped')}</div>
                     <div className="text-white font-bold text-base">{aggregate.skipped}</div>
                 </div>
             </div>
@@ -96,7 +98,7 @@ const BulkProgressDisplay: React.FC<Props> = ({
 
             {state === 'running' && total > 25 && (
                 <p className="text-[11px] text-slate-500">
-                    Applies in batches of 25. Cancelling stops sending further batches; ones already sent will have completed.
+                    {t('Applies in batches of 25. Cancelling stops sending further batches; ones already sent will have completed.')}
                 </p>
             )}
         </div>

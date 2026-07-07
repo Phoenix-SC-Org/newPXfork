@@ -4,6 +4,7 @@ import BulkActionShell from '../shared/BulkActionShell';
 import BulkProgressDisplay from '../shared/BulkProgressDisplay';
 import { useBulkProgress } from '../../hooks/useBulkProgress';
 import { useBulkActionFlow } from '../../hooks/useBulkActionFlow';
+import { useI18n } from '../../i18n/I18nContext';
 import { User } from '../../types';
 
 interface Props {
@@ -32,6 +33,7 @@ const FLAG_ACTION: Record<Props['flag'], string> = {
  * selection are silently counted as skipped.
  */
 const BulkSetClientFlagModal: React.FC<Props> = ({ flag, selectedUsers, onClose }) => {
+    const { t } = useI18n();
     const [value, setValue] = useState<boolean>(true);
     const bulk = useBulkProgress<number>();
 
@@ -58,18 +60,20 @@ const BulkSetClientFlagModal: React.FC<Props> = ({ flag, selectedUsers, onClose 
 
     return (
         <BulkActionShell
-            title={`Set ${label} Flag`}
-            subtitle={`Apply to ${selectedUsers.length} ${selectedUsers.length === 1 ? 'client' : 'clients'} (non-Client users will be skipped).`}
+            title={t('Set {label} Flag', { label })}
+            subtitle={selectedUsers.length === 1
+                ? t('Apply to {count} client (non-Client users will be skipped).', { count: selectedUsers.length })
+                : t('Apply to {count} clients (non-Client users will be skipped).', { count: selectedUsers.length })}
             selectedUsers={selectedUsers}
             onClose={onClose}
             onConfirm={onConfirm}
-            confirmLabel={value ? `Enable ${label}` : `Disable ${label}`}
+            confirmLabel={value ? t('Enable {label}', { label }) : t('Disable {label}', { label })}
             busy={isRunning}
             hideFooter={isRunning || isFinished}
         >
             {!isRunning && !isFinished && (
                 <div className="space-y-2">
-                    <div className="text-sm font-bold text-white">Set {label} flag to:</div>
+                    <div className="text-sm font-bold text-white">{t('Set {label} flag to:', { label })}</div>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             onClick={() => setValue(true)}
@@ -80,7 +84,7 @@ const BulkSetClientFlagModal: React.FC<Props> = ({ flag, selectedUsers, onClose 
                             }`}
                         >
                             <i className="fa-solid fa-check mr-2" />
-                            Enable
+                            {t('Enable')}
                         </button>
                         <button
                             onClick={() => setValue(false)}
@@ -91,7 +95,7 @@ const BulkSetClientFlagModal: React.FC<Props> = ({ flag, selectedUsers, onClose 
                             }`}
                         >
                             <i className="fa-solid fa-xmark mr-2" />
-                            Disable
+                            {t('Disable')}
                         </button>
                     </div>
                 </div>
