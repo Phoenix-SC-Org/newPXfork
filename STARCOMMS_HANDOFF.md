@@ -1,220 +1,268 @@
-# StarComms Integration — Handoff (V1 + V2)
+# StarComms Integration — Handoff
 
-**Status:** V1 shipped & stabilized (2026-07-08). **V2 implemented 2026-07-08**
-— read-only operational visibility. Still no write operations of any kind.
-
-Scope:
-- **V1:** read the status of an external StarComms shard in **Admin →
-  Integrations → StarComms**, with a connection test.
-- **V2:** a reusable read-only **StarComms status widget** in the **Operations
-  Center** and **Dispatch Console**, backed by a cached/throttled read action
-  visible to Operations / Dispatch / Admin users.
-
-Both are fully optional and inert when disabled.
+Feature work is **paused**. This document is the source of truth for the
+StarComms integration on this fork. Last verified: **2026-07-08**.
 
 ---
 
-## V2 summary (read-only operational visibility)
-
-- Reusable `StarCommsStatusWidget` (container) + pure `StarCommsStatusView`
-  (prop-driven, testable) showing: connection status, `operationOpen`, connected
-  operator count, nets, feature flags, shard version, last successful refresh
-  time, and a manual refresh button.
-- Mounted in `OperationsCenterView` (top of the list) and `DispatchCenterView`
-  (top of the Comms Matrix column). Loads on its own async path — **never blocks
-  the host page**; renders **nothing** when disabled or when the caller lacks
-  access, so operational areas stay clean.
-- New cached read action `operation:starcomms_status` (secret-free:
-  `{ config, status | null, error | null, fetchedAt }`).
-- **Server-side throttle:** a 15s in-process TTL cache with in-flight de-dupe in
-  `lib/comms/index.ts` (`getCachedCommsStatus`) collapses many concurrent widget
-  mounts to at most one upstream request per window. Admin **Test Connection**
-  (V1) still bypasses the cache for a fresh probe. Timeout stays governed by
-  `STARCOMMS_TIMEOUT_MS`.
-- **No new env vars, no schema change, no new DB permissions, no write actions.**
-
-### V2 permission gate
-
-Chosen (approved): the widget action is admitted to **Operations OR Dispatch OR
-Admin** users, so dispatchers without `operations:view` still get live data.
-
-- `fullPermissionMap['operation:starcomms_status'] = 'operations:view'` (base).
-- A localized OR in the dispatcher's existing special-case chain (same pattern
-  as `isUnitLeader` / `isRequestLead`) additionally admits `request:dispatch` or
-  `admin:access`:
-  `isStarCommsReader = action === 'operation:starcomms_status' && (perms.includes('request:dispatch') || perms.includes('admin:access'))`.
-- The V1 admin actions remain `admin:access`-only for the config panel.
-
----
-
-## Architecture (replaceable provider layer)
-
-A small `CommsProvider` abstraction so a future official/open-source StarComms
-(or a different backend) can be dropped in without touching callers.
+## Current branch
 
 ```
-lib/comms/types.ts      CommsProvider interface + secret-free types
-lib/comms/starcomms.ts  StarCommsProvider — GET {BASE_URL}/api/v1/status (server-only)
-lib/comms/index.ts      getCommsProvider() factory + describeCommsConfig()
-        ▲
-api/actions/starcomms.ts   admin:starcomms_status / admin:starcomms_test
-        ▲  (registered in api/services.ts)
-components/views/admin/StarCommsTab.tsx   admin UI (calls the two actions via rpcAction)
+beta/starcomms-integration-v1
 ```
 
-To swap providers later: implement `CommsProvider` and return it from
-`getCommsProvider()` in `lib/comms/index.ts`. Nothing else changes.
+Relevant commits (newest first):
+- `5c6b93b` Add StarComms read-only integration v2 (operational widget) — committed, pending beta validation
+- `47f7442` Add StarComms read-only integration (V1 handoff doc)
+- `c06058c` Add StarComms integration foundation v1
+
+Working tree is **clean** (everything committed). No push has been performed by
+the assistant.
 
 ---
 
-## Changed / added files
+## Current StarComms V1 status
 
-**New — V1**
-- `lib/comms/types.ts` — provider interface, `CommsStatus`, `CommsConfigSummary`, `CommsResult`, error taxonomy.
-- `lib/comms/starcomms.ts` — StarComms provider (Bearer auth, AbortController timeout, lenient response coercion, `redact()`).
-- `lib/comms/index.ts` — factory + config-summary helper **(+ V2: `getCachedCommsStatus` TTL cache + `__resetCommsCache` test helper)**.
-- `api/actions/starcomms.ts` — `admin:starcomms_status`, `admin:starcomms_test` **(+ V2: `operation:starcomms_status`)**.
-- `components/views/admin/StarCommsTab.tsx` — admin panel (i18n).
-- `tests/starcomms.test.ts` — 13 tests.
-- `STARCOMMS_HANDOFF.md` — this file.
+**V1 = shipped and working in the beta deployment.** Read-only:
+- Admin page **Admin → Integrations → StarComms** shows enabled/configured,
+  Base URL, timeout, a **Test Connection** button, and — when reachable — guild
+  id/name, shard public URL/version, connected operators, operationOpen, nets,
+  and feature flags.
+- Backed by the external shard call `GET {STARCOMMS_BASE_URL}/api/v1/status` with
+  an owner Bearer token, server-side only.
+- Fully optional and inert when `STARCOMMS_ENABLED` is not `true`.
 
-**New — V2**
-- `components/shared/StarCommsStatusWidget.tsx` — reusable widget (container + pure `StarCommsStatusView`).
-- `tests/starcommsWidget.test.tsx` — 10 tests (action, cache/throttle, view states).
-
-**Modified**
-- `api/services.ts` — V1: 1 import, `...starcommsActions`, 2 map entries. V2: 1 map entry (`operation:starcomms_status`) + 1 localized OR line (`isStarCommsReader`) in the permission gate. No other logic touched.
-- `components/views/admin/AdminPanelView.tsx` — lazy import, 1 Integrations tab entry, 1 render-switch case (V1).
-- `components/views/operations/OperationsCenterView.tsx` — import + mount `<StarCommsStatusWidget />` (V2, 2 lines).
-- `components/views/operations/DispatchCenterView.tsx` — import + mount `<StarCommsStatusWidget />` in the Comms Matrix column (V2, 2 lines).
-- `components/views/admin/StarCommsTab.tsx` — "used by Operations widget" note (V2, 1 line).
-- `i18n/de.ts` — 22 (V1) + 6 (V2) German strings.
-- `.env.example` — `STARCOMMS_*` block (V1).
-- `DEPLOYMENT_GUIDE.md` — StarComms env table + security note + curl/PowerShell test (V1).
-
-**Not touched:** auth, Discord OAuth, Supabase/RLS, the general permission
-system beyond the single localized OR line, `schema.sql`, `reset_db.sql`,
-`/api/query`.
+**V2 (read-only operational widget)** is code-complete and committed on this
+branch (`5c6b93b`) but is treated as *pending beta validation* — see
+"Exact next steps for V2". It adds a `StarCommsStatusWidget` to the Operations
+Center and Dispatch Console plus a cached read action; still no writes.
 
 ---
 
-## Environment variables
+## What is working in beta (V1)
+
+- StarComms admin panel renders with correct enabled/configured state.
+- Test Connection returns a live status when the shard + key are valid.
+- With `STARCOMMS_ENABLED` unset/false, the integration is invisible to the app
+  and nothing calls the shard.
+- No StarComms owner key is present in the client bundle, UI, logs, or API
+  responses (re-verified by bundle grep + tests).
+
+---
+
+## Coolify beta configuration assumptions
+
+- myRSI beta runs on Coolify (Nixpacks), single container, env read at **startup**
+  (a var change requires a container restart/redeploy).
+- The four `STARCOMMS_*` vars are set in Coolify's **environment** UI (runtime
+  variables, **not** build variables).
+- The StarComms shard is reachable from the container over HTTPS. If a
+  Cloudflare/WAF sits in front of the shard it may challenge server-to-server
+  calls (same failure class as the earlier UEX case) — surfaces as
+  `network`/`unauthorized`, not a crash.
+- `STARCOMMS_TIMEOUT_MS` governs the per-request timeout; the default of 5000ms
+  is assumed if unset.
+
+---
+
+## Required myRSI beta env vars
 
 | Variable | Required | Default | Notes |
 | :--- | :--- | :--- | :--- |
 | `STARCOMMS_ENABLED` | to enable | (off) | `true`/`1`/`yes`/`on` = on; anything else/unset = off |
-| `STARCOMMS_BASE_URL` | when enabled | — | e.g. `https://comms.your-org.space`; client calls `{BASE_URL}/api/v1/status` |
-| `STARCOMMS_OWNER_API_KEY` | when enabled | — | **Owner secret.** Server-only, sent only as `Authorization: Bearer …`. Rotate if leaked |
+| `STARCOMMS_BASE_URL` | when enabled | — | shard base, e.g. `https://comms.your-org.space`; client calls `{BASE_URL}/api/v1/status` |
+| `STARCOMMS_OWNER_API_KEY` | when enabled | — | **owner secret**, server-only, sent only as `Authorization: Bearer …` |
 | `STARCOMMS_TIMEOUT_MS` | no | `5000` | request timeout in ms |
 
-Set in Coolify's env UI (not build variables); restart the container (env is
-read at startup). Verification (`curl` / PowerShell) is in `DEPLOYMENT_GUIDE.md`.
+Curl / PowerShell verification snippets are in `DEPLOYMENT_GUIDE.md`
+(StarComms section).
 
 ---
 
-## Permission model
+## Security notes
 
-V1 gates both actions and the admin tab on the existing **`admin:access`**
-permission (no schema change). Two enforcement layers:
-
-- **UI:** the admin nav filters tabs by `hasPermission(tab.permission)` and the
-  render switch re-checks `hasPermission('admin:access')`.
-- **Server (authoritative):** `admin:starcomms_status` / `admin:starcomms_test`
-  use the protected `admin:` prefix → the dispatcher requires
-  `fullPermissionMap[action]` = `admin:access`. A caller without it gets `403`.
-  No `user:manage:self` and no op-owner bypass apply.
-
-The originally-requested `starcomms:view` / `starcomms:admin` split is deferred
-to V2 (would add two rows to the `schema.sql` permission catalog + a reseed).
+- **`STARCOMMS_OWNER_API_KEY` must never reach the frontend, logs, UI, or API
+  responses.** Enforcement:
+  - Read only in `lib/comms/starcomms.ts` (server) and placed only in the
+    outgoing `Authorization` header.
+  - `lib/comms/*` is imported only by the server action module — verified it is
+    **not** in the client bundle (`process.env.STARCOMMS*` = 0 and endpoint
+    `api/v1/status` = 0 in `dist/assets`).
+  - All actions return a **secret-free** config summary + normalized status; the
+    only client-side occurrence of the string `STARCOMMS_OWNER_API_KEY` is the
+    env-var **name** inside an admin help sentence — not the value.
+  - Logs (`log.warn`) emit only `timeoutMs` / HTTP `status` / a `redact()`-ed
+    network-error message.
+  - Tests assert the key never appears in provider results or action responses.
+- Rotate the key if it is ever exposed. Keep it in Coolify env only; never commit.
 
 ---
 
-## Test results (2026-07-08, after V2)
+## Files changed for V1 (and why)
+
+**New**
+- `lib/comms/types.ts` — replaceable `CommsProvider` interface + secret-free types (so a future official StarComms can drop in).
+- `lib/comms/starcomms.ts` — StarComms provider: Bearer auth, `AbortController` timeout, lenient response coercion, `redact()`.
+- `lib/comms/index.ts` — `getCommsProvider()` factory + `describeCommsConfig()`.
+- `api/actions/starcomms.ts` — the two V1 actions.
+- `components/views/admin/StarCommsTab.tsx` — admin panel UI (i18n).
+- `tests/starcomms.test.ts` — 13 tests.
+
+**Modified (minimal, additive)**
+- `api/services.ts` — 1 import, `...starcommsActions` in the registry, 2 `fullPermissionMap` entries. No other logic touched.
+- `components/views/admin/AdminPanelView.tsx` — lazy import + 1 Integrations tab entry + 1 render-switch case.
+- `i18n/de.ts` — 22 German strings.
+- `.env.example` — `STARCOMMS_*` block.
+- `DEPLOYMENT_GUIDE.md` — env table + security note + curl/PowerShell test.
+
+(V2 additionally added `components/shared/StarCommsStatusWidget.tsx`,
+`tests/starcommsWidget.test.tsx`, a cache in `lib/comms/index.ts`, the
+`operation:starcomms_status` action, one map entry + one OR line in
+`api/services.ts`, and mounts in `OperationsCenterView` / `DispatchCenterView` —
+see the V1 plan doc for the split.)
+
+---
+
+## Backend actions / queries / services added
+
+- **Actions** (registered in `api/services.ts` via `...starcommsActions`):
+  - `admin:starcomms_status` — read config summary + live status (V1).
+  - `admin:starcomms_test` — force a live probe, bypassing cache (V1).
+  - `operation:starcomms_status` — cached/throttled read for the operational widget (V2).
+- **Queries:** none. Reads go through the service-action dispatcher (same pattern
+  as `AllianceManagementTab`); no new `/api/query` subset was added.
+- **Services/helpers:** `getCommsProvider()`, `describeCommsConfig()`,
+  `getCachedCommsStatus()` (15s TTL + in-flight de-dupe, V2) in `lib/comms/`.
+
+---
+
+## Frontend components / pages added
+
+- **V1:** `components/views/admin/StarCommsTab.tsx` — admin page under
+  **Admin → Integrations → StarComms**.
+- **V2:** `components/shared/StarCommsStatusWidget.tsx` — reusable widget
+  (container + pure `StarCommsStatusView`), mounted in the Operations Center and
+  the Dispatch Console.
+
+---
+
+## Permission decision
+
+**V1 uses the existing `admin:access` permission. No `schema.sql` change, no new
+DB permissions.**
+
+- Both V1 actions and the admin tab are gated on `admin:access`.
+- Rationale: V1 is an admin-only, read-only config panel; reusing `admin:access`
+  avoids a schema-catalog change + reseed on the beta branch while the feature is
+  experimental.
+- (V2's widget action reuses `operations:view` OR `request:dispatch` OR
+  `admin:access` via one localized OR line in the dispatcher's existing
+  special-case chain — still no schema change and no new DB perms.)
+- Dedicated `starcomms:view` / `starcomms:admin` permissions are intentionally
+  deferred (they would require schema.sql rows + reseed).
+
+---
+
+## Tests run and results (2026-07-08)
 
 - `npx tsc --noEmit` — **clean**
 - `npm run lint` — **clean** (0 warnings, `--max-warnings 0`)
-- `npm run test` — **1403 passed / 148 files** (V1 13 + V2 10 + permissionMapCoverage)
+- `npm run test` — **1403 passed / 148 files** (StarComms: 13 V1 + 10 V2; plus permissionMapCoverage)
 - `npm run build` — **success**
 - `npm run i18n:check` — **OK** (no missing/orphan keys)
+- Bundle leak grep: `process.env.STARCOMMS*` = 0, `api/v1/status` = 0 in `dist/assets`.
 
-`tests/starcomms.test.ts` (V1) covers: permission mapping; disabled; missing
-base URL; missing API key; success+normalized; 401→unauthorized; timeout;
-malformed (non-JSON and non-object); API-key redaction in provider + action
-responses.
-
-`tests/starcommsWidget.test.tsx` (V2) covers: widget action gated on
-`operations:view`; disabled state (no fetch, no key); success (status +
-`fetchedAt`, no key); 401 error (no key); **cache throttle** (repeat reads
-within TTL → one upstream call, re-fetch after TTL); and the view rendering
-every state without throwing (loading / connected / timeout-error /
-not-configured / empty) — the last proving the widget cannot break the host
-Operations/Dispatch initial load.
-
-### V2 leakage re-check (built bundle)
-
-`dist/assets` grep after build: `process.env.STARCOMMS*` = 0, server endpoint
-`api/v1/status` = 0 (`lib/comms` did not bundle client-side). Only the widget
-action name `operation:starcomms_status` appears (benign).
+StarComms test coverage: permission mapping; disabled (no fetch, no key);
+missing base URL; missing API key; success + normalized status; 401 →
+unauthorized; timeout; malformed (non-JSON / non-object); API-key redaction;
+cache throttle (one upstream call per TTL); widget view renders every state
+without throwing.
 
 ---
 
-## Stabilization verification (this pass)
+## Known limitations
 
-- **API key not exposed to the frontend bundle:** built `dist/assets` grep —
-  `process.env.STARCOMMS*` = 0, server endpoint `api/v1/status` = 0 (i.e.
-  `lib/comms` did not bundle client-side), no StarComms-linked `Bearer ${…}`.
-  The only client-side occurrence of `STARCOMMS_OWNER_API_KEY` is the env-var
-  **name** inside an admin help sentence — not the value.
-- **API key not in API responses:** actions return a secret-free config summary
-  + normalized status only; tests assert the key never appears in any output.
-- **API key not in logs:** the four `log.warn` calls emit only `timeoutMs` /
-  `status` / a `redact()`-ed network-error message.
-- **`STARCOMMS_ENABLED=false` is safe:** `readEnabled()` only treats
-  `true/1/yes/on` as on, so `false` → off; the status action short-circuits with
-  no fetch and returns `{ status: null, error: null }`; the app is unaffected.
-- **Missing base URL / API key:** the panel shows an amber "Not fully
-  configured" banner; **Test Connection** returns the specific
-  `missing_base_url` / `missing_api_key` error message. No crash, no secret.
-- **Non-admin access blocked:** UI hides the tab; server denies the actions with
-  `403` (verified against the dispatcher permission gate).
-- **`/api/query` and `/api/services` unaffected:** the only dispatcher change was
-  additive (import + spread + 2 map lines); full suite + permissionMapCoverage
-  green; `/api/query` was not modified.
-
----
-
-## Known limitations (V1 + V2)
-
-- **Read-only.** No mint/join/mute/move or any write to StarComms.
-- **Env-only config.** No admin-console-entered credentials (unlike Discord/
-  LiveKit). Changing config needs an env edit + restart.
-- **Permission gate.** V1 admin panel = `admin:access`. V2 widget =
-  `operations:view` OR `request:dispatch` OR `admin:access`. No dedicated
-  `starcomms:*` DB perms yet.
-- **Cache is per-process.** The 15s TTL cache lives in-process; instances behind
-  a load balancer each keep their own (fine at current scale; not distributed).
-- **Manual refresh is throttled.** Clicking refresh within the 15s window returns
-  cached data (unchanged `fetchedAt`). Admins force a fresh probe via **Test
-  Connection** (uncached).
-- **Widget hides on disabled / no-access.** By design it renders nothing rather
-  than an error box in those cases.
+- **Read-only.** No mint/join/mute/move/open/close or any write to StarComms.
+- **Env-only config.** No admin-console-entered credentials; changes need an env
+  edit + restart.
+- **Permission gate reuse.** No dedicated `starcomms:*` DB perms yet.
+- **Cache is per-process** (15s TTL); not distributed across instances.
+- **Manual widget refresh is throttled** within the TTL (admins can force a fresh
+  probe via Test Connection).
 - **Loose response schema.** `/api/v1/status` is coerced leniently; the single
   place to adjust is `coerceStatus` in `lib/comms/starcomms.ts`.
-- **No WAF handling.** A Cloudflare/WAF challenge surfaces as
-  `network`/`unauthorized` (same class as the UEX case).
+- **No WAF handling.** A challenge in front of the shard surfaces as
+  `network`/`unauthorized`.
 
 ---
 
-## Next steps (V3 — NOT implemented)
+## Exact next steps for V2
 
-1. Dedicated permissions `starcomms:view` / `starcomms:admin` (schema.sql
-   catalog rows + reseed; needs explicit approval per project rules).
-2. Optional admin-console config (DB-stored, encrypted like LiveKit).
-3. **Write operations** behind `starcomms:admin` once the official API
-   stabilizes (mint join tokens, open/close operation, net management), added to
-   the `CommsProvider` interface — out of scope until then.
-4. Auto-refresh/polling for the widget and/or a distributed cache if scaled
-   horizontally.
-5. Deep links from the widget into StarComms nets/operators.
-6. Pin the response schema to the official StarComms spec when published and
-   tighten `coerceStatus`.
+V2 is code-complete and committed (`5c6b93b`). To finish shipping it to beta:
+
+1. **Deploy the branch to beta** (Coolify redeploy of `beta/starcomms-integration-v1`).
+2. **Validate the widget in beta** with `STARCOMMS_ENABLED=true` and a valid
+   shard/key: open **Operations Center** and **Dispatch Console** and confirm the
+   widget shows connection status, operator count, nets, feature flags, shard
+   version, and a last-refresh time; click refresh.
+3. **Validate the permission behaviour:** a dispatcher (has `request:dispatch`,
+   not `operations:view`) sees live data; a member without ops/dispatch/admin
+   sees no widget (renders nothing) and the `operation:starcomms_status` action
+   returns 403 for them.
+4. **Validate disabled/misconfig paths in beta:** with `STARCOMMS_ENABLED=false`
+   the widget is absent everywhere; with enabled-but-missing key the admin panel
+   shows the amber "not fully configured" state.
+5. **Watch the throttle:** confirm many concurrent dispatch users generate at
+   most ~1 shard call / 15s / instance (server logs).
+6. **Update this handoff** to mark V2 "validated in beta" once the above pass.
+
+(Everything above is validation/rollout — no new V2 code is required.)
+
+---
+
+## What NOT to change
+
+- Do **not** add write actions or any operation that creates/updates/opens/closes
+  anything in StarComms (that is V3, out of scope).
+- Do **not** expose `STARCOMMS_OWNER_API_KEY` to the client — keep all shard calls
+  in `lib/comms/*` (server) and return only secret-free data.
+- Do **not** change `schema.sql`, `reset_db.sql`, auth, Discord OAuth,
+  Supabase/RLS, or the general permission system beyond the one existing
+  localized OR line.
+- Do **not** add new DB permissions on this beta branch.
+- Do **not** refactor unrelated modules or the dispatcher beyond the StarComms
+  entries already present.
+- Do **not** `git push` without explicit approval.
+
+---
+
+## Commands for a new Claude session to continue safely
+
+```bash
+# 1. Confirm you are on the right branch and the tree is clean
+git branch --show-current          # expect: beta/starcomms-integration-v1
+git status --short                 # expect: empty
+
+# 2. See the StarComms surface
+git log --oneline | grep -i starcomms
+ls lib/comms api/actions/starcomms.ts components/shared/StarCommsStatusWidget.tsx
+
+# 3. Verify the build/health before any change
+npx tsc --noEmit
+npm run lint
+npm run test
+npm run build
+npm run i18n:check
+
+# 4. Prove no key leaks into the client bundle (after a build)
+grep -rl "process.env.STARCOMMS" dist/assets/ | wc -l   # expect 0
+grep -rl "api/v1/status" dist/assets/ | wc -l            # expect 0
+
+# 5. Run only the StarComms tests while iterating
+npx vitest run tests/starcomms.test.ts tests/starcommsWidget.test.tsx
+```
+
+Key files to read first: `lib/comms/starcomms.ts` (shard client + redaction),
+`api/actions/starcomms.ts` (actions), `api/services.ts` (permission gate +
+registry, search "starcomms"), `components/shared/StarCommsStatusWidget.tsx`
+(widget), and `docs/integrations/starcomms-v1-plan.md` (design/plan).
