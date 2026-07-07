@@ -1,6 +1,7 @@
 /* Theme-Registry: eine Datei pro Theme, umgeschaltet über das data-theme-
    Attribut auf <html> (gesetzt von theme/ThemeContext.tsx, persistiert in
    localStorage 'ui.theme'). Architektur-Doku in red.css. */
+@import './darkred.css';
 @import './red.css';
 @import './blue.css';
 @import './black.css';

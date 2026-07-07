@@ -1,0 +1,64 @@
+/* ==========================================================================
+   Theme: DARK RED (Standard) — nahezu schwarze Flächen mit tiefrotem Akzent,
+   orientiert am "Phoenix Terminal"-Look: Panels fast schwarz mit dezentem
+   Rotstich, Akzente in sattem Dunkelrot, hohe Kontraste für Mono-Labels.
+
+   Architektur siehe red.css (semantische Tokens → Tailwind-Skalen-Mapping).
+   Farbanpassungen: NUR die --theme-*-Werte ändern.
+   ========================================================================== */
+
+:root[data-theme='darkred'] {
+    /* --- Semantische Tokens: Akzent (tiefes Rot, ~358°) ---
+       Bewusst dunkler/gesättigter als das Signal-Rot der Statusfarben,
+       damit Gefahr-Badges weiterhin heller herausstechen. */
+    --theme-accent-50:  #fdf3f3;
+    --theme-accent-100: #fbe2e2;
+    --theme-accent-200: #f8c9c9;
+    --theme-accent-300: #f19b9d;
+    --theme-accent-400: #e8474f;
+    --theme-accent-500: #cf2430;
+    --theme-accent-600: #b01824;
+    --theme-accent-700: #921420;
+    --theme-accent-800: #78121c;
+    --theme-accent-900: #64121b;
+    --theme-accent-950: #38060c;
+
+    /* --- Semantische Tokens: Fläche/Neutral (Fast-Schwarz mit Rothauch) ---
+       300–500 sind Textabstufungen: entsättigt, damit Fließtext ruhig bleibt. */
+    --theme-surface-50:  #f8f6f6;
+    --theme-surface-100: #efe9e9;
+    --theme-surface-200: #ddd1d2;
+    --theme-surface-300: #bda9ab;
+    --theme-surface-400: #93797c;
+    --theme-surface-500: #6a5254;
+    --theme-surface-600: #4c3537;
+    --theme-surface-700: #362225;
+    --theme-surface-800: #231314;
+    --theme-surface-900: #150a0b;
+    --theme-surface-950: #0a0405;
+
+    /* --- Tailwind-Skalen-Mapping (nicht direkt editieren) --- */
+    --color-sky-50:  var(--theme-accent-50);
+    --color-sky-100: var(--theme-accent-100);
+    --color-sky-200: var(--theme-accent-200);
+    --color-sky-300: var(--theme-accent-300);
+    --color-sky-400: var(--theme-accent-400);
+    --color-sky-500: var(--theme-accent-500);
+    --color-sky-600: var(--theme-accent-600);
+    --color-sky-700: var(--theme-accent-700);
+    --color-sky-800: var(--theme-accent-800);
+    --color-sky-900: var(--theme-accent-900);
+    --color-sky-950: var(--theme-accent-950);
+
+    --color-slate-50:  var(--theme-surface-50);
+    --color-slate-100: var(--theme-surface-100);
+    --color-slate-200: var(--theme-surface-200);
+    --color-slate-300: var(--theme-surface-300);
+    --color-slate-400: var(--theme-surface-400);
+    --color-slate-500: var(--theme-surface-500);
+    --color-slate-600: var(--theme-surface-600);
+    --color-slate-700: var(--theme-surface-700);
+    --color-slate-800: var(--theme-surface-800);
+    --color-slate-900: var(--theme-surface-900);
+    --color-slate-950: var(--theme-surface-950);
+}

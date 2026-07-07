@@ -688,7 +688,7 @@ const DYNAMIC_KEYS = new Set([
     // lib/time.ts formatRelativeTime via translate-Param
     'in a moment', 'in {minutes}m', 'in {hours}h', 'in {days}d',
     // components/common/ThemeSwitcher.tsx: t(opt.label) aus THEMES-Array
-    'Red', 'Classic (Blue)', 'Black',
+    'Dark Red', 'Red', 'Classic (Blue)', 'Black',
 ]);
 
 const usedKeys = new Map(); // key -> first "file:line"

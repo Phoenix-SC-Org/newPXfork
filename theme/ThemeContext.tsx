@@ -7,11 +7,12 @@ import { usePersistentState } from '../hooks/usePersistentState';
 // untouched upstream look (Classic) — it has no overrides by design, which
 // keeps future upstream merges conflict-free.
 
-export type ThemeId = 'red' | 'blue' | 'black';
+export type ThemeId = 'darkred' | 'red' | 'blue' | 'black';
 
-export const DEFAULT_THEME: ThemeId = 'red';
+export const DEFAULT_THEME: ThemeId = 'darkred';
 
 export const THEMES: { id: ThemeId; label: string; swatch: string }[] = [
+    { id: 'darkred', label: 'Dark Red', swatch: '#8f1420' },
     { id: 'red', label: 'Red', swatch: '#ef2a4d' },
     { id: 'blue', label: 'Classic (Blue)', swatch: '#0ea5e9' },
     { id: 'black', label: 'Black', swatch: '#3f3f46' },
@@ -20,7 +21,7 @@ export const THEMES: { id: ThemeId; label: string; swatch: string }[] = [
 const STORAGE_KEY = 'ui.theme';
 
 function sanitize(value: unknown): ThemeId {
-    return value === 'red' || value === 'blue' || value === 'black' ? value : DEFAULT_THEME;
+    return value === 'darkred' || value === 'red' || value === 'blue' || value === 'black' ? value : DEFAULT_THEME;
 }
 
 function readStoredTheme(): ThemeId {

@@ -22,15 +22,15 @@ describe('ThemeProvider', () => {
         delete document.documentElement.dataset.theme;
     });
 
-    it('exposes exactly the three themes with red as default', () => {
-        expect(THEMES.map((t) => t.id)).toEqual(['red', 'blue', 'black']);
-        expect(DEFAULT_THEME).toBe('red');
+    it('exposes exactly the four themes with dark red as default', () => {
+        expect(THEMES.map((t) => t.id)).toEqual(['darkred', 'red', 'blue', 'black']);
+        expect(DEFAULT_THEME).toBe('darkred');
     });
 
-    it('defaults to red and sets the data-theme attribute', () => {
+    it('defaults to dark red and sets the data-theme attribute', () => {
         render(<ThemeProvider><Probe /></ThemeProvider>);
-        expect(screen.getByTestId('theme').textContent).toBe('red');
-        expect(document.documentElement.dataset.theme).toBe('red');
+        expect(screen.getByTestId('theme').textContent).toBe('darkred');
+        expect(document.documentElement.dataset.theme).toBe('darkred');
     });
 
     it('switches themes, updates the attribute and persists to localStorage', () => {
@@ -51,10 +51,10 @@ describe('ThemeProvider', () => {
         expect(document.documentElement.dataset.theme).toBe('blue');
     });
 
-    it('treats a corrupted stored value as the red default', () => {
+    it('treats a corrupted stored value as the dark red default', () => {
         localStorage.setItem('ui.theme', '"pink"');
         render(<ThemeProvider><Probe /></ThemeProvider>);
-        expect(screen.getByTestId('theme').textContent).toBe('red');
-        expect(document.documentElement.dataset.theme).toBe('red');
+        expect(screen.getByTestId('theme').textContent).toBe('darkred');
+        expect(document.documentElement.dataset.theme).toBe('darkred');
     });
 });

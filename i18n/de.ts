@@ -5723,6 +5723,7 @@ export const de: Record<string, string | Record<string, string>> = {
 
     // ThemeSwitcher
     'Switch theme': 'Theme wechseln',
+    'Dark Red': 'Dunkelrot',
     'Red': 'Rot',
     'Classic (Blue)': 'Classic (Blau)',
     'Black': 'Schwarz',
