@@ -16,7 +16,7 @@
 // Do NOT call bare fetch() against peer/feed URLs — that re-opens both holes.
 
 import { lookup } from 'node:dns/promises';
-import { Agent } from 'undici';
+import { Agent, fetch as undiciFetch } from 'undici';
 import { isPrivateIpv4, isPrivateIpv6Address } from './linkUrl.js';
 
 // Cap the response body centrally on the pinning dispatcher so every outbound
@@ -118,7 +118,11 @@ export async function ssrfSafeFetch(url: string, init?: SsrfSafeFetchInit): Prom
     }
 
     try {
-        const res = await fetch(url, {
+        // undici's OWN fetch, not Node's global fetch: the pinning `dispatcher`
+        // Agent is from the node_modules undici (v8), and passing it to Node's
+        // built-in fetch (a different internal undici) throws `invalid
+        // onRequestStart method`. fetch + Agent must be the same undici copy.
+        const res = await undiciFetch(url, {
             method: init?.method || 'GET',
             headers: init?.headers,
             body: init?.body,
@@ -126,7 +130,7 @@ export async function ssrfSafeFetch(url: string, init?: SsrfSafeFetchInit): Prom
             redirect: 'manual',
             // undici extension — routes the request through the pinning Agent.
             ...(dispatcher ? { dispatcher } : {}),
-        } as RequestInit);
+        } as any) as unknown as Response;
 
         if (res.status >= 300 && res.status < 400) {
             throw new Error(`Peer responded with a redirect (${res.status}) — refused (SSRF guard)`);

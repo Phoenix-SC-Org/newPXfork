@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { Agent } from 'undici';
+import { Agent, fetch as undiciFetch } from 'undici';
 import { log as baseLog } from './log.js';
 
 const log = baseLog.child({ module: 'lib.supabaseServer' });
@@ -24,8 +24,13 @@ const fetchAgent = new Agent({
     allowH2: false,
 });
 
+// Dispatch through undici's OWN fetch, not Node's global fetch. The `dispatcher`
+// Agent above is from the node_modules undici (v8); Node's built-in fetch is
+// backed by a DIFFERENT internal undici, and handing one's Agent to the other's
+// fetch throws `invalid onRequestStart method` (mismatched request-handler
+// interface). Keep fetch + Agent in the same undici copy.
 const customFetch: typeof globalThis.fetch = (input, init) =>
-    fetch(input, { ...init, dispatcher: fetchAgent } as any);
+    undiciFetch(input as any, { ...init, dispatcher: fetchAgent } as any) as any;
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
     global: { fetch: customFetch },

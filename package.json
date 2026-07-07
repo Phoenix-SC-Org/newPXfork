@@ -53,11 +53,11 @@
     "react-dom": "^19.2.7",
     "react-konva": "^19.2.5",
     "recharts": "^3.9.0",
-    "undici": "8.5.0",
+    "undici": "8.7.0",
     "web-push": "3.6.7"
   },
   "overrides": {
-    "undici": "8.5.0",
+    "undici": "8.7.0",
     "jsdom": {
       "undici": "^7.25.0"
     },
