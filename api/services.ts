@@ -744,6 +744,9 @@ export const fullPermissionMap: Record<string, string> = {
     // preview_net_preset = READ-ONLY diff of a preset vs existing nets (no writes).
     'admin:starcomms_list_net_presets': 'admin:access',
     'admin:starcomms_preview_net_preset': 'admin:access',
+    // Optional sync (V6) — admin-only, READ-ONLY planner. Returns the (default-OFF)
+    // sync flags + suggested actions; execution reuses the V3 open/close actions.
+    'admin:starcomms_sync_plan': 'admin:access',
     // Operational widget read (V2). Base perm operations:view; the dispatcher
     // additionally admits request:dispatch / admin:access via the OR check below
     // (isStarCommsReader), so Dispatch and Admin users also get live data.

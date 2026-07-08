@@ -7,6 +7,7 @@
 
 import { describeCommsConfig, getCachedCommsStatus, getCommsProvider } from '../../lib/comms/index.js';
 import { NET_PRESETS, getNetPreset, buildNetPresetPreview } from '../../lib/comms/netPresets.js';
+import { readSyncConfig, computeSyncSuggestions } from '../../lib/comms/syncPlanner.js';
 
 export const starcommsActions = {
     // Read: config summary, plus live status when enabled AND configured.
@@ -99,5 +100,25 @@ export const starcommsActions = {
         }
         const preview = buildNetPresetPreview(preset, result.status.nets);
         return { config, ok: true, error: null, preview };
+    },
+
+    // Sync Planner (V6) — READ-ONLY. Returns the (all-default-OFF) sync flags plus
+    // the SUGGESTED actions computed from current status + the caller-supplied
+    // myRSI operation-active signal. Never writes; execution of a suggestion is a
+    // separate explicit click that reuses the V3 open/close actions. Gated on
+    // admin:access. Secret-free. `operationActive` is passed in so the comms layer
+    // stays decoupled from the operations DB.
+    'admin:starcomms_sync_plan': async (payload: { operationActive?: boolean }) => {
+        const config = describeCommsConfig();
+        const sync = readSyncConfig();
+        if (!config.enabled || !config.configured) {
+            return { config, sync, status: null, suggestions: [], error: null };
+        }
+        const result = await getCommsProvider().getStatus();
+        if (!result.ok) {
+            return { config, sync, status: null, suggestions: [], error: { kind: result.error, message: result.message } };
+        }
+        const suggestions = computeSyncSuggestions(sync, result.status, !!payload?.operationActive);
+        return { config, sync, status: result.status, suggestions, error: null };
     },
 };
