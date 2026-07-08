@@ -5956,4 +5956,26 @@ export const de: Record<string, string | Record<string, string>> = {
     "A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled sessions, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org certification. Off by default.": "Ein Lernmanagementsystem für deine Organisation. Admins und Ausbilder erstellen Kurse aus Modulen, Lektionen und Lernergebnissen, die als geplante Sessions oder im Selbststudium aus dem Katalog absolviert werden. Mitglieder schreiben sich ein, lernen in ihrem eigenen Tempo, und Ausbilder bewerten jedes Lernergebnis als kompetent oder noch nicht kompetent. Der Abschluss eines Kurses kann eine Organisations-Zertifizierung verleihen. Standardmäßig deaktiviert.",
     "Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.": "Wenn die Academy deaktiviert wird, ist sie für alle Mitglieder ausgeblendet und ihre Aktionen werden serverseitig geschlossen. Kurse, Sessions, Einschreibungen und Fortschritt bleiben erhalten und kehren bei erneuter Aktivierung zurück.",
 
+    // StarComms V3 — manual operation control (admin-only write actions)
+    "Manual operation control": "Manuelle Einsatzsteuerung",
+    "Manually open or close the StarComms operation. These are one-off admin actions — myRSI does not sync to StarComms automatically.": "Öffne oder schließe den StarComms-Einsatz manuell. Dies sind einmalige Admin-Aktionen — myRSI synchronisiert sich nicht automatisch mit StarComms.",
+    "Current operation:": "Aktueller Einsatz:",
+    "Last refreshed: {time}": "Zuletzt aktualisiert: {time}",
+    "Open StarComms operation": "StarComms-Einsatz öffnen",
+    "Close StarComms operation": "StarComms-Einsatz schließen",
+    "Open StarComms operation?": "StarComms-Einsatz öffnen?",
+    "Close StarComms operation?": "StarComms-Einsatz schließen?",
+    "This manually opens the StarComms operation and notifies connected clients. It does not sync automatically with myRSI.": "Öffnet den StarComms-Einsatz manuell und benachrichtigt verbundene Clients. Es erfolgt keine automatische Synchronisierung mit myRSI.",
+    "This manually closes the StarComms operation and notifies connected clients. It does not sync automatically with myRSI.": "Schließt den StarComms-Einsatz manuell und benachrichtigt verbundene Clients. Es erfolgt keine automatische Synchronisierung mit myRSI.",
+    "Open operation": "Einsatz öffnen",
+    "Close operation": "Einsatz schließen",
+    "StarComms operation opened.": "StarComms-Einsatz geöffnet.",
+    "StarComms operation closed.": "StarComms-Einsatz geschlossen.",
+    "StarComms action failed.": "StarComms-Aktion fehlgeschlagen.",
+    "Not fully configured.": "Nicht vollständig konfiguriert.",
+    "Status unavailable.": "Status nicht verfügbar.",
+    "The operation is already open.": "Der Einsatz ist bereits geöffnet.",
+    "The operation is already closed.": "Der Einsatz ist bereits geschlossen.",
+    "StarComms status is unavailable — refresh with Test Connection before changing the operation state.": "StarComms-Status ist nicht verfügbar — vor dem Ändern des Einsatzstatus mit „Verbindung testen“ aktualisieren.",
+
 };

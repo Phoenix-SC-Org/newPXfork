@@ -9,12 +9,13 @@
 // =============================================================================
 
 import { log as baseLog } from '../log.js';
-import type { CommsConfigSummary, CommsNet, CommsProvider, CommsResult, CommsStatus } from './types.js';
+import type { CommsConfigSummary, CommsNet, CommsProvider, CommsResult, CommsStatus, CommsWriteResult } from './types.js';
 
 const log = baseLog.child({ module: 'comms.starcomms' });
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const STATUS_PATH = '/api/v1/status';
+const OPERATION_PATH = '/api/v1/operation';
 
 function readEnabled(): boolean {
     const v = (process.env.STARCOMMS_ENABLED || '').trim().toLowerCase();
@@ -191,5 +192,62 @@ export class StarCommsProvider implements CommsProvider {
             return { ok: false, error: 'malformed', message: 'StarComms returned an unexpected response shape.' };
         }
         return { ok: true, status: coerceStatus(body as Record<string, unknown>) };
+    }
+
+    // --- Manual write (V3) ---------------------------------------------------
+    // POST {BASE_URL}/api/v1/operation with { open: boolean }. Opening/closing is
+    // non-destructive — it only toggles the operation-open flag (the shard then
+    // broadcasts a config update to connected clients). The owner key is read
+    // per-call and only placed in the Authorization header; the request body
+    // carries no secret and the response body is intentionally NOT returned.
+    async setOperationOpen(open: boolean): Promise<CommsWriteResult> {
+        if (!readEnabled()) {
+            return { ok: false, error: 'disabled', message: 'StarComms integration is disabled.' };
+        }
+        const baseUrl = readBaseUrl();
+        if (!baseUrl) {
+            return { ok: false, error: 'missing_base_url', message: 'STARCOMMS_BASE_URL is not set.' };
+        }
+        const key = readApiKey();
+        if (!key) {
+            return { ok: false, error: 'missing_api_key', message: 'STARCOMMS_OWNER_API_KEY is not set.' };
+        }
+
+        const timeoutMs = readTimeoutMs();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        let res: Response;
+        try {
+            res = await fetch(`${baseUrl}${OPERATION_PATH}`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${key}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ open }),
+                signal: controller.signal,
+            });
+        } catch (e) {
+            const name = (e as { name?: string })?.name;
+            if (name === 'AbortError') {
+                log.warn('starcomms operation timeout', { timeoutMs, open });
+                return { ok: false, error: 'timeout', message: `StarComms request timed out after ${timeoutMs}ms.` };
+            }
+            log.warn('starcomms operation network error', { open, err: redact(String((e as { message?: string })?.message || e)) });
+            return { ok: false, error: 'network', message: 'Could not reach the StarComms shard.' };
+        } finally {
+            clearTimeout(timer);
+        }
+
+        if (res.status === 401 || res.status === 403) {
+            log.warn('starcomms operation unauthorized', { status: res.status });
+            return { ok: false, error: 'unauthorized', message: `StarComms rejected the API key (HTTP ${res.status}).` };
+        }
+        if (!res.ok) {
+            log.warn('starcomms operation http error', { status: res.status, open });
+            return { ok: false, error: 'network', message: `StarComms returned HTTP ${res.status}.` };
+        }
+        return { ok: true };
     }
 }

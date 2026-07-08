@@ -74,6 +74,7 @@ export async function getCachedCommsStatus(now: () => number = Date.now): Promis
 export type {
     CommsProvider,
     CommsResult,
+    CommsWriteResult,
     CommsStatus,
     CommsConfigSummary,
     CommsErrorKind,

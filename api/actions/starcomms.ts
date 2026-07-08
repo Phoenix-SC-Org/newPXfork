@@ -32,6 +32,27 @@ export const starcommsActions = {
             : { config, ok: false, status: null, error: { kind: result.error, message: result.message } };
     },
 
+    // Manual write (V3): open the StarComms operation. Admin-only, gated on
+    // `admin:access` in api/services.ts. Non-destructive (toggles the open flag).
+    // The provider validates enabled/base-url/api-key and returns a typed,
+    // secret-free result — the owner key never appears in this response.
+    'admin:starcomms_open': async () => {
+        const config = describeCommsConfig();
+        const result = await getCommsProvider().setOperationOpen(true);
+        return result.ok
+            ? { config, ok: true, error: null }
+            : { config, ok: false, error: { kind: result.error, message: result.message } };
+    },
+
+    // Manual write (V3): close the StarComms operation. Same gate/guarantees.
+    'admin:starcomms_close': async () => {
+        const config = describeCommsConfig();
+        const result = await getCommsProvider().setOperationOpen(false);
+        return result.ok
+            ? { config, ok: true, error: null }
+            : { config, ok: false, error: { kind: result.error, message: result.message } };
+    },
+
     // Operational widget read (V2). CACHED/throttled — safe for many
     // dispatch/ops users mounting the widget concurrently. Gated in
     // api/services.ts on operations:view OR request:dispatch OR admin:access.

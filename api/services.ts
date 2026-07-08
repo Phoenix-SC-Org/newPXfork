@@ -735,6 +735,11 @@ export const fullPermissionMap: Record<string, string> = {
     // StarComms integration (optional, read-only) — admin console panel (V1).
     'admin:starcomms_status': 'admin:access',
     'admin:starcomms_test': 'admin:access',
+    // Manual write actions (V3) — admin-only. Non-destructive open/close of the
+    // StarComms operation. Deliberately gated on admin:access (no schema change,
+    // no dedicated starcomms:manage permission on this branch).
+    'admin:starcomms_open': 'admin:access',
+    'admin:starcomms_close': 'admin:access',
     // Operational widget read (V2). Base perm operations:view; the dispatcher
     // additionally admits request:dispatch / admin:access via the OR check below
     // (isStarCommsReader), so Dispatch and Admin users also get live data.

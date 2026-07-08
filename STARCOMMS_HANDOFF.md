@@ -90,8 +90,105 @@ V3 introduces the first **write** path to StarComms. Hard constraints:
   dedicated `starcomms:*` permission(s) rather than reusing `admin:access`
   (schema change + reseed). Plan and confirm before touching `schema.sql`.
 
-See "Suggested V3 roadmap" at the end for the proposed shape. **V3 code has not
-been written yet.**
+**V3 (manual open/close write actions) is now implemented** — see the next
+section. Later phases (V3.1+) remain future work.
+
+---
+
+## StarComms V3 — manual write actions (implemented, 2026-07-08)
+
+First **write** path to StarComms. Manual, admin-only, non-destructive. Still no
+automatic sync, no background jobs, no net/assignment/role sync.
+
+### Status
+Code-complete on `beta/starcomms-v3-manual-actions`. All checks green (below).
+Not yet committed/pushed. Read-only V1/V2/V2.1 untouched and still passing.
+
+### Endpoint used (confirmed from official StarComms Owner API docs)
+- **`POST {STARCOMMS_BASE_URL}/api/v1/operation`**
+  - Headers: `Authorization: Bearer <STARCOMMS_OWNER_API_KEY>`,
+    `Content-Type: application/json`, `Accept: application/json`
+  - Body: `{ "open": true }` to open, `{ "open": false }` to close
+  - The shard toggles the operation-open flag and broadcasts a config update to
+    connected clients. Required owner-key scope: `write:operation` (plus
+    `read:status` for the existing status refresh).
+  - Response body is intentionally **not** returned to callers; only a typed
+    ok/err is surfaced. Success = any 2xx; 401/403 → `unauthorized`.
+
+### Actions & permission
+| Action | Gate | Purpose |
+| :--- | :--- | :--- |
+| `admin:starcomms_open` | `admin:access` | manually open the StarComms operation |
+| `admin:starcomms_close` | `admin:access` | manually close the StarComms operation |
+
+Reuses existing **`admin:access`** (same as V1). **No `schema.sql` change, no
+`starcomms:manage` permission, no reseed** — per the approved V3 scope.
+
+### Changed files
+- `lib/comms/types.ts` — `CommsWriteResult` type + `setOperationOpen(open)` on the
+  `CommsProvider` interface (keeps the provider replaceable).
+- `lib/comms/starcomms.ts` — `setOperationOpen()` impl: validates
+  enabled/base-url/api-key, POSTs `{ open }`, reuses the `AbortController`
+  timeout + `redact()`, typed secret-free errors. `OPERATION_PATH` constant.
+- `lib/comms/index.ts` — re-export `CommsWriteResult`.
+- `api/actions/starcomms.ts` — `admin:starcomms_open` / `admin:starcomms_close`
+  actions returning `{ config, ok, error }` (secret-free; key never included).
+- `api/services.ts` — two `fullPermissionMap` entries → `admin:access` (registry
+  already spreads `...starcommsActions`). No dispatcher special-case.
+- `components/views/admin/StarCommsTab.tsx` — “Open/Close StarComms operation”
+  buttons with confirm dialog; disabled when disabled/misconfigured/no
+  `admin:access`/state-already-matches/status-unavailable; refreshes status on
+  success; non-blocking error toast; shows current `operationOpen` + last-refresh;
+  explicit “manual, no auto-sync” copy.
+- `i18n/de.ts` — German strings for the V3 UI (informal “du”).
+- `tests/starcomms.test.ts` — V3 write-action suite.
+
+### Safety posture (matches approved scope)
+- Manual admin-only buttons; **no auto-open/close, no background jobs, no sync**.
+- Non-destructive — only toggles the operation-open flag; no delete/wipe.
+- All writes go server-side through the myRSI action dispatcher; the browser
+  never sees the endpoint or key (bundle grep: `api/v1/operation` = 0,
+  `process.env.STARCOMMS*` = 0).
+- Safe when `STARCOMMS_ENABLED=false` or config missing (typed `disabled` /
+  `missing_*` result, no fetch).
+- Key redacted in all logs/errors; write responses are secret-free.
+
+### Tests run and results (2026-07-08)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — OK (5238 keys / 5870 de entries)
+- `npm run build` — success (client + server)
+- `npm run test` — **1512 passed / 161 files** (StarComms: 46; +7 V3)
+- Bundle grep: `process.env.STARCOMMS*` = 0, `api/v1/operation` = 0, `api/v1/status` = 0
+- V3 coverage: gate = admin:access; disabled → no fetch; missing key → no fetch;
+  open posts `{open:true}` to `/api/v1/operation` w/ bearer + JSON (no key leak);
+  close posts `{open:false}`; 401 → unauthorized (no leak); timeout handled.
+
+### Known limitations
+- **Admin panel only** — write buttons live in Admin → Integrations → StarComms;
+  the Operations/Dispatch widget stays read-only (surfacing there = V3.1).
+- **No optimistic UI** — after a write we re-fetch admin status (uncached) to
+  reflect the new state; there's a brief round-trip.
+- **No 409/no-op distinction** — the UI already disables a button when the state
+  matches, but if the shard rejects a redundant open/close it surfaces as a
+  generic error toast.
+- **`admin:access` gate** (not a dedicated `starcomms:manage`) — intentional for
+  this branch; a real per-feature perm is a schema change (deferred, needs a
+  plan + reseed).
+- Same env-only-config, per-process-cache, loose-schema, no-WAF caveats as V2.
+
+### Next ideas (NOT implemented)
+- **V3.1** — surface the open/close buttons in the Operations StarComms widget
+  for `operations:view` holders (needs an explicit gate decision; likely still
+  `admin:access` for writes while reads stay broad).
+- **V3.1** — dedicated `starcomms:manage` permission in `schema.sql` (+ reseed)
+  replacing `admin:access` reuse, once writes are proven in beta.
+- **V3.2** — additional manual write actions if the Owner API supports them
+  (e.g. mint/join a net) — still manual, still non-destructive; **no** automatic
+  operation/roster/role sync (explicitly out of scope).
+- **V3.2** — optional confirmation that includes the myRSI-vs-StarComms mismatch
+  (reuse V2.1 awareness) so an admin closing StarComms sees if a myRSI op is
+  still active.
 
 ---
 

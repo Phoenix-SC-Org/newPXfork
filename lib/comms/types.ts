@@ -57,6 +57,12 @@ export type CommsResult =
     | { ok: true; status: CommsStatus }
     | { ok: false; error: CommsErrorKind; message: string };
 
+/** Result of a write action. Secret-free: carries only a success flag or a typed
+ *  non-sensitive error — never the API key or any request/response body. */
+export type CommsWriteResult =
+    | { ok: true }
+    | { ok: false; error: CommsErrorKind; message: string };
+
 export interface CommsProvider {
     readonly name: string;
     /** Non-secret config summary (env presence only, never values). */
@@ -64,4 +70,9 @@ export interface CommsProvider {
     /** Fetch live status. Resolves to a typed result; never throws for the
      *  expected disabled/misconfig/network/timeout/malformed cases. */
     getStatus(): Promise<CommsResult>;
+    /** Manual write (V3): open (`true`) or close (`false`) the StarComms
+     *  operation. Server-only. Resolves to a typed, secret-free result; never
+     *  throws for the expected disabled/misconfig/unauthorized/timeout/network
+     *  cases. Non-destructive: it only toggles the operation-open flag. */
+    setOperationOpen(open: boolean): Promise<CommsWriteResult>;
 }

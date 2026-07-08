@@ -213,3 +213,86 @@ describe('StarComms actions — no key leakage', () => {
         expect(JSON.stringify(out)).not.toContain(KEY);
     });
 });
+
+describe('StarComms V3 — manual write actions (open/close)', () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
+    });
+
+    it('gates both write actions on admin:access', () => {
+        expect(fullPermissionMap['admin:starcomms_open']).toBe('admin:access');
+        expect(fullPermissionMap['admin:starcomms_close']).toBe('admin:access');
+    });
+
+    it('does NOT call the shard when disabled (safe no-op)', async () => {
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        const out = await starcommsActions['admin:starcomms_open']() as { ok: boolean; error: { kind: string } | null };
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(out.ok).toBe(false);
+        expect(out.error?.kind).toBe('disabled');
+    });
+
+    it('does NOT call the shard when the API key is missing', async () => {
+        vi.stubEnv('STARCOMMS_ENABLED', 'true');
+        vi.stubEnv('STARCOMMS_BASE_URL', BASE);
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        const out = await starcommsActions['admin:starcomms_close']() as { ok: boolean; error: { kind: string } | null };
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(out.error?.kind).toBe('missing_api_key');
+    });
+
+    it('open posts { open: true } to /api/v1/operation with the bearer token; no key leaks', async () => {
+        enableFull();
+        const fetchMock = vi.fn().mockResolvedValue(res(200, { ok: true }));
+        vi.stubGlobal('fetch', fetchMock);
+        const out = await starcommsActions['admin:starcomms_open']() as { ok: boolean };
+        expect(out.ok).toBe(true);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe(`${BASE}/api/v1/operation`);
+        expect(init.method).toBe('POST');
+        const headers = init.headers as Record<string, string>;
+        expect(headers.Authorization).toBe(`Bearer ${KEY}`);
+        expect(headers['Content-Type']).toBe('application/json');
+        expect(JSON.parse(init.body as string)).toEqual({ open: true });
+        expect(JSON.stringify(out)).not.toContain(KEY);
+    });
+
+    it('close posts { open: false } to /api/v1/operation', async () => {
+        enableFull();
+        const fetchMock = vi.fn().mockResolvedValue(res(200, { ok: true }));
+        vi.stubGlobal('fetch', fetchMock);
+        const out = await starcommsActions['admin:starcomms_close']() as { ok: boolean };
+        expect(out.ok).toBe(true);
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe(`${BASE}/api/v1/operation`);
+        expect(JSON.parse(init.body as string)).toEqual({ open: false });
+    });
+
+    it('maps a 401 to unauthorized without leaking the key', async () => {
+        enableFull();
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res(401, { error: 'nope' })));
+        const out = await starcommsActions['admin:starcomms_open']() as { ok: boolean; error: { kind: string } | null };
+        expect(out.ok).toBe(false);
+        expect(out.error?.kind).toBe('unauthorized');
+        expect(JSON.stringify(out)).not.toContain(KEY);
+    });
+
+    it('maps an aborted request to timeout', async () => {
+        enableFull();
+        vi.stubEnv('STARCOMMS_TIMEOUT_MS', '5');
+        vi.stubGlobal('fetch', (_url: string, init: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
+            init.signal.addEventListener('abort', () => {
+                const e = new Error('aborted');
+                e.name = 'AbortError';
+                reject(e);
+            });
+        }));
+        const out = await starcommsActions['admin:starcomms_close']() as { ok: boolean; error: { kind: string } | null };
+        expect(out.ok).toBe(false);
+        expect(out.error?.kind).toBe('timeout');
+    });
+});
