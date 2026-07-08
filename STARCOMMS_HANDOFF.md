@@ -1,7 +1,97 @@
 # StarComms Integration — Handoff
 
-Feature work is **paused**. This document is the source of truth for the
-StarComms integration on this fork. Last verified: **2026-07-08**.
+This document is the source of truth for the StarComms integration on this fork.
+Last verified: **2026-07-08**.
+
+---
+
+## Pre-V3 status snapshot (2026-07-08) — read this first
+
+Consolidated status at the point of starting **V3 (manual write actions)**.
+Details for each area are in the dedicated sections below.
+
+### Current branch
+`beta/starcomms-v3-manual-actions` (created off the merged V2.1 line). Working
+tree clean. Recent history (newest first):
+- `b8cac73` update + translationv2 — Academy German translation (rest)
+- `8ca582b` update + translation — Academy German translation (part)
+- `001cef7` Complete StarComms V2.1 awareness integration 334 — resolved-merge fix
+- `c27b797` v15.4.1-open — upstream catch-up (ancestor)
+
+No push of V3 work yet. Nothing is committed on this branch beyond what it
+inherited; V3 code has **not** started (this doc update precedes it).
+
+### Upstream c27b797 merge — DONE & stable
+Upstream `c27b797` (v15.4.1-open: notifications, Academy LMS, native uploads, org
+accent/theme, feature-gate hardening, schema changes) is fully merged. 21 files /
+36 conflict regions resolved by combining upstream with our fork. StarComms
+V1/V2/V2.1 fully preserved. `lib/supabaseServer.ts` intentionally kept our
+plain-fetch version (upstream's custom undici Agent breaks Supabase on our
+runtime). See "Upstream merge — c27b797" below.
+
+### StarComms V1 / V2 / V2.1 — all shipped, read-only
+- **V1** — admin panel (Admin → Integrations → StarComms): config summary +
+  Test Connection + live status. Gate: `admin:access`.
+- **V2** — cached operational widget in Operations Center + Dispatch Console
+  (`operation:starcomms_status`, 15s TTL). Gate: `operations:view` OR
+  `request:dispatch` OR `admin:access` via `isStarCommsReader`.
+- **V2.1** — contextual read-only awareness (warnings/hints correlating myRSI
+  operation state vs StarComms `operationOpen`, operators, nets, feature flags,
+  staleness); derived frontend-side; four known feature flags normalized in
+  `coerceStatus`.
+- **All three remain strictly read-only.** No writes exist yet.
+
+### Beta deployment — LIVE
+Deployed and running on beta (Coolify). The earlier failed redeploy was a stale
+commit (`89ef51e`) still carrying conflict markers; the resolved commit
+(`001cef7`) builds clean and is live. After schema changes, `schema.sql` must be
+re-run on beta Supabase followed by **Repair Database** (see merge section).
+
+### Translation (EN/DE) — Academy DONE
+Upstream's Academy (LMS) UI was English-only; now fully localized via the fork's
+natural-key i18n. ~9 files wrapped in `t()` (7 Academy views + Sidebar nav label
++ Academy feature toggle); **186 German entries** added to `i18n/de.ts`
+(informal "du" register); 1 orphan removed. `npm run i18n:check` → OK.
+
+### Tests run (2026-07-08, post-translation)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — OK (5218 keys / 5850 de entries, no missing/orphan)
+- `npm run build` — success (client + server)
+- `npm run test` — **1505 passed / 161 files** (StarComms: 39)
+- Bundle leak grep: `process.env.STARCOMMS*` = 0, `api/v1/status` = 0
+
+### Known limitations (carried into V3)
+- **Read-only only** — no mint/join/mute/move/open/close; no writes anywhere yet.
+- **Env-only config**; no admin-console-stored credentials. Changes need an env
+  edit + container restart.
+- **Permission-gate reuse** — no dedicated `starcomms:*` DB perms
+  (`admin:access` / `operations:view` reused). A real write boundary is a V3
+  prerequisite (see below).
+- **Per-process 15s cache**; not distributed across instances.
+- **Loose response schema** — `coerceStatus` in `lib/comms/starcomms.ts` is the
+  single place to tighten when the official StarComms schema lands.
+- **No WAF handling** — a challenge in front of the shard surfaces as
+  `network`/`unauthorized`.
+
+### V3 goal & guardrails — manual write actions ONLY
+V3 introduces the first **write** path to StarComms. Hard constraints:
+- **Manual write actions only** — user-initiated, explicit. Each write is a
+  deliberate operator action with a confirmation step.
+- **No automatic sync yet** — never mirror myRSI operation open/close, rosters,
+  or assignments to StarComms automatically. No background reconciliation.
+- **No destructive actions** — no delete/wipe/purge/close-and-discard. Scope to
+  additive/idempotent operations (e.g. open/mint/join); nothing that irreversibly
+  removes StarComms state.
+- **No API key exposure** — `STARCOMMS_OWNER_API_KEY` stays server-only, only in
+  the outgoing `Authorization` header; never in the frontend, logs, UI, test
+  snapshots, or API responses. All write responses stay secret-free.
+- **Permission boundary** — a genuine write needs a real gate; V3 should add
+  dedicated `starcomms:*` permission(s) rather than reusing `admin:access`
+  (schema change + reseed). Plan and confirm before touching `schema.sql`.
+
+See "Suggested V3 roadmap" at the end for the proposed shape. **V3 code has not
+been written yet.**
 
 ---
 
