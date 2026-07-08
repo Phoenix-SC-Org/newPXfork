@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { useOperations } from '../../../contexts/OperationsContext';
 import { OperationStatus } from '../../../types';
 import { useI18n } from '../../../i18n/I18nContext';
@@ -52,6 +53,22 @@ interface SyncConfigSummary { operationState: boolean; netPreset: boolean; roleN
 interface SyncSuggestion { kind: string; severity: 'warning' | 'info'; messageKey: string; actionable: boolean; action?: string }
 interface SyncPlanResponse { config: CommsConfig; sync: SyncConfigSummary; status: CommsStatus | null; suggestions: SyncSuggestion[]; error: CommsError | null }
 
+// V5 recovery (roster / assignments / rules)
+interface RosterOperator { userId: string | null; displayName: string | null; nets: string[]; transport: string | null; transmitting: boolean | null; connectedSince: string | null; roleIds?: string[] }
+interface Assignment { userId: string | null; netUid: string | null; netName: string | null }
+interface RoleNetRule { roleId: string | null; netUids: string[] }
+interface SectionError { kind: string; message: string }
+interface V5StateResponse {
+    config: CommsConfig; status: CommsStatus | null;
+    roster: RosterOperator[] | null; assignments: Assignment[] | null; rules: RoleNetRule[] | null;
+    errors: { status?: SectionError | null; roster?: SectionError | null; assignments?: SectionError | null; rules?: SectionError | null };
+}
+interface AssignmentPreviewItem { userId: string; netUid: string; action: string; effective: boolean; reason?: string }
+interface AssignmentsPreview { toApply: AssignmentPreviewItem[]; skipped: AssignmentPreviewItem[]; missingNets: string[]; unknownUsers: string[]; warnings: string[]; applyPossible: boolean }
+interface AssignPreviewResponse { config: CommsConfig; ok: boolean; error: CommsError | null; preview: AssignmentsPreview | null }
+interface ApplyResponse { config: CommsConfig; ok: boolean; error: CommsError | null; applied?: number }
+interface ApplyNetPresetResponse { config: CommsConfig; ok: boolean; created: number; skipped: number; errors: { name: string; message: string }[]; error: CommsError | null }
+
 const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
         <div className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-0.5">{label}</div>
@@ -62,6 +79,7 @@ const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, val
 const StarCommsTab: React.FC = () => {
     const { rpcAction } = useData();
     const { hasPermission } = useAuth();
+    const { addToast, confirm } = useNotification();
     const { operations } = useOperations();
     const { t, locale } = useI18n();
     const canManage = hasPermission('admin:access');
@@ -86,6 +104,14 @@ const StarCommsTab: React.FC = () => {
     // Optional Sync (V6) — suggested actions only; nothing runs automatically.
     const [sync, setSync] = useState<SyncConfigSummary | null>(null);
     const [suggestions, setSuggestions] = useState<SyncSuggestion[]>([]);
+
+    // V5 recovery — roster / assignments / rules + manual assignment flow.
+    const [v5, setV5] = useState<V5StateResponse | null>(null);
+    const [selUser, setSelUser] = useState('');
+    const [selNet, setSelNet] = useState('');
+    const [assignPreview, setAssignPreview] = useState<AssignmentsPreview | null>(null);
+    const [assignBusy, setAssignBusy] = useState(false);
+    const [applyingPreset, setApplyingPreset] = useState(false);
 
     // Reusable status load — also used to refresh after a manual write.
     const loadStatus = useCallback(async () => {
@@ -183,11 +209,101 @@ const StarCommsTab: React.FC = () => {
         return () => { cancelled = true; };
     }, [canManage, loadSyncPlan]);
 
-    // Refresh both status and suggestions after a manual sync execution.
+    // V5 combined read (roster + assignments + rules + status), with per-section
+    // errors so we can show "missing scope" warnings.
+    const loadV5State = useCallback(async () => {
+        try {
+            const res = await rpcAction('admin:starcomms_v5_state', {}) as V5StateResponse;
+            setV5(res);
+        } catch { setV5(null); }
+    }, [rpcAction]);
+
+    useEffect(() => {
+        if (!canManage) return;
+        let cancelled = false;
+        void (async () => { if (!cancelled) await loadV5State(); })();
+        return () => { cancelled = true; };
+    }, [canManage, loadV5State]);
+
+    // Refresh status + suggestions (+ V5 state) after a manual action.
     const refreshSync = useCallback(async () => {
         await loadStatus();
         await loadSyncPlan();
     }, [loadStatus, loadSyncPlan]);
+    const refreshAll = useCallback(async () => {
+        await loadStatus();
+        await loadSyncPlan();
+        await loadV5State();
+    }, [loadStatus, loadSyncPlan, loadV5State]);
+
+    // V4 apply repair — create the preset's missing nets (confirmed).
+    const applyPreset = useCallback(async () => {
+        if (!selectedPreset) return;
+        const ok = await confirm({
+            title: t('Apply net preset?'),
+            message: t('This creates the missing StarComms nets for this preset. Existing nets are never deleted or renamed.'),
+            confirmText: t('Create missing nets'),
+            variant: 'info',
+        });
+        if (!ok) return;
+        setApplyingPreset(true);
+        try {
+            const res = await rpcAction('admin:starcomms_apply_net_preset', { presetId: selectedPreset }) as ApplyNetPresetResponse;
+            if (res.ok || res.created > 0) {
+                addToast(t('Created {n} net(s); {s} already existed.', { n: res.created, s: res.skipped }), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+                await refreshAll();
+                await runPreview();
+            } else {
+                addToast(res.error?.message || t('Net preset apply failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+            }
+        } catch (e) {
+            addToast(e instanceof Error ? e.message : t('Net preset apply failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+        } finally {
+            setApplyingPreset(false);
+        }
+    }, [rpcAction, selectedPreset, confirm, addToast, t, refreshAll, runPreview]);
+
+    // V5 manual assignment — preview then confirmed assign/unassign.
+    const previewAssignment = useCallback(async (action: 'assign' | 'unassign') => {
+        if (!selUser || !selNet) return;
+        setAssignBusy(true);
+        setAssignPreview(null);
+        try {
+            const res = await rpcAction('admin:starcomms_preview_assignments', { actions: [{ userId: selUser, netUid: selNet, action }] }) as AssignPreviewResponse;
+            if (res.ok && res.preview) setAssignPreview(res.preview);
+            else addToast(res.error?.message || t('Preview failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+        } catch (e) {
+            addToast(e instanceof Error ? e.message : t('Preview failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+        } finally {
+            setAssignBusy(false);
+        }
+    }, [rpcAction, selUser, selNet, addToast, t]);
+
+    const applyAssignment = useCallback(async (action: 'assign' | 'unassign') => {
+        if (!selUser || !selNet) return;
+        const ok = await confirm({
+            title: action === 'assign' ? t('Assign operator to net?') : t('Unassign operator from net?'),
+            message: t('This changes only the selected StarComms assignment. Other assignments are left unchanged.'),
+            confirmText: action === 'assign' ? t('Assign') : t('Unassign'),
+            variant: action === 'assign' ? 'info' : 'danger',
+        });
+        if (!ok) return;
+        setAssignBusy(true);
+        try {
+            const res = await rpcAction('admin:starcomms_apply_assignments', { actions: [{ userId: selUser, netUid: selNet, action }], confirm: true }) as ApplyResponse;
+            if (res.ok) {
+                addToast(action === 'assign' ? t('Operator assigned.') : t('Operator unassigned.'), <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
+                setAssignPreview(null);
+                await loadV5State();
+            } else {
+                addToast(res.error?.message || t('Assignment failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+            }
+        } catch (e) {
+            addToast(e instanceof Error ? e.message : t('Assignment failed.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+        } finally {
+            setAssignBusy(false);
+        }
+    }, [rpcAction, selUser, selNet, confirm, addToast, t, loadV5State]);
 
     const yesNo = (v: boolean | null) => (v === null ? '—' : v ? t('Yes') : t('No'));
     const selectedPresetObj = presets.find((p) => p.id === selectedPreset) || null;
@@ -196,8 +312,8 @@ const StarCommsTab: React.FC = () => {
         'operation-open': t('Suggested: open the StarComms operation — a myRSI operation is active but StarComms is closed.'),
         'operation-close': t('Suggested: close the StarComms operation — no active myRSI operation was detected.'),
         'net-preset': t('Suggested: review the StarComms net preset for the active operation.'),
-        'role-net-rules': t('Suggested: review role-to-net mapping. Role-to-net management is not yet available.'),
-        'assignments': t('Suggested: review operator assignments. Assignment management is not yet available.'),
+        'role-net-rules': t('Suggested: review the StarComms role-to-net mapping.'),
+        'assignments': t('Suggested: review StarComms operator assignments.'),
     };
     // Warning keys → localized text (literal t() so the i18n scanner sees them).
     const warningText: Record<string, string> = {
@@ -463,19 +579,103 @@ const StarCommsTab: React.FC = () => {
                                     {preview.warnings.map((w) => (
                                         <p key={w} className="text-[10px] text-amber-300/80"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{warningText[w] ?? w}</p>
                                     ))}
-                                    {/* Apply — locked until the StarComms create-net endpoint is confirmed. */}
+                                    {/* Apply (V5 recovery) — creates missing nets via POST /api/v1/nets. */}
                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                         <button
-                                            disabled
-                                            title={t('Applying (net creation) is not yet enabled — pending the StarComms create-net endpoint.')}
-                                            className="px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-slate-700/40 text-slate-500 border border-slate-600/40 cursor-not-allowed"
+                                            onClick={() => void applyPreset()}
+                                            disabled={applyingPreset || preview.toCreate.length === 0}
+                                            className="px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
-                                            <i className="fa-solid fa-lock mr-1.5" />{t('Apply preset')}
+                                            <i className={`fa-solid ${applyingPreset ? 'fa-circle-notch animate-spin' : 'fa-wand-magic-sparkles'} mr-1.5`} />{t('Create missing nets')}
                                         </button>
-                                        <span className="text-[10px] text-slate-500">{t('Apply is pending the StarComms create-net endpoint (Preview is read-only).')}</span>
+                                        <span className="text-[10px] text-slate-500">{t('Creates the missing nets only. Existing nets are never deleted or renamed.')}</span>
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Role-to-Net & Assignments (V5) — admin-only. Manual, with
+                        preview + confirm. Reads roster/assignments/rules; writes are
+                        confirmed and non-destructive (assignments never bulk-removed;
+                        rule replacement is explicit). */}
+                    {canManage && config?.enabled && config.configured && (
+                        <div className="rounded-lg border border-violet-500/20 bg-violet-500/[0.03] px-4 py-3 space-y-4">
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-violet-300 flex items-center gap-2">
+                                    <i className="fa-solid fa-users-gear" /> {t('Role-to-Net & Assignments')}
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1">{t('Manual, admin-only. Preview before every change; existing nets are never deleted or renamed.')}</p>
+                            </div>
+
+                            {/* A. Roster */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">{t('Roster')}</h4>
+                                {v5?.errors?.roster?.kind === 'unauthorized' ? (
+                                    <p className="text-[11px] text-amber-300/80"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{t('Missing scope: the owner key lacks read:roster.')}</p>
+                                ) : v5?.roster && v5.roster.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {v5.roster.map((op) => (
+                                            <div key={op.userId || op.displayName || JSON.stringify(op)} className="flex items-center gap-2 text-[11px] text-slate-300">
+                                                <i className={`fa-solid fa-circle text-[6px] ${op.transmitting ? 'text-emerald-400' : 'text-slate-600'}`} />
+                                                <span className="font-bold">{op.displayName || op.userId || '—'}</span>
+                                                <span className="text-slate-500 font-mono">{op.nets.length > 0 ? op.nets.join(', ') : t('no nets')}</span>
+                                                {op.connectedSince && <span className="text-slate-600">· {new Date(op.connectedSince).toLocaleTimeString(locale)}</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-[11px] text-slate-500">{t('No connected operators.')}</p>}
+                            </div>
+
+                            {/* B. Manual Assignment */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">{t('Manual Assignment')}</h4>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <select value={selUser} onChange={(e) => { setSelUser(e.target.value); setAssignPreview(null); }} className="bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-hidden focus:ring-1 focus:ring-violet-500/50">
+                                        <option value="">{t('Select operator…')}</option>
+                                        {(v5?.roster || []).map((op) => <option key={op.userId || ''} value={op.userId || ''}>{op.displayName || op.userId}</option>)}
+                                    </select>
+                                    <select value={selNet} onChange={(e) => { setSelNet(e.target.value); setAssignPreview(null); }} className="bg-slate-900/60 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-hidden focus:ring-1 focus:ring-violet-500/50">
+                                        <option value="">{t('Select net…')}</option>
+                                        {(status?.nets || []).map((n) => <option key={n.id || n.name || ''} value={n.id || ''}>{n.name || n.id}</option>)}
+                                    </select>
+                                    <button onClick={() => void previewAssignment('assign')} disabled={!selUser || !selNet || assignBusy} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-sky-500/10 text-sky-300 border border-sky-500/30 hover:bg-sky-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                        <i className={`fa-solid ${assignBusy ? 'fa-circle-notch animate-spin' : 'fa-eye'} mr-1.5`} />{t('Preview')}
+                                    </button>
+                                </div>
+                                {assignPreview && (
+                                    <div className="mt-2 space-y-1.5 text-[11px]">
+                                        {assignPreview.unknownUsers.length > 0 && <p className="text-amber-300/80"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{t('This user is not currently on the roster (offline or unknown).')}</p>}
+                                        {assignPreview.missingNets.length > 0 && <p className="text-amber-300/80"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{t('The selected net was not found in the current net list.')}</p>}
+                                        <p className="text-slate-400">{assignPreview.applyPossible ? t('This change will be applied.') : t('No change — the assignment already matches.')}</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button onClick={() => void applyAssignment('assign')} disabled={assignBusy} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                                <i className="fa-solid fa-user-plus mr-1.5" />{t('Confirm assign')}
+                                            </button>
+                                            <button onClick={() => void applyAssignment('unassign')} disabled={assignBusy} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                                <i className="fa-solid fa-user-minus mr-1.5" />{t('Confirm unassign')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* D. Role-to-Net Rules (read-only view; replacement is backend-ready) */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">{t('Role-to-Net Rules')}</h4>
+                                {v5?.errors?.rules?.kind === 'unauthorized' ? (
+                                    <p className="text-[11px] text-amber-300/80"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{t('Missing scope: the owner key lacks read:assignments.')}</p>
+                                ) : v5?.rules && v5.rules.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {v5.rules.map((r) => (
+                                            <div key={r.roleId || JSON.stringify(r)} className="text-[11px] font-mono text-slate-300">
+                                                <span className="text-slate-500">{t('Role')} {r.roleId}</span> → {r.netUids.join(', ') || '—'}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-[11px] text-slate-500">{t('No role-to-net rules configured.')}</p>}
+                                <p className="text-[10px] text-amber-300/80 mt-1"><i className="fa-solid fa-triangle-exclamation mr-1" />{t('Applying role-to-net rules replaces the entire StarComms rule set.')}</p>
+                            </div>
                         </div>
                     )}
 

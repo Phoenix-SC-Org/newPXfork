@@ -1,7 +1,123 @@
 # StarComms Integration — Handoff
 
 This document is the source of truth for the StarComms integration on this fork.
-Last verified: **2026-07-08**.
+Last verified: **2026-07-09**.
+
+---
+
+## StarComms V5 recovery + V4 apply repair + V6 repair (2026-07-09)
+
+V5 (role-to-net & assignments) was never built (endpoint-blocked); V4-apply was
+deferred; V6 shipped with placeholders for both. With the **confirmed Owner API
+endpoint contracts** now in hand, V5 is implemented, V4-apply is repaired, and V6
+is updated to recognise V5. Branch: `beta/starcomms-v5-recovery-on-v6`.
+
+### Status
+Complete and green (below). Manual/preview-first, admin-only, non-destructive.
+Committed locally per phase (A provider → B actions → C UI/V6-repair); **not pushed**.
+
+### Endpoint contracts used
+| Purpose | Method + path | Scope |
+| :--- | :--- | :--- |
+| Roster | `GET /api/v1/roster` | `read:roster` (+ `read:roster:roles` for role IDs) |
+| Assignments (list) | `GET /api/v1/assignments` | `read:assignments` |
+| Role-to-net rules (list) | `GET /api/v1/rules` | `read:assignments` |
+| Assign / unassign | `POST /api/v1/assignments` `{userId, netUid, action}` | `write:assignments` |
+| Bulk assignments (≤200) | `POST /api/v1/assignments/bulk` `{assignments:[…]}` | `write:assignments` |
+| Replace role rules | `POST /api/v1/rules` `{rules:[{roleId, netUids}]}` (**REPLACES all**) | `write:rules` |
+| Create net (V4 repair) | `POST /api/v1/nets` `{name}` | `write:nets` |
+
+(Existing: `GET /api/v1/status` `read:status`, `POST /api/v1/operation` for V3.)
+Temporary assignments (`POST /api/v1/assignments/temporary`) are **not** wired yet.
+
+### Required scopes (add to the owner key per capability used)
+`read:status` (always), `read:roster` (+ `read:roster:roles` optional),
+`read:assignments`, `write:assignments`, `write:rules`, `write:nets`. Missing
+scopes surface as `unauthorized` per-section and render "Missing scope: …" hints
+in the admin UI — they never crash the panel.
+
+### V4 apply repair
+`admin:starcomms_apply_net_preset` now **creates the missing nets** (re-derived
+from live status, so duplicate clicks are safe) via `POST /api/v1/nets`. Never
+deletes/renames. The admin Net Presets "Create missing nets" button is unlocked
+(was a locked placeholder), with a confirm dialog + status refresh.
+
+### V5 provider + actions
+- Provider (`lib/comms/starcomms.ts`): `getRoster`, `getAssignments`,
+  `getRoleNetRules`, `assignUserToNet`, `unassignUserFromNet`,
+  `bulkApplyAssignments` (≤200), `replaceRoleNetRules`, `createNet` — via a shared
+  private `request()` (validate config, timeout, Bearer-in-header-only, redact,
+  typed errors). `getStatus`/`setOperationOpen` unchanged.
+- Actions (all `admin:access`, secret-free): `admin:starcomms_v5_state` (read
+  roster+assignments+rules+status, per-section errors), `preview_role_net_rules`
+  / `apply_role_net_rules` (apply requires `confirm:true`; warns REPLACE),
+  `preview_assignments` / `apply_assignments` (apply requires `confirm:true`;
+  single→`/assignments`, multi→`/bulk`; unassign only when explicitly selected).
+- Pure preview diffs in `lib/comms/v5Planner.ts` (side-effect free).
+
+### UI (admin StarComms tab)
+New "Role-to-Net & Assignments" section: **Roster** (operators, nets, connected
+time, transmit dot); **Manual Assignment** (operator+net select → Preview →
+confirm Assign/Unassign); **Role-to-Net Rules** (current rules read-only +
+explicit "replaces the entire rule set" warning). Missing-scope hints per
+sub-section. (An interactive rule-set *editor* for replacement is backend-ready
+but UI-deferred — see limitations.)
+
+### V6 repair
+The sync planner's `role-net-rules` / `assignments` suggestions no longer say
+"not yet available" — they point to the V5 section (still suggested/manual, no
+auto-execution). Operation open/close suggestions still reuse V3. Runtime scope
+availability is surfaced by the V5 section's per-section errors.
+
+### Changed files
+**New:** `lib/comms/v5Planner.ts`, `tests/starcommsV5Provider.test.ts`,
+`tests/starcommsV5Actions.test.ts`.
+**Modified:** `lib/comms/types.ts` (+ V5 types/methods), `lib/comms/starcomms.ts`
+(+ request helper + 8 methods), `lib/comms/index.ts` (exports),
+`lib/comms/syncPlanner.ts` (V6 repair), `api/actions/starcomms.ts` (6 actions),
+`api/services.ts` (6 map entries → `admin:access`),
+`components/views/admin/StarCommsTab.tsx` (V4 apply unlock + V5 sections),
+`i18n/de.ts`. **No `schema.sql`, no new DB permissions, no unrelated modules.**
+
+### Tests run and results (2026-07-09)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings)
+- `npm run i18n:check` — OK (5297 keys / 5931 de entries)
+- `npm run build` — success (client + server)
+- `npm run test` — **1572 passed / 166 files** (+24 V5: 12 provider, 12 actions)
+- Bundle audit: `process.env.STARCOMMS*`=0; **every** endpoint (`status`,
+  `operation`, `roster`, `assignments`, `rules`, `nets`)=0 in `dist/assets`.
+- Coverage: provider endpoint/body/401/timeout/bulk-limit/no-key-leak; V4 apply
+  creates only missing nets; preview actions never POST; apply requires confirm;
+  disabled/missing-config block; 401→missing-scope; single vs bulk assignment.
+
+### Known limitations
+- **Role-to-net replacement has no interactive editor yet** — the section shows
+  current rules + the REPLACE warning; `preview_role_net_rules` /
+  `apply_role_net_rules` are implemented and tested, ready for an editor UI.
+- **Bulk assignment** is a backend capability (≤200); the UI does single
+  assign/unassign only (bulk exposure deferred, per brief).
+- **Net identity**: assignment/rule net matching uses status net `id`/`uid`
+  leniently (warns, never blocks) — a shard rename can read as "not found".
+- **Temporary assignments** endpoint not wired.
+- Still no auto-sync/background jobs; V6 remains suggested/manual. Same env-only
+  config / no-WAF caveats as prior versions.
+
+### Rollout checklist (beta)
+1. On the StarComms owner key, grant the scopes for the capabilities you'll use
+   (at least `read:status`; add `read:roster`, `read:assignments`,
+   `write:assignments`, `write:rules`, `write:nets` as needed).
+2. Deploy the branch; env is read at startup (restart/redeploy to pick up scope
+   changes). **No `schema.sql` / Repair Database step — no schema change in V5.**
+3. Admin → Integrations → StarComms → **Test Connection**.
+4. **V4 apply**: pick a preset → Preview → "Create missing nets" → confirm →
+   verify created count and that existing nets are untouched.
+5. **Roster**: confirm operators list (or a "Missing scope: read:roster" hint if
+   the key lacks it).
+6. **Manual assignment**: select operator + net → Preview → confirm Assign, then
+   confirm Unassign → verify on the shard.
+7. **Rules**: confirm current rules render (or a missing-scope hint).
+8. Confirm a non-admin cannot see/call any V5 control (403 server-side).
 
 ---
 

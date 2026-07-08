@@ -73,7 +73,7 @@ export interface SyncSuggestion {
     messageKey: string;
     actionable: boolean;
     /** Hint for the UI on how to act. */
-    action?: 'open' | 'close' | 'review-net-presets' | 'review';
+    action?: 'open' | 'close' | 'review-net-presets' | 'review-role-net' | 'review-assignments' | 'review';
 }
 
 /**
@@ -122,25 +122,28 @@ export function computeSyncSuggestions(
         });
     }
 
-    // 3) Role-to-net rules — informational only (V5 not yet available).
+    // 3) Role-to-net rules — V5 provides preview/apply; suggest reviewing the
+    //    Role-to-Net section. Runtime scope availability is surfaced by the UI
+    //    (via the v5_state per-section errors), not the planner.
     if (sync.roleNetRules) {
         out.push({
             kind: 'role-net-rules',
             severity: 'info',
-            messageKey: 'Suggested: review role-to-net mapping. Role-to-net management is not yet available.',
+            messageKey: 'Suggested: review the StarComms role-to-net mapping.',
             actionable: false,
-            action: 'review',
+            action: 'review-role-net',
         });
     }
 
-    // 4) Assignments — informational only (V5 not yet available).
+    // 4) Assignments — V5 provides preview/apply; suggest reviewing the
+    //    Assignments section.
     if (sync.assignments) {
         out.push({
             kind: 'assignments',
             severity: 'info',
-            messageKey: 'Suggested: review operator assignments. Assignment management is not yet available.',
+            messageKey: 'Suggested: review StarComms operator assignments.',
             actionable: false,
-            action: 'review',
+            action: 'review-assignments',
         });
     }
 
