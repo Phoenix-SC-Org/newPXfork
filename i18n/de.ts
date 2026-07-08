@@ -5956,6 +5956,23 @@ export const de: Record<string, string | Record<string, string>> = {
     "A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled sessions, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org certification. Off by default.": "Ein Lernmanagementsystem für deine Organisation. Admins und Ausbilder erstellen Kurse aus Modulen, Lektionen und Lernergebnissen, die als geplante Sessions oder im Selbststudium aus dem Katalog absolviert werden. Mitglieder schreiben sich ein, lernen in ihrem eigenen Tempo, und Ausbilder bewerten jedes Lernergebnis als kompetent oder noch nicht kompetent. Der Abschluss eines Kurses kann eine Organisations-Zertifizierung verleihen. Standardmäßig deaktiviert.",
     "Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.": "Wenn die Academy deaktiviert wird, ist sie für alle Mitglieder ausgeblendet und ihre Aktionen werden serverseitig geschlossen. Kurse, Sessions, Einschreibungen und Fortschritt bleiben erhalten und kehren bei erneuter Aktivierung zurück.",
 
+    // StarComms V6 — optional sync (suggested actions; all flags default OFF)
+    "StarComms Sync": "StarComms-Sync",
+    "Optional, opt-in sync. Nothing runs automatically — every action is a manual, admin-confirmed click. Modes are controlled by STARCOMMS_SYNC_* environment flags (all off by default).": "Optionale, ausdrücklich aktivierte Synchronisierung. Nichts läuft automatisch — jede Aktion ist ein manueller, von Admins bestätigter Klick. Die Modi werden über STARCOMMS_SYNC_*-Umgebungsvariablen gesteuert (standardmäßig alle aus).",
+    "Operation state": "Einsatzstatus",
+    "Net preset": "Netz-Preset",
+    "Role-to-net rules": "Rollen-zu-Netz-Regeln",
+    "Assignments": "Zuweisungen",
+    "myRSI operation active:": "myRSI-Einsatz aktiv:",
+    "Sync is off. Enable a STARCOMMS_SYNC_* environment flag (and restart) to see suggested actions.": "Sync ist aus. Aktiviere eine STARCOMMS_SYNC_*-Umgebungsvariable (und starte neu), um vorgeschlagene Aktionen zu sehen.",
+    "No suggestions — StarComms matches the current myRSI state.": "Keine Vorschläge — StarComms entspricht dem aktuellen myRSI-Status.",
+    "Suggested actions are manual — myRSI never opens, closes, or changes StarComms on its own.": "Vorgeschlagene Aktionen sind manuell — myRSI öffnet, schließt oder ändert StarComms niemals von selbst.",
+    "Suggested: open the StarComms operation — a myRSI operation is active but StarComms is closed.": "Vorschlag: StarComms-Einsatz öffnen — ein myRSI-Einsatz ist aktiv, aber StarComms ist geschlossen.",
+    "Suggested: close the StarComms operation — no active myRSI operation was detected.": "Vorschlag: StarComms-Einsatz schließen — es wurde kein aktiver myRSI-Einsatz erkannt.",
+    "Suggested: review the StarComms net preset for the active operation.": "Vorschlag: das StarComms-Netz-Preset für den aktiven Einsatz prüfen.",
+    "Suggested: review role-to-net mapping. Role-to-net management is not yet available.": "Vorschlag: Rollen-zu-Netz-Zuordnung prüfen. Die Verwaltung von Rollen-zu-Netz ist noch nicht verfügbar.",
+    "Suggested: review operator assignments. Assignment management is not yet available.": "Vorschlag: Operator-Zuweisungen prüfen. Die Verwaltung von Zuweisungen ist noch nicht verfügbar.",
+
     // StarComms V4 — net presets (preview; apply pending endpoint)
     "Net Presets": "Netz-Presets",
     "Preview a preset of voice nets against StarComms, then create the missing ones. Manual and admin-only — existing nets are never deleted or renamed.": "Ein Preset von Sprach-Netzen mit StarComms abgleichen und anschließend die fehlenden erstellen. Manuell und nur für Admins — vorhandene Netze werden nie gelöscht oder umbenannt.",

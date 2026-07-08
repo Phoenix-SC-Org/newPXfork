@@ -5,6 +5,108 @@ Last verified: **2026-07-08**.
 
 ---
 
+## StarComms V6 — optional sync: suggested actions (2026-07-08)
+
+Optional, **opt-in** sync. Everything is OFF by default and **suggestion-only** —
+nothing runs automatically, there are no background jobs, no polling, no schema
+change. The planner is side-effect-free; execution of a suggestion is a separate
+explicit admin click that reuses the existing V3 open/close actions.
+
+### ⚠️ Correction to the assumed "current state"
+The V6 brief listed "V5 works" and implied V4 apply works. In this repo:
+- **V5 (role-to-net / assignments) does NOT exist** (Phase-1-blocked: StarComms
+  exposes no rules/assignments/operator-list endpoints; `status` gives only an
+  operator *count*).
+- **V4 = Preview only; Apply (net creation) is deferred** (no create-net endpoint).
+- The only working StarComms **write** is V3 `open`/`close`.
+
+Consequently V6 delivers a full suggested-actions **planner for all four modes**,
+but **real manual execution only for operation open/close**. Net-preset
+suggestions point to the V4 Preview; role-net / assignment suggestions are
+**informational only** ("not yet available"). No endpoints were guessed.
+
+### Status
+Phase 1 (planner) + Phase 2 (admin UI) complete on
+`beta/starcomms-v6-optional-sync` (branched off V4 `8e4b620`). Phases 3–4
+(env-gated auto/background execution) intentionally **not** built. All checks
+green. Committed locally per phase; **not pushed**.
+
+### Sync modes (independent env flags, ALL default false)
+| Flag | Suggestion | Executable now? |
+| :--- | :--- | :--- |
+| `STARCOMMS_SYNC_OPERATION_STATE` | open when myRSI active & StarComms closed; close when open & no active op | ✅ via V3 open/close (manual confirm) |
+| `STARCOMMS_SYNC_NET_PRESET` | review a net preset for the active op | ⚠️ V4 Preview only (apply deferred) |
+| `STARCOMMS_SYNC_ROLE_NET_RULES` | review role-to-net mapping | ❌ informational (V5 absent) |
+| `STARCOMMS_SYNC_ASSIGNMENTS` | review operator assignments | ❌ informational (V5 absent) |
+
+### Env vars
+`STARCOMMS_SYNC_OPERATION_STATE` / `_NET_PRESET` / `_ROLE_NET_RULES` /
+`_ASSIGNMENTS` (all `false`), `STARCOMMS_SYNC_MODE=suggested` (only `suggested`
+implemented; `auto` reserved and never acted on), `STARCOMMS_SYNC_MIN_INTERVAL_SECONDS=30`
+(advisory; not a poller). Documented in `.env.example`. Read at startup.
+
+### Architecture (planner vs executor)
+- **Planner** `lib/comms/syncPlanner.ts`: `readSyncConfig()` (env flags) + pure
+  `computeSyncSuggestions(sync, status, operationActive)` → typed secret-free
+  suggestions. No I/O, no writes, no secrets. Fully unit-tested.
+- **Read action** `admin:starcomms_sync_plan` (`admin:access`): returns flags +
+  status + suggestions; fetches `GET /api/v1/status` only. `operationActive` is
+  passed in by the caller so the comms layer stays decoupled from the operations DB.
+- **Executor**: NOT new code — actionable suggestions reuse the V3
+  `admin:starcomms_open`/`_close` actions via the shared `StarCommsOperationControls`
+  (confirm dialog + refresh). No duplicated StarComms calls; provider stays replaceable.
+- **UI**: a "StarComms Sync" section in the admin StarComms tab shows mode
+  badges (enabled/disabled), current StarComms operation state + myRSI active,
+  the suggestions, inline confirm controls for actionable ones, and a "manual
+  only — nothing runs automatically" note. `operationActive` sourced from
+  `useOperations()`.
+
+### Changed files
+**New:** `lib/comms/syncPlanner.ts`, `tests/starcommsSync.test.ts`.
+**Modified:** `api/actions/starcomms.ts` (`admin:starcomms_sync_plan`),
+`api/services.ts` (map → `admin:access`), `components/views/admin/StarCommsTab.tsx`
+(Sync section + `useOperations`), `i18n/de.ts` (V6 strings), `.env.example`
+(sync flags). No `schema.sql`, no new permissions, no unrelated modules.
+
+### Tests run and results (2026-07-08)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings; fixed a `react-hooks/set-state-in-effect`
+  by wrapping the plan-load in an async IIFE, matching the file's other effects)
+- `npm run i18n:check` — OK (5269 keys / 5903 de entries)
+- `npm run build` — success (client + server)
+- `npm run test` — **1548 passed / 164 files** (+13 V6)
+- Bundle grep: `process.env.STARCOMMS*` = 0, `api/v1/operation` = 0, `api/v1/status` = 0
+- V6 coverage: all flags default false; planner side-effect-free/no writes;
+  operation-open suggested when active+closed; operation-close when open+inactive;
+  no suggestion when already aligned; role-net/assignment review-only;
+  sync_plan gated admin:access; disabled → no fetch; flags-off → no suggestions;
+  reads GET /status only (method GET, never a write); 401 handled; no key leak.
+
+### Known limitations / what remains manual
+- **Everything is manual** — suggestions never auto-execute; the admin clicks to
+  open/close. No background jobs, no polling, no auto-apply.
+- Only **operation open/close** is executable. Net-preset apply (V4) and all of
+  V5 (role-net rules, assignments) do **not** exist, so those suggestions are
+  review-only.
+- `operationActive` in the admin sync panel comes from the client
+  `OperationsContext`; if operations aren't loaded on the admin route it reads
+  `false` (conservative — worst case a missing open suggestion).
+- Suggestions are computed on demand (on load / after an action), not polled.
+
+### What would be needed before true automation (V6 Phase 4 / later)
+1. Explicit **auto-execute** flag(s) separate from the suggestion flags, plus a
+   confirmation/guardrail design (and likely an audit trail).
+2. A safe **audit/event** sink (none was invented — no schema table added). If
+   persistence of sync settings or an audit log is required → **stop and ask**
+   before any `schema.sql` change.
+3. For net-preset / role-net / assignment automation: the missing StarComms
+   **create-net / rules / assignments endpoints + scopes** (V4-apply and V5 are
+   still blocked on these — do not guess).
+4. A rate limiter honoring `STARCOMMS_SYNC_MIN_INTERVAL_SECONDS` if background
+   execution is ever added.
+
+---
+
 ## StarComms V4 — net presets: Preview shipped, Apply DEFERRED (2026-07-08)
 
 Manual net presets, **split into safe steps**. Steps 2–3 (preset model +

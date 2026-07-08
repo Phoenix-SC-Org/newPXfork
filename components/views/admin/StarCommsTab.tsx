@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useData } from '../../../contexts/DataContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useOperations } from '../../../contexts/OperationsContext';
+import { OperationStatus } from '../../../types';
 import { useI18n } from '../../../i18n/I18nContext';
 import StarCommsOperationControls from '../../shared/StarCommsOperationControls';
 
@@ -45,6 +47,11 @@ interface NetPresetPreview {
 }
 interface PreviewResponse { config: CommsConfig; ok: boolean; error: CommsError | null; preview: NetPresetPreview | null }
 
+// Optional Sync (V6)
+interface SyncConfigSummary { operationState: boolean; netPreset: boolean; roleNetRules: boolean; assignments: boolean; mode: string; minIntervalSeconds: number; anyEnabled: boolean }
+interface SyncSuggestion { kind: string; severity: 'warning' | 'info'; messageKey: string; actionable: boolean; action?: string }
+interface SyncPlanResponse { config: CommsConfig; sync: SyncConfigSummary; status: CommsStatus | null; suggestions: SyncSuggestion[]; error: CommsError | null }
+
 const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg px-3 py-2">
         <div className="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-0.5">{label}</div>
@@ -55,8 +62,11 @@ const Field: React.FC<{ label: string; value: React.ReactNode }> = ({ label, val
 const StarCommsTab: React.FC = () => {
     const { rpcAction } = useData();
     const { hasPermission } = useAuth();
+    const { operations } = useOperations();
     const { t, locale } = useI18n();
     const canManage = hasPermission('admin:access');
+    // Authoritative myRSI "operation active" signal for sync suggestions.
+    const operationActive = operations.some((o) => o.status === OperationStatus.Active);
 
     const [config, setConfig] = useState<CommsConfig | null>(null);
     const [status, setStatus] = useState<CommsStatus | null>(null);
@@ -72,6 +82,10 @@ const StarCommsTab: React.FC = () => {
     const [preview, setPreview] = useState<NetPresetPreview | null>(null);
     const [previewing, setPreviewing] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
+
+    // Optional Sync (V6) — suggested actions only; nothing runs automatically.
+    const [sync, setSync] = useState<SyncConfigSummary | null>(null);
+    const [suggestions, setSuggestions] = useState<SyncSuggestion[]>([]);
 
     // Reusable status load — also used to refresh after a manual write.
     const loadStatus = useCallback(async () => {
@@ -152,8 +166,39 @@ const StarCommsTab: React.FC = () => {
         }
     }, [rpcAction, selectedPreset, t]);
 
+    // Sync planner (V6) — READ-ONLY. Fetches the (default-OFF) sync flags + the
+    // suggested actions computed from current status + operationActive. No writes.
+    const loadSyncPlan = useCallback(async () => {
+        try {
+            const res = await rpcAction('admin:starcomms_sync_plan', { operationActive }) as SyncPlanResponse;
+            setSync(res.sync);
+            setSuggestions(res.suggestions || []);
+        } catch { setSync(null); setSuggestions([]); }
+    }, [rpcAction, operationActive]);
+
+    useEffect(() => {
+        if (!canManage) return;
+        let cancelled = false;
+        void (async () => { if (!cancelled) await loadSyncPlan(); })();
+        return () => { cancelled = true; };
+    }, [canManage, loadSyncPlan]);
+
+    // Refresh both status and suggestions after a manual sync execution.
+    const refreshSync = useCallback(async () => {
+        await loadStatus();
+        await loadSyncPlan();
+    }, [loadStatus, loadSyncPlan]);
+
     const yesNo = (v: boolean | null) => (v === null ? '—' : v ? t('Yes') : t('No'));
     const selectedPresetObj = presets.find((p) => p.id === selectedPreset) || null;
+    // Suggestion kind → localized text (literal t() so the i18n scanner sees them).
+    const suggestionText: Record<string, string> = {
+        'operation-open': t('Suggested: open the StarComms operation — a myRSI operation is active but StarComms is closed.'),
+        'operation-close': t('Suggested: close the StarComms operation — no active myRSI operation was detected.'),
+        'net-preset': t('Suggested: review the StarComms net preset for the active operation.'),
+        'role-net-rules': t('Suggested: review role-to-net mapping. Role-to-net management is not yet available.'),
+        'assignments': t('Suggested: review operator assignments. Assignment management is not yet available.'),
+    };
     // Warning keys → localized text (literal t() so the i18n scanner sees them).
     const warningText: Record<string, string> = {
         'no-delete': t('Existing StarComms nets are never deleted or renamed — Apply only creates the missing nets.'),
@@ -279,6 +324,74 @@ const StarCommsTab: React.FC = () => {
                         onRefresh={loadStatus}
                         lastRefresh={lastRefresh}
                     />
+
+                    {/* Optional Sync (V6) — admin-only. SUGGESTED actions only; all
+                        STARCOMMS_SYNC_* flags default OFF. Nothing runs automatically —
+                        actionable suggestions (operation open/close) reuse the V3
+                        controls below on an explicit click. */}
+                    {canManage && config?.enabled && (
+                        <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/[0.03] px-4 py-3 space-y-3">
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest text-indigo-300 flex items-center gap-2">
+                                    <i className="fa-solid fa-arrows-rotate" /> {t('StarComms Sync')}
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1">
+                                    {t('Optional, opt-in sync. Nothing runs automatically — every action is a manual, admin-confirmed click. Modes are controlled by STARCOMMS_SYNC_* environment flags (all off by default).')}
+                                </p>
+                            </div>
+
+                            {sync && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[
+                                        { on: sync.operationState, label: t('Operation state') },
+                                        { on: sync.netPreset, label: t('Net preset') },
+                                        { on: sync.roleNetRules, label: t('Role-to-net rules') },
+                                        { on: sync.assignments, label: t('Assignments') },
+                                    ].map((m) => (
+                                        <span key={m.label} className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${m.on ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-slate-800/60 border-slate-700/50 text-slate-500'}`}>
+                                            <i className={`fa-solid ${m.on ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1`} />{m.label}: {m.on ? t('Enabled') : t('Disabled')}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                                <span className="text-slate-500 uppercase tracking-widest font-black">{t('Current operation:')}</span>
+                                <span className={`font-bold ${status?.operationOpen === true ? 'text-emerald-300' : status?.operationOpen === false ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    {status?.operationOpen === true ? t('Open') : status?.operationOpen === false ? t('Closed') : t('Unknown')}
+                                </span>
+                                <span className="text-slate-500">· {t('myRSI operation active:')} {yesNo(operationActive)}</span>
+                            </div>
+
+                            {!sync?.anyEnabled ? (
+                                <p className="text-xs text-slate-500"><i className="fa-solid fa-circle-info mr-1.5" />{t('Sync is off. Enable a STARCOMMS_SYNC_* environment flag (and restart) to see suggested actions.')}</p>
+                            ) : suggestions.length === 0 ? (
+                                <p className="text-xs text-slate-500"><i className="fa-solid fa-circle-check mr-1.5" />{t('No suggestions — StarComms matches the current myRSI state.')}</p>
+                            ) : (
+                                <div className="space-y-1.5">
+                                    {suggestions.map((s) => (
+                                        <div key={s.kind} className={`flex items-start gap-1.5 text-[11px] leading-snug rounded-md px-2 py-1.5 border ${s.severity === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' : 'bg-sky-500/10 border-sky-500/25 text-sky-200'}`}>
+                                            <i className={`fa-solid ${s.severity === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'} mt-0.5`} />
+                                            <span>{suggestionText[s.kind] ?? s.messageKey}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {suggestions.some((s) => s.actionable) && (
+                                <StarCommsOperationControls
+                                    compact
+                                    enabled={!!config?.enabled}
+                                    configured={!!config?.configured}
+                                    operationOpen={status?.operationOpen ?? null}
+                                    statusAvailable={!!status}
+                                    onRefresh={refreshSync}
+                                />
+                            )}
+
+                            <p className="text-[10px] text-slate-500"><i className="fa-solid fa-hand-pointer mr-1" />{t('Suggested actions are manual — myRSI never opens, closes, or changes StarComms on its own.')}</p>
+                        </div>
+                    )}
 
                     {/* Net Presets (V4) — admin-only. Preview is read-only (diffs a
                         preset's desired nets against existing nets). Apply (net
