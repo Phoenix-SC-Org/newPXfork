@@ -5,6 +5,100 @@ Last verified: **2026-07-08**.
 
 ---
 
+## Production readiness — V3 (2026-07-08): PASS
+
+Production-readiness pass over the full StarComms integration (V1 → V3). **No new
+features added.** All verification checks pass; the integration is safe to run in
+production with the owner key scoped to `read:status` + `write:operation`.
+
+### Final branch
+`beta/starcomms-v3-manual-actions` @ `b8160b4` (V3 committed + pushed; V3 verified
+working in beta). This doc update is the only pending working-tree change.
+
+### Gate results
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — OK (5238 keys / 5870 de entries; **no missing V3 strings**)
+- `npm run build` — success (client + server)
+- `npm run test` — **1512 passed / 161 files** (StarComms 46; V1/V2/V2.1 read-only
+  + upstream academy/notifications/feature-gate suites all green)
+- Bundle leak audit (post-build `dist/assets`): `process.env.STARCOMMS*` = 0,
+  `api/v1/operation` = 0, `api/v1/status` = 0, `STARCOMMS_OWNER_API_KEY` = 2
+  (env-var **name** in the EN+DE admin help sentence only — never the value).
+
+### Verified behaviours
+| Check | Status | Where enforced |
+| :--- | :--- | :--- |
+| Owner key never in frontend/UI/logs/API/snapshots/bundle | ✅ | key read only in `lib/comms/starcomms.ts` → `Authorization` header; `redact()` on errors; actions return secret-free `{config, ok, error}`; bundle grep clean |
+| `STARCOMMS_ENABLED=false` disables all StarComms | ✅ | `readEnabled()` gates `getStatus()` **and** `setOperationOpen()` (typed `disabled`, no fetch); widget + admin write section hidden |
+| Missing `STARCOMMS_BASE_URL` handled | ✅ | typed `missing_base_url`, no fetch |
+| Missing `STARCOMMS_OWNER_API_KEY` handled | ✅ | typed `missing_api_key`, no fetch |
+| Invalid / 401 key handled | ✅ | typed `unauthorized` (read + write) |
+| Timeout doesn't block app loading | ✅ | per-call `AbortController`; widget async, renders error, never throws |
+| Manual open/close require confirmation | ✅ | `confirm()` in `StarCommsTab.doWrite` |
+| Manual open/close admin-only | ✅ | `hasPermission('admin:access')` (UI) + `fullPermissionMap` `admin:access` (server) |
+| Buttons disabled when state already matches | ✅ | `canOpen` ⇐ `operationOpen===false`; `canClose` ⇐ `===true` |
+| Status refreshes after open/close | ✅ | `loadStatus()` on success |
+| V1/V2/V2.1 read-only views still work | ✅ | existing suites pass |
+| Upstream merged features still work | ✅ | 1512-test suite green |
+| German complete for all V3 UI strings | ✅ | `i18n:check` OK (no missing) |
+
+### Final env vars (myRSI beta/prod)
+| Variable | Required | Default | Notes |
+| :--- | :--- | :--- | :--- |
+| `STARCOMMS_ENABLED` | to enable | (off) | `true`/`1`/`yes`/`on` = on; anything else/unset = off |
+| `STARCOMMS_BASE_URL` | when enabled | — | shard base; client calls `{BASE_URL}/api/v1/status` (read) and `POST {BASE_URL}/api/v1/operation` (write) |
+| `STARCOMMS_OWNER_API_KEY` | when enabled | — | **owner secret**, server-only, `Authorization: Bearer …` only. **Scope: `read:status` + `write:operation`** (write scope is new for V3 open/close) |
+| `STARCOMMS_TIMEOUT_MS` | no | `5000` | per-request timeout (ms) |
+
+Set as **runtime** env in Coolify (not build vars); env is read at startup, so a
+change needs a container restart/redeploy.
+
+### Manual rollout checklist (beta → prod)
+1. Ensure the StarComms owner key includes **`write:operation`** scope (else
+   open/close return a safe `unauthorized` toast; reads still work).
+2. Set/confirm the four `STARCOMMS_*` runtime env vars; restart the container.
+3. Open **Admin → Integrations → StarComms** → **Test Connection** → expect a live
+   status (guild, shard version, operators, `operationOpen`, nets, flags).
+4. Confirm the **Manual operation control** card is visible (admin, enabled,
+   configured) and shows the current operation state + last-refresh time.
+5. Click **Open**/​**Close** → confirm the dialog → verify the toast and that the
+   status refreshes to the new `operationOpen`, and the now-matching button
+   disables.
+6. Verify the **Operations Center** and **Dispatch Console** read-only widgets
+   render (V2/V2.1) with the correct awareness warnings.
+7. Confirm a **non-admin** never sees the write buttons and the
+   `admin:starcomms_open`/`close` actions return 403 for them.
+8. (No schema step) V3 added **no** schema changes — `schema.sql` re-run / Repair
+   Database are **not** required for this rollout. (They were only needed for the
+   earlier upstream c27b797 merge.)
+
+### Rollback steps
+- **Fastest (disable, no redeploy of code):** set `STARCOMMS_ENABLED=false` in
+  Coolify and restart — the entire integration (read + write) goes inert; the app
+  behaves as if StarComms never existed. No data is affected.
+- **Disable writes only:** remove the `write:operation` scope from the owner key
+  (rotate to a read-only key). Open/close then fail safely (`unauthorized`);
+  V1/V2/V2.1 reads continue.
+- **Revert the code:** V3 is isolated to commit `b8160b4`. `git revert b8160b4`
+  (or redeploy the prior commit `28f9e96`) removes the write actions/buttons; V1/
+  V2/V2.1 remain intact. No schema/migration to unwind.
+- If the owner key is ever exposed: **rotate it** in Coolify and restart.
+
+### Known limitations (production)
+- **Manual only** — admin clicks open/close; **no** auto-sync, background jobs,
+  net creation, assignment/role sync, or destructive actions.
+- **Admin panel only** — write buttons live in the admin tab; Operations/Dispatch
+  widgets stay read-only.
+- **`admin:access` gate** (not a dedicated `starcomms:manage`) — intentional; a
+  per-feature perm is a deferred `schema.sql` change.
+- **No optimistic UI / no 409 distinction** — a redundant open/close (already
+  disabled in UI) would surface as a generic error toast if the shard rejects it.
+- **Per-process 15s status cache**; **env-only config** (restart to change);
+  **loose response schema** (tighten in `coerceStatus`); **no WAF handling**.
+
+---
+
 ## Pre-V3 status snapshot (2026-07-08) — read this first
 
 Consolidated status at the point of starting **V3 (manual write actions)**.
