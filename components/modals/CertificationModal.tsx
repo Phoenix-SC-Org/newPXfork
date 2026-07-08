@@ -122,6 +122,7 @@ const CertificationModal: React.FC<CertificationModalProps> = ({ isOpen, onClose
                             accentClass="text-sky-400"
                             disabled={isLoading}
                             iconPlaceholder="e.g., fa-solid fa-user-astronaut"
+                            feature="certification"
                         />
                     </div>
                     <div>

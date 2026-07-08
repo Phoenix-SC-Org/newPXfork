@@ -4,7 +4,11 @@ import { useNotification } from '../../../../contexts/NotificationContext';
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { QmPlatformItemWithUsage, QmPlatformCategory, ToastVariant } from '../../../../types';
 import { CategoryEditor } from './AdminCommodityCatalogTab';
+<<<<<<< HEAD
 import { useI18n } from '../../../../i18n/I18nContext';
+=======
+import ImageInput from '../../../common/ImageInput';
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 const PAGE_SIZE = 50;
 
@@ -434,10 +438,22 @@ export default function AdminItemCatalogTab() {
                             <div>
                                 <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">{t('Media & Links')}</h4>
                                 <div className="space-y-3">
+<<<<<<< HEAD
                                     <div>
                                         <label className={labelClass}>{t('Thumbnail URL')}</label>
                                         <input value={editForm.thumbnailUrl || ''} onChange={(e) => setEditForm({ ...editForm, thumbnailUrl: e.target.value })} className={inputClass} />
                                     </div>
+=======
+                                    <ImageInput
+                                        label="Thumbnail URL"
+                                        feature="quartermaster"
+                                        preview="square"
+                                        value={editForm.thumbnailUrl || null}
+                                        onChange={(v) => setEditForm({ ...editForm, thumbnailUrl: v })}
+                                        placeholder="https://example.com/item.png"
+                                        inputClassName={inputClass}
+                                    />
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                                     <div>
                                         <label className={labelClass}>{t('Screenshot URL')}</label>
                                         <input value={editForm.screenshotUrl || ''} onChange={(e) => setEditForm({ ...editForm, screenshotUrl: e.target.value })} className={inputClass} />

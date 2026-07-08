@@ -4,7 +4,9 @@ import { cache } from '../cache.js';
 import { sendPushToAll, sendPushToStaff, sendPushToPermission } from '../push.js';
 import { toUnitPost, toServiceTypeConfig } from './mappers.js';
 import type { Tables } from './rows.js';
-import type { AIConfig, Announcement, BrandingConfig, Certification, Commendation, DiscordConfig, ExternalTool, GovernmentsFeatureConfig, HeroCardConfig, HRConfig, IntelSharingConfig, Location, OpenGraphConfig, PublicPageConfig, RadioChannel, RadioConfig, Rank, Role, ServiceTypeConfig, SpecializationTag, SystemConfig, UnitPost, WikiHomeConfig } from '../../types.js';
+import type { AIConfig, Announcement, BrandingConfig, Certification, Commendation, DiscordConfig, ExternalTool, GovernmentsFeatureConfig, HeroCardConfig, HRConfig, IntelSharingConfig, Location, OpenGraphConfig, PublicPageConfig, RadioChannel, RadioConfig, Rank, Role, ServiceTypeConfig, SpecializationTag, SystemConfig, ThemeConfig, UnitPost, WikiHomeConfig } from '../../types.js';
+import { normalizeHexColor } from '../color.js';
+import { normalizeDocMediaForStorage } from '../orgMediaDocs.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { CLIENT_DEFAULT_PERMS } from '../clientRolePermissions.js';
 import { encryptConfigSecrets, decryptConfigSecrets, encryptSecret, decryptSecret } from '../crypto.js';
@@ -50,6 +52,7 @@ export interface SettingsBlob {
     publicPageConfig: PublicPageConfig;
     hrConfig?: HRConfig;
     intelSharingConfig?: IntelSharingConfig;
+    themeConfig?: Partial<ThemeConfig>;
     geminiKey?: string;
     admin_setup_code?: { code: string; created_at: string };
 }
@@ -218,6 +221,18 @@ export const updateBrandingConfig = async (config: Record<string, unknown>) => {
     handleSupabaseError({ error, message: 'Failed to update branding config' });
     broadcastSettingsUpdate();
 };
+export const updateThemeConfig = async (config: Record<string, unknown>) => {
+    if (!config || typeof config !== 'object') throw new Error('Invalid theme config payload');
+    // Mass-assignment defense: rebuild from an explicit allowlist — NEVER spread the
+    // payload. Only { enabled, accent } are persisted; accent is re-validated to canonical
+    // #rrggbb (an invalid value is dropped, so it can never reach the CSS sink).
+    const accent = normalizeHexColor((config as { accent?: unknown }).accent);
+    const value: { enabled: boolean; accent?: string } = { enabled: (config as { enabled?: unknown }).enabled === true };
+    if (accent) value.accent = accent;
+    const { error } = await supabase.from('settings').upsert({ key: 'themeConfig', value }, { onConflict: 'key' });
+    handleSupabaseError({ error, message: 'Failed to update theme config' });
+    broadcastSettingsUpdate();
+};
 // Accepts #rgb / #rrggbb / #rrggbbaa (case-insensitive). Anything else (named
 // colours, rgb()/hsl() functions, urls, expressions) is dropped on write so a
 // crafted themeColor can never reach the SSR <meta name="theme-color"> tag.
@@ -259,7 +274,7 @@ export const updateRadioConfig = async (config: Record<string, unknown>) => {
     handleSupabaseError({ error, message: 'Failed to update radio config' });
     broadcastSettingsUpdate();
 };
-export const updateWikiHomeConfig = async (config: Partial<WikiHomeConfig>) => { const { error } = await supabase.from('settings').upsert({ key: 'wikiHomeConfig', value: config }, { onConflict: 'key' }); handleSupabaseError({ error, message: 'Failed to update wiki home config' }); broadcastSettingsUpdate(); };
+export const updateWikiHomeConfig = async (config: Partial<WikiHomeConfig>) => { const value = config.welcomeContent ? { ...config, welcomeContent: normalizeDocMediaForStorage(config.welcomeContent) } : config; const { error } = await supabase.from('settings').upsert({ key: 'wikiHomeConfig', value }, { onConflict: 'key' }); handleSupabaseError({ error, message: 'Failed to update wiki home config' }); broadcastSettingsUpdate(); };
 
 const PUBLIC_LINK_URL_RE = /^(https:\/\/|discord:\/\/)/i;
 const HTML_TAG_RE = /<[^>]*>/g;
@@ -423,6 +438,45 @@ export const updateOrgFeatures = async (patch: Record<string, unknown>) => {
     handleSupabaseError({ error, message: 'Failed to update optional features' });
     broadcastSettingsUpdate();
     return next;
+};
+
+// ── Optional-feature gate helpers ─────────────────────────────────────────────
+// Server-side enable check for the optional modules (marketplace, warehouse,
+// academy, finances, quartermaster, government). The dispatcher (api/services.ts
+// OPTIONAL_FEATURE_NAMESPACES) and the read path (api/query.ts SUBSET_REQUIRED_FEATURE)
+// both resolve a feature through isOptionalFeatureEnabled so a toggled-off module
+// fails closed on the server, not just in the Sidebar nav.
+//
+// All three fail CLOSED: any thrown error (settings row missing, DB down) resolves
+// to `false` so a read failure can never leave a disabled module reachable. These
+// modules are all DEFAULT-OFF (`!!enabled`). The two DEFAULT-ON features
+// (leaderboard, externalTools) have no action namespace/read subset and are
+// deliberately NOT gated here — do not route them through isFeatureEnabled, whose
+// `!!enabled` predicate would wrongly read them as disabled-by-default.
+export const isFeatureEnabled = async (feature: string): Promise<boolean> => {
+    try {
+        const features = await getOrgFeatures();
+        return !!(features?.[feature] as { enabled?: boolean } | undefined)?.enabled;
+    } catch {
+        return false;
+    }
+};
+
+// Government keeps its on/off in its OWN settings row ('governmentsConfig'), not
+// the orgFeatures blob — so it needs a dedicated reader. Default OFF.
+export const isGovernmentEnabled = async (): Promise<boolean> => {
+    try {
+        const { data } = await supabase.from('settings').select('value').eq('key', 'governmentsConfig').maybeSingle();
+        return !!(data?.value as { enabled?: boolean } | undefined)?.enabled;
+    } catch {
+        return false;
+    }
+};
+
+// Route an optional-feature KEY to the right source of truth: government reads its
+// separate settings key; every other module reads the orgFeatures blob.
+export const isOptionalFeatureEnabled = async (feature: string): Promise<boolean> => {
+    return feature === 'government' ? isGovernmentEnabled() : isFeatureEnabled(feature);
 };
 
 export const updateIntelSharingConfig = async (config: Record<string, unknown>) => {
@@ -719,6 +773,7 @@ import { seedNewOrganization } from './seeder.js';
 const GLOBAL_PERMISSIONS = [
     { name: 'admin:access', description: "Access the Admin Dashboard", category: 'System' },
     { name: 'admin:config:branding', description: "Manage Branding & System Config", category: 'System' },
+    { name: 'admin:config:theme', description: "Manage Custom Theme", category: 'System' },
     { name: 'admin:config:discord', description: "Manage Discord Integration", category: 'System' },
     { name: 'admin:config:metadata', description: "Manage SEO & Metadata", category: 'System' },
     { name: 'admin:config:ai', description: "Manage AI Configuration", category: 'System' },
@@ -823,6 +878,9 @@ const GLOBAL_PERMISSIONS = [
     { name: 'marketplace:list', description: "Post & Manage Own Listings", category: 'Marketplace' },
     { name: 'marketplace:contract', description: "Propose & Fulfil Contracts", category: 'Marketplace' },
     { name: 'marketplace:admin', description: "Moderate Marketplace & Reports", category: 'Marketplace' },
+    { name: 'academy:view', description: "View Academy (staff surfaces)", category: 'Academy' },
+    { name: 'academy:instruct', description: "Instruct Courses & Run Sessions", category: 'Academy' },
+    { name: 'academy:manage', description: "Manage Academy (approve, certify, award)", category: 'Academy' },
 ];
 
 export async function repairDatabase() {
@@ -1088,7 +1146,16 @@ export async function deleteCertification(id: number) {
 }
 
 export async function awardCertification(userId: number, certId: number, adminId: number) {
-    await supabase.from('user_certifications').insert({ user_id: userId, certification_id: certId, awarded_by: adminId });
+    // Idempotent: user_certifications has a composite PRIMARY KEY (user_id,
+    // certification_id), so upsert-ignore-duplicates makes a re-award a silent
+    // no-op instead of a PK-violation throw. This makes the Academy certify→award
+    // path (double-click / re-certify) and the Award-Certification modal both
+    // button-spam safe without a check-then-insert race.
+    const { error } = await supabase.from('user_certifications').upsert(
+        { user_id: userId, certification_id: certId, awarded_by: adminId },
+        { onConflict: 'user_id,certification_id', ignoreDuplicates: true },
+    );
+    handleSupabaseError({ error, message: 'Failed to award certification' });
     // user_certifications isn't in the postgres_changes map, so broadcast
     // explicitly. Pass userId so the recipient re-hydrates their heavy nested
     // arrays (the lite roster query omits certs).
@@ -1101,9 +1168,9 @@ export async function revokeCertification(userId: number, certId: number) {
 
 /**
  * Award a single certification to N users. Validates the cert exists once at the
- * top, then verifies each target user exists before insert. Allows duplicate
- * grants (matches single-user `awardCertification` — schema has no UNIQUE).
- * Capped at 100 targets per call; client chunks at 25.
+ * top, then verifies each target user exists before insert. Idempotent per user:
+ * a re-grant is a no-op via the user_certifications composite PK (matches
+ * single-user `awardCertification`). Capped at 100 targets per call; client chunks at 25.
  */
 export async function bulkAwardCertification(
     targetUserIds: number[],
@@ -1138,9 +1205,12 @@ export async function bulkAwardCertification(
                 
                 .maybeSingle();
             if (!u) { skipped++; continue; }
-            const { error } = await supabase.from('user_certifications').insert({
-                user_id: userId, certification_id: certificationId, awarded_by: adminId,
-            });
+            // Idempotent per user: the composite PK makes a re-grant a no-op
+            // (upsert-ignore) rather than a PK-violation error that would skip it.
+            const { error } = await supabase.from('user_certifications').upsert(
+                { user_id: userId, certification_id: certificationId, awarded_by: adminId },
+                { onConflict: 'user_id,certification_id', ignoreDuplicates: true },
+            );
             if (error) { skipped++; continue; }
             updated++;
             updatedIds.push(userId);

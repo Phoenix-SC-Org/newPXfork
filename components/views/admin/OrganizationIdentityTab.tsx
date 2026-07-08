@@ -4,7 +4,11 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { BrandingConfig } from '../../../types';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
+=======
+import ImageInput from '../../common/ImageInput';
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 const SOUND_FIELDS = ['bootSoundUrl', 'newRequestSoundUrl', 'assignmentSoundUrl', 'eamSoundUrl', 'radioMicCueUrl', 'radioSquelchUrl'] as const;
 
@@ -88,8 +92,21 @@ const OrganizationIdentityTab: React.FC = () => {
                             <input type="text" id="name" name="name" value={config.name} onChange={handleChange} className={inputCls} />
                         </div>
                         <div>
+<<<<<<< HEAD
                             <label htmlFor="iconUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Logo URL')}</label>
                             <input type="text" id="iconUrl" name="iconUrl" value={config.iconUrl} onChange={handleChange} className={inputMonoCls} />
+=======
+                            <ImageInput
+                                id="iconUrl"
+                                label="Logo URL"
+                                feature="branding"
+                                preview="square"
+                                value={config.iconUrl}
+                                onChange={(url) => setConfig(prev => ({ ...prev, iconUrl: url ?? '' }))}
+                                placeholder="https://example.com/logo.png  or  /media/logo.png"
+                                inputClassName={inputMonoCls}
+                            />
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                         </div>
                     </div>
                     <div className="md:col-span-2">

@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Vite-build-646cff?style=flat-square&logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Supabase-Postgres%20%C2%B7%20Realtime-3ecf8e?style=flat-square&logo=supabase&logoColor=white" alt="Supabase">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/Node-%E2%89%A522.12-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node >=22.12">
+  <img src="https://img.shields.io/badge/Node-%E2%89%A524-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node >=24">
   <img src="https://img.shields.io/badge/license-Noncommercial-f59e0b?style=flat-square" alt="Noncommercial license">
 </p>
 
@@ -36,21 +36,24 @@ One deployment runs one org. No SaaS, no per-seat fees, no data living on someon
 | 📟 **Requests & Dispatch** | Service requests with triage, dispatch, and a live dispatch center |
 | 🎯 **Operations** | Plan ops, phases & tasks, RSVPs, command boards, after-action reports |
 | 🕵️ **Intelligence** | Reports, dossiers, caution notes, security clearances & limiting markers |
+| 🎓 **Academy** | Courses, cohort sessions, and competency-based certifications |
+| 🛒 **Marketplace** | Internal member-to-member trading with contracts and warehouse delivery |
 | 🤝 **Cross-Org Alliances** | Secure, server-to-server federation between independent instances |
 | 🚀 **Fleet & Logistics** | Fleet manager, warehouse, and quartermaster |
 | 🏛️ **Government & Finance** | Elections, legislation, orders, and an org treasury |
 | 📖 **Wiki & Public Page** | A TipTap rich-text org wiki + a configurable public-facing org page |
 | 🎙️ **In-app Voice** | LiveKit push-to-talk comms, no third-party app required |
+| 🎨 **Branding & Themes** | Your logo, a custom accent theme, and native image uploads anywhere a URL is accepted |
 | 🔐 **Granular Permissions** | Fine-grained roles, with the **server** as the real security boundary |
 
-Everything updates live across clients via Supabase Realtime.
+Everything updates live across clients via Supabase Realtime. Modules like Academy, Marketplace, Government, Finance, Quartermaster, and Warehouse are **optional** — toggle them per deployment in the admin console.
 
 ## 🏗️ Architecture
 
-- **Frontend** — React + Vite + TailwindCSS. `App.tsx` always renders `DashboardApp.tsx`. An unauthenticated visitor gets the login screen or the optional public org page.
-- **Backend** — an Express server (`server.ts`). All mutations go through a single `POST /api/services` RPC endpoint dispatched in `api/services.ts`; reads go through `GET /api/query`. The server runs under the Supabase service-role key, so the **server is the security boundary** (permission map + per-resource authz), not per-row tenant scoping.
-- **Database** — Supabase (PostgreSQL + Realtime). RLS stays enabled deny-by-default so a leaked anon/auth key reads nothing.
-- **Auth** — Discord OAuth. On first boot the server seeds defaults and prints a one-time **admin setup code** to its console; the first Discord login that supplies that code becomes Admin. Subsequent users self-register at the default role and are promoted by an admin.
+- **Frontend** — a single-page web app (React + Vite + TailwindCSS). Visitors who aren't signed in see the login screen, or the optional public org page.
+- **Backend** — a Node/Express server that serves the app *and* handles every read and write. It's the single gatekeeper: **all permission checks happen on the server, never in the browser**, so a tampered-with client can't slip past them.
+- **Database** — Supabase (PostgreSQL + Realtime). Locked down by default, so a leaked browser key reads nothing on its own.
+- **Auth** — sign in with Discord. On first boot the server sets up sensible defaults and prints a one-time **admin setup code** to its console; the first person to log in with that code becomes the Admin. Everyone after that signs up at the default role, and an admin promotes them.
 
 ## 🚀 Quick Start
 

@@ -118,10 +118,10 @@
   @keyframes glowPulse {
     0%,
     100% {
-      box-shadow: 0 0 4px rgba(56, 189, 248, 0.2);
+      box-shadow: 0 0 4px color-mix(in oklab, var(--color-sky-400) 20%, transparent);
     }
     50% {
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px color-mix(in oklab, var(--color-sky-400) 40%, transparent);
     }
   }
 }
@@ -155,12 +155,20 @@
   background: var(--color-slate-800, #1e293b);
 }
 ::-webkit-scrollbar-thumb {
+<<<<<<< HEAD
   background-color: var(--color-sky-400, #38bdf8);
+=======
+  background-color: var(--color-sky-400);
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
   border-radius: 4px;
   border: 2px solid var(--color-slate-800, #1e293b);
 }
 ::-webkit-scrollbar-thumb:hover {
+<<<<<<< HEAD
   background-color: var(--color-sky-300, #7dd3fc);
+=======
+  background-color: var(--color-sky-300);
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 }
 
 /* Date Picker Icon Visibility Fix for Dark Theme */
@@ -260,7 +268,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
 }
 
 .wiki-editor-content blockquote {
-  border-left: 3px solid #38bdf8;
+  border-left: 3px solid var(--color-sky-400);
   padding-left: 1rem;
   margin: 1rem 0;
   color: #94a3b8;
@@ -281,7 +289,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
-  color: #7dd3fc;
+  color: var(--color-sky-300);
 }
 
 .wiki-editor-content pre code {
@@ -293,7 +301,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
 .wiki-editor-content a,
 .minimal-rich-editor-content a,
 .wiki-link {
-  color: #38bdf8;
+  color: var(--color-sky-400);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -301,7 +309,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
 .wiki-editor-content a:hover,
 .minimal-rich-editor-content a:hover,
 .wiki-link:hover {
-  color: #7dd3fc;
+  color: var(--color-sky-300);
 }
 
 .wiki-editor-content img {
@@ -353,7 +361,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
    on the parent cell. */
 .wiki-editor-content td:focus-within,
 .wiki-editor-content th:focus-within {
-  outline: 2px solid rgba(56, 189, 248, 0.5);
+  outline: 2px solid color-mix(in oklab, var(--color-sky-400) 50%, transparent);
   outline-offset: -2px;
 }
 
@@ -365,7 +373,7 @@ select option { background-color: var(--color-slate-900, #0f172a); color: var(--
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: rgba(56, 189, 248, 0.4);
+  background-color: color-mix(in oklab, var(--color-sky-400) 40%, transparent);
   pointer-events: none;
 }
 .wiki-editor-content.resize-cursor {

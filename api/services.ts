@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import * as db from '../lib/db.js';
 import { verifyToken, isSessionForceLoggedOut, isSessionRevokedByWatermark } from '../lib/auth.js';
 import { buildOAuthStateCookie, clearOAuthStateCookie, readOAuthStateCookie, nonceMatches, isValidNonceShape } from '../lib/oauthStateCookie.js';
-import { isOpaqueServerError } from '../lib/errors.js';
+import { isOpaqueServerError, isSecurityDenial } from '../lib/errors.js';
 import { getClientIp } from '../lib/clientIp.js';
 import { checkAuthRateLimit } from '../lib/authRateLimit.js';
 import { log as baseLog } from '../lib/log.js';
@@ -30,7 +30,12 @@ import { marketplaceActions } from './actions/marketplace.js';
 import { catalogActions } from './actions/catalog.js';
 import { allianceActions } from './actions/alliances.js';
 import { operationsFederationActions } from './actions/operations-federation.js';
+<<<<<<< HEAD
 import { starcommsActions } from './actions/starcomms.js';
+=======
+import { notificationActions } from './actions/notifications.js';
+import { academyActions } from './actions/academy.js';
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 type ActionHandler = (payload: any, token?: string) => Promise<unknown>;
 
@@ -44,7 +49,34 @@ export const PUBLIC_ACTIONS: readonly string[] = ['auth:begin_oauth', 'auth:disc
 // actions are gated explicitly (each maps to the user:manage:self pseudo-permission,
 // i.e. any authenticated caller) rather than being implicitly open — that closes the
 // fail-open trap where a map entry on a user:* action would silently do nothing.
-export const PROTECTED_PREFIXES: readonly string[] = ['admin:', 'hr:', 'intel:', 'warrant:', 'unit:', 'operation:', 'request:', 'broadcast:', 'api:', 'wiki:', 'fleet:', 'gov:', 'radio:', 'warehouse:', 'finance:', 'qm:', 'system:', 'discord:', 'org:', 'catalog:', 'alliance:', 'mirror:', 'marketplace:', 'user:'];
+export const PROTECTED_PREFIXES: readonly string[] = ['admin:', 'hr:', 'intel:', 'warrant:', 'unit:', 'operation:', 'request:', 'broadcast:', 'api:', 'wiki:', 'fleet:', 'gov:', 'radio:', 'warehouse:', 'finance:', 'qm:', 'system:', 'discord:', 'org:', 'catalog:', 'alliance:', 'mirror:', 'marketplace:', 'user:', 'notifications:', 'academy:'];
+
+// Optional-feature namespaces: action prefixes whose WHOLE namespace fails closed
+// server-side when the module is toggled OFF (Admin → Optional Features) — not just
+// hidden in the Sidebar nav. Mirrors the read-path SUBSET_REQUIRED_FEATURE gate in
+// api/query.ts. Each maps a prefix → its feature key + source of truth + a UI label
+// for the 403; `exempt` lists actions that stay reachable while the module is OFF.
+//   - source 'features'   → the orgFeatures JSONB blob (all default-OFF).
+//   - source 'government' → the separate governmentsConfig settings key (default-OFF).
+// Government is the ONLY module whose on/off toggle lives inside its own namespace
+// (gov:update_feature_config), so that action MUST be exempt or disabling government
+// would be irreversible. Every other module toggles via admin:update_features (the
+// admin: namespace, never itself feature-gated) → no self-lockout. Runtime resolves
+// enable-state via db.isOptionalFeatureEnabled(feature); `source` documents where the
+// flag lives and is pinned by tests/featureGateParity.test.ts.
+export const OPTIONAL_FEATURE_NAMESPACES: Readonly<Record<string, {
+    feature: string;
+    source: 'features' | 'government';
+    label: string;
+    exempt?: readonly string[];
+}>> = {
+    'marketplace:': { feature: 'marketplace',   source: 'features',   label: 'Marketplace' },
+    'warehouse:':   { feature: 'warehouse',     source: 'features',   label: 'Warehouse' },
+    'academy:':     { feature: 'academy',       source: 'features',   label: 'Academy' },
+    'finance:':     { feature: 'finances',      source: 'features',   label: 'Finances' },
+    'qm:':          { feature: 'quartermaster', source: 'features',   label: 'Quartermaster' },
+    'gov:':         { feature: 'government',     source: 'government', label: 'Government', exempt: ['gov:update_feature_config'] },
+};
 
 // The op-owner bypass (isOpOwner) lets an op's owner satisfy the operations:manage
 // gate for owner-appropriate edit/lifecycle actions on their own op. It must NOT
@@ -152,6 +184,7 @@ export const fullPermissionMap: Record<string, string> = {
     'admin:sync_user_roles': 'admin:config:discord',
     'admin:update_rank_mapping': 'admin:config:discord',
     'admin:update_branding_config': 'admin:config:branding',
+    'admin:update_theme_config': 'admin:config:theme',
     'admin:update_public_page_config': 'admin:config:branding',
     'admin:list_testimonial_candidates': 'admin:config:branding',
     'admin:update_system_config': 'admin:config:branding',
@@ -702,6 +735,7 @@ export const fullPermissionMap: Record<string, string> = {
     'marketplace:admin:list_reports': 'marketplace:admin',
     'marketplace:admin:review_report': 'marketplace:admin',
 
+<<<<<<< HEAD
     // StarComms integration (optional, read-only) — admin console panel (V1).
     'admin:starcomms_status': 'admin:access',
     'admin:starcomms_test': 'admin:access',
@@ -709,6 +743,62 @@ export const fullPermissionMap: Record<string, string> = {
     // additionally admits request:dispatch / admin:access via the OR check below
     // (isStarCommsReader), so Dispatch and Admin users also get live data.
     'operation:starcomms_status': 'operations:view',
+=======
+    // Notification Center — the caller's OWN inbox. Self-scoped by user_id in the
+    // db layer (BOLA-asserted), so any authenticated session may call these
+    // (user:manage:self); there is no role permission for a personal inbox.
+    'notifications:mark_read': 'user:manage:self',
+    'notifications:mark_all_read': 'user:manage:self',
+    'notifications:delete': 'user:manage:self',
+
+    // Academy (LMS). Instructor curriculum/session authoring → academy:instruct;
+    // Learning-Admin lifecycle/certify → academy:manage. set_course_certification
+    // + certify_and_complete additionally require admin:award:certification (the
+    // cert-award escalation gate), asserted in the db layer. Student self-service
+    // (self_enroll / mark_lesson / withdraw own / get own enrolment / catalog) →
+    // user:manage:self, BOLA-scoped in the db. The whole namespace is also
+    // feature-gated in the dispatcher (403 when Academy is OFF).
+    'academy:create_course': 'academy:instruct',
+    'academy:update_course': 'academy:instruct',
+    'academy:delete_course': 'academy:instruct',
+    'academy:submit_course': 'academy:instruct',
+    'academy:set_course_certification': 'academy:manage',
+    'academy:approve_course': 'academy:manage',
+    'academy:reject_course': 'academy:manage',
+    'academy:set_course_archived': 'academy:manage',
+    'academy:set_course_access': 'academy:manage',
+    'academy:add_course_instructor': 'academy:instruct',
+    'academy:add_course_instructors': 'academy:instruct',
+    'academy:withdraw_enrollments_bulk': 'academy:instruct',
+    'academy:recommend_enrollments_bulk': 'academy:instruct',
+    'academy:remove_course_instructor': 'academy:instruct',
+    'academy:create_module': 'academy:instruct',
+    'academy:update_module': 'academy:instruct',
+    'academy:delete_module': 'academy:instruct',
+    'academy:create_lesson': 'academy:instruct',
+    'academy:update_lesson': 'academy:instruct',
+    'academy:delete_lesson': 'academy:instruct',
+    'academy:create_outcome': 'academy:instruct',
+    'academy:update_outcome': 'academy:instruct',
+    'academy:delete_outcome': 'academy:instruct',
+    'academy:create_session': 'academy:instruct',
+    'academy:update_session': 'academy:instruct',
+    'academy:set_session_status': 'academy:instruct',
+    'academy:add_session_instructor': 'academy:instruct',
+    'academy:remove_session_instructor': 'academy:instruct',
+    'academy:assign_students': 'academy:instruct',
+    'academy:assess_outcome': 'academy:instruct',
+    'academy:recommend_certification': 'academy:instruct',
+    'academy:certify_and_complete': 'academy:manage',
+    'academy:self_enroll': 'user:manage:self',
+    'academy:withdraw_enrollment': 'user:manage:self',
+    'academy:mark_lesson': 'user:manage:self',
+    'academy:get_enrollment': 'user:manage:self',
+    'academy:get_catalog_course': 'user:manage:self',
+    'academy:get_course': 'academy:view',
+    'academy:get_session': 'academy:view',
+    'academy:list_recommended': 'academy:manage',
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 };
 
 export const actions: Record<string, ActionHandler> = {
@@ -730,7 +820,12 @@ export const actions: Record<string, ActionHandler> = {
     ...catalogActions,
     ...allianceActions,
     ...operationsFederationActions,
+<<<<<<< HEAD
     ...starcommsActions,
+=======
+    ...notificationActions,
+    ...academyActions,
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 };
 
 // Validate permission-map coverage against the actions registry.
@@ -922,6 +1017,12 @@ export default async function handler(req: Request, res: Response) {
             const result = await actions[action](payload, token);
             return res.status(200).json({ success: true, data: result });
         } catch (error: any) {
+            if (isSecurityDenial(error)) {
+                // BOLA/authz denial: audit-log the event + diagnostic fields
+                // server-side; only the safe, generic message crosses the wire.
+                log.warn(error.auditEvent || 'authz.denied', { action, ...error.fields });
+                return res.status(error.status || 403).json({ success: false, message: error.message });
+            }
             const requestId = randomUUID();
             log.error('error executing public action', { requestId, action, err: error });
             const message = isOpaqueServerError(error)
@@ -996,8 +1097,20 @@ export default async function handler(req: Request, res: Response) {
         return res.status(400).json({ message: `Invalid action: ${action}` });
     }
 
-    // Single-org self-hosted: all optional modules (warehouse, etc.) are always
-    // enabled — the former per-org feature-flag gate is gone with multi-tenancy.
+    // Optional-feature gate: when a module is toggled OFF, its whole action
+    // namespace fails closed HERE — before the permission gate, so a disabled
+    // feature is denied regardless of role (including the permission-LESS academy
+    // student surface and the member-reachable marketplace/government namespaces).
+    // `exempt` actions (a module's own re-enable path, e.g. gov:update_feature_config)
+    // always pass so a disabled module can be switched back on. Mirrors the read-path
+    // gate in api/query.ts. Prefixes are mutually exclusive — at most one matches.
+    for (const [prefix, gate] of Object.entries(OPTIONAL_FEATURE_NAMESPACES)) {
+        if (!action.startsWith(prefix) || gate.exempt?.includes(action)) continue;
+        if (!(await db.isOptionalFeatureEnabled(gate.feature))) {
+            return res.status(403).json({ success: false, message: `The ${gate.label} feature is not enabled.` });
+        }
+        break;
+    }
 
     // BOLA MITIGATION & Permission Verification
     if (PROTECTED_PREFIXES.some(p => action.startsWith(p))) {
@@ -1094,6 +1207,12 @@ export default async function handler(req: Request, res: Response) {
         const result = await actions[action](payload, token);
         return res.status(200).json({ success: true, data: result });
     } catch (error: any) {
+        if (isSecurityDenial(error)) {
+            // BOLA/authz denial: audit-log the event + diagnostic fields (ids,
+            // clearance) server-side; only the safe, generic message is returned.
+            log.warn(error.auditEvent || 'authz.denied', { userId: user?.id, action, ...error.fields });
+            return res.status(error.status || 403).json({ success: false, message: error.message });
+        }
         const requestId = randomUUID();
         log.error('error executing action', { requestId, action, err: error });
         const message = isOpaqueServerError(error)

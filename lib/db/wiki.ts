@@ -6,6 +6,7 @@ import { supabase, handleSupabaseError, safeFetch, broadcastToOrg } from './comm
 import { toWikiPage } from './mappers.js';
 import { stripHtmlSingleLine } from '../textSanitize.js';
 import { sanitizeTiptapJson } from '../tiptapValidate.js';
+import { normalizeDocMediaForStorage, assertDocImageCap } from '../orgMediaDocs.js';
 import { updateWikiHomeConfig } from './system.js';
 import { assertCanClassify, passesClearance, filterByClearance, type ClearanceUser } from '../clearance.js';
 import { log as baseLog } from '../log.js';
@@ -117,8 +118,9 @@ export async function createWikiPage(payload: WikiPagePayload, userId: number, a
     // rejects javascript:/data: URLs in links/images. Defense in depth — the wiki
     // render path doesn't use dangerouslySetInnerHTML today.
     const safeContent = payload.content
-        ? sanitizeTiptapJson(payload.content, 'wiki')
+        ? normalizeDocMediaForStorage(sanitizeTiptapJson(payload.content, 'wiki'))
         : { type: 'doc', content: [] };
+    if (payload.content) assertDocImageCap(safeContent);
 
     const { data: page, error } = await supabase.from('wiki_pages').insert({
         parent_page_id: payload.parentPageId || null,
@@ -180,7 +182,10 @@ export async function updateWikiPage(id: string, payload: WikiPagePayload, userI
         payload = { ...payload, title: safeTitle };
         updates.title = safeTitle;
     }
-    if (payload.content !== undefined) updates.content = sanitizeTiptapJson(payload.content, 'wiki');
+    if (payload.content !== undefined) {
+        updates.content = normalizeDocMediaForStorage(sanitizeTiptapJson(payload.content, 'wiki'));
+        assertDocImageCap(updates.content);
+    }
     if (payload.classificationLevel !== undefined) updates.classification_level = payload.classificationLevel;
     if (payload.menuStructureLocked !== undefined) updates.menu_structure_locked = !!payload.menuStructureLocked;
 
@@ -483,12 +488,14 @@ export async function importWikiPages(
     for (const plan of plans.values()) {
         if (plan.kind !== 'insert') continue;
         const safeTitle = stripHtmlSingleLine(plan.source.title, 200) || 'Untitled';
+        const importedContent = normalizeDocMediaForStorage(sanitizeTiptapJson(plan.source.content, 'wiki') || {});
+        assertDocImageCap(importedContent);
         const { error } = await supabase.from('wiki_pages').insert({
             id: plan.targetId,
             parent_page_id: null,
             title: safeTitle,
             slug: plan.slug,
-            content: sanitizeTiptapJson(plan.source.content, 'wiki') || {},
+            content: importedContent,
             classification_level: plan.source.classificationLevel ?? 0,
             sort_order: plan.source.sortOrder ?? 0,
             created_by_id: userId,
@@ -502,11 +509,13 @@ export async function importWikiPages(
     for (const plan of plans.values()) {
         if (plan.kind !== 'update') continue;
         const safeTitle = stripHtmlSingleLine(plan.source.title, 200) || 'Untitled';
+        const importedContent = normalizeDocMediaForStorage(sanitizeTiptapJson(plan.source.content, 'wiki') || {});
+        assertDocImageCap(importedContent);
         const { error } = await supabase
             .from('wiki_pages')
             .update({
                 title: safeTitle,
-                content: sanitizeTiptapJson(plan.source.content, 'wiki') || {},
+                content: importedContent,
                 classification_level: plan.source.classificationLevel ?? 0,
                 sort_order: plan.source.sortOrder ?? 0,
                 updated_by_id: userId,

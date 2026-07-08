@@ -30,6 +30,7 @@
   "exclude": [
     "node_modules",
     "legacy-portal",
-    "supabase-reports"
+    "supabase-reports",
+    "porting"
   ]
 }

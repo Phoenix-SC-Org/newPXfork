@@ -37,6 +37,7 @@ const GovernmentSettingsTab: React.FC = () => {
     const [govDescription, setGovDescription] = useState(governmentConfig?.description || '');
     const [govType, setGovType] = useState<string>(governmentConfig?.governmentType || 'custom');
     const [isEditingIdentity, setIsEditingIdentity] = useState(false);
+    const [activeTab, setActiveTab] = useState<'setup' | 'structure' | 'constitution'>('setup');
 
     // Constitution editor
     const [isEditingConstitution, setIsEditingConstitution] = useState(false);
@@ -418,8 +419,33 @@ const GovernmentSettingsTab: React.FC = () => {
         }
     };
 
+    const govTabs: { key: 'setup' | 'structure' | 'constitution'; label: string; icon: string }[] = [
+        { key: 'setup', label: 'Setup & Identity', icon: 'fa-solid fa-id-card' },
+        { key: 'structure', label: 'Branches & Positions', icon: 'fa-solid fa-sitemap' },
+        { key: 'constitution', label: 'Constitution', icon: 'fa-solid fa-scroll' },
+    ];
+
     return (
-        <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+        <div className="flex flex-col min-h-full animate-fade-in">
+            {enabled && (
+                <div className="sticky top-0 z-10 flex items-center gap-1 px-4 md:px-8 pt-4 border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-xs overflow-x-auto scrollbar-none">
+                    {govTabs.map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={`shrink-0 flex items-center gap-2 px-4 py-3 text-[11px] font-black uppercase tracking-widest border-b-2 transition-colors ${
+                                activeTab === tab.key
+                                    ? 'border-indigo-500 text-indigo-300'
+                                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                            }`}
+                        >
+                            <i className={`${tab.icon} text-[10px]`} />
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+            <div className="flex-1 min-h-0 p-4 md:p-8 space-y-6 flex flex-col">
             <TabPageHeader
                 title={t('Government')}
                 icon="fa-solid fa-landmark"
@@ -442,7 +468,7 @@ const GovernmentSettingsTab: React.FC = () => {
                 </div>
             )}
 
-            {enabled && (
+            {enabled && activeTab === 'setup' && (
                 <>
                     {/* Quick Template Application */}
                     <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
@@ -555,9 +581,12 @@ const GovernmentSettingsTab: React.FC = () => {
                             )}
                         </div>
                     )}
+                </>
+            )}
 
-                    {/* Constitution Editor */}
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
+            {/* Constitution Editor */}
+            {enabled && activeTab === 'constitution' && (
+                <div className={`bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 flex flex-col ${!isEditingConstitution && governmentConfig?.constitutionContent ? 'flex-1 min-h-0' : ''}`}>
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold text-white flex items-center gap-2">
                                 <i className="fa-solid fa-scroll text-amber-400 text-xs"></i>
@@ -577,6 +606,7 @@ const GovernmentSettingsTab: React.FC = () => {
                             <div>
                                 <p className="text-xs text-slate-400 mb-2">{t("Write your organisation's constitution. This will be visible to all members under the Constitution tab.")}</p>
                                 <WikiEditor
+                                    uploadFeature="government"
                                     content={governmentConfig?.constitutionContent || EMPTY_EDITOR_CONTENT}
                                     editable={true}
                                     onSave={saveConstitution}
@@ -584,7 +614,7 @@ const GovernmentSettingsTab: React.FC = () => {
                                 />
                             </div>
                         ) : governmentConfig?.constitutionContent ? (
-                            <div className="max-h-48 overflow-y-auto">
+                            <div className="flex-1 min-h-0 overflow-y-auto">
                                 <WikiEditor
                                     content={governmentConfig.constitutionContent}
                                     editable={false}
@@ -594,8 +624,10 @@ const GovernmentSettingsTab: React.FC = () => {
                             <p className="text-xs text-slate-500 italic">{t('No constitution drafted yet. Click "Draft Constitution" to get started.')}</p>
                         )}
                     </div>
+            )}
 
-                    {/* Branches & Positions */}
+            {/* Branches & Positions */}
+            {enabled && activeTab === 'structure' && (
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold text-white">{t('Branches & Positions')}</h4>
@@ -805,8 +837,8 @@ const GovernmentSettingsTab: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </>
             )}
+            </div>
 
             <WindowFrame
                 isOpen={showBranchForm}

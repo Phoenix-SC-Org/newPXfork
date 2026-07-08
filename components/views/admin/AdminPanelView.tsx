@@ -36,11 +36,9 @@ const AIConfigTab = React.lazy(() => import('./AIConfigTab'));
 const IntelligenceManagementTab = React.lazy(() => import('./IntelligenceManagementTab'));
 const StarCommsTab = React.lazy(() => import('./StarCommsTab'));
 const AllianceManagementTab = React.lazy(() => import('./AllianceManagementTab'));
-const OrganizationIdentityTab = React.lazy(() => import('./OrganizationIdentityTab'));
+const AppearanceTab = React.lazy(() => import('./AppearanceTab'));
 const OrgPublicPageTab = React.lazy(() => import('./OrgPublicPageTab'));
 const LegalDocumentsTab = React.lazy(() => import('./LegalDocumentsTab'));
-const ClientSettingsTab = React.lazy(() => import('./ClientSettingsTab'));
-const SiteMetadataTab = React.lazy(() => import('./SiteMetadataTab'));
 const DatabaseToolsTab = React.lazy(() => import('./DatabaseToolsTab'));
 const WikiToolsTab = React.lazy(() => import('./WikiToolsTab'));
 const OrgImportTab = React.lazy(() => import('./OrgImportTab'));
@@ -104,9 +102,7 @@ const tabGroups = {
         { id: 'starcomms', label: 'StarComms', icon: 'fa-solid fa-satellite-dish', permission: 'admin:access' },
     ],
     "Appearance": [
-        { id: 'identity', label: 'Organization Identity', icon: 'fa-solid fa-palette', permission: 'admin:config:branding' },
-        { id: 'settings', label: 'Client Dashboard', icon: 'fa-solid fa-desktop', permission: 'admin:config:settings' },
-        { id: 'metadata', label: 'Site Metadata', icon: 'fa-solid fa-globe', permission: 'admin:config:metadata' },
+        { id: 'appearance', label: 'Appearance', icon: 'fa-solid fa-palette', permission: 'admin:config:branding', anyOf: ['admin:config:branding', 'admin:config:theme', 'admin:config:settings', 'admin:config:metadata'] },
         { id: 'public_page', label: 'Public Landing Page', icon: 'fa-solid fa-globe', permission: 'admin:config:branding' },
     ],
     "Policies": [
@@ -148,6 +144,11 @@ const NavigationItem: React.FC<{ id: string; label: string; icon: string; isActi
 const AdminPanelView: React.FC = () => {
     const { t } = useI18n();
     const { hasPermission } = useAuth();
+    // A tab is visible if the caller holds its permission, or ANY of an optional
+    // anyOf set (used by the consolidated Appearance tab, which fronts several
+    // sub-permissions).
+    const canSeeTab = (tab: { permission: string; anyOf?: readonly string[] }) =>
+        tab.anyOf ? tab.anyOf.some(p => hasPermission(p)) : hasPermission(tab.permission);
     const { editingServiceType } = useNavigation();
     const { openAdjustReputationModal, openReputationHistoryModal, openRatingHistoryModal, openAwardSingleCertModal, openAwardSingleCommendModal, openAddConductEntryModal, isServiceTypeModalOpen, setIsServiceTypeModalOpen } = useModalRegistry();
     const { hydratedServiceRequests } = useData();
@@ -217,11 +218,9 @@ const AdminPanelView: React.FC = () => {
             case 'tools': return hasPermission('admin:config:tools') ? <ExternalToolsManagementTab /> : null;
             case 'eam': return hasPermission('admin:broadcast:eam') ? <EAMBroadcastTab /> : null;
             case 'discord': return hasPermission('admin:config:discord') ? <DiscordSettingsTab /> : null;
-            case 'settings': return hasPermission('admin:config:settings') ? <ClientSettingsTab /> : null;
-            case 'identity': return hasPermission('admin:config:branding') ? <OrganizationIdentityTab /> : null;
+            case 'appearance': return <AppearanceTab />;
             case 'public_page': return hasPermission('admin:config:branding') ? <OrgPublicPageTab /> : null;
             case 'legal': return hasPermission('admin:config:branding') ? <LegalDocumentsTab /> : null;
-            case 'metadata': return hasPermission('admin:config:metadata') ? <SiteMetadataTab /> : null;
             case 'radio': return hasPermission('admin:config:branding') ? <RadioSettingsTab /> : null;
             case 'ai': return hasPermission('admin:config:ai') ? <AIConfigTab /> : null;
             case 'intel_mgmt': return hasPermission('intel:manage') ? <IntelligenceManagementTab /> : null;
@@ -269,7 +268,7 @@ const AdminPanelView: React.FC = () => {
                             className="w-full bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden appearance-none transition-all"
                         >
                             {Object.entries(tabGroups).map(([categoryName, tabs]) => {
-                                const visibleTabs = tabs.filter(tab => hasPermission(tab.permission));
+                                const visibleTabs = tabs.filter(canSeeTab);
                                 if (visibleTabs.length === 0) return null;
                                 return (
                                     <optgroup key={categoryName} label={t(categoryName)} className="bg-slate-900 text-slate-400">
@@ -289,7 +288,7 @@ const AdminPanelView: React.FC = () => {
                 {/* Desktop sidebar */}
                 <div className="hidden lg:flex flex-col shrink-0 w-60 border-r border-slate-800/60 bg-slate-900/40 overflow-y-auto custom-scrollbar py-5 px-3 gap-5">
                     {Object.entries(tabGroups).map(([categoryName, tabs]) => {
-                        const visibleTabs = tabs.filter(tab => hasPermission(tab.permission));
+                        const visibleTabs = tabs.filter(canSeeTab);
                         if (visibleTabs.length === 0) return null;
                         return (
                             <div key={categoryName} className="space-y-0.5">

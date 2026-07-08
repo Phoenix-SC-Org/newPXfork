@@ -12,6 +12,7 @@ import { useIntel } from './IntelContext';
 import { useHR } from './HRContext';
 import { useWarehouse } from './WarehouseContext';
 import { useFleet } from './FleetContext';
+import { useAcademy } from './AcademyContext';
 import { useGovernment } from './GovernmentContext';
 import { useRequests } from './RequestsContext';
 import { useAnnouncements } from './AnnouncementsContext';
@@ -54,6 +55,7 @@ const LAZY_DOMAINS: Record<string, string> = {
     fleet: 'fleet', fleet_catalog: 'fleet', fleet_user_ships: 'fleet', fleet_groups: 'fleet',
     warehouse: 'warehouse', warehouse_catalog: 'warehouse', warehouse_stock: 'warehouse', warehouse_requests: 'warehouse',
     government: 'government', government_structure: 'government', government_elections: 'government', government_legislation: 'government', government_motions: 'government',
+    academy: 'academy', academy_my: 'academy',
 };
 // Fallback logic for mappers needing it (minimal dummy constraint)
 const unknownUser: User = { id: 0, discordId: '', name: 'Unknown', avatarUrl: '', rsiHandle: '', role: UserRole.Client, roleId: 1, reputation: 0, isDuty: false, permissions: [], createdAt: '' };
@@ -176,6 +178,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         shipCatalog, userShips, fleetGroups,
         registerRefreshFleet,
     } = fleetCtx;
+
+    // Academy domain — a thin slice-owner (like Fleet). Its four slice setters
+    // (academyCourses/academySessions/academyCatalog/academyMyEnrollments) run via
+    // applyStateData(data) (the 'academy'/'academy_my' subset-fetch branches route
+    // the response through it). We only need its refresh-registration hooks here.
+    const { registerRefreshAcademy, registerRefreshMyAcademy } = useAcademy();
 
     // Government domain — sourced from useGovernment() and re-exposed verbatim.
     // No optimistic-update branches and no government CRUD here. Government's
@@ -669,6 +677,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // check on governmentConfig (null is valid) lives in the setter.
                 const data = await apiService.getStateSubset('government');
                 applyStateData(data);
+            } else if (subset === 'academy') {
+                // Staff bundle → Academy's academyCourses/academySessions slice setters.
+                const data = await apiService.getStateSubset('academy');
+                applyStateData(data);
+            } else if (subset === 'academy_my') {
+                // Self bundle → Academy's academyCatalog/academyMyEnrollments slice setters.
+                const data = await apiService.getStateSubset('academy_my');
+                applyStateData(data);
             } else if (subset === 'main') {
                 const gen = guards.users.begin();
                 const data = await apiService.getStateSubset('main');
@@ -761,6 +777,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshWiki = useCallback(() => fetchDataSubset('wiki', { force: true }), [fetchDataSubset]);
     const refreshWarehouse = useCallback(() => fetchDataSubset('warehouse', { force: true }), [fetchDataSubset]);
     const refreshFleet = useCallback(() => fetchDataSubset('fleet', { force: true }), [fetchDataSubset]);
+    const refreshAcademy = useCallback(() => fetchDataSubset('academy', { force: true }), [fetchDataSubset]);
+    const refreshMyAcademy = useCallback(() => fetchDataSubset('academy_my', { force: true }), [fetchDataSubset]);
     const ensureFleetLoaded = useCallback(() => {
         if (shipCatalog.length === 0) return fetchDataSubset('fleet', { force: true });
         return Promise.resolve();
@@ -823,6 +841,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const unreg = registerRefreshFleet(refreshFleet);
         return unreg;
     }, [registerRefreshFleet, refreshFleet]);
+
+    useEffect(() => registerRefreshAcademy(refreshAcademy), [registerRefreshAcademy, refreshAcademy]);
+    useEffect(() => registerRefreshMyAcademy(refreshMyAcademy), [registerRefreshMyAcademy, refreshMyAcademy]);
 
     useEffect(() => {
         const unreg = registerRefreshGovernment(refreshGovernment);

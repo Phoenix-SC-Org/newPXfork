@@ -172,6 +172,7 @@ const WikiHomePage: React.FC<WikiHomePageProps> = ({ config, visiblePages, canEd
                 <div className="space-y-3">
                     <SectionLabel label={t('Welcome Content')} icon="fa-message" />
                     <WikiEditor
+                        uploadFeature="wiki"
                         content={config.welcomeContent || EMPTY_CONTENT}
                         editable={true}
                         onSave={handleSaveWelcome}

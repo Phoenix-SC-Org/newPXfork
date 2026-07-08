@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ssrfSafeFetch() returns a raw Response and consumers do an unbounded
 // res.json()/res.text(), so a hostile peer streaming GBs could OOM us (several
@@ -19,9 +19,13 @@ vi.mock('node:dns/promises', () => {
     const lookup = async () => h.lookupResult;
     return { lookup, default: { lookup } };
 });
-// Stub the undici Agent so construction is inert under the test environment;
-// we capture and assert the options it was constructed with.
-vi.mock('undici', () => ({ Agent: class { constructor(public opts: any) {} close() { return Promise.resolve(); } } }));
+// Stub the undici Agent (inert under test; we capture and assert its constructor
+// opts) AND undici's own fetch. lib/ssrf uses undici's fetch (not Node's global),
+// so capture the outbound call here to read back the dispatcher's Agent opts.
+vi.mock('undici', () => ({
+    Agent: class { constructor(public opts: any) {} close() { return Promise.resolve(); } },
+    fetch: async (url: string, init: any) => { h.fetchCalls.push({ url, init }); return h.fetchResponse; },
+}));
 
 import { ssrfSafeFetch, MAX_OUTBOUND_RESPONSE_BYTES } from '../lib/ssrf';
 
@@ -29,9 +33,7 @@ beforeEach(() => {
     h.lookupResult = [{ address: '93.184.216.34', family: 4 }]; // public
     h.fetchResponse = { status: 200 };
     h.fetchCalls = [];
-    vi.stubGlobal('fetch', async (url: string, init: any) => { h.fetchCalls.push({ url, init }); return h.fetchResponse; });
 });
-afterEach(() => { vi.unstubAllGlobals(); });
 
 describe('ssrfSafeFetch response-byte ceiling (ssrf#1)', () => {
     it('exposes a positive, bounded outbound response ceiling constant', () => {

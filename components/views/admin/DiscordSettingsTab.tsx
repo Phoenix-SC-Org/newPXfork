@@ -113,7 +113,24 @@ const DiscordSettingsTab: React.FC = () => {
     ];
 
     return (
-        <div className="p-4 md:p-8 space-y-6 animate-fade-in">
+        <div className="flex flex-col min-h-full animate-fade-in">
+            <div className="sticky top-0 z-10 flex items-center gap-1 px-4 md:px-8 pt-4 border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-xs overflow-x-auto scrollbar-none">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`shrink-0 flex items-center gap-2 px-4 py-3 text-[11px] font-black uppercase tracking-widest border-b-2 transition-colors ${
+                            activeTab === tab.key
+                                ? 'border-indigo-500 text-indigo-300'
+                                : 'border-transparent text-slate-500 hover:text-slate-300'
+                        }`}
+                    >
+                        <i className={`${tab.icon} text-[10px]`} />
+                        <span>{tab.label}</span>
+                    </button>
+                ))}
+            </div>
+            <div className="p-4 md:p-8 space-y-6">
             <TabPageHeader
                 title={t("Discord Integration")}
                 icon="fa-brands fa-discord"
@@ -121,6 +138,7 @@ const DiscordSettingsTab: React.FC = () => {
                 subtitle={t("Connect your Discord server for bot, channel routing, and role sync.")}
             />
 
+<<<<<<< HEAD
             <div className="flex border-b border-slate-700/50 overflow-x-auto custom-scrollbar">
                 {tabs.map(tab => (
                     <button
@@ -138,6 +156,8 @@ const DiscordSettingsTab: React.FC = () => {
                 ))}
             </div>
 
+=======
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
             {/* Discord Bot Configuration Warning */}
             {!discordConfig?.clientId && (
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
@@ -242,6 +262,12 @@ const DiscordSettingsTab: React.FC = () => {
             {/* Role Mapping Tab */}
             {activeTab === 'mapping' && (
                 <div className="space-y-6">
+                    {/* Reference notes pinned to the top so they stay primarily visible. */}
+                    <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30 text-sm text-slate-400 space-y-2">
+                        <p><i className="fa-solid fa-shield-halved mr-2 text-slate-500"></i><strong className="text-slate-300">Security note:</strong> The Admin permission level cannot be assigned via Discord sync. Only Member, Dispatcher, and custom roles are available.</p>
+                        <p><i className="fa-solid fa-info-circle mr-2 text-slate-500"></i>When syncing from Discord, the first matching role in the user's Discord role list determines their rank and permission level.</p>
+                        <p><i className="fa-solid fa-robot mr-2 text-slate-500"></i><strong className="text-slate-300">Bot requirement:</strong> For bi-directional sync, your Discord bot needs the <code className="bg-slate-700 px-1.5 py-0.5 rounded-sm text-xs">MANAGE_ROLES</code> permission and must have a role positioned higher than the roles it manages.</p>
+                    </div>
                     <div className="bg-slate-900/50 rounded-lg p-6 border border-slate-700/50">
                         <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 flex-wrap gap-4">
                             <div>
@@ -314,14 +340,18 @@ const DiscordSettingsTab: React.FC = () => {
                             <p className="text-center text-slate-500 py-8">{t('No roles fetched. Click "Fetch Server Roles" to begin.')}</p>
                         )}
                     </div>
+<<<<<<< HEAD
 
                     <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30 text-sm text-slate-400 space-y-2">
                         <p><i className="fa-solid fa-shield-halved mr-2 text-slate-500"></i><strong className="text-slate-300">{t('Security note:')}</strong> {t('The Admin permission level cannot be assigned via Discord sync. Only Member, Dispatcher, and custom roles are available.')}</p>
                         <p><i className="fa-solid fa-info-circle mr-2 text-slate-500"></i>{t("When syncing from Discord, the first matching role in the user's Discord role list determines their rank and permission level.")}</p>
                         <p><i className="fa-solid fa-robot mr-2 text-slate-500"></i><strong className="text-slate-300">{t('Bot requirement:')}</strong> {t('For bi-directional sync, your Discord bot needs the')} <code className="bg-slate-700 px-1.5 py-0.5 rounded-sm text-xs">MANAGE_ROLES</code> {t('permission and must have a role positioned higher than the roles it manages.')}</p>
                     </div>
+=======
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                 </div>
             )}
+            </div>
         </div>
     );
 };

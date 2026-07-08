@@ -1,5 +1,6 @@
 import React from 'react';
 import AwardIcon from './AwardIcon';
+import ImageInput from './ImageInput';
 import { isSafeImageUrl } from '../../lib/imageUrl';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -14,6 +15,8 @@ interface AwardIconInputProps {
     accentClass?: string;
     disabled?: boolean;
     iconPlaceholder?: string;
+    /** When set, the Image URL tab also offers a file upload for this feature. */
+    feature?: string;
 }
 
 /**
@@ -28,7 +31,12 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
     fallbackIcon,
     accentClass = 'text-sky-400',
     disabled,
+<<<<<<< HEAD
     iconPlaceholder,
+=======
+    iconPlaceholder = 'e.g., fa-solid fa-star',
+    feature,
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 }) => {
     const { t } = useI18n();
     const urlValid = !imageUrl.trim() || isSafeImageUrl(imageUrl);
@@ -71,14 +79,24 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                         />
                     ) : (
                         <>
-                            <input
-                                type="url"
-                                value={imageUrl}
-                                onChange={(e) => onImageUrlChange(e.target.value)}
-                                placeholder="https://cdn.example.com/award.png"
-                                className={`${inputClass} text-xs`}
-                                disabled={disabled}
-                            />
+                            {feature ? (
+                                <ImageInput
+                                    value={imageUrl}
+                                    onChange={(v) => onImageUrlChange(v || '')}
+                                    feature={feature}
+                                    hidePreview
+                                    inputClassName={`${inputClass} text-xs`}
+                                />
+                            ) : (
+                                <input
+                                    type="url"
+                                    value={imageUrl}
+                                    onChange={(e) => onImageUrlChange(e.target.value)}
+                                    placeholder="https://cdn.example.com/award.png"
+                                    className={`${inputClass} text-xs`}
+                                    disabled={disabled}
+                                />
+                            )}
                             {imageUrl.trim() && !urlValid && (
                                 <p className="text-[10px] text-red-400 mt-1.5">
                                     <i className="fa-solid fa-triangle-exclamation mr-1"></i>

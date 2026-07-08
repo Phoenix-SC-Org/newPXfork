@@ -7,6 +7,9 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { randomBytes } from 'node:crypto';
 import { getClientIp } from './lib/clientIp.js';
 import { pruneAuthRateLimitBuckets } from './lib/authRateLimit.js';
+import orgUploadHandler, { pruneOrgUploadBuckets } from './api/orgUpload.js';
+import { MAX_UPLOAD_BYTES } from './lib/storage.js';
+import { runOrgMediaGc } from './lib/orgMediaGc.js';
 import { pruneAiRateLimitBuckets } from './lib/aiRateLimit.js';
 import { log as baseLog } from './lib/log.js';
 
@@ -50,6 +53,7 @@ setInterval(() => {
         if (now - ts > SCANNER_LOG_DEDUPE_MS * 5) lastScannerLog.delete(ip);
     }
     pruneAuthRateLimitBuckets(now);
+    pruneOrgUploadBuckets(now);
     pruneAiRateLimitBuckets(now);
 }, 60_000).unref?.();
 
@@ -460,6 +464,27 @@ app.post('/api/admin/import-stream', express.text({ type: () => true, limit: '64
     }
 });
 
+// Native image upload (raw image bytes). Outside the RPC dispatcher; the handler runs the
+// same auth + permission checks. Per-IP limiter here; per-user throttle inside the handler.
+const orgUploadLimiter = rateLimit({
+    windowMs: 60_000,
+    max: 40,
+    standardHeaders: true,
+    keyGenerator: (req) => ipKeyGenerator(getClientIp(req as express.Request)),
+    message: { message: 'Too many uploads. Please slow down and try again shortly.' },
+});
+app.post(
+    '/api/org/upload',
+    orgUploadLimiter,
+    express.raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'], limit: MAX_UPLOAD_BYTES }),
+    (req, res) => {
+        orgUploadHandler(req, res).catch((e) => {
+            log.error('org upload handler error', { err: e });
+            if (!res.headersSent) res.status(500).json({ message: 'Upload failed' });
+        });
+    },
+);
+
 // --- Alliance federation: SERVER-TO-SERVER ONLY (never browser-facing) ---
 // Peers reach these directly. /pair runs the code-authenticated ECDH handshake
 // responder; /profile returns our advertised directory card to a key-verified
@@ -830,6 +855,7 @@ import cron from 'node-cron';
 import { cleanupInactiveDutyUsers } from './lib/db/users.js';
 import { cleanupExpiredBulletins } from './lib/db/intel.js';
 import { allianceSyncTick } from './lib/db/allianceSync.js';
+import { pruneOldNotifications } from './lib/db/notifications.js';
 import { withCronLease } from './lib/cronLock.js';
 
 // Only bind the port / register cron + signal handlers when this module is the
@@ -909,6 +935,34 @@ const server = isMainModule ? app.listen(Number(port), '0.0.0.0', () => {
             log.error('cron alliance sync failed', { err: e });
         }
       }, { failClosed: true });
+    });
+
+    // Notification Center retention (daily, 03:30 UTC): prune inbox rows older
+    // than 90 days. The bell only ever surfaces the latest 100 per recipient, so
+    // anything this old is already unreachable. pruneOldNotifications never throws
+    // and deletes in bounded <=500-id chunks. 10-minute lease hold is ample.
+    cron.schedule('30 3 * * *', async () => {
+      await withCronLease('prune_notifications', 600, async () => {
+        const t0 = Date.now();
+        try {
+            const deleted = await pruneOldNotifications(90);
+            log.info('cron notification-prune done', { deleted, durationMs: Date.now() - t0 });
+        } catch (e) {
+            log.error('cron notification prune failed', { err: e });
+        }
+      });
+    });
+
+    cron.schedule('30 4 * * *', async () => {
+      await withCronLease('org_media_gc', 1800, async () => {
+        const t0 = Date.now();
+        try {
+            await runOrgMediaGc();
+            log.info('cron media-gc done', { durationMs: Date.now() - t0 });
+        } catch (e) {
+            log.error('cron media gc failed', { err: e });
+        }
+      });
     });
 
     log.info('cron jobs initialized');

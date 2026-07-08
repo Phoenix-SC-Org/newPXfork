@@ -22,7 +22,7 @@ import { useDataCore } from './DataCoreContext';
 import {
     BrandingConfig, DiscordConfig, HeroCardConfig, OpenGraphConfig, RadioConfig,
     AIConfig, WikiHomeConfig, HRConfig, PublicPageConfig, ServiceTypeConfig,
-    ExternalTool, RadioChannel, TestimonialCandidate,
+    ExternalTool, RadioChannel, TestimonialCandidate, ThemeConfig,
 } from '../types';
 
 // Re-exports so domain consumers can import config types from either
@@ -30,7 +30,7 @@ import {
 export type {
     BrandingConfig, DiscordConfig, HeroCardConfig, OpenGraphConfig, RadioConfig,
     AIConfig, WikiHomeConfig, HRConfig, PublicPageConfig, ServiceTypeConfig,
-    ExternalTool, RadioChannel, TestimonialCandidate,
+    ExternalTool, RadioChannel, TestimonialCandidate, ThemeConfig,
 } from '../types';
 
 // Default branding icon — mirrors DataContext.defaultIconUrl. Kept duplicated
@@ -39,6 +39,7 @@ const defaultIconUrl = '/media/cross-swords.png';
 
 export interface ConfigContextValue {
     brandingConfig: BrandingConfig;
+    themeConfig: Partial<ThemeConfig>;
     discordConfig: DiscordConfig;
     heroCardConfig: HeroCardConfig;
     openGraphConfig: OpenGraphConfig;
@@ -90,6 +91,7 @@ export interface ConfigContextValue {
     updateDiscordConfig: (config: any) => Promise<void>;
     updateHeroCardConfig: (config: HeroCardConfig) => Promise<void>;
     updateBrandingConfig: (config: any) => Promise<void>;
+    updateThemeConfig: (config: Partial<ThemeConfig>) => Promise<void>;
     updateOpenGraphConfig: (config: OpenGraphConfig) => Promise<void>;
     updateRadioConfig: (config: any) => Promise<void>;
     updateAIConfig: (config: any) => Promise<void>;
@@ -118,6 +120,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { rpcAction, registerSliceSetter } = useDataCore();
 
     const [brandingConfig, setBrandingConfig] = useState<BrandingConfig>({ name: '', iconUrl: defaultIconUrl });
+    const [themeConfig, setThemeConfig] = useState<Partial<ThemeConfig>>({ enabled: false });
     const [discordConfig, setDiscordConfig] = useState<DiscordConfig>({});
     const [heroCardConfig, setHeroCardConfig] = useState<HeroCardConfig>({ backgroundImageUrl: '', discordUrl: '', organizationUrl: '', title: '', subtitle: '' });
     const [openGraphConfig, setOpenGraphConfig] = useState<OpenGraphConfig>({ title: '', description: '', imageUrl: '' });
@@ -184,6 +187,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     useEffect(() => {
         const cleanups = [
             registerSliceSetter('brandingConfig', (data: any) => { if (data.brandingConfig) setBrandingConfig(data.brandingConfig); }),
+            registerSliceSetter('themeConfig', (data: any) => { if (data.themeConfig) setThemeConfig(data.themeConfig); }),
             registerSliceSetter('discordConfig', (data: any) => { if (data.discordConfig) setDiscordConfig(data.discordConfig); }),
             registerSliceSetter('heroCardConfig', (data: any) => { if (data.heroCardConfig) setHeroCardConfig(data.heroCardConfig); }),
             registerSliceSetter('openGraphConfig', (data: any) => { if (data.openGraphConfig) setOpenGraphConfig(data.openGraphConfig); }),
@@ -265,6 +269,10 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         rpcAction('admin:update_branding_config', config).then(() => refreshMain()),
     [rpcAction, refreshMain]);
 
+    const updateThemeConfig = useCallback((config: Partial<ThemeConfig>) =>
+        rpcAction('admin:update_theme_config', config).then(() => refreshMain()),
+    [rpcAction, refreshMain]);
+
     const updateOpenGraphConfig = useCallback((config: OpenGraphConfig) =>
         rpcAction('admin:update_opengraph_config', config).then(() => refreshMain()),
     [rpcAction, refreshMain]);
@@ -307,7 +315,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     const value = useMemo<ConfigContextValue>(() => ({
-        brandingConfig, discordConfig, heroCardConfig, openGraphConfig, radioConfig,
+        brandingConfig, themeConfig, discordConfig, heroCardConfig, openGraphConfig, radioConfig,
         aiConfig, wikiHomeConfig, hrConfig, publicPageConfig,
         serviceTypes, externalTools, locations, radioChannels,
         setBrandingConfig, setDiscordConfig, setHeroCardConfig, setOpenGraphConfig, setRadioConfig,
@@ -317,20 +325,20 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addServiceType, updateServiceType, deleteServiceType,
         addExternalTool, updateExternalTool, deleteExternalTool, reorderExternalTool,
         deleteRadioChannel,
-        updateDiscordConfig, updateHeroCardConfig, updateBrandingConfig, updateOpenGraphConfig,
+        updateDiscordConfig, updateHeroCardConfig, updateBrandingConfig, updateThemeConfig, updateOpenGraphConfig,
         updateRadioConfig, updateAIConfig, updateWikiHomeConfig, updateSystemConfig,
         updatePublicPageConfig, updateOrgFeatures,
         listTestimonialCandidates,
         registerRefreshMainState, registerRefreshDiscord, registerRefreshExternalTools,
     }), [
-        brandingConfig, discordConfig, heroCardConfig, openGraphConfig, radioConfig,
+        brandingConfig, themeConfig, discordConfig, heroCardConfig, openGraphConfig, radioConfig,
         aiConfig, wikiHomeConfig, hrConfig, publicPageConfig,
         serviceTypes, externalTools, locations, radioChannels,
         addLocation, updateLocation, deleteLocation, seedDefaultLocations,
         addServiceType, updateServiceType, deleteServiceType,
         addExternalTool, updateExternalTool, deleteExternalTool, reorderExternalTool,
         deleteRadioChannel,
-        updateDiscordConfig, updateHeroCardConfig, updateBrandingConfig, updateOpenGraphConfig,
+        updateDiscordConfig, updateHeroCardConfig, updateBrandingConfig, updateThemeConfig, updateOpenGraphConfig,
         updateRadioConfig, updateAIConfig, updateWikiHomeConfig, updateSystemConfig,
         updatePublicPageConfig, updateOrgFeatures,
         listTestimonialCandidates,

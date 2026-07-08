@@ -1,6 +1,7 @@
 
 import { supabase, handleSupabaseError, safeFetch } from '../common.js';
 import { sanitizeTiptapJson } from '../../tiptapValidate.js';
+import { normalizeDocMediaForStorage, assertDocImageCap, signDocMediaForClient } from '../../orgMediaDocs.js';
 import { stripHtml } from '../../textSanitize.js';
 import {
     MotionStatus,
@@ -56,9 +57,15 @@ export async function getLegislationState(): Promise<GovernmentLegislation[]> {
         [], 'government_legislation'
     );
 
-    return Array.isArray(result)
+    const legislation = Array.isArray(result)
         ? result.map(r => toGovernmentLegislation(r as unknown as Parameters<typeof toGovernmentLegislation>[0]))
         : [];
+    // Legislation bodies may reference private-bucket images by key; sign them for this
+    // permitted reader (this runs behind the gov:view gate).
+    for (const l of legislation) {
+        if (l.body) l.body = await signDocMediaForClient(l.body);
+    }
+    return legislation;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +117,8 @@ export async function getMotionsState(currentUserId?: number): Promise<Governmen
 
 export async function createLegislation(data: Partial<GovernmentLegislation> & { userId?: number }): Promise<GovernmentLegislation | null> {
     // Legislation body is edited via the WikiEditor (Tiptap JSON) — sanitize on save.
-    const safeBody = data.body && typeof data.body === 'object' ? sanitizeTiptapJson(data.body, 'wiki') : (data.body || '');
+    const safeBody = data.body && typeof data.body === 'object' ? normalizeDocMediaForStorage(sanitizeTiptapJson(data.body, 'wiki')) : (data.body || '');
+    if (safeBody && typeof safeBody === 'object') assertDocImageCap(safeBody);
     const payload = {
         title: data.title,
         body: safeBody,
@@ -138,8 +146,9 @@ export async function updateLegislation(legislationId: number, updates: Partial<
     if (updates.title !== undefined) dbUpdates.title = updates.title;
     if (updates.body !== undefined) {
         dbUpdates.body = updates.body && typeof updates.body === 'object'
-            ? sanitizeTiptapJson(updates.body, 'wiki')
+            ? normalizeDocMediaForStorage(sanitizeTiptapJson(updates.body, 'wiki'))
             : updates.body;
+        if (dbUpdates.body && typeof dbUpdates.body === 'object') assertDocImageCap(dbUpdates.body);
     }
     if (updates.summary !== undefined) dbUpdates.summary = updates.summary;
     if (updates.sponsorPositionId !== undefined) dbUpdates.sponsor_position_id = updates.sponsorPositionId;

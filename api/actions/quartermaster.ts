@@ -1,5 +1,5 @@
 import * as db from '../../lib/db.js';
-import { sendPushToPermission, sendPushToUsers } from '../../lib/push.js';
+import { sendPushToPermission } from '../../lib/push.js';
 import { log as baseLog } from '../../lib/log.js';
 import type { QmCatalogCategory, QmLocationType, QmCondition, QmIssuanceStatus } from '../../types.js';
 
@@ -280,12 +280,14 @@ export const quartermasterActions = {
             const issuances = await db.listIssuances({ limit: 1 });
             const issuance = issuances.find((i) => i.id === issuanceId);
             if (issuance && issuance.issuedToUserId !== userId) {
-                sendPushToUsers([issuance.issuedToUserId], {
+                // Durable inbox notification (also emits realtime + OS push).
+                await db.createNotification(issuance.issuedToUserId, {
+                    type: 'qm_issuance',
                     title: 'Loadout ready',
                     body: `Your issuance of ${issuance.quantity}× ${issuance.inventory?.catalog?.name || issuance.inventory?.customName || 'item'} has been fulfilled.`,
-                    tag: `qm-fulfilled-${issuanceId}`,
-                    data: { view: 'quartermaster', tab: 'issuances', issuanceId },
-                }).catch((err) => log.warn('fulfil push failed', { err }));
+                    link: 'quartermaster',
+                    metadata: { issuanceId },
+                }).catch((err) => log.warn('fulfil notification failed', { err }));
             }
         }
         return { applied: ok };
@@ -298,12 +300,13 @@ export const quartermasterActions = {
             inventoryId, issuedToUserId, quantity, dueBackAt, notes, operationId,
         });
         if (issuedToUserId !== userId) {
-            sendPushToUsers([issuedToUserId], {
+            await db.createNotification(issuedToUserId, {
+                type: 'qm_issuance',
                 title: 'Loadout issued',
                 body: `You've been issued ${quantity}× item by an officer.`,
-                tag: `qm-issued-${issuanceId}`,
-                data: { view: 'quartermaster', tab: 'issuances', issuanceId },
-            }).catch((err) => log.warn('issue push failed', { err }));
+                link: 'quartermaster',
+                metadata: { issuanceId },
+            }).catch((err) => log.warn('issue notification failed', { err }));
         }
         return { issuanceId };
     },
@@ -315,12 +318,13 @@ export const quartermasterActions = {
             issuedToUserId, lines, dueBackAt, notes, operationId,
         });
         if (issuedToUserId !== userId && issuanceIds.length > 0) {
-            sendPushToUsers([issuedToUserId], {
+            await db.createNotification(issuedToUserId, {
+                type: 'qm_issuance',
                 title: 'Kit issued',
                 body: `An officer issued ${issuanceIds.length} ${issuanceIds.length === 1 ? 'item' : 'items'} to you.`,
-                tag: `qm-issued-kit-${issuanceIds[0]}`,
-                data: { view: 'quartermaster', tab: 'issuances', issuanceId: issuanceIds[0] },
-            }).catch((err) => log.warn('bulk issue push failed', { err }));
+                link: 'quartermaster',
+                metadata: { issuanceId: issuanceIds[0] },
+            }).catch((err) => log.warn('bulk issue notification failed', { err }));
         }
         return { issuanceIds };
     },

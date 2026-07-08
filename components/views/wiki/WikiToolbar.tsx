@@ -4,6 +4,8 @@ import { useI18n } from '../../../i18n/I18nContext';
 
 interface WikiToolbarProps {
     editor: Editor;
+    /** When provided, the toolbar shows an image-upload button in addition to insert-by-URL. */
+    onImageUpload?: () => void;
 }
 
 const ToolbarButton: React.FC<{
@@ -57,8 +59,12 @@ const TableButton: React.FC<{
     </button>
 );
 
+<<<<<<< HEAD
 const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
     const { t } = useI18n();
+=======
+const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor, onImageUpload }) => {
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
     const [isOverflowOpen, setIsOverflowOpen] = useState(false);
     const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -134,6 +140,13 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
 
             <Divider />
 
+            {onImageUpload && (
+                <ToolbarButton
+                    onClick={onImageUpload}
+                    icon="fa-solid fa-upload"
+                    title="Upload Image"
+                />
+            )}
             <ToolbarButton
                 onClick={() => promptAndInsert(t('Enter image URL:'), (url) => editor.chain().focus().setImage({ src: url }).run())}
                 icon="fa-solid fa-image"

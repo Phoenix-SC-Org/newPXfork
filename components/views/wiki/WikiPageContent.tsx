@@ -146,6 +146,7 @@ const WikiPageContent: React.FC<WikiPageContentProps> = ({
                 )}
 
                 <WikiEditor
+                    uploadFeature="wiki"
                     content={page.content}
                     editable={true}
                     onSave={handleSave}

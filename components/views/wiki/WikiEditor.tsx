@@ -13,7 +13,11 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { IframeExtension } from './extensions/IframeExtension';
 import WikiToolbar from './WikiToolbar';
+<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
+=======
+import apiService from '../../../services/apiService';
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 interface WikiEditorProps {
     content: any;
@@ -21,11 +25,33 @@ interface WikiEditorProps {
     onSave?: (json: any) => Promise<void> | void;
     onCancel?: () => void;
     onChange?: (json: any) => void;
+    // When set, the toolbar offers an image upload for this feature (alongside insert-by-URL).
+    // Private features (wiki/government) get a short-lived signed URL to display; the stored
+    // object key is normalised on save.
+    uploadFeature?: string;
 }
 
+<<<<<<< HEAD
 const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCancel, onChange }) => {
     const { t } = useI18n();
+=======
+const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCancel, onChange, uploadFeature }) => {
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
     const [isSaving, setIsSaving] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = () => fileInputRef.current?.click();
+    const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = ''; // allow re-picking the same file
+        if (!file || !editor || !uploadFeature) return;
+        try {
+            const res = await apiService.uploadOrgMedia(file, uploadFeature);
+            if (res.url) editor.chain().focus().setImage({ src: res.url }).run();
+        } catch (err) {
+            alert(`Image upload failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+        }
+    };
 
     const handleSave = async () => {
         if (!editor || !onSave || isSaving) return;
@@ -96,7 +122,10 @@ const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCa
 
     return (
         <div className="wiki-editor">
-            {editable && <WikiToolbar editor={editor} />}
+            {uploadFeature && (
+                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" className="hidden" onChange={onFilePicked} />
+            )}
+            {editable && <WikiToolbar editor={editor} onImageUpload={uploadFeature ? handleImageUpload : undefined} />}
             <div className={`rounded-lg border ${editable ? 'border-sky-500/30 bg-slate-900/50' : 'border-transparent bg-transparent'}`}>
                 <EditorContent editor={editor} />
             </div>

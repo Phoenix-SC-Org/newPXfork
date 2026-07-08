@@ -471,6 +471,15 @@ export const DataCoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 // dispatch a window event so AuthContext can re-hydrate
                 // currentUser's heavy fields if it's about them.
                 window.dispatchEvent(new CustomEvent('app:realtime:user-update', { detail: payload.payload }));
+            })
+            .on('broadcast', { event: 'notification_update' }, (payload) => {
+                debugLog('[Realtime] Notification Update Broadcast Received');
+                // Base channel (every member has a personal inbox). Payload is
+                // id-only ({ notificationId, targetUserId }); relay it to
+                // PersistentNotificationsContext, which refetches the self-scoped
+                // inbox ONLY when targetUserId === the signed-in user. No content
+                // ever rides the wire.
+                window.dispatchEvent(new CustomEvent('app:realtime:notification-update', { detail: payload.payload }));
             });
 
         if (hasPerm('fleet:view')) {
@@ -484,6 +493,18 @@ export const DataCoreProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     const subsets = parseSlicePayload(payload.payload, FLEET_SLICE_SUBSETS);
                     if (subsets) for (const s of subsets) callFetcher(s);
                     else callFetcher('fleet');
+                });
+        }
+
+        if (hasPerm('academy:view')) {
+            channel = channel
+                .on('broadcast', { event: 'academy_update' }, () => {
+                    debugLog('[Realtime] Academy Update Broadcast Received');
+                    // Id-only staff signal (course/session mutations). Refetch the
+                    // whole staff 'academy' subset — content rides the gated read.
+                    // Students' My Academy changes ride their own mutation refresh +
+                    // the notification_update signal, not this staff channel.
+                    callFetcher('academy');
                 });
         }
 

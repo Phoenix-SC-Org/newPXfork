@@ -365,3 +365,42 @@ export function isEmptyTiptapDoc(doc: unknown): boolean {
     if (!doc || typeof doc !== 'object') return true;
     return !nodeHasContent(doc);
 }
+
+// ---------------------------------------------------------------------------
+// Image-src collection / mapping over a doc tree
+// ---------------------------------------------------------------------------
+// Used by the private-media transforms: gather every image source in a doc (to
+// count them or sign them), and rebuild a doc replacing each image src.
+
+/** Collect every distinct image node `src` in a doc tree. */
+export function collectImageSrcs(node: unknown, out: Set<string> = new Set<string>()): Set<string> {
+    if (!node || typeof node !== 'object') return out;
+    const n = node as { type?: unknown; attrs?: { src?: unknown } | null; content?: unknown };
+    if (n.type === 'image' && typeof n.attrs?.src === 'string' && n.attrs.src) {
+        out.add(n.attrs.src);
+    }
+    if (Array.isArray(n.content)) {
+        for (const child of n.content) collectImageSrcs(child, out);
+    }
+    return out;
+}
+
+/**
+ * Rebuild a doc, replacing every image node's `src` with fn(src). If fn returns a falsy
+ * value the image node is dropped. Pure — returns a new tree, input untouched. Walks
+ * `content[]` only, matching the sanitiser's tree shape.
+ */
+export function mapImageSrcs(node: unknown, fn: (src: string) => string | null): any {
+    if (!node || typeof node !== 'object') return node;
+    const n = node as { type?: unknown; attrs?: { src?: unknown } | null; content?: unknown };
+    if (n.type === 'image') {
+        const src = typeof n.attrs?.src === 'string' ? n.attrs.src : '';
+        const mapped = src ? fn(src) : null;
+        if (!mapped) return null;
+        return { ...n, attrs: { ...n.attrs, src: mapped } };
+    }
+    if (Array.isArray(n.content)) {
+        return { ...n, content: n.content.map(c => mapImageSrcs(c, fn)).filter(c => c !== null) };
+    }
+    return n;
+}

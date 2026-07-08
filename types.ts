@@ -1034,6 +1034,13 @@ export interface Location {
     parent_id?: number;
 }
 
+/** Custom theme (v1: accent-only). When disabled/absent, the default theme applies. */
+export interface ThemeConfig {
+    enabled: boolean;
+    /** Base brand accent as a canonical #rrggbb hex; the server derives the full shade ramp. */
+    accent?: string;
+}
+
 export interface BrandingConfig {
     name: string;
     iconUrl: string;
@@ -2499,4 +2506,176 @@ export function formatReferralSource(source: string | undefined | null): string 
     if (REFERRAL_SOURCE_LABELS[source]) return REFERRAL_SOURCE_LABELS[source];
     if (source.startsWith('Internal Application:')) return source.replace('Internal Application:', 'Job:').trim();
     return source.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// =============================================================================
+// NOTIFICATION CENTER (persistent per-user inbox)
+// =============================================================================
+// A durable, per-recipient record of meaningful org events (request lifecycle,
+// QM issuance, HR assignment, academy enrolment/completion, …) — distinct from
+// the ephemeral toast/"attention required" feed. The row stores only a
+// NON-SENSITIVE summary + an in-app deep-link; clicking re-fetches the
+// permission-gated view. organizationId/userId are never surfaced to the client.
+export interface PersistentNotification {
+    id: number;
+    /** Category for icon/grouping, e.g. 'request' | 'qm_issuance' | 'hr_assignment' | 'academy_enrolled'. Free text. */
+    type: string;
+    title: string;
+    body: string;
+    /** In-app view target (e.g. 'requests', 'academy') for coarse section nav. */
+    link: string | null;
+    /** Minimal non-sensitive entity ids for rendering/grouping — never gated content. */
+    metadata: Record<string, unknown>;
+    /** ISO timestamp when read, or null while unread. */
+    readAt: string | null;
+    createdAt: string;
+}
+
+// =============================================================================
+// ACADEMY (LMS) — courses → modules → lessons → outcomes, sessions, enrolments
+// =============================================================================
+// Optional feature (default OFF). Single-org: no organizationId on any academy
+// type (the tenant dimension the hosted build carried is gone). See lib/db/academy.ts.
+export type AcademyCourseStatus = 'draft' | 'pending_approval' | 'published' | 'archived';
+export type AcademyCourseAccess = 'open' | 'gated';
+/** How a course is run: scheduled cohort sessions, or evergreen self-paced (enrol anytime). */
+export type AcademyCourseDelivery = 'cohort' | 'self_paced';
+export type AcademySessionStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type AcademyEnrollmentStatus = 'enrolled' | 'in_progress' | 'completed' | 'withdrawn';
+export type AcademyEnrollmentSource = 'self' | 'assigned';
+export type AcademyOutcomeVerdict = 'competent' | 'not_yet_competent';
+
+/** Minimal user projection joined into academy rows (instructor / student / assessor). */
+export interface AcademyUserRef {
+    id: number;
+    name: string;
+    avatarUrl: string;
+    rsiHandle: string;
+}
+
+/** Certification a course awards on certified completion (minimal projection). */
+export interface AcademyCertRef {
+    id: number;
+    name: string;
+    icon: string | null;
+    imageUrl: string | null;
+}
+
+export interface AcademyLesson {
+    id: number;
+    moduleId: number;
+    title: string;
+    content: string | null;
+    videoUrl: string | null;
+    sortOrder: number;
+    estimatedMinutes: number | null;
+}
+
+export interface AcademyModule {
+    id: number;
+    courseId: string;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    lessons: AcademyLesson[];
+}
+
+export interface AcademyOutcome {
+    id: number;
+    courseId: string;
+    title: string;
+    description: string | null;
+    sortOrder: number;
+    required: boolean;
+}
+
+export interface AcademyCourse {
+    id: string;
+    title: string;
+    description: string | null;
+    icon: string | null;
+    imageUrl: string | null;
+    status: AcademyCourseStatus;
+    access: AcademyCourseAccess;
+    /** Cohort (scheduled sessions) or self-paced (evergreen, one implicit session). */
+    delivery: AcademyCourseDelivery;
+    certificationId: number | null;
+    certification: AcademyCertRef | null;
+    createdBy: number;
+    approvedBy: number | null;
+    publishedAt: string | null;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    /** Assigned curriculum authors (hydrated on detail reads). */
+    instructors: AcademyUserRef[];
+    /** Nested curriculum (hydrated on detail reads). */
+    modules: AcademyModule[];
+    outcomes: AcademyOutcome[];
+    /** Count of scheduled/active sessions (hydrated on list reads). */
+    sessionCount?: number;
+}
+
+export interface AcademySession {
+    id: string;
+    courseId: string;
+    /** Course title projection for list rendering. */
+    courseTitle: string | null;
+    title: string;
+    status: AcademySessionStatus;
+    startsAt: string | null;
+    endsAt: string | null;
+    location: string | null;
+    capacity: number | null;
+    enrollmentOpen: boolean;
+    /** True for the hidden auto-managed session that backs a self-paced course. */
+    isImplicit: boolean;
+    createdBy: number;
+    createdAt: string;
+    updatedAt: string;
+    /** Assigned session instructors (hydrated on detail reads). */
+    instructors: AcademyUserRef[];
+    /** Current enrolment count (hydrated for capacity display). */
+    enrollmentCount: number;
+}
+
+export interface AcademyLessonProgress {
+    id: number;
+    enrollmentId: string;
+    lessonId: number;
+    completedBy: number;
+    completedAt: string;
+}
+
+export interface AcademyOutcomeResult {
+    id: number;
+    enrollmentId: string;
+    outcomeId: number;
+    verdict: AcademyOutcomeVerdict;
+    assessedBy: number;
+    assessedAt: string;
+}
+
+export interface AcademyEnrollment {
+    id: string;
+    sessionId: string;
+    studentId: number;
+    student: AcademyUserRef | null;
+    source: AcademyEnrollmentSource;
+    status: AcademyEnrollmentStatus;
+    assignedBy: number | null;
+    recommendedBy: number | null;
+    recommendedAt: string | null;
+    certifiedBy: number | null;
+    completedAt: string | null;
+    enrolledAt: string;
+    /** Curriculum + competency detail (hydrated on the student/instructor detail view). */
+    lessonProgress: AcademyLessonProgress[];
+    outcomeResults: AcademyOutcomeResult[];
+    /** Session/course context projection for "My Sessions" rows. */
+    sessionTitle?: string | null;
+    courseTitle?: string | null;
+    /** Curriculum progress projection (hydrated in the my-academy bundle only). */
+    lessonsTotal?: number;
+    lessonsCompleted?: number;
 }

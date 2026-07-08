@@ -6,7 +6,11 @@ import { HeroCardConfig } from '../../../types';
 import { sanitizeImageUrl } from '../../../lib/imageUrl';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
+=======
+import ImageInput from '../../common/ImageInput';
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 const ClientSettingsTab: React.FC = () => {
     const { t } = useI18n();
@@ -64,15 +68,20 @@ const ClientSettingsTab: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div className="md:col-span-3 space-y-6">
                         <div>
+<<<<<<< HEAD
                             <label htmlFor="backgroundImageUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Background Image URL')}</label>
                             <input
                                 type="text"
+=======
+                            <ImageInput
+>>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                                 id="backgroundImageUrl"
-                                name="backgroundImageUrl"
+                                label="Background Image URL"
+                                feature="hero-card"
+                                preview="landscape"
                                 value={config.backgroundImageUrl}
-                                onChange={handleChange}
+                                onChange={(url) => setConfig(prev => ({ ...prev, backgroundImageUrl: url ?? '' }))}
                                 placeholder="https://..."
-                                className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono"
                             />
                         </div>
                         <div>
