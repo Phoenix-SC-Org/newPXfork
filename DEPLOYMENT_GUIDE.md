@@ -54,7 +54,6 @@ Copy `.env.example` to `.env` and fill it in (or set them in your host's environ
 
 The server fails fast on boot if `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing in production.
 
-<<<<<<< HEAD
 ### StarComms integration (optional)
 
 A read-only integration that reports the status of an external StarComms shard
@@ -96,9 +95,10 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:STARCOMMS_OWNER_API_K
 A `200` with a JSON status body means the shard and key are good. A `401`/`403`
 means the key is wrong; an HTML `Just a moment…` page means a Cloudflare/WAF in
 front of the shard is challenging the request.
-=======
+
+### Media / image uploads (optional)
+
 Image uploads work out of the box. If you want to change the defaults, three optional variables let you: `MEDIA_MAX_UPLOAD_BYTES` (largest single image, default 5 MB), `MEDIA_MAX_STORAGE_BYTES` (total space uploads may use, default 250 MB), and `MEDIA_GC_DRY_RUN=true` (makes the nightly cleanup only *report* unused images instead of deleting them — handy while you build confidence).
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 ---
 

@@ -5,11 +5,8 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
-<<<<<<< HEAD
 import { useI18n } from '../../i18n/I18nContext';
-=======
 import ImageInput from '../common/ImageInput';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 interface RankModalProps {
     isOpen: boolean;

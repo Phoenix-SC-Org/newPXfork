@@ -59,12 +59,8 @@ const TableButton: React.FC<{
     </button>
 );
 
-<<<<<<< HEAD
-const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
-    const { t } = useI18n();
-=======
 const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor, onImageUpload }) => {
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
+    const { t } = useI18n();
     const [isOverflowOpen, setIsOverflowOpen] = useState(false);
     const overflowRef = useRef<HTMLDivElement>(null);
 

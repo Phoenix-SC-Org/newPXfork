@@ -5,6 +5,82 @@ StarComms integration on this fork. Last verified: **2026-07-08**.
 
 ---
 
+## Upstream merge — c27b797 (v15.4.1-open "Catch Up Update")
+
+Upstream MyRSI commit `c27b797e69756b60e14543971cdb6457f2620efe` was merged into
+the StarComms V2.1 branch (`beta/starcomms-v2-1-upstream-c27b797`). Upstream adds
+notifications, Academy (LMS), native image uploads, org accent/theme changes,
+optional-feature-gate hardening, schema changes, tests, and docs. StarComms
+V1/V2/V2.1 is fully preserved — **no StarComms files, actions, components, tests,
+or docs were deleted; no StarComms schema permissions were added.**
+
+### How the merge arrived
+The branch was handed over with the merge **committed while unresolved** — i.e.
+literal `<<<<<<< / ======= / >>>>>>>` markers were baked into 21 files (git's
+index showed no unmerged entries). Each region was resolved in-place by combining
+upstream with our fork's changes.
+
+### Conflicts resolved (21 files, 36 regions)
+- **`api/services.ts`** — kept **both** the StarComms action imports/registry/
+  permission-map entries (`admin:starcomms_status`, `admin:starcomms_test`,
+  `operation:starcomms_status`) **and** upstream's `notificationActions` /
+  `academyActions` + their permission-map entries. The StarComms dispatcher OR-line
+  (`isStarCommsReader`) and upstream's `OPTIONAL_FEATURE_NAMESPACES` feature-gate
+  are both intact. StarComms still reuses `admin:access` / `operations:view` only.
+- **`lib/supabaseServer.ts`** (security-critical) — **kept our fork's version**
+  (plain `createClient` on the runtime's global fetch). Upstream reintroduced a
+  custom undici `Agent` with connection pooling; we intentionally rejected it
+  because that dispatcher broke all Supabase calls on our runtime
+  (`UND_ERR_INVALID_ARG` / "invalid onRequestStart method"). Noted inline in the file.
+- **`DashboardApp.tsx`** — union of imports: our i18n/theme providers **and**
+  upstream's org-accent helpers (`useConfig`, `normalizeHexColor`, `orgTheme`).
+- **Native image uploads** (`AwardIconInput`, `RankModal`, `UnitModal`,
+  `ClientSettingsTab`, `OrganizationIdentityTab`, `OrgPublicPageTab`,
+  `SiteMetadataTab`, `AllianceManagementTab`, `AdminItemCatalogTab`,
+  `WikiEditor`, `WikiToolbar`) — took upstream's new `ImageInput`/upload feature,
+  kept our `t()` localization on labels.
+- **`FeaturesSettingsTab.tsx`** — took upstream's real Academy feature toggle
+  (replacing our "coming soon" placeholder).
+- **`DiscordSettingsTab.tsx`** — dropped our duplicate tab bar in favour of
+  upstream's sticky tab bar (localized), kept our Discord-sync security note.
+- **`ATSTab.tsx`** — took upstream's category dropdown (our `categoryTabs` var no
+  longer exists; upstream's `categoryOptions` does), kept `t()` localization.
+- **`HeaderNotificationsBell.tsx`** — took upstream's `totalCount` notifications
+  layout, kept our i18n strings.
+- **`DutyRosterView.tsx`** — kept upstream's clickable-row + `stopPropagation`
+  behaviour, kept our i18n titles and the `const { t }` component body.
+- **`index.css`** — kept our fork's scrollbar colour fallbacks.
+- **`DEPLOYMENT_GUIDE.md`** — kept the StarComms section **and** added upstream's
+  media-upload env-var paragraph.
+
+### Schema — action required on beta
+`schema.sql` merged cleanly and **already contains upstream's additions**
+(notifications, Academy, media). **Because the schema changed, on the beta
+Supabase you must:**
+1. **Re-run `schema.sql`** in the Supabase SQL editor so the new tables/columns/
+   policies land in the database.
+2. **Run "Repair Database"** afterwards (Admin → … ) so permission-catalog /
+   feature seeding is reconciled with the new schema.
+
+No new **StarComms** schema permissions were invented (StarComms still rides
+`admin:access` / `operations:view`, per V2.1).
+
+### Tests run and results (post-merge)
+- `npm install` — clean (0 vulnerabilities; lockfile already consistent)
+- `npx tsc --noEmit` — **clean**
+- `npm run build` — **success** (client + server)
+- `npm run lint` — **clean** (0 warnings, `--max-warnings 0`)
+- `npm run test` — **1505 passed / 161 files** (was 1419/148 pre-merge; upstream's
+  academy/notifications/media suites now run alongside StarComms's 39)
+- Bundle leak grep (post-build): `process.env.STARCOMMS*` = 0, `api/v1/status` = 0.
+
+### Status
+Stabilized. Working tree holds the resolved files (not committed, not pushed).
+No new StarComms features were added during this merge; V3 write actions remain
+out of scope.
+
+---
+
 ## Current branch
 
 ```

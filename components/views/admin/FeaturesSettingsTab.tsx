@@ -350,11 +350,6 @@ const FeaturesSettingsTab: React.FC = () => {
                         </div>
                     </div>
 
-<<<<<<< HEAD
-                    {/* Placeholder for future features */}
-                    <div className="bg-slate-800/20 rounded-lg border border-dashed border-slate-700/50 p-5 text-center">
-                        <p className="text-xs text-slate-500 uppercase tracking-widest">{t('More features coming soon')}</p>
-=======
                     {/* ACADEMY */}
                     <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden">
                         <div className="flex items-start gap-4 p-5">
@@ -387,7 +382,6 @@ const FeaturesSettingsTab: React.FC = () => {
                                 </div>
                             </div>
                         </div>
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                     </div>
                 </div>
 

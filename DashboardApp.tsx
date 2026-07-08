@@ -85,14 +85,11 @@ import WindowTaskbar from './components/layout/WindowTaskbar';
 import NotificationListener from './components/utility/NotificationListener';
 import { initializeSupabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/utility/ErrorBoundary';
-<<<<<<< HEAD
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import { ThemeProvider } from './theme/ThemeContext';
-=======
 import { useConfig } from './contexts/ConfigContext';
 import { normalizeHexColor } from './lib/color';
 import { accentRampVars, SKY_VAR_NAMES } from './lib/orgTheme';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 // Retry wrapper for lazy view imports — handles transient preload failures
 // (e.g. Safari module preload quirks) and stale-chunk errors after deploys.

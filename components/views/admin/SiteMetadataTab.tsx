@@ -5,11 +5,8 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { OpenGraphConfig } from '../../../types';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
-<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
-=======
 import ImageInput from '../../common/ImageInput';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 const SiteMetadataTab: React.FC = () => {
     const { t } = useI18n();
@@ -203,14 +200,8 @@ const SiteMetadataTab: React.FC = () => {
                             </p>
                         </div>
                         <div>
-<<<<<<< HEAD
                             <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-2">{t('Open Graph Image URL (Social Share)')}</label>
-                             <input
-                                type="text"
-=======
-                            <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-2">Open Graph Image URL (Social Share)</label>
                              <ImageInput
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                                 id="imageUrl"
                                 feature="site-metadata"
                                 hidePreview

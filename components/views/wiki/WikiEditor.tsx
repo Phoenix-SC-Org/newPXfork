@@ -13,11 +13,8 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { IframeExtension } from './extensions/IframeExtension';
 import WikiToolbar from './WikiToolbar';
-<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
-=======
 import apiService from '../../../services/apiService';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 interface WikiEditorProps {
     content: any;
@@ -31,12 +28,8 @@ interface WikiEditorProps {
     uploadFeature?: string;
 }
 
-<<<<<<< HEAD
-const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCancel, onChange }) => {
-    const { t } = useI18n();
-=======
 const WikiEditor: React.FC<WikiEditorProps> = ({ content, editable, onSave, onCancel, onChange, uploadFeature }) => {
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
+    const { t } = useI18n();
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 

@@ -177,35 +177,6 @@ const ATSTab: React.FC = () => {
                 </div>
             </div>
 
-<<<<<<< HEAD
-            {/* Category tabs */}
-            <div className="relative flex gap-0 -mb-px overflow-x-auto custom-scrollbar border-b border-white/5 shrink-0">
-                {categoryTabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setCategoryFilter(tab.key)}
-                        className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${categoryFilter === tab.key
-                            ? 'text-emerald-300 border-emerald-400'
-                            : 'text-slate-500 border-transparent hover:text-slate-300'
-                            }`}
-                    >
-                        <i className={`fa-solid ${tab.icon}`}></i>
-                        {t(tab.label)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Sub-filters + actions */}
-            <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
-                    className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
-                >
-                    <option value="All">{t('All Statuses')}</option>
-                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
-                </select>
-=======
             {/* Filters + actions */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -214,18 +185,17 @@ const ATSTab: React.FC = () => {
                         onChange={(e) => setCategoryFilter(e.target.value as 'All' | 'Recruitment' | 'Vetting' | 'Internal' | 'Transfer' | 'Jobs')}
                         className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
                     >
-                        {categoryOptions.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
+                        {categoryOptions.map(opt => <option key={opt.key} value={opt.key}>{t(opt.label)}</option>)}
                     </select>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
                         className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
                     >
-                        <option value="All">All Statuses</option>
-                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="All">{t('All Statuses')}</option>
+                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{t(s)}</option>)}
                     </select>
                 </div>
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
                 <div className="flex gap-2">
                     <button

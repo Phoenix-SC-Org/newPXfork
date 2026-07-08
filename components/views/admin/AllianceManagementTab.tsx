@@ -286,15 +286,9 @@ const AllianceManagementTab: React.FC = () => {
                             className="w-full bg-slate-800 border border-slate-600 rounded-sm p-2 text-white text-sm outline-hidden focus:border-slate-500" placeholder="e.g. MYRSI" disabled={!canManage} />
                     </div>
                     <div>
-<<<<<<< HEAD
                         <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">{t('Icon URL')}</label>
-                        <input value={profile.iconUrl || ''} onChange={e => setProfile(p => ({ ...p, iconUrl: e.target.value }))}
-                            className="w-full bg-slate-800 border border-slate-600 rounded-sm p-2 text-white text-sm outline-hidden focus:border-slate-500" placeholder="https://…" disabled={!canManage} />
-=======
-                        <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Icon URL</label>
                         <ImageInput feature="alliance" hidePreview value={profile.iconUrl || ''} onChange={v => setProfile(p => ({ ...p, iconUrl: v ?? '' }))}
                             placeholder="https://…" inputClassName="w-full bg-slate-800 border border-slate-600 rounded-sm p-2 text-white text-sm outline-hidden focus:border-slate-500" />
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">{t('Contact (Discord)')}</label>

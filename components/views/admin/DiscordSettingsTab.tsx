@@ -126,7 +126,7 @@ const DiscordSettingsTab: React.FC = () => {
                         }`}
                     >
                         <i className={`${tab.icon} text-[10px]`} />
-                        <span>{tab.label}</span>
+                        <span>{t(tab.label)}</span>
                     </button>
                 ))}
             </div>
@@ -138,26 +138,6 @@ const DiscordSettingsTab: React.FC = () => {
                 subtitle={t("Connect your Discord server for bot, channel routing, and role sync.")}
             />
 
-<<<<<<< HEAD
-            <div className="flex border-b border-slate-700/50 overflow-x-auto custom-scrollbar">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
-                            activeTab === tab.key
-                                ? 'text-slate-100 border-slate-300'
-                                : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-500'
-                        }`}
-                    >
-                        <i className={`${tab.icon} mr-2`} />
-                        {t(tab.label)}
-                    </button>
-                ))}
-            </div>
-
-=======
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
             {/* Discord Bot Configuration Warning */}
             {!discordConfig?.clientId && (
                 <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
@@ -340,15 +320,12 @@ const DiscordSettingsTab: React.FC = () => {
                             <p className="text-center text-slate-500 py-8">{t('No roles fetched. Click "Fetch Server Roles" to begin.')}</p>
                         )}
                     </div>
-<<<<<<< HEAD
 
                     <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/30 text-sm text-slate-400 space-y-2">
                         <p><i className="fa-solid fa-shield-halved mr-2 text-slate-500"></i><strong className="text-slate-300">{t('Security note:')}</strong> {t('The Admin permission level cannot be assigned via Discord sync. Only Member, Dispatcher, and custom roles are available.')}</p>
                         <p><i className="fa-solid fa-info-circle mr-2 text-slate-500"></i>{t("When syncing from Discord, the first matching role in the user's Discord role list determines their rank and permission level.")}</p>
                         <p><i className="fa-solid fa-robot mr-2 text-slate-500"></i><strong className="text-slate-300">{t('Bot requirement:')}</strong> {t('For bi-directional sync, your Discord bot needs the')} <code className="bg-slate-700 px-1.5 py-0.5 rounded-sm text-xs">MANAGE_ROLES</code> {t('permission and must have a role positioned higher than the roles it manages.')}</p>
                     </div>
-=======
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                 </div>
             )}
             </div>

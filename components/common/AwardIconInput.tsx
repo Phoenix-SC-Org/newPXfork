@@ -31,12 +31,8 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
     fallbackIcon,
     accentClass = 'text-sky-400',
     disabled,
-<<<<<<< HEAD
     iconPlaceholder,
-=======
-    iconPlaceholder = 'e.g., fa-solid fa-star',
     feature,
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 }) => {
     const { t } = useI18n();
     const urlValid = !imageUrl.trim() || isSafeImageUrl(imageUrl);

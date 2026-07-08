@@ -30,12 +30,9 @@ import { marketplaceActions } from './actions/marketplace.js';
 import { catalogActions } from './actions/catalog.js';
 import { allianceActions } from './actions/alliances.js';
 import { operationsFederationActions } from './actions/operations-federation.js';
-<<<<<<< HEAD
 import { starcommsActions } from './actions/starcomms.js';
-=======
 import { notificationActions } from './actions/notifications.js';
 import { academyActions } from './actions/academy.js';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 type ActionHandler = (payload: any, token?: string) => Promise<unknown>;
 
@@ -735,7 +732,6 @@ export const fullPermissionMap: Record<string, string> = {
     'marketplace:admin:list_reports': 'marketplace:admin',
     'marketplace:admin:review_report': 'marketplace:admin',
 
-<<<<<<< HEAD
     // StarComms integration (optional, read-only) — admin console panel (V1).
     'admin:starcomms_status': 'admin:access',
     'admin:starcomms_test': 'admin:access',
@@ -743,7 +739,7 @@ export const fullPermissionMap: Record<string, string> = {
     // additionally admits request:dispatch / admin:access via the OR check below
     // (isStarCommsReader), so Dispatch and Admin users also get live data.
     'operation:starcomms_status': 'operations:view',
-=======
+
     // Notification Center — the caller's OWN inbox. Self-scoped by user_id in the
     // db layer (BOLA-asserted), so any authenticated session may call these
     // (user:manage:self); there is no role permission for a personal inbox.
@@ -798,7 +794,6 @@ export const fullPermissionMap: Record<string, string> = {
     'academy:get_course': 'academy:view',
     'academy:get_session': 'academy:view',
     'academy:list_recommended': 'academy:manage',
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 };
 
 export const actions: Record<string, ActionHandler> = {
@@ -820,12 +815,9 @@ export const actions: Record<string, ActionHandler> = {
     ...catalogActions,
     ...allianceActions,
     ...operationsFederationActions,
-<<<<<<< HEAD
     ...starcommsActions,
-=======
     ...notificationActions,
     ...academyActions,
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 };
 
 // Validate permission-map coverage against the actions registry.

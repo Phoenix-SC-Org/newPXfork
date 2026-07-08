@@ -5,11 +5,8 @@ import MinimalRichEditor from '../../shared/editor/MinimalRichEditor';
 import { tryParseTiptapJson } from '../../../lib/tiptapValidate';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
-<<<<<<< HEAD
 import { useI18n } from '../../../i18n/I18nContext';
-=======
 import ImageInput from '../../common/ImageInput';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 const inputCls = "w-full bg-slate-900/60 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden transition-all";
 const inputMonoCls = inputCls + " font-mono";
@@ -348,16 +345,10 @@ const OrgPublicPageTab: React.FC = () => {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
-<<<<<<< HEAD
                             <label className="block text-sm font-medium text-slate-300">{t('Hero Banner Image URL')}</label>
-                            <input
-                                type="url"
-=======
-                            <label className="block text-sm font-medium text-slate-300">Hero Banner Image URL</label>
                             <ImageInput
                                 feature="public-page"
                                 hidePreview
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                                 value={config.heroImageUrl || ''}
                                 onChange={(v) => update('heroImageUrl', v ?? '')}
                                 placeholder="https://example.com/banner.jpg"
@@ -378,16 +369,10 @@ const OrgPublicPageTab: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
-<<<<<<< HEAD
                             <label className="block text-sm font-medium text-slate-300">{t('Profile Image URL')}</label>
-                            <input
-                                type="url"
-=======
-                            <label className="block text-sm font-medium text-slate-300">Profile Image URL</label>
                             <ImageInput
                                 feature="public-page"
                                 hidePreview
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                                 value={config.profileImageUrl || ''}
                                 onChange={(v) => update('profileImageUrl', v ?? '')}
                                 placeholder="https://example.com/avatar.png"

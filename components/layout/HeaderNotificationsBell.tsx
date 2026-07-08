@@ -127,21 +127,12 @@ export default function HeaderNotificationsBell() {
 
             {open && (
                 <div className="absolute top-full right-0 mt-1 w-80 max-w-[calc(100vw-1rem)] bg-slate-900 border border-white/10 rounded-xl shadow-2xl shadow-black/60 z-50 overflow-hidden animate-fade-in">
-<<<<<<< HEAD
-                    <div className="px-4 py-3 border-b border-white/5 bg-slate-950/50 flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Attention Required')}</p>
-                            <p className="text-sm font-bold text-white">
-                                {count === 0 ? t('All clear') : (count === 1 ? t('{count} item', { count }) : t('{count} items', { count }))}
-                                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
-=======
                     <div className="px-4 py-3 border-b border-white/5 bg-slate-950/50 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Notifications</p>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500">{t('Notifications')}</p>
                             <p className="text-sm font-bold text-white">
-                                {totalCount === 0 ? 'All clear' : `${totalCount} ${totalCount === 1 ? 'item' : 'items'}`}
-                                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {criticalCount} critical</span>}
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
+                                {totalCount === 0 ? t('All clear') : (totalCount === 1 ? t('{count} item', { count: totalCount }) : t('{count} items', { count: totalCount }))}
+                                {criticalCount > 0 && <span className="ml-2 text-rose-300">· {t('{count} critical', { count: criticalCount })}</span>}
                             </p>
                         </div>
                         {unreadCount > 0 && (
@@ -157,11 +148,7 @@ export default function HeaderNotificationsBell() {
                     {notifications.length === 0 && count === 0 ? (
                         <div className="px-4 py-8 text-center">
                             <i className="fa-solid fa-check-circle text-2xl text-slate-600 mb-2" />
-<<<<<<< HEAD
                             <p className="text-xs text-slate-500">{t('Nothing requires your attention.')}</p>
-=======
-                            <p className="text-xs text-slate-500">You're all caught up.</p>
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                         </div>
                     ) : (
                         <div className="max-h-96 overflow-y-auto">

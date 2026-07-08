@@ -7,11 +7,8 @@ import { useAuth } from '../../contexts/AuthContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
-<<<<<<< HEAD
 import { useI18n } from '../../i18n/I18nContext';
-=======
 import ImageInput from '../common/ImageInput';
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 
 interface UnitModalProps {
     isOpen: boolean;
@@ -165,13 +162,8 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                     <div className="border-t border-slate-700/50 pt-6">
                         <h4 className="text-sm font-bold text-white mb-4">{t('Branding & Identity')}</h4>
                         <div>
-<<<<<<< HEAD
                             <label className={labelClass}>{t('Logo URL')}</label>
-                            <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} disabled={isLoading} />
-=======
-                            <label className={labelClass}>Logo URL</label>
                             <ImageInput feature="unit" preview="square" value={logoUrl} onChange={(v) => setLogoUrl(v ?? '')} placeholder="https://..." inputClassName={inputClass} />
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
                         </div>
                         <div className="mt-4">
                             <label className={labelClass}>{t('Motto')}</label>

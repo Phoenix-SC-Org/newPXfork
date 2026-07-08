@@ -155,20 +155,12 @@
   background: var(--color-slate-800, #1e293b);
 }
 ::-webkit-scrollbar-thumb {
-<<<<<<< HEAD
   background-color: var(--color-sky-400, #38bdf8);
-=======
-  background-color: var(--color-sky-400);
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
   border-radius: 4px;
   border: 2px solid var(--color-slate-800, #1e293b);
 }
 ::-webkit-scrollbar-thumb:hover {
-<<<<<<< HEAD
   background-color: var(--color-sky-300, #7dd3fc);
-=======
-  background-color: var(--color-sky-300);
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
 }
 
 /* Date Picker Icon Visibility Fix for Dark Theme */

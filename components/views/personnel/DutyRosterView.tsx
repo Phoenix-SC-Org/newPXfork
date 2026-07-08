@@ -458,11 +458,7 @@ const DutyRosterView: React.FC = () => {
                                                     </span>
                                                 </div>
                                                 <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-<<<<<<< HEAD
-                                                    <button onClick={() => viewMemberProfile(member)} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
-=======
-                                                    <button onClick={(e) => { e.stopPropagation(); viewMemberProfile(member); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
+                                                    <button onClick={(e) => { e.stopPropagation(); viewMemberProfile(member); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
                                                         <i className="fa-solid fa-id-card"></i>
                                                     </button>
                                                     {canManageDuty && (
@@ -534,15 +530,10 @@ const FlatMemberRow: React.FC<{
     togglingId: number | null;
     onView: () => void;
     onToggleDuty: () => void;
-<<<<<<< HEAD
 }> = ({ member, canManageDuty, togglingId, onView, onToggleDuty }) => {
     const { t } = useI18n();
     return (
-    <div className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group">
-=======
-}> = ({ member, canManageDuty, togglingId, onView, onToggleDuty }) => (
     <div onClick={onView} className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group cursor-pointer">
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
         <div className="flex-1 flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
                 <img src={member.avatarUrl} className="w-8 h-8 rounded-full border border-slate-600 object-cover" alt="" />
@@ -570,11 +561,7 @@ const FlatMemberRow: React.FC<{
             </span>
         </div>
         <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-<<<<<<< HEAD
-            <button onClick={onView} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
-=======
-            <button onClick={(e) => { e.stopPropagation(); onView(); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
->>>>>>> c27b797e69756b60e14543971cdb6457f2620efe
+            <button onClick={(e) => { e.stopPropagation(); onView(); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title={t('View Profile')}>
                 <i className="fa-solid fa-id-card"></i>
             </button>
             {canManageDuty && (
