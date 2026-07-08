@@ -5,6 +5,92 @@ Last verified: **2026-07-08**.
 
 ---
 
+## StarComms V3.1 — operational open/close controls (2026-07-08)
+
+Surfaces the existing V3 manual open/close controls inside the Operations/Dispatch
+StarComms widget (previously admin-panel only), **reusing the V3 backend actions
+and gate**. No new backend, no new permission, no auto-sync, no schema change.
+
+### Status
+Code-complete on `beta/starcomms-v3-1-ops-controls`. All checks green (below).
+Not yet committed/pushed. Admin panel V3 controls and read-only V1/V2/V2.1 intact.
+
+### What changed
+The manual controls were extracted into a **shared component** used by both the
+admin tab and the widget, so the gating/confirm/write/refresh logic lives in one
+place (no duplication).
+
+**New**
+- `components/shared/StarCommsOperationControls.tsx` — pure
+  `StarCommsOperationControlsView` (prop-driven, testable) + a container that
+  wires the admin gate + confirm dialog + existing V3 actions + refresh. Renders
+  **nothing** unless the viewer has `admin:access` and the integration is enabled.
+  A `compact` prop switches between the widget's button row and the admin card.
+
+**Modified**
+- `components/shared/StarCommsStatusWidget.tsx` — the pure view gained an optional
+  `controls` slot; the container injects `<StarCommsOperationControls compact>`
+  with `enabled`/`configured`/`operationOpen`/`statusAvailable`/`onRefresh`. The
+  widget already shows current operation state, last-refresh, and the V2.1
+  warnings/hints — the controls sit beneath them.
+- `components/views/admin/StarCommsTab.tsx` — replaced its inline V3 write card
+  with the shared `<StarCommsOperationControls>` (removed the duplicated
+  `doWrite`/`writing`/`canManage` logic and now-unused imports).
+- `i18n/de.ts` — one new string (`"Admin only — no auto-sync"`); all other V3
+  strings reused.
+- `tests/starcommsControls.test.tsx` (new) — pure-view + container tests.
+
+### Permission behavior
+- **Backend unchanged** — writes still dispatch to `admin:starcomms_open` /
+  `admin:starcomms_close`, gated on **`admin:access`** in `fullPermissionMap`.
+- **Client-side visibility** — the buttons render only when
+  `useAuth().hasPermission('admin:access')` is true. Normal Operations/Dispatch
+  users (who can *read* the widget via `operations:view` / `request:dispatch`)
+  see the read-only status **without** any controls. A non-admin who forged the
+  call still gets a 403 server-side. No backend permission was weakened; no
+  `starcomms:manage` added.
+
+### Button states (widget & admin, shared logic)
+Hidden when not admin **or** `STARCOMMS_ENABLED=false`. Disabled when: not
+configured; status unavailable; a write is in flight (spinner); or the current
+`operationOpen` already matches the requested action (Open disabled while open,
+Close disabled while closed). Confirmation dialog before every write; status
+refreshes on success; failures show a non-blocking toast.
+
+### Tests run and results (2026-07-08)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — OK (5239 keys / 5871 de entries)
+- `npm run build` — success (client + server)
+- `npm run test` — **1524 passed / 162 files** (StarComms 58; +12 V3.1)
+- Bundle grep: `process.env.STARCOMMS*` = 0, `api/v1/operation` = 0, `api/v1/status` = 0
+- V3.1 coverage: non-admin → no controls; disabled → no controls; Open disabled
+  when already open; Close disabled when already closed; both disabled when status
+  unavailable / write in flight; confirm required (dismiss → no backend call);
+  success → `admin:starcomms_open`/`close` called + status refreshed; failure →
+  toast, no refresh.
+
+### Known limitations
+- **Admin-gated visibility only** — a non-admin Operations user never sees the
+  buttons (by design). No "read-only admins can view but not act" tier.
+- **Compact widget variant** shows just the button row + a "manual, no auto-sync"
+  label; the current state/last-refresh come from the widget's own grid (not
+  duplicated in the control block).
+- Inherits all V3 limitations: manual only, no auto-sync/background jobs,
+  non-destructive, `admin:access` gate (no `starcomms:manage`), per-process 15s
+  cache, env-only config, loose schema, no WAF handling.
+
+### Suggested next steps
+- **V3.2** — if/when a dedicated `starcomms:manage` permission is introduced
+  (schema change + reseed), swap the `admin:access` checks (UI `hasPermission` +
+  backend map) to it in one place each.
+- **V3.2** — richer confirm copy that reuses the V2.1 awareness (e.g. warn when
+  closing StarComms while a myRSI operation is still active).
+- **V3.2** — optional inline error text in the widget (in addition to the toast)
+  for operators who miss the transient toast.
+
+---
+
 ## Production readiness — V3 (2026-07-08): PASS
 
 Production-readiness pass over the full StarComms integration (V1 → V3). **No new

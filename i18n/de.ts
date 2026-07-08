@@ -5958,6 +5958,7 @@ export const de: Record<string, string | Record<string, string>> = {
 
     // StarComms V3 — manual operation control (admin-only write actions)
     "Manual operation control": "Manuelle Einsatzsteuerung",
+    "Admin only — no auto-sync": "Nur Admin — keine automatische Synchronisierung",
     "Manually open or close the StarComms operation. These are one-off admin actions — myRSI does not sync to StarComms automatically.": "Öffne oder schließe den StarComms-Einsatz manuell. Dies sind einmalige Admin-Aktionen — myRSI synchronisiert sich nicht automatisch mit StarComms.",
     "Current operation:": "Aktueller Einsatz:",
     "Last refreshed: {time}": "Zuletzt aktualisiert: {time}",

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useI18n } from '../../i18n/I18nContext';
 import { deriveCommsAwareness, KNOWN_FEATURE_KEYS, STALE_AFTER_MS } from './starCommsAwareness';
+import StarCommsOperationControls from './StarCommsOperationControls';
 
 // Read-only StarComms status widget for operational areas (Operations / Dispatch).
 // Data comes from the cached `operation:starcomms_status` service action — a
@@ -33,6 +34,9 @@ interface ViewProps {
     operationActive: boolean;
     stale: boolean;
     onRefresh: () => void;
+    /** Optional manual open/close controls (V3.1). Injected by the container so
+     *  the pure view stays context-free; renders nothing for non-admins. */
+    controls?: React.ReactNode;
 }
 
 const Cell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
@@ -43,7 +47,7 @@ const Cell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, valu
 );
 
 /** Pure presentational view — no context, fully prop-driven (testable). */
-export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, config, status, error, lastRefresh, operationActive, stale, onRefresh }) => {
+export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, config, status, error, lastRefresh, operationActive, stale, onRefresh, controls }) => {
     const { t } = useI18n();
     const ok = !!status && !error;
     const yesNo = (v: boolean | null) => (v === null ? '—' : v ? t('Yes') : t('No'));
@@ -166,6 +170,7 @@ export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, 
                 ) : (
                     <div className="text-xs text-slate-500">{t('No status available.')}</div>
                 )}
+                {!loading && controls}
             </div>
         </div>
     );
@@ -244,6 +249,16 @@ const StarCommsStatusWidget: React.FC<{ operationActive?: boolean }> = ({ operat
             operationActive={operationActive}
             stale={stale}
             onRefresh={onRefresh}
+            controls={
+                <StarCommsOperationControls
+                    compact
+                    enabled={!!config?.enabled}
+                    configured={!!config?.configured}
+                    operationOpen={status?.operationOpen ?? null}
+                    statusAvailable={!!status && !error}
+                    onRefresh={onRefresh}
+                />
+            }
         />
     );
 };
