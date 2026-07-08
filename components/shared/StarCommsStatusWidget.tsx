@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useI18n } from '../../i18n/I18nContext';
+import { deriveCommsAwareness, KNOWN_FEATURE_KEYS, STALE_AFTER_MS } from './starCommsAwareness';
 
 // Read-only StarComms status widget for operational areas (Operations / Dispatch).
 // Data comes from the cached `operation:starcomms_status` service action — a
@@ -29,6 +30,8 @@ interface ViewProps {
     status: CommsStatus | null;
     error: CommsError | null;
     lastRefresh: string | null;
+    operationActive: boolean;
+    stale: boolean;
     onRefresh: () => void;
 }
 
@@ -40,10 +43,24 @@ const Cell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, valu
 );
 
 /** Pure presentational view — no context, fully prop-driven (testable). */
-export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, config, status, error, lastRefresh, onRefresh }) => {
+export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, config, status, error, lastRefresh, operationActive, stale, onRefresh }) => {
     const { t } = useI18n();
     const ok = !!status && !error;
     const yesNo = (v: boolean | null) => (v === null ? '—' : v ? t('Yes') : t('No'));
+    const awareness = deriveCommsAwareness(status, operationActive);
+    // Resolve each awareness key to display text via literal t() calls (keeps the
+    // i18n scanner able to see the natural keys, and DE translations in sync).
+    const awarenessText: Record<string, string> = {
+        'op-closed': t('myRSI operation is active, but StarComms operation is closed.'),
+        'op-open-no-myrsi': t('StarComms operation is open, but no active myRSI operation was detected.'),
+        'no-operators': t('No StarComms operators are currently connected.'),
+        'no-nets': t('No StarComms nets are available.'),
+        'acars-off': t('StarComms ACARS is disabled for this deployment.'),
+    };
+    // Known flags first (stable order), then any remaining provider flags.
+    const featureKeys = status
+        ? [...KNOWN_FEATURE_KEYS.filter((k) => k in status.features), ...Object.keys(status.features).filter((k) => !KNOWN_FEATURE_KEYS.includes(k as typeof KNOWN_FEATURE_KEYS[number]))]
+        : [];
 
     return (
         <div className="rounded-xl border border-slate-700/50 bg-slate-900/50 overflow-hidden">
@@ -85,6 +102,31 @@ export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, 
                     </div>
                 ) : status ? (
                     <div className="space-y-3">
+                        {/* Contextual, non-blocking warnings/hints (V2.1). */}
+                        {awareness.length > 0 && (
+                            <div className="space-y-1.5">
+                                {awareness.map((a) => (
+                                    <div
+                                        key={a.key}
+                                        className={`flex items-start gap-1.5 text-[11px] leading-snug rounded-md px-2 py-1.5 border ${
+                                            a.level === 'warning'
+                                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                                                : 'bg-sky-500/10 border-sky-500/25 text-sky-200'
+                                        }`}
+                                    >
+                                        <i className={`fa-solid ${a.level === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'} mt-0.5`} />
+                                        <span>{awarenessText[a.key]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {stale && (
+                            <div className="text-[10px] text-amber-300/80">
+                                <i className="fa-solid fa-clock-rotate-left mr-1" />{t('StarComms status may be stale — refresh for the latest.')}
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <Cell label={t('Operation Open')} value={yesNo(status.operationOpen)} />
                             <Cell label={t('Connected Operators')} value={status.connectedOperators ?? '—'} />
@@ -105,15 +147,18 @@ export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, 
                             ) : <span className="text-[10px] text-slate-500">{t('No nets reported.')}</span>}
                         </div>
 
-                        {Object.keys(status.features).length > 0 && (
+                        {featureKeys.length > 0 && (
                             <div>
                                 <div className="text-[9px] uppercase tracking-widest text-slate-500 font-black mb-1">{t('Feature Flags')}</div>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {Object.entries(status.features).map(([k, v]) => (
-                                        <span key={k} className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${v ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-slate-800/60 border-slate-700/50 text-slate-500'}`}>
-                                            <i className={`fa-solid ${v ? 'fa-check' : 'fa-xmark'} mr-1`} />{k}
-                                        </span>
-                                    ))}
+                                    {featureKeys.map((k) => {
+                                        const v = status.features[k];
+                                        return (
+                                            <span key={k} className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${v ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-slate-800/60 border-slate-700/50 text-slate-500'}`}>
+                                                <i className={`fa-solid ${v ? 'fa-check' : 'fa-xmark'} mr-1`} />{k}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -127,8 +172,10 @@ export const StarCommsStatusView: React.FC<ViewProps> = ({ loading, refreshing, 
 };
 
 /** Container: fetches the cached status via rpcAction and manages state.
- *  Renders nothing when the integration is disabled or the caller lacks access. */
-const StarCommsStatusWidget: React.FC = () => {
+ *  Renders nothing when the integration is disabled or the caller lacks access.
+ *  `operationActive` is the host view's authoritative "a myRSI operation/dispatch
+ *  context is currently active" signal, used only to derive contextual hints. */
+const StarCommsStatusWidget: React.FC<{ operationActive?: boolean }> = ({ operationActive = false }) => {
     const { rpcAction } = useData();
     const { locale } = useI18n();
 
@@ -172,9 +219,19 @@ const StarCommsStatusWidget: React.FC = () => {
         setRefreshing(false);
     }, [fetchStatus]);
 
+    // Staleness is a display-only concern: re-evaluate on a light interval so the
+    // "may be stale" hint appears without ever issuing another network fetch
+    // (avoids aggressive polling). The tick only bumps local state.
+    const [nowTick, setNowTick] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNowTick(Date.now()), 30_000);
+        return () => clearInterval(id);
+    }, []);
+
     if (hidden) return null;
 
     const lastRefresh = fetchedAt ? new Date(fetchedAt).toLocaleTimeString(locale) : null;
+    const stale = !!fetchedAt && !error && nowTick - Date.parse(fetchedAt) > STALE_AFTER_MS;
 
     return (
         <StarCommsStatusView
@@ -184,6 +241,8 @@ const StarCommsStatusWidget: React.FC = () => {
             status={status}
             error={error}
             lastRefresh={lastRefresh}
+            operationActive={operationActive}
+            stale={stale}
             onRefresh={onRefresh}
         />
     );

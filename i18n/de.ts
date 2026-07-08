@@ -5760,4 +5760,15 @@ export const de: Record<string, string | Record<string, string>> = {
     "No status available.": "Kein Status verfügbar.",
     "This status is also shown to Operations and Dispatch users via a read-only widget.": "Dieser Status wird Operations- und Dispatch-Nutzern zusätzlich über ein schreibgeschütztes Widget angezeigt.",
 
+    // StarComms operational awareness (V2.1)
+    "myRSI operation is active, but StarComms operation is closed.": "myRSI-Einsatz ist aktiv, aber der StarComms-Einsatz ist geschlossen.",
+    "StarComms operation is open, but no active myRSI operation was detected.": "StarComms-Einsatz ist offen, aber es wurde kein aktiver myRSI-Einsatz erkannt.",
+    "No StarComms operators are currently connected.": "Derzeit sind keine StarComms-Operatoren verbunden.",
+    "No StarComms nets are available.": "Es sind keine StarComms-Netze verfügbar.",
+    "StarComms ACARS is disabled for this deployment.": "StarComms ACARS ist für diese Instanz deaktiviert.",
+    "StarComms status may be stale — refresh for the latest.": "StarComms-Status ist möglicherweise veraltet — für den aktuellen Stand aktualisieren.",
+    "Operational awareness": "Operative Hinweise",
+    "A read-only StarComms status widget is shown in the Operations Center and the Dispatch Console. It surfaces contextual, non-blocking warnings when the StarComms operation state does not match myRSI (e.g. an active myRSI operation while StarComms is closed, or no operators connected).": "Ein schreibgeschütztes StarComms-Status-Widget wird im Operations Center und in der Dispatch-Konsole angezeigt. Es zeigt kontextbezogene, nicht blockierende Warnungen an, wenn der StarComms-Einsatzstatus nicht mit myRSI übereinstimmt (z. B. ein aktiver myRSI-Einsatz bei geschlossenem StarComms oder keine verbundenen Operatoren).",
+    "StarComms operation:": "StarComms-Einsatz:",
+
 };

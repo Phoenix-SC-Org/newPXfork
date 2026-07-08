@@ -37,6 +37,122 @@ branch (`5c6b93b`) but is treated as *pending beta validation* — see
 "Exact next steps for V2". It adds a `StarCommsStatusWidget` to the Operations
 Center and Dispatch Console plus a cached read action; still no writes.
 
+**V2.1 (read-only operational awareness)** is code-complete on branch
+`beta/starcomms-v2-ops-widget`. It layers *contextual warnings/hints* on top of
+the V2 widget (operation open/closed correlation, operator/net awareness,
+feature-flag awareness, stale-status hint) and a read-only "Operational
+awareness" section in the admin panel. **No writes, no new actions, no new
+permissions, no `schema.sql` change.** See "StarComms V2.1" below.
+
+---
+
+## StarComms V2.1 — operational awareness (read-only)
+
+### Status
+Code-complete, **not yet committed/pushed** (working-tree changes). All checks
+green (see "Tests run" below). Reuses the V2 `operation:starcomms_status` gate
+verbatim — no permission or schema change.
+
+### Where warnings are derived (frontend-side, one additive backend tweak)
+Warnings are derived **client-side** in a pure, unit-tested helper
+(`components/shared/starCommsAwareness.ts`), because the `operation:starcomms_status`
+action is a **shared, context-free, throttled** read — injecting per-caller
+myRSI operation state into it would break the shared-cache guarantee and couple
+the comms action to operations/requests DB queries. The host views already hold
+the authoritative "is a myRSI operation/dispatch context active" signal, and all
+correlation inputs (`operationOpen`, `connectedOperators`, `nets`, `features`)
+are already in the safe typed V2 response — no secret involved. The only backend
+change is additive: normalizing four known feature flags in `coerceStatus`.
+
+### Warning / hint rules (`deriveCommsAwareness`)
+Only evaluated when a live status is present (disabled/error/not-configured are
+handled by the widget's own banners — rule 1.3 below):
+
+| Condition | Level | Message (natural key) |
+| :--- | :--- | :--- |
+| myRSI op active **and** `operationOpen === false` | warning | `myRSI operation is active, but StarComms operation is closed.` |
+| `operationOpen === true` **and** no active myRSI op | info | `StarComms operation is open, but no active myRSI operation was detected.` |
+| myRSI op active **and** `connectedOperators === 0` | warning | `No StarComms operators are currently connected.` |
+| `nets.length === 0` | info | `No StarComms nets are available.` |
+| myRSI op active **and** `features.acarsEnabled === false` | info (never error) | `StarComms ACARS is disabled for this deployment.` |
+| StarComms unavailable / timeout / disabled / misconfigured | non-blocking banner in the widget only (never blocks page load) | existing V2 error/not-configured banners |
+| displayed status older than `STALE_AFTER_MS` (60s) | hint | `StarComms status may be stale — refresh for the latest.` |
+
+"myRSI op active" signal per host: Operations Center = any operation with
+`OperationStatus.Active`; Dispatch Console = `stats.active > 0` (active service
+requests). Staleness re-evaluates on a 30s local timer that issues **no** network
+fetch (avoids aggressive polling); manual refresh (V2) is unchanged.
+
+### Feature flags
+`coerceStatus` now normalizes four known flags into the existing `features`
+map under stable keys — `globalPttEnabled`, `acarsEnabled`, `publicNet.enabled`,
+`orgLink.enabled` — read from top-level, nested-under-`features`, or the
+`publicNet`/`orgLink` objects. Absent flags are omitted (no false "disabled").
+Values are booleans only; no secret can enter. The widget shows known flags
+first, then any remaining provider flags.
+
+### Changed files (V2.1)
+**New**
+- `components/shared/starCommsAwareness.ts` — pure `deriveCommsAwareness()`,
+  `STALE_AFTER_MS`, `KNOWN_FEATURE_KEYS` (no React, fully testable).
+
+**Modified (additive)**
+- `lib/comms/starcomms.ts` — `enrichKnownFeatures()` folded into `coerceStatus`.
+- `components/shared/StarCommsStatusWidget.tsx` — `operationActive` prop, awareness
+  banners, stale hint, known-flags-first ordering; container computes staleness.
+- `components/views/operations/OperationsCenterView.tsx` — passes
+  `operationActive={operations.some(o => o.status === Active)}`.
+- `components/views/operations/DispatchCenterView.tsx` — passes
+  `operationActive={stats.active > 0}`.
+- `components/views/admin/StarCommsTab.tsx` — read-only "Operational awareness"
+  section (explainer + StarComms-side condition summary; no write controls).
+- `i18n/de.ts` — 9 German strings for the new keys.
+- `tests/starcomms.test.ts` — feature-flag coercion + key-redaction tests.
+- `tests/starcommsWidget.test.tsx` — `deriveCommsAwareness` rule tests + view render tests.
+
+**Not touched:** `api/services.ts` (no new action/perm), `schema.sql`, auth,
+Discord OAuth, Supabase/RLS, `lib/comms/index.ts` (cache unchanged),
+`lib/comms/types.ts` (no type change — `features` was already a boolean map).
+
+### Tests run and results (V2.1)
+- `npx tsc --noEmit` — **clean**
+- `npm run lint` — **clean** (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — **OK** (no missing/orphan keys; 5034 keys / 5667 de entries)
+- `npm run test` — **1419 passed / 148 files** (+16 vs V2: 6 provider/flag + 10 awareness/view)
+- `npm run build` — **success** (client + server)
+- Bundle leak grep (post-build): `process.env.STARCOMMS*` = 0, `api/v1/status` = 0;
+  `STARCOMMS_OWNER_API_KEY` = 2 (env-var **name** in the admin help sentence only,
+  EN+DE bundle — never the value).
+
+### Known limitations (V2.1)
+- "myRSI op active" is derived from data the host view already has; on a view
+  that hasn't loaded operations/requests yet it is momentarily `false` (may briefly
+  suppress the op-open/closed correlation). No false *warnings* result.
+- Staleness is a display hint only (60s), decoupled from the 15s server cache TTL;
+  it never forces a refetch.
+- Admin "Operational awareness" summary shows StarComms-*intrinsic* conditions
+  only (operators/nets/ACARS/operation-open) — it has no myRSI operation context,
+  so it deliberately omits the op-correlation rules to avoid false positives.
+- Feature-flag coercion still assumes a loosely-specced body; the single place to
+  tighten remains `coerceStatus` / `enrichKnownFeatures` in `lib/comms/starcomms.ts`.
+- Same per-process cache and no-WAF-handling caveats as V2.
+
+### Suggested V3 roadmap (write actions — NOT implemented)
+V3 would introduce the first **write** path and therefore a real permission
+boundary. Suggested shape when the feature stabilizes:
+1. Add dedicated catalog permissions `starcomms:view` / `starcomms:admin` in
+   `schema.sql` (+ reseed) — replacing the current V1/V2 gate reuse.
+2. Add write actions behind `starcomms:admin`, e.g. open/close operation, mint/join
+   a net, mute/move an operator — each with an explicit confirmation step.
+3. Extend `CommsProvider` with the write methods (keep the interface swappable);
+   implement in `StarCommsProvider` with the same redaction/timeout discipline.
+4. Optional two-way sync of myRSI operation open/close ↔ StarComms operation state
+   (behind an explicit opt-in; never automatic).
+5. Audit-log every write (actor + action + target) and add write-path tests
+   (authz, idempotency, failure surfaces, no-secret-leak).
+
+Out of scope now, per V2.1 constraints — do **not** implement V3 here.
+
 ---
 
 ## What is working in beta (V1)

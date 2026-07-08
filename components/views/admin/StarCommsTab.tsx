@@ -195,6 +195,33 @@ const StarCommsTab: React.FC = () => {
                             </div>
                         </div>
                     )}
+
+                    {/* Operational awareness (V2.1) — read-only explainer of where
+                        StarComms status is surfaced outside the admin panel, plus a
+                        compact summary of any StarComms-side conditions worth noting.
+                        No write controls. */}
+                    <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 px-4 py-3 space-y-2">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                            <i className="fa-solid fa-satellite-dish text-sky-400" /> {t('Operational awareness')}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                            {t('A read-only StarComms status widget is shown in the Operations Center and the Dispatch Console. It surfaces contextual, non-blocking warnings when the StarComms operation state does not match myRSI (e.g. an active myRSI operation while StarComms is closed, or no operators connected).')}
+                        </p>
+                        {status && (
+                            <ul className="text-xs text-slate-300 space-y-1 mt-1">
+                                <li><i className="fa-solid fa-circle-dot text-slate-500 mr-1.5 text-[8px]" />{t('StarComms operation:')} {yesNo(status.operationOpen)}</li>
+                                {status.connectedOperators === 0 && (
+                                    <li className="text-amber-300"><i className="fa-solid fa-triangle-exclamation mr-1.5" />{t('No StarComms operators are currently connected.')}</li>
+                                )}
+                                {status.nets.length === 0 && (
+                                    <li className="text-sky-300"><i className="fa-solid fa-circle-info mr-1.5" />{t('No StarComms nets are available.')}</li>
+                                )}
+                                {status.features.acarsEnabled === false && (
+                                    <li className="text-sky-300"><i className="fa-solid fa-circle-info mr-1.5" />{t('StarComms ACARS is disabled for this deployment.')}</li>
+                                )}
+                            </ul>
+                        )}
+                    </div>
                 </>
             )}
         </div>

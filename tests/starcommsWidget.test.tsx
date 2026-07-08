@@ -6,6 +6,8 @@ import { starcommsActions } from '../api/actions/starcomms';
 import { fullPermissionMap } from '../api/services';
 import { I18nProvider } from '../i18n/I18nContext';
 import { StarCommsStatusView } from '../components/shared/StarCommsStatusWidget';
+import { deriveCommsAwareness } from '../components/shared/starCommsAwareness';
+import type { CommsStatus } from '../lib/comms/types';
 
 const KEY = 'SC_OWNER_KEY_WIDGET_999';
 const BASE = 'https://shard.example.com';
@@ -91,11 +93,22 @@ const renderView = (props: Partial<React.ComponentProps<typeof StarCommsStatusVi
                 status={null}
                 error={null}
                 lastRefresh={null}
+                operationActive={false}
+                stale={false}
                 onRefresh={() => undefined}
                 {...props}
             />
         </I18nProvider>,
     );
+
+// A fully-connected StarComms status; individual tests override single fields.
+const baseStatus: CommsStatus = {
+    guildId: 'g-1', guildName: 'Phoenix',
+    shard: { publicUrl: 'https://shard.example.com', version: '2.1.0' },
+    connectedOperators: 3, operationOpen: true,
+    nets: [{ id: 'n1', name: 'Command' }],
+    features: { acarsEnabled: true },
+};
 
 describe('StarComms V2 — status view renders every state gracefully', () => {
     afterEach(() => cleanup());
@@ -125,5 +138,72 @@ describe('StarComms V2 — status view renders every state gracefully', () => {
 
     it('never throws for a malformed/empty status (does not break host load)', () => {
         expect(() => renderView({ status: null, error: null })).not.toThrow();
+    });
+});
+
+// --- Contextual awareness derivation (V2.1) ---------------------------------
+
+describe('deriveCommsAwareness — read-only warning/hint rules', () => {
+    it('warns when a myRSI operation is active but StarComms is closed', () => {
+        const items = deriveCommsAwareness({ ...baseStatus, operationOpen: false }, true);
+        expect(items).toContainEqual(expect.objectContaining({ key: 'op-closed', level: 'warning' }));
+    });
+
+    it('hints when StarComms is open but no myRSI operation is active', () => {
+        const items = deriveCommsAwareness({ ...baseStatus, operationOpen: true }, false);
+        expect(items).toContainEqual(expect.objectContaining({ key: 'op-open-no-myrsi', level: 'info' }));
+    });
+
+    it('warns when an operation is active but zero operators are connected', () => {
+        const items = deriveCommsAwareness({ ...baseStatus, connectedOperators: 0 }, true);
+        expect(items).toContainEqual(expect.objectContaining({ key: 'no-operators', level: 'warning' }));
+    });
+
+    it('hints when no nets are returned', () => {
+        const items = deriveCommsAwareness({ ...baseStatus, nets: [] }, false);
+        expect(items).toContainEqual(expect.objectContaining({ key: 'no-nets', level: 'info' }));
+    });
+
+    it('gives only an informational ACARS hint during an active context', () => {
+        const items = deriveCommsAwareness({ ...baseStatus, features: { acarsEnabled: false } }, true);
+        const acars = items.find(i => i.key === 'acars-off');
+        expect(acars?.level).toBe('info');
+    });
+
+    it('produces no items for a healthy, aligned status', () => {
+        expect(deriveCommsAwareness(baseStatus, true)).toHaveLength(0);
+    });
+
+    it('returns nothing when there is no status (error/disabled states)', () => {
+        expect(deriveCommsAwareness(null, true)).toEqual([]);
+    });
+});
+
+describe('StarComms V2.1 — contextual warnings render in the view', () => {
+    afterEach(() => cleanup());
+
+    it('shows the "myRSI active / StarComms closed" warning', () => {
+        renderView({ status: { ...baseStatus, operationOpen: false }, operationActive: true });
+        expect(screen.getByText('myRSI operation is active, but StarComms operation is closed.')).toBeTruthy();
+    });
+
+    it('shows the "StarComms open / no myRSI operation" hint', () => {
+        renderView({ status: { ...baseStatus, operationOpen: true }, operationActive: false });
+        expect(screen.getByText('StarComms operation is open, but no active myRSI operation was detected.')).toBeTruthy();
+    });
+
+    it('shows the zero-operators warning', () => {
+        renderView({ status: { ...baseStatus, connectedOperators: 0 }, operationActive: true });
+        expect(screen.getByText('No StarComms operators are currently connected.')).toBeTruthy();
+    });
+
+    it('shows the no-nets hint', () => {
+        renderView({ status: { ...baseStatus, nets: [] }, operationActive: false });
+        expect(screen.getByText('No StarComms nets are available.')).toBeTruthy();
+    });
+
+    it('shows the stale-status hint when marked stale', () => {
+        renderView({ status: baseStatus, operationActive: true, stale: true });
+        expect(screen.getByText(/may be stale/)).toBeTruthy();
     });
 });

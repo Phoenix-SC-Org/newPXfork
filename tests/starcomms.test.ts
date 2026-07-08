@@ -130,6 +130,57 @@ describe('StarComms provider', () => {
     });
 });
 
+describe('StarComms — known feature flags (V2.1)', () => {
+    afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+    it('normalizes top-level and nested known flags into features', async () => {
+        enableFull();
+        const body = {
+            ...OK_BODY,
+            globalPttEnabled: true,
+            acarsEnabled: false,
+            publicNet: { enabled: true },
+            orgLink: { enabled: false },
+        };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res(200, body)));
+        const r = await getCommsProvider().getStatus();
+        if (!r.ok) throw new Error('expected ok');
+        expect(r.status.features.globalPttEnabled).toBe(true);
+        expect(r.status.features.acarsEnabled).toBe(false);
+        expect(r.status.features['publicNet.enabled']).toBe(true);
+        expect(r.status.features['orgLink.enabled']).toBe(false);
+        // Generic passthrough flags are preserved alongside the known ones.
+        expect(r.status.features.push_to_talk).toBe(true);
+    });
+
+    it('reads known flags nested under features when not present top-level', async () => {
+        enableFull();
+        const body = { ...OK_BODY, features: { acarsEnabled: true, globalPttEnabled: false } };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res(200, body)));
+        const r = await getCommsProvider().getStatus();
+        if (!r.ok) throw new Error('expected ok');
+        expect(r.status.features.acarsEnabled).toBe(true);
+        expect(r.status.features.globalPttEnabled).toBe(false);
+    });
+
+    it('omits absent known flags (kept compact, no false "disabled")', async () => {
+        enableFull();
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res(200, { ...OK_BODY, features: {} })));
+        const r = await getCommsProvider().getStatus();
+        if (!r.ok) throw new Error('expected ok');
+        expect('acarsEnabled' in r.status.features).toBe(false);
+        expect('publicNet.enabled' in r.status.features).toBe(false);
+    });
+
+    it('never returns the owner key even with the flag payload present', async () => {
+        enableFull();
+        const body = { ...OK_BODY, globalPttEnabled: true, publicNet: { enabled: true } };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res(200, body)));
+        const r = await getCommsProvider().getStatus();
+        expect(JSON.stringify(r)).not.toContain(KEY);
+    });
+});
+
 describe('StarComms actions — no key leakage', () => {
     afterEach(() => {
         vi.unstubAllEnvs();

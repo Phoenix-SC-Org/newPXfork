@@ -85,6 +85,23 @@ function coerceFeatures(v: unknown): Record<string, boolean> {
     return out;
 }
 
+// The V2.1 operational-awareness UI surfaces four well-known StarComms feature
+// flags by canonical name. They may arrive either top-level, nested under
+// `features`, or (for publicNet/orgLink) inside their own object — so we look in
+// every plausible spot and merge the resolved value under a stable key. Absent
+// flags are simply not added (kept compact; no false "disabled"). This stays a
+// pure boolean map — no secret material can enter here.
+function enrichKnownFeatures(body: Record<string, unknown>, features: Record<string, boolean>): Record<string, boolean> {
+    const out = { ...features };
+    const f = asObj(body.features);
+    const set = (key: string, v: boolean | null) => { if (v !== null) out[key] = v; };
+    set('globalPttEnabled', asBool(body.globalPttEnabled) ?? asBool(f.globalPttEnabled));
+    set('acarsEnabled', asBool(body.acarsEnabled) ?? asBool(f.acarsEnabled));
+    set('publicNet.enabled', asBool(asObj(body.publicNet).enabled) ?? asBool(f['publicNet.enabled']));
+    set('orgLink.enabled', asBool(asObj(body.orgLink).enabled) ?? asBool(f['orgLink.enabled']));
+    return out;
+}
+
 function coerceStatus(body: Record<string, unknown>): CommsStatus {
     const guild = asObj(body.guild);
     const shard = asObj(body.shard);
@@ -100,7 +117,7 @@ function coerceStatus(body: Record<string, unknown>): CommsStatus {
         connectedOperators: asNum(body.connectedOperators) ?? asNum(operators.connected),
         operationOpen: asBool(body.operationOpen) ?? asBool(operation.open),
         nets: coerceNets(body.nets),
-        features: coerceFeatures(body.features),
+        features: enrichKnownFeatures(body, coerceFeatures(body.features)),
     };
 }
 

@@ -271,7 +271,7 @@ const OperationsCenterView: React.FC = () => {
                     />
                 </div>
 
-                <StarCommsStatusWidget />
+                <StarCommsStatusWidget operationActive={operations.some(o => o.status === OperationStatus.Active)} />
 
                 {/* Allied joint operations mirrored from host instances. */}
                 {(acceptedMirrors.length > 0 || pendingMirrors.length > 0) && !searchTerm && (
