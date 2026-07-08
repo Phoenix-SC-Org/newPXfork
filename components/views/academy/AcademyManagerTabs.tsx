@@ -47,7 +47,7 @@ export const ApprovalsTab: React.FC = () => {
     }, [addToast]);
     const errToast = useCallback((err: unknown) => {
         addToast(err instanceof Error ? err.message : t('Something went wrong.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
-    }, [addToast]);
+    }, [addToast, t]);
 
     const pending = academyCourses.filter(c => c.status === 'pending_approval');
     const published = academyCourses.filter(c => c.status === 'published');
@@ -85,7 +85,7 @@ export const ApprovalsTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [reviewCourse, rpcAction, okToast, errToast, refreshAcademy, closeReview]);
+    }, [reviewCourse, rpcAction, okToast, errToast, refreshAcademy, closeReview, t]);
 
     const reject = useCallback(async () => {
         if (!reviewCourse) return;
@@ -107,7 +107,7 @@ export const ApprovalsTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [reviewCourse, rpcAction, confirm, okToast, errToast, refreshAcademy, closeReview]);
+    }, [reviewCourse, rpcAction, confirm, okToast, errToast, refreshAcademy, closeReview, t]);
 
     const setAccess = useCallback(async (course: AcademyCourse, access: 'open' | 'gated') => {
         if (course.access === access || busy) return;
@@ -140,7 +140,7 @@ export const ApprovalsTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [confirm, rpcAction, okToast, errToast, refreshAcademy]);
+    }, [confirm, rpcAction, okToast, errToast, refreshAcademy, t]);
 
     const unarchiveCourse = useCallback(async (course: AcademyCourse) => {
         setBusy(true);
@@ -153,7 +153,7 @@ export const ApprovalsTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [rpcAction, okToast, errToast, refreshAcademy]);
+    }, [rpcAction, okToast, errToast, refreshAcademy, t]);
 
     return (
         <div className="space-y-8 max-w-3xl">
@@ -391,7 +391,7 @@ export const CertifyTab: React.FC = () => {
             addToast(err instanceof Error ? err.message : t('Failed to load certify queue'), <i className="fa-solid fa-triangle-exclamation" />, ERR_TOAST);
             setRows([]);
         }
-    }, [rpcAction, addToast]);
+    }, [rpcAction, addToast, t]);
 
     useEffect(() => {
         void (async () => { await load(); })();
@@ -410,7 +410,7 @@ export const CertifyTab: React.FC = () => {
         } finally {
             setBusyId(null);
         }
-    }, [rpcAction, confirm, addToast, load]);
+    }, [rpcAction, confirm, addToast, load, t]);
 
     if (rows === null) return <div className="py-16 text-center text-slate-500"><i className="fa-solid fa-spinner animate-spin text-2xl" aria-hidden /></div>;
 

@@ -699,22 +699,22 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
             {/* Roster */}
             <section className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roster ({activeEnrollments.length}{session.capacity != null ? ` / ${session.capacity}` : ''})</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Roster')} ({activeEnrollments.length}{session.capacity != null ? ` / ${session.capacity}` : ''})</h3>
                     <div className="flex items-center gap-3">
                         {selectedIds.size > 0 && (
                             <>
-                                <span className="text-[10px] text-slate-500 uppercase tracking-widest">{selectedIds.size} selected</span>
-                                <button type="button" disabled={busy} onClick={bulkRecommend} className="text-xs font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-widest disabled:opacity-50"><i className="fa-solid fa-user-graduate mr-1"></i>Recommend</button>
-                                <button type="button" disabled={busy} onClick={bulkWithdraw} className="text-xs font-bold text-red-400 hover:text-red-300 uppercase tracking-widest disabled:opacity-50"><i className="fa-solid fa-user-minus mr-1"></i>Withdraw</button>
-                                <button type="button" onClick={() => setSelectedIds(new Set())} className="text-xs text-slate-500 hover:text-slate-300 uppercase tracking-widest">Clear</button>
+                                <span className="text-[10px] text-slate-500 uppercase tracking-widest">{t('{count} selected', { count: selectedIds.size })}</span>
+                                <button type="button" disabled={busy} onClick={bulkRecommend} className="text-xs font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-widest disabled:opacity-50"><i className="fa-solid fa-user-graduate mr-1"></i>{t('Recommend')}</button>
+                                <button type="button" disabled={busy} onClick={bulkWithdraw} className="text-xs font-bold text-red-400 hover:text-red-300 uppercase tracking-widest disabled:opacity-50"><i className="fa-solid fa-user-minus mr-1"></i>{t('Withdraw')}</button>
+                                <button type="button" onClick={() => setSelectedIds(new Set())} className="text-xs text-slate-500 hover:text-slate-300 uppercase tracking-widest">{t('Clear')}</button>
                             </>
                         )}
-                        {!assigning && <button type="button" onClick={() => setAssigning(true)} className="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest"><i className="fa-solid fa-user-plus mr-1"></i>Assign Students</button>}
+                        {!assigning && <button type="button" onClick={() => setAssigning(true)} className="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest"><i className="fa-solid fa-user-plus mr-1"></i>{t('Assign Students')}</button>}
                     </div>
                 </div>
-                {assigning && <UserPicker users={allUsers} excludeIds={enrolledIds} actionLabel="Assign" busy={busy} onConfirm={assignStudents} onCancel={() => setAssigning(false)} />}
+                {assigning && <UserPicker users={allUsers} excludeIds={enrolledIds} actionLabel={t('Assign')} busy={busy} onConfirm={assignStudents} onCancel={() => setAssigning(false)} />}
                 {enrollments.length === 0 ? (
-                    <p className="text-[11px] text-slate-600 italic">No students enrolled yet.</p>
+                    <p className="text-[11px] text-slate-600 italic">{t('No students enrolled yet.')}</p>
                 ) : (
                     <div className="space-y-1.5">
                         {enrollments.map(e => {
@@ -723,13 +723,13 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
                             <div key={e.id}
                                 className={`w-full flex items-center gap-2 px-2 py-2 rounded-md border transition-colors ${selectedEnrollmentId === e.id ? 'bg-purple-500/10 border-purple-500/40' : selectedIds.has(e.id) ? 'bg-purple-500/5 border-purple-500/25' : 'bg-slate-800/40 border-slate-800 hover:border-purple-500/30'}`}>
                                 {active
-                                    ? <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggleSelect(e.id)} className="shrink-0 w-4 h-4 accent-purple-500 cursor-pointer" aria-label={`Select ${e.student?.name || 'student'}`} />
+                                    ? <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggleSelect(e.id)} className="shrink-0 w-4 h-4 accent-purple-500 cursor-pointer" aria-label={t('Select {name}', { name: e.student?.name || t('student') })} />
                                     : <span className="w-4 shrink-0" />}
                                 <button type="button" onClick={() => openEnrollment(e.id)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                                     {e.student?.avatarUrl
                                         ? <img src={e.student.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-700 shrink-0" />
                                         : <span className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0"><i className="fa-solid fa-user"></i></span>}
-                                    <span className="text-sm text-white flex-1 truncate">{e.student?.name || 'Student'}</span>
+                                    <span className="text-sm text-white flex-1 truncate">{e.student?.name || t('Student')}</span>
                                     <span className="text-[10px] text-slate-500 uppercase tracking-widest">{e.status.replace('_', ' ')}</span>
                                     <span className="text-[10px] text-slate-600 uppercase tracking-widest">{e.source}</span>
                                 </button>
@@ -754,6 +754,7 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
     const { rpcAction } = useData();
     const { academyCourses, academySessions, refreshAcademy } = useAcademy();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [detail, setDetail] = useState<{ session: AcademySession; enrollments: AcademyEnrollment[] } | null>(null);
@@ -767,7 +768,7 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
             const d = await rpcAction('academy:get_session', { sessionId }) as { session: AcademySession; enrollments: AcademyEnrollment[] };
             setDetail(d);
         } catch (err: any) {
-            addToast(err?.message || 'Failed to load session', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to load session'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         }
     };
     const openSession = (sessionId: string) => { setSelectedId(sessionId); setDetail(null); void loadSession(sessionId); };
@@ -778,12 +779,12 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
         setBusy(true);
         try {
             const created = await rpcAction('academy:create_session', data) as AcademySession;
-            addToast('Session created', <i className="fa-solid fa-check"></i>, OK_CLS);
+            addToast(t('Session created'), <i className="fa-solid fa-check"></i>, OK_CLS);
             await refreshAcademy();
             setCreating(false);
             openSession(created.id);
         } catch (err: any) {
-            addToast(err?.message || 'Failed to create session', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to create session'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         } finally {
             setBusy(false);
         }
@@ -797,8 +798,8 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
     return (
         <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-white">Sessions</h2>
-                {!creating && <button type="button" onClick={() => setCreating(true)} className={BTN_PRIMARY}><i className="fa-solid fa-plus mr-2"></i>New Session</button>}
+                <h2 className="text-lg font-bold text-white">{t('Sessions')}</h2>
+                {!creating && <button type="button" onClick={() => setCreating(true)} className={BTN_PRIMARY}><i className="fa-solid fa-plus mr-2"></i>{t('New Session')}</button>}
             </div>
 
             {creating && <NewSessionForm courses={publishedCourses} busy={busy} onSubmit={createSession} onCancel={() => setCreating(false)} />}
@@ -806,7 +807,7 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
             {academySessions.length === 0 ? (
                 <div className="text-center py-16 text-slate-500">
                     <i className="fa-solid fa-users-rectangle text-3xl mb-3 text-slate-700"></i>
-                    <p className="text-sm">No sessions yet. Run a published course as a cohort.</p>
+                    <p className="text-sm">{t('No sessions yet. Run a published course as a cohort.')}</p>
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -821,7 +822,7 @@ export const SessionsTab: React.FC<{ canManage: boolean }> = ({ canManage }) => 
                                     <p className="text-[11px] text-slate-500 truncate">{s.courseTitle}</p>
                                 </div>
                                 <span className="text-[11px] text-slate-400 font-mono">{s.enrollmentCount}{s.capacity != null ? ` / ${s.capacity}` : ''}</span>
-                                <Pill label={sst.label} cls={sst.cls} />
+                                <Pill label={t(sst.label)} cls={sst.cls} />
                                 <i className="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
                             </button>
                         );

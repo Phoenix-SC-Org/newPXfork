@@ -102,7 +102,7 @@ export const CatalogTab: React.FC = () => {
         } finally {
             setLoadingId(null);
         }
-    }, [rpcAction, addToast]);
+    }, [rpcAction, addToast, t]);
 
     const [search, setSearch] = useState('');
     const filtered = useMemo(() => {
@@ -134,7 +134,7 @@ export const CatalogTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [rpcAction, refreshMyAcademy, addToast, detail]);
+    }, [rpcAction, refreshMyAcademy, addToast, detail, t]);
 
     if (detail) {
         return <CourseDetailView detail={detail} busy={busy} enrolledSessionIds={enrolledSessionIds} onEnrol={enrol} onBack={() => setDetail(null)} />;
@@ -221,7 +221,7 @@ export const MyLearningTab: React.FC = () => {
         } finally {
             setOpeningId(null);
         }
-    }, [rpcAction, addToast]);
+    }, [rpcAction, addToast, t]);
 
     // Re-fetch the open enrolment (guarded so a mid-flight Close won't re-open it).
     const reloadDetail = useCallback(async (enrollmentId: string) => {
@@ -252,7 +252,7 @@ export const MyLearningTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [rpcAction, reloadDetail, addToast]);
+    }, [rpcAction, reloadDetail, addToast, t]);
 
     // Refresh the My Learning list (progress bars) once when the modal closes, rather
     // than on every lesson tick — the open modal already shows live optimistic state.
@@ -272,7 +272,7 @@ export const MyLearningTab: React.FC = () => {
         } finally {
             setBusy(false);
         }
-    }, [rpcAction, refreshMyAcademy, addToast, confirm]);
+    }, [rpcAction, refreshMyAcademy, addToast, confirm, t]);
 
     return (
         <div className="p-4 sm:p-6">
