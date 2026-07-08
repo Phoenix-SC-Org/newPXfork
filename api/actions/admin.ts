@@ -448,6 +448,7 @@ export const adminActions = {
     'admin:update_discord_config': async (payload: DiscordConfigPayload) => { await db.updateDiscordSettings(stripActorFields(payload)); },
     'admin:update_hero_config': async (payload: HeroConfigPayload) => { await db.updateHeroCardConfig(stripActorFields(payload)); },
     'admin:update_branding_config': async (payload: BrandingConfigPayload) => { await db.updateBrandingConfig(stripActorFields(payload)); },
+    'admin:update_theme_config': async (payload: { enabled?: boolean; accent?: string }) => { await db.updateThemeConfig(stripActorFields(payload)); },
     'admin:update_public_page_config': async (payload: PublicPageConfigPayload) => { await db.updatePublicPageConfig(stripActorFields(payload)); invalidatePublicCache(); },
     'admin:list_testimonial_candidates': async ({ search, limit, offset }: ListTestimonialCandidatesPayload) => db.getTestimonialCandidates({ search, limit, offset }),
     'admin:update_system_config': async ({ appUrl }: UpdateSystemConfigPayload) => { await db.updateSystemConfig({ appUrl }); },

@@ -56,7 +56,7 @@ const MemberAchievementsTab: React.FC = () => {
         <div className="h-full flex flex-col animate-fade-in">
             {/* Sub-navigation: tab strip + import/export. The inner sub-tab renders
                 its own TabPageHeader, so no outer page header here. */}
-            <div className="shrink-0 px-4 md:px-8 pt-4 border-b border-slate-700/50 flex items-end justify-between gap-3">
+            <div className="shrink-0 px-4 md:px-8 pt-4 border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-xs flex items-end justify-between gap-3">
                 <div className="flex gap-1 -mb-px overflow-x-auto custom-scrollbar">
                     {available.map(tab => {
                         const isActive = tab.id === active;

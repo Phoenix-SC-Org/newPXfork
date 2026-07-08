@@ -5,6 +5,7 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { OpenGraphConfig } from '../../../types';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import ImageInput from '../../common/ImageInput';
 
 const SiteMetadataTab: React.FC = () => {
     const { openGraphConfig, updateOpenGraphConfig } = useConfig();
@@ -139,15 +140,17 @@ const SiteMetadataTab: React.FC = () => {
                          <div>
                             <label htmlFor="faviconUrl" className="block text-sm font-medium text-slate-300 mb-2">Favicon URL (Browser Tab)</label>
                              <div className="flex gap-4 items-center">
-                                 <input
-                                    type="text"
-                                    id="faviconUrl"
-                                    name="faviconUrl"
-                                    value={config.faviconUrl || ''}
-                                    onChange={handleChange}
-                                    placeholder="https://example.com/favicon.png"
-                                    className="flex-1 bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
-                                />
+                                 <div className="flex-1">
+                                    <ImageInput
+                                        id="faviconUrl"
+                                        feature="site-metadata"
+                                        hidePreview
+                                        value={config.faviconUrl || ''}
+                                        onChange={(url) => setConfig(prev => ({ ...prev, faviconUrl: url ?? '' }))}
+                                        placeholder="https://example.com/favicon.png"
+                                        inputClassName="flex-1 bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
+                                    />
+                                 </div>
                                 <div className="w-10 h-10 shrink-0 bg-slate-800 rounded-sm border border-slate-700 flex items-center justify-center p-1">
                                     {config.faviconUrl && !faviconError ? (
                                         <img 
@@ -166,15 +169,17 @@ const SiteMetadataTab: React.FC = () => {
                          <div>
                             <label htmlFor="pwaIconUrl" className="block text-sm font-medium text-slate-300 mb-2">App Icon URL (PWA / Mobile Home Screen)</label>
                              <div className="flex gap-4 items-center">
-                                 <input
-                                    type="text"
-                                    id="pwaIconUrl"
-                                    name="pwaIconUrl"
-                                    value={config.pwaIconUrl || ''}
-                                    onChange={handleChange}
-                                    placeholder="https://example.com/icon-512.png"
-                                    className="flex-1 bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
-                                />
+                                 <div className="flex-1">
+                                    <ImageInput
+                                        id="pwaIconUrl"
+                                        feature="site-metadata"
+                                        hidePreview
+                                        value={config.pwaIconUrl || ''}
+                                        onChange={(url) => setConfig(prev => ({ ...prev, pwaIconUrl: url ?? '' }))}
+                                        placeholder="https://example.com/icon-512.png"
+                                        inputClassName="flex-1 bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
+                                    />
+                                 </div>
                                 <div className="w-12 h-12 shrink-0 bg-slate-800 rounded-xl border border-slate-700 flex items-center justify-center p-1 overflow-hidden">
                                     {config.pwaIconUrl && !pwaIconError ? (
                                         <img 
@@ -194,14 +199,14 @@ const SiteMetadataTab: React.FC = () => {
                         </div>
                         <div>
                             <label htmlFor="imageUrl" className="block text-sm font-medium text-slate-300 mb-2">Open Graph Image URL (Social Share)</label>
-                             <input
-                                type="text"
+                             <ImageInput
                                 id="imageUrl"
-                                name="imageUrl"
+                                feature="site-metadata"
+                                hidePreview
                                 value={config.imageUrl}
-                                onChange={handleChange}
+                                onChange={(url) => setConfig(prev => ({ ...prev, imageUrl: url ?? '' }))}
                                 placeholder="https://example.com/social-image.png"
-                                className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
+                                inputClassName="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono text-sm"
                             />
                         </div>
                     </div>

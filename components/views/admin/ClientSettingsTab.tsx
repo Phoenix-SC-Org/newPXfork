@@ -6,6 +6,7 @@ import { HeroCardConfig } from '../../../types';
 import { sanitizeImageUrl } from '../../../lib/imageUrl';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import ImageInput from '../../common/ImageInput';
 
 const ClientSettingsTab: React.FC = () => {
     const { heroCardConfig, updateHeroCardConfig } = useConfig();
@@ -62,15 +63,14 @@ const ClientSettingsTab: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div className="md:col-span-3 space-y-6">
                         <div>
-                            <label htmlFor="backgroundImageUrl" className="block text-sm font-medium text-slate-300 mb-2">Background Image URL</label>
-                            <input
-                                type="text"
+                            <ImageInput
                                 id="backgroundImageUrl"
-                                name="backgroundImageUrl"
+                                label="Background Image URL"
+                                feature="hero-card"
+                                preview="landscape"
                                 value={config.backgroundImageUrl}
-                                onChange={handleChange}
+                                onChange={(url) => setConfig(prev => ({ ...prev, backgroundImageUrl: url ?? '' }))}
                                 placeholder="https://..."
-                                className="w-full bg-slate-700/50 border border-slate-600 rounded-md p-2.5 text-white font-mono"
                             />
                         </div>
                         <div>

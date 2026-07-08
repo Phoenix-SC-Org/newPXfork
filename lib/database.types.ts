@@ -14,6 +14,553 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_course_instructors: {
+        Row: {
+          assigned_by: number | null
+          course_id: string
+          created_at: string
+          id: number
+          user_id: number
+        }
+        Insert: {
+          assigned_by?: number | null
+          course_id: string
+          created_at?: string
+          id?: number
+          user_id: number
+        }
+        Update: {
+          assigned_by?: number | null
+          course_id?: string
+          created_at?: string
+          id?: number
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_course_instructors_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_course_instructors_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_course_instructors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_courses: {
+        Row: {
+          access: string
+          approved_by: number | null
+          certification_id: number | null
+          created_at: string
+          created_by: number
+          delivery: string
+          description: string | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          published_at: string | null
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access?: string
+          approved_by?: number | null
+          certification_id?: number | null
+          created_at?: string
+          created_by: number
+          delivery?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access?: string
+          approved_by?: number | null
+          certification_id?: number | null
+          created_at?: string
+          created_by?: number
+          delivery?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_courses_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_courses_certification_id_fkey"
+            columns: ["certification_id"]
+            isOneToOne: false
+            referencedRelation: "certifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_courses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_enrollments: {
+        Row: {
+          assigned_by: number | null
+          certified_by: number | null
+          completed_at: string | null
+          enrolled_at: string
+          id: string
+          recommended_at: string | null
+          recommended_by: number | null
+          session_id: string
+          source: string
+          status: string
+          student_id: number
+        }
+        Insert: {
+          assigned_by?: number | null
+          certified_by?: number | null
+          completed_at?: string | null
+          enrolled_at?: string
+          id?: string
+          recommended_at?: string | null
+          recommended_by?: number | null
+          session_id: string
+          source?: string
+          status?: string
+          student_id: number
+        }
+        Update: {
+          assigned_by?: number | null
+          certified_by?: number | null
+          completed_at?: string | null
+          enrolled_at?: string
+          id?: string
+          recommended_at?: string | null
+          recommended_by?: number | null
+          session_id?: string
+          source?: string
+          status?: string
+          student_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_enrollments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_certified_by_fkey"
+            columns: ["certified_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_recommended_by_fkey"
+            columns: ["recommended_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academy_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_lesson_progress: {
+        Row: {
+          completed_at: string
+          completed_by: number
+          enrollment_id: string
+          id: number
+          lesson_id: number
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: number
+          enrollment_id: string
+          id?: number
+          lesson_id: number
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: number
+          enrollment_id?: string
+          id?: number
+          lesson_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lesson_progress_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_lesson_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_lessons: {
+        Row: {
+          content: string | null
+          created_at: string
+          estimated_minutes: number | null
+          id: number
+          module_id: number
+          sort_order: number
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: number
+          module_id: number
+          sort_order?: number
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: number
+          module_id?: number
+          sort_order?: number
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_modules: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: number
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_outcome_results: {
+        Row: {
+          assessed_at: string
+          assessed_by: number
+          enrollment_id: string
+          id: number
+          outcome_id: number
+          verdict: string
+        }
+        Insert: {
+          assessed_at?: string
+          assessed_by: number
+          enrollment_id: string
+          id?: number
+          outcome_id: number
+          verdict?: string
+        }
+        Update: {
+          assessed_at?: string
+          assessed_by?: number
+          enrollment_id?: string
+          id?: number
+          outcome_id?: number
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_outcome_results_assessed_by_fkey"
+            columns: ["assessed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_outcome_results_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_outcome_results_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "academy_outcomes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_outcomes: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          id: number
+          required: boolean
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          required?: boolean
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          required?: boolean
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_outcomes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_session_instructors: {
+        Row: {
+          assigned_by: number | null
+          created_at: string
+          id: number
+          session_id: string
+          user_id: number
+        }
+        Insert: {
+          assigned_by?: number | null
+          created_at?: string
+          id?: number
+          session_id: string
+          user_id: number
+        }
+        Update: {
+          assigned_by?: number | null
+          created_at?: string
+          id?: number
+          session_id?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_session_instructors_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_session_instructors_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academy_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_session_instructors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_sessions: {
+        Row: {
+          capacity: number | null
+          course_id: string
+          created_at: string
+          created_by: number
+          ends_at: string | null
+          enrollment_open: boolean
+          id: string
+          is_implicit: boolean
+          location: string | null
+          starts_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          course_id: string
+          created_at?: string
+          created_by: number
+          ends_at?: string | null
+          enrollment_open?: boolean
+          id?: string
+          is_implicit?: boolean
+          location?: string | null
+          starts_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          course_id?: string
+          created_at?: string
+          created_by?: number
+          ends_at?: string | null
+          enrollment_open?: boolean
+          id?: string
+          is_implicit?: boolean
+          location?: string | null
+          starts_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academy_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alliance_peer_directory_cache: {
+        Row: {
+          fleet: Json | null
+          peer_id: string
+          roster: Json | null
+          synced_at: string | null
+        }
+        Insert: {
+          fleet?: Json | null
+          peer_id: string
+          roster?: Json | null
+          synced_at?: string | null
+        }
+        Update: {
+          fleet?: Json | null
+          peer_id?: string
+          roster?: Json | null
+          synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alliance_peer_directory_cache_peer_id_fkey"
+            columns: ["peer_id"]
+            isOneToOne: true
+            referencedRelation: "alliance_peers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alliance_peers: {
         Row: {
           base_url: string
@@ -26,9 +573,11 @@ export type Database = {
           id: string
           inbound_key_id: string | null
           inbound_max_clearance: number
+          intel_synced_at: string | null
           is_local_initiator: boolean | null
           label: string
           last_contact_at: string | null
+          ops_synced_at: string | null
           outbound_key_enc: string | null
           outbound_max_clearance: number
           pairing_state: string
@@ -39,6 +588,11 @@ export type Database = {
           profile_fetched_at: string | null
           revoked_at: string | null
           status: Database["public"]["Enums"]["alliance_status"]
+          sync_alert: string | null
+          sync_failures: number
+          sync_health: string
+          sync_last_ok_at: string | null
+          sync_next_attempt_at: string | null
           type: Database["public"]["Enums"]["alliance_type"]
           updated_at: string
         }
@@ -53,9 +607,11 @@ export type Database = {
           id?: string
           inbound_key_id?: string | null
           inbound_max_clearance?: number
+          intel_synced_at?: string | null
           is_local_initiator?: boolean | null
           label: string
           last_contact_at?: string | null
+          ops_synced_at?: string | null
           outbound_key_enc?: string | null
           outbound_max_clearance?: number
           pairing_state?: string
@@ -66,6 +622,11 @@ export type Database = {
           profile_fetched_at?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["alliance_status"]
+          sync_alert?: string | null
+          sync_failures?: number
+          sync_health?: string
+          sync_last_ok_at?: string | null
+          sync_next_attempt_at?: string | null
           type?: Database["public"]["Enums"]["alliance_type"]
           updated_at?: string
         }
@@ -80,9 +641,11 @@ export type Database = {
           id?: string
           inbound_key_id?: string | null
           inbound_max_clearance?: number
+          intel_synced_at?: string | null
           is_local_initiator?: boolean | null
           label?: string
           last_contact_at?: string | null
+          ops_synced_at?: string | null
           outbound_key_enc?: string | null
           outbound_max_clearance?: number
           pairing_state?: string
@@ -93,6 +656,11 @@ export type Database = {
           profile_fetched_at?: string | null
           revoked_at?: string | null
           status?: Database["public"]["Enums"]["alliance_status"]
+          sync_alert?: string | null
+          sync_failures?: number
+          sync_health?: string
+          sync_last_ok_at?: string | null
+          sync_next_attempt_at?: string | null
           type?: Database["public"]["Enums"]["alliance_type"]
           updated_at?: string
         }
@@ -1980,6 +2548,428 @@ export type Database = {
           },
         ]
       }
+      marketplace_categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          icon: string | null
+          id: number
+          listing_kind: string
+          name: string
+          parent_id: number | null
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          icon?: string | null
+          id?: number
+          listing_kind?: string
+          name: string
+          parent_id?: number | null
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          icon?: string | null
+          id?: number
+          listing_kind?: string
+          name?: string
+          parent_id?: number | null
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_contract_milestones: {
+        Row: {
+          completed_at: string | null
+          completed_by_id: number | null
+          contract_id: string
+          created_at: string
+          description: string | null
+          id: number
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_id?: number | null
+          contract_id: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_id?: number | null
+          contract_id?: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_contract_milestones_completed_by_id_fkey"
+            columns: ["completed_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contract_milestones_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_contracts: {
+        Row: {
+          accepted_at: string | null
+          agreed_price_uec: number | null
+          buyer_id: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          kind: string
+          listing_id: string | null
+          proposed_at: string
+          proposed_by_id: number | null
+          quantity: number | null
+          seller_id: number
+          status: string
+          terms_note: string | null
+          title: string
+          updated_at: string
+          warehouse_stock_id: number | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          agreed_price_uec?: number | null
+          buyer_id: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kind: string
+          listing_id?: string | null
+          proposed_at?: string
+          proposed_by_id?: number | null
+          quantity?: number | null
+          seller_id: number
+          status?: string
+          terms_note?: string | null
+          title: string
+          updated_at?: string
+          warehouse_stock_id?: number | null
+        }
+        Update: {
+          accepted_at?: string | null
+          agreed_price_uec?: number | null
+          buyer_id?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kind?: string
+          listing_id?: string | null
+          proposed_at?: string
+          proposed_by_id?: number | null
+          quantity?: number | null
+          seller_id?: number
+          status?: string
+          terms_note?: string | null
+          title?: string
+          updated_at?: string
+          warehouse_stock_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_contracts_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contracts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contracts_proposed_by_id_fkey"
+            columns: ["proposed_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contracts_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contracts_warehouse_stock_id_fkey"
+            columns: ["warehouse_stock_id"]
+            isOneToOne: false
+            referencedRelation: "v_warehouse_stock_with_qty"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_contracts_warehouse_stock_id_fkey"
+            columns: ["warehouse_stock_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_listings: {
+        Row: {
+          category_id: number | null
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          listing_type: string
+          location: string | null
+          moderation_closed_at: string | null
+          price_type: string
+          price_uec: number | null
+          quantity: number | null
+          quantity_claimed: number
+          seller_id: number
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+          warehouse_stock_id: number | null
+        }
+        Insert: {
+          category_id?: number | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          kind: string
+          listing_type: string
+          location?: string | null
+          moderation_closed_at?: string | null
+          price_type?: string
+          price_uec?: number | null
+          quantity?: number | null
+          quantity_claimed?: number
+          seller_id: number
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          warehouse_stock_id?: number | null
+        }
+        Update: {
+          category_id?: number | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          listing_type?: string
+          location?: string | null
+          moderation_closed_at?: string | null
+          price_type?: string
+          price_uec?: number | null
+          quantity?: number | null
+          quantity_claimed?: number
+          seller_id?: number
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          warehouse_stock_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_warehouse_stock_id_fkey"
+            columns: ["warehouse_stock_id"]
+            isOneToOne: false
+            referencedRelation: "v_warehouse_stock_with_qty"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_warehouse_stock_id_fkey"
+            columns: ["warehouse_stock_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_ratings: {
+        Row: {
+          contract_id: string
+          created_at: string
+          feedback: string | null
+          id: number
+          ratee_id: number
+          rater_id: number
+          rater_role: string
+          stars: number
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          feedback?: string | null
+          id?: number
+          ratee_id: number
+          rater_id: number
+          rater_role: string
+          stars: number
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          feedback?: string | null
+          id?: number
+          ratee_id?: number
+          rater_id?: number
+          rater_role?: string
+          stars?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_ratings_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_ratings_ratee_id_fkey"
+            columns: ["ratee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_ratings_rater_id_fkey"
+            columns: ["rater_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_reports: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          details: string | null
+          id: number
+          listing_id: string | null
+          reason_category: string
+          reporter_id: number
+          reviewed_at: string | null
+          reviewed_by_id: number | null
+          status: string
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: number
+          listing_id?: string | null
+          reason_category: string
+          reporter_id: number
+          reviewed_at?: string | null
+          reviewed_by_id?: number | null
+          status?: string
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: number
+          listing_id?: string | null
+          reason_category?: string
+          reporter_id?: number
+          reviewed_at?: string | null
+          reviewed_by_id?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_reports_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_reports_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_reports_reviewed_by_id_fkey"
+            columns: ["reviewed_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mirrored_operation_participation: {
         Row: {
           is_ready: boolean
@@ -2065,6 +3055,50 @@ export type Database = {
             columns: ["host_peer_id"]
             isOneToOne: false
             referencedRelation: "alliance_peers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: number
+          link: string | null
+          metadata: Json
+          read_at: string | null
+          title: string
+          type: string
+          user_id: number
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: number
+          link?: string | null
+          metadata?: Json
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: number
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: number
+          link?: string | null
+          metadata?: Json
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2545,6 +3579,7 @@ export type Database = {
           rsvp_status: string | null
           ship_id: number | null
           ship_utilized: string | null
+          time_left: string | null
           user_id: number
           user_ship_id: number | null
         }
@@ -2562,6 +3597,7 @@ export type Database = {
           rsvp_status?: string | null
           ship_id?: number | null
           ship_utilized?: string | null
+          time_left?: string | null
           user_id: number
           user_ship_id?: number | null
         }
@@ -2579,6 +3615,7 @@ export type Database = {
           rsvp_status?: string | null
           ship_id?: number | null
           ship_utilized?: string | null
+          time_left?: string | null
           user_id?: number
           user_ship_id?: number | null
         }
@@ -2823,28 +3860,34 @@ export type Database = {
       }
       operation_templates: {
         Row: {
+          classification_level: number
           created_at: string
           created_by: number | null
           description: string | null
           id: number
+          limiting_marker_ids: number[]
           name: string
           payload: Json
           updated_at: string
         }
         Insert: {
+          classification_level?: number
           created_at?: string
           created_by?: number | null
           description?: string | null
           id?: number
+          limiting_marker_ids?: number[]
           name: string
           payload: Json
           updated_at?: string
         }
         Update: {
+          classification_level?: number
           created_at?: string
           created_by?: number | null
           description?: string | null
           id?: number
+          limiting_marker_ids?: number[]
           name?: string
           payload?: Json
           updated_at?: string
@@ -4690,6 +5733,7 @@ export type Database = {
           secondary_position_id: number | null
           tenure_start_date: string | null
           timezone: string | null
+          tokens_valid_from: string | null
           unit_id: number | null
           voice_channel_name: string | null
         }
@@ -4724,6 +5768,7 @@ export type Database = {
           secondary_position_id?: number | null
           tenure_start_date?: string | null
           timezone?: string | null
+          tokens_valid_from?: string | null
           unit_id?: number | null
           voice_channel_name?: string | null
         }
@@ -4758,6 +5803,7 @@ export type Database = {
           secondary_position_id?: number | null
           tenure_start_date?: string | null
           timezone?: string | null
+          tokens_valid_from?: string | null
           unit_id?: number | null
           voice_channel_name?: string | null
         }
@@ -4850,6 +5896,7 @@ export type Database = {
           id: string
           notes: string | null
           reason: string
+          related_contract_id: string | null
           related_movement_id: string | null
           related_request_id: string | null
           stock_id: number
@@ -4861,6 +5908,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reason: string
+          related_contract_id?: string | null
           related_movement_id?: string | null
           related_request_id?: string | null
           stock_id: number
@@ -4872,6 +5920,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reason?: string
+          related_contract_id?: string | null
           related_movement_id?: string | null
           related_request_id?: string | null
           stock_id?: number
@@ -4882,6 +5931,13 @@ export type Database = {
             columns: ["actor_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_movements_related_contract_id_fkey"
+            columns: ["related_contract_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_contracts"
             referencedColumns: ["id"]
           },
           {
@@ -5251,7 +6307,7 @@ export type Database = {
           created_at: string
           external_id: string | null
           id: string
-          issued_by: number
+          issued_by: number | null
           notes: string | null
           reason: string
           source_feed_id: string | null
@@ -5267,7 +6323,7 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           id?: string
-          issued_by: number
+          issued_by?: number | null
           notes?: string | null
           reason: string
           source_feed_id?: string | null
@@ -5283,7 +6339,7 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           id?: string
-          issued_by?: number
+          issued_by?: number | null
           notes?: string | null
           reason?: string
           source_feed_id?: string | null
@@ -5497,6 +6553,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_truncate_all_data: { Args: never; Returns: undefined }
       finance_approve_entry: {
         Args: { p_approver_id: number; p_entry_id: string }
         Returns: number
@@ -5518,7 +6575,35 @@ export type Database = {
         Args: { p_actor_id: number; p_entry_id: string; p_reason: string }
         Returns: string
       }
+      gov_appoint_holder: {
+        Args: {
+          p_appointed_by_id: number
+          p_election_id: number
+          p_position_id: number
+          p_user_id: number
+        }
+        Returns: number
+      }
       import_reset_sequence: { Args: { p_table: string }; Returns: undefined }
+      marketplace_accept_contract: {
+        Args: { p_actor_id: number; p_contract_id: string }
+        Returns: string
+      }
+      marketplace_release_listing: {
+        Args: { p_listing_id: string; p_qty: number }
+        Returns: undefined
+      }
+      op_join_participant: {
+        Args: {
+          p_operation_id: string
+          p_role_requested: string
+          p_ship_id: number
+          p_ship_utilized: string
+          p_user_id: number
+          p_user_ship_id: number
+        }
+        Returns: undefined
+      }
       public_stats_for_org: {
         Args: never
         Returns: {
@@ -5622,6 +6707,14 @@ export type Database = {
       }
       warehouse_fulfil_request: {
         Args: { p_actor_id: number; p_request_id: string }
+        Returns: string
+      }
+      warehouse_marketplace_deliver: {
+        Args: { p_actor_id: number; p_contract_id: string }
+        Returns: string
+      }
+      warehouse_marketplace_reverse: {
+        Args: { p_actor_id: number; p_contract_id: string; p_reason: string }
         Returns: string
       }
       warehouse_overview_stats: {

@@ -1,6 +1,7 @@
 
 import { supabase, handleSupabaseError, safeFetch } from '../common.js';
 import { sanitizeTiptapJson } from '../../tiptapValidate.js';
+import { normalizeDocMediaForStorage, assertDocImageCap, signDocMediaForClient } from '../../orgMediaDocs.js';
 import {
     GovernmentConfig,
     GovernmentBranch,
@@ -87,9 +88,15 @@ export async function getGovernmentStructureState() {
     }
 
     const featureToggle = featureToggleResult as { value?: unknown } | null;
+    const governmentConfig = configResult ? toGovernmentConfig(configResult) : null;
+    // Constitution images are stored in the private bucket as object keys; swap them for
+    // signed URLs so a permitted reader can display them. This runs behind the gov:view gate.
+    if (governmentConfig?.constitutionContent) {
+        governmentConfig.constitutionContent = await signDocMediaForClient(governmentConfig.constitutionContent);
+    }
     return {
         governmentsConfig: featureToggle?.value || { enabled: false },
-        governmentConfig: configResult ? toGovernmentConfig(configResult) : null,
+        governmentConfig,
         governmentBranches: branches,
         governmentPositions: positions,
         governmentPositionHolders: holders,
@@ -128,10 +135,11 @@ export async function upsertGovernmentConfig(config: Partial<GovernmentConfig>):
         // Constitution is edited via the WikiEditor (Tiptap JSON); sanitize on
         // save to drop disallowed nodes/marks and reject unsafe link/image URLs.
         constitution_content: config.constitutionContent
-            ? sanitizeTiptapJson(config.constitutionContent, 'wiki')
+            ? normalizeDocMediaForStorage(sanitizeTiptapJson(config.constitutionContent, 'wiki'))
             : null,
         updated_at: new Date().toISOString(),
     };
+    if (payload.constitution_content) assertDocImageCap(payload.constitution_content);
 
     // Single-org: government_configs holds exactly one row. Upsert on the PK —
     // reuse the existing row's id if present, otherwise insert a fresh one.
@@ -147,7 +155,8 @@ export async function upsertGovernmentConfig(config: Partial<GovernmentConfig>):
 }
 
 export async function updateConstitution(content: unknown) {
-    const safeContent = content ? sanitizeTiptapJson(content, 'wiki') : null;
+    const safeContent = content ? normalizeDocMediaForStorage(sanitizeTiptapJson(content, 'wiki')) : null;
+    if (safeContent) assertDocImageCap(safeContent);
     const { error } = await supabase.from('government_configs')
         .update({ constitution_content: safeContent, updated_at: new Date().toISOString() })
         ;

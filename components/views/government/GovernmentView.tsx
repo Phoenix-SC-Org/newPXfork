@@ -237,6 +237,7 @@ const ConstitutionTab: React.FC<{ governmentConfig: any; canAdmin: boolean }> = 
                         {hasConstitution ? 'Edit Constitution' : 'Draft Constitution'}
                     </h2>
                     <WikiEditor
+                        uploadFeature="government"
                         content={governmentConfig?.constitutionContent || EMPTY_CONSTITUTION}
                         editable={true}
                         onSave={save}

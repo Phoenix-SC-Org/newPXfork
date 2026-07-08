@@ -1,5 +1,6 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -20,6 +21,8 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './tests/setup.ts',
+      // Keep vitest's default excludes, plus the reference-only / non-app trees.
+      exclude: [...configDefaults.exclude, 'porting/**', 'legacy-portal/**', 'supabase-reports/**'],
       coverage: {
         // Regression floor scoped to the server/business-logic surface (lib +
         // api); the untested UI is excluded so the gate isn't dominated by

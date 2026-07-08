@@ -10,6 +10,7 @@ import { escapeLikePattern } from '../pgrest.js';
 import { toHydratedApplication, toHRInterviewTemplate, toJobPosting, toHydratedInterview, toMiniUser, toTransferRequest, toPersonnelPosition } from './mappers.js';
 import { logHrPositionChange } from './users.js';
 import { sendPushToUsers } from '../push.js';
+import { createNotification } from './notifications.js';
 import { log as baseLog } from '../log.js';
 
 const log = baseLog.child({ module: 'db.hr' });
@@ -485,12 +486,16 @@ export async function assignRecruiter(id: string, recruiterId: number, userId: n
     const { data: recruiter } = await supabase.from('users').select('name').eq('id', recruiterId).single();
     await addApplicationLog(id, 'ASSIGNMENT', `Assigned to ${recruiter?.name || 'recruiter'}`, userId);
 
-    sendPushToUsers([recruiterId], {
+    // Durable inbox notification for the assigned recruiter; createNotification
+    // also emits the id-only realtime signal AND fires the OS push (replaces the
+    // former raw sendPushToUsers — no double-push).
+    await createNotification(recruiterId, {
+        type: 'hr_assignment',
         title: 'Case Assignment',
         body: `You have been assigned to Case File ${id.split('-')[0].toUpperCase()}.`,
-        tag: 'hr-assignment',
-        data: { url: '/hr', applicationId: id }
-    });
+        link: 'hr',
+        metadata: { applicationId: id },
+    }).catch(() => { /* best-effort */ });
     broadcastHRUpdate('applicants');
 }
 

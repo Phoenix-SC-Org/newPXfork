@@ -117,6 +117,7 @@ const SpecializationModal: React.FC<SpecializationModalProps> = ({ isOpen, onClo
                             accentClass="text-sky-400"
                             disabled={isLoading}
                             iconPlaceholder="e.g., fa-solid fa-crosshairs"
+                            feature="specialization"
                         />
                     </div>
                     <div>

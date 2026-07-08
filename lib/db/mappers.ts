@@ -22,7 +22,11 @@ import {
     UrgencyLevel, ThreatLevel, ServiceRequestStatus,
     TreasuryAccountType, LedgerEntryType, LedgerEntryStatus,
     QmCatalogCategory, QmCatalogSource, QmLocationType, QmCondition, QmIssuanceStatus, QmOutcome,
-    PlatformLocationAmenities, CommsPlanEntry, ConductRecordType
+    PlatformLocationAmenities, CommsPlanEntry, ConductRecordType,
+    AcademyUserRef, AcademyLesson, AcademyModule, AcademyOutcome, AcademyCourse,
+    AcademySession, AcademyLessonProgress, AcademyOutcomeResult, AcademyEnrollment,
+    AcademyCourseStatus, AcademyCourseAccess, AcademyCourseDelivery,
+    AcademySessionStatus, AcademyEnrollmentSource, AcademyEnrollmentStatus, AcademyOutcomeVerdict,
 } from '../../types.js';
 import type { Tables, NullToUndefined } from './rows.js';
 
@@ -754,7 +758,7 @@ export const toHydratedWarrant = (dbWarrant: WarrantRowWithEmbeds): HydratedWarr
     action: dbWarrant.action as unknown as WarrantAction,
     uecReward: dbWarrant.uec_reward,
     status: dbWarrant.status as unknown as WarrantStatus,
-    issuedBy: dbWarrant.issued_by,
+    issuedBy: dbWarrant.issued_by ?? null,
     claimedBy: dbWarrant.claimed_by,
     sourceFeedId: dbWarrant.source_feed_id,
     externalId: dbWarrant.external_id,
@@ -1401,4 +1405,117 @@ export const toLedgerEntry = (db: LedgerEntryRowWithEmbeds): LedgerEntry => ({
     notes: db.notes ?? null,
     createdAt: db.created_at,
     updatedAt: db.updated_at,
+});
+
+// ---------------------------------------------------------------------------
+// Academy (LMS) — base row mappers. Nested collections (modules/lessons/
+// outcomes/instructors) start empty and are assembled by lib/db/academy.ts.
+// Single-org: no organization_id column, so no organizationId field.
+// ---------------------------------------------------------------------------
+type AcademyUserRefEmbed = { id: number; name: string | null; avatar_url: string | null; rsi_handle: string | null } | null;
+
+export const toAcademyUserRef = (db: AcademyUserRefEmbed): AcademyUserRef | null =>
+    db ? { id: db.id, name: db.name ?? '', avatarUrl: db.avatar_url ?? '', rsiHandle: db.rsi_handle ?? '' } : null;
+
+export const toAcademyLesson = (db: Tables<'academy_lessons'>): AcademyLesson => ({
+    id: db.id,
+    moduleId: db.module_id,
+    title: db.title,
+    content: db.content ?? null,
+    videoUrl: db.video_url ?? null,
+    sortOrder: db.sort_order,
+    estimatedMinutes: db.estimated_minutes ?? null,
+});
+
+export const toAcademyModule = (db: Tables<'academy_modules'>): AcademyModule => ({
+    id: db.id,
+    courseId: db.course_id,
+    title: db.title,
+    description: db.description ?? null,
+    sortOrder: db.sort_order,
+    lessons: [],
+});
+
+export const toAcademyOutcome = (db: Tables<'academy_outcomes'>): AcademyOutcome => ({
+    id: db.id,
+    courseId: db.course_id,
+    title: db.title,
+    description: db.description ?? null,
+    sortOrder: db.sort_order,
+    required: db.required !== false,
+});
+
+export const toAcademyCourse = (db: Tables<'academy_courses'>): AcademyCourse => ({
+    id: db.id,
+    title: db.title,
+    description: db.description ?? null,
+    icon: db.icon ?? null,
+    imageUrl: db.image_url ?? null,
+    status: db.status as AcademyCourseStatus,
+    access: db.access as AcademyCourseAccess,
+    delivery: (db.delivery as AcademyCourseDelivery) || 'cohort',
+    certificationId: db.certification_id ?? null,
+    certification: null,
+    createdBy: db.created_by,
+    approvedBy: db.approved_by ?? null,
+    publishedAt: db.published_at ?? null,
+    sortOrder: db.sort_order,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
+    instructors: [],
+    modules: [],
+    outcomes: [],
+});
+
+export const toAcademySession = (db: Tables<'academy_sessions'>): AcademySession => ({
+    id: db.id,
+    courseId: db.course_id,
+    courseTitle: null,
+    title: db.title,
+    status: db.status as AcademySessionStatus,
+    startsAt: db.starts_at ?? null,
+    endsAt: db.ends_at ?? null,
+    location: db.location ?? null,
+    capacity: db.capacity ?? null,
+    enrollmentOpen: db.enrollment_open !== false,
+    isImplicit: db.is_implicit === true,
+    createdBy: db.created_by,
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
+    instructors: [],
+    enrollmentCount: 0,
+});
+
+export const toAcademyLessonProgress = (db: Tables<'academy_lesson_progress'>): AcademyLessonProgress => ({
+    id: db.id,
+    enrollmentId: db.enrollment_id,
+    lessonId: db.lesson_id,
+    completedBy: db.completed_by,
+    completedAt: db.completed_at,
+});
+
+export const toAcademyOutcomeResult = (db: Tables<'academy_outcome_results'>): AcademyOutcomeResult => ({
+    id: db.id,
+    enrollmentId: db.enrollment_id,
+    outcomeId: db.outcome_id,
+    verdict: db.verdict as AcademyOutcomeVerdict,
+    assessedBy: db.assessed_by,
+    assessedAt: db.assessed_at,
+});
+
+export const toAcademyEnrollment = (db: Tables<'academy_enrollments'>): AcademyEnrollment => ({
+    id: db.id,
+    sessionId: db.session_id,
+    studentId: db.student_id,
+    student: null,
+    source: db.source as AcademyEnrollmentSource,
+    status: db.status as AcademyEnrollmentStatus,
+    assignedBy: db.assigned_by ?? null,
+    recommendedBy: db.recommended_by ?? null,
+    recommendedAt: db.recommended_at ?? null,
+    certifiedBy: db.certified_by ?? null,
+    completedAt: db.completed_at ?? null,
+    enrolledAt: db.enrolled_at,
+    lessonProgress: [],
+    outcomeResults: [],
 });

@@ -127,13 +127,13 @@ const ATSTab: React.FC = () => {
         );
     }
 
-    const categoryTabs: Array<{ key: 'All' | 'Recruitment' | 'Vetting' | 'Internal' | 'Transfer' | 'Jobs'; label: string; icon: string }> = [
-        { key: 'All', label: 'All', icon: 'fa-list-ul' },
-        { key: 'Recruitment', label: 'Recruitment', icon: 'fa-user-plus' },
-        { key: 'Vetting', label: 'Vetting', icon: 'fa-shield-halved' },
-        { key: 'Internal', label: 'Internal', icon: 'fa-folder-closed' },
-        { key: 'Transfer', label: 'Transfer', icon: 'fa-right-left' },
-        { key: 'Jobs', label: 'Jobs', icon: 'fa-briefcase' },
+    const categoryOptions: Array<{ key: 'All' | 'Recruitment' | 'Vetting' | 'Internal' | 'Transfer' | 'Jobs'; label: string }> = [
+        { key: 'All', label: 'All Categories' },
+        { key: 'Recruitment', label: 'Recruitment' },
+        { key: 'Vetting', label: 'Vetting' },
+        { key: 'Internal', label: 'Internal' },
+        { key: 'Transfer', label: 'Transfer' },
+        { key: 'Jobs', label: 'Jobs' },
     ];
 
     return (
@@ -175,33 +175,25 @@ const ATSTab: React.FC = () => {
                 </div>
             </div>
 
-            {/* Category tabs */}
-            <div className="relative flex gap-0 -mb-px overflow-x-auto custom-scrollbar border-b border-white/5 shrink-0">
-                {categoryTabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setCategoryFilter(tab.key)}
-                        className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${categoryFilter === tab.key
-                            ? 'text-emerald-300 border-emerald-400'
-                            : 'text-slate-500 border-transparent hover:text-slate-300'
-                            }`}
-                    >
-                        <i className={`fa-solid ${tab.icon}`}></i>
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* Sub-filters + actions */}
+            {/* Filters + actions */}
             <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
-                    className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
-                >
-                    <option value="All">All Statuses</option>
-                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value as 'All' | 'Recruitment' | 'Vetting' | 'Internal' | 'Transfer' | 'Jobs')}
+                        className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
+                    >
+                        {categoryOptions.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
+                    </select>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'All')}
+                        className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-black uppercase tracking-wider outline-hidden focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/40 transition-all"
+                    >
+                        <option value="All">All Statuses</option>
+                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
 
                 <div className="flex gap-2">
                     <button

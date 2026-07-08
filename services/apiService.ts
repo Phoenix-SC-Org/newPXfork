@@ -302,6 +302,27 @@ class ApiService {
         const tail = buffer.trim();
         if (tail) emit(tail);
     }
+
+    /** Upload an image for a feature (branding, rank, wiki, ...). Posts the raw bytes; the
+     *  server checks the signed-in user's permission for that feature, re-encodes the image,
+     *  and returns a URL to store (public features) plus the object key + visibility. */
+    async uploadOrgMedia(file: File, feature: string): Promise<{ url: string | null; key: string; visibility: 'public' | 'private' }> {
+        const headers: Record<string, string> = { 'Content-Type': file.type || 'application/octet-stream' };
+        if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+        const response = await fetch(`${API_URL}/org/upload?for=${encodeURIComponent(feature)}`, {
+            method: 'POST',
+            headers,
+            body: file,
+        });
+        if (!response.ok) {
+            this.handleResponseError(response.status);
+            let message = 'Upload failed';
+            try { const e = await response.json(); if (e.message) message = e.message; } catch { /* non-json error body */ }
+            throw new Error(message);
+        }
+        const data = await response.json();
+        return { url: data.url ?? null, key: data.key, visibility: data.visibility };
+    }
 }
 
 export default new ApiService();

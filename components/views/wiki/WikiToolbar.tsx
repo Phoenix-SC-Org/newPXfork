@@ -3,6 +3,8 @@ import { Editor } from '@tiptap/react';
 
 interface WikiToolbarProps {
     editor: Editor;
+    /** When provided, the toolbar shows an image-upload button in addition to insert-by-URL. */
+    onImageUpload?: () => void;
 }
 
 const ToolbarButton: React.FC<{
@@ -56,7 +58,7 @@ const TableButton: React.FC<{
     </button>
 );
 
-const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
+const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor, onImageUpload }) => {
     const [isOverflowOpen, setIsOverflowOpen] = useState(false);
     const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -132,6 +134,13 @@ const WikiToolbar: React.FC<WikiToolbarProps> = ({ editor }) => {
 
             <Divider />
 
+            {onImageUpload && (
+                <ToolbarButton
+                    onClick={onImageUpload}
+                    icon="fa-solid fa-upload"
+                    title="Upload Image"
+                />
+            )}
             <ToolbarButton
                 onClick={() => promptAndInsert('image', (url) => editor.chain().focus().setImage({ src: url }).run())}
                 icon="fa-solid fa-image"

@@ -2,6 +2,7 @@
 import React, { useMemo, useEffect, useRef, Suspense, useState } from 'react';
 import BootSplash from './components/shared/BootSplash';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PersistentNotificationsProvider } from './contexts/PersistentNotificationsContext';
 import { DataProvider, useData } from './contexts/DataContext';
 import { DataCoreProvider } from './contexts/DataCoreContext';
 import { MembersProvider } from './contexts/MembersContext';
@@ -14,6 +15,7 @@ import { FleetProvider } from './contexts/FleetContext';
 import { GovernmentProvider } from './contexts/GovernmentContext';
 import { RequestsProvider } from './contexts/RequestsContext';
 import { AnnouncementsProvider } from './contexts/AnnouncementsContext';
+import { AcademyProvider } from './contexts/AcademyContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 import { RadioProvider } from './contexts/RadioContext';
 import { HIDPTTProvider } from './contexts/HIDPTTContext';
@@ -83,6 +85,9 @@ import WindowTaskbar from './components/layout/WindowTaskbar';
 import NotificationListener from './components/utility/NotificationListener';
 import { initializeSupabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/utility/ErrorBoundary';
+import { useConfig } from './contexts/ConfigContext';
+import { normalizeHexColor } from './lib/color';
+import { accentRampVars, SKY_VAR_NAMES } from './lib/orgTheme';
 
 // Retry wrapper for lazy view imports — handles transient preload failures
 // (e.g. Safari module preload quirks) and stale-chunk errors after deploys.
@@ -142,6 +147,7 @@ const FinancesView = lazyWithRetry(() => import('./components/views/finances/Fin
 const QuartermasterView = lazyWithRetry(() => import('./components/views/quartermaster/QuartermasterView'));
 const WarehouseView = lazyWithRetry(() => import('./components/views/warehouse/WarehouseView'));
 const MarketplaceView = lazyWithRetry(() => import('./components/views/marketplace/MarketplaceView'));
+const AcademyHubView = lazyWithRetry(() => import('./components/views/academy/AcademyHubView'));
 
 const LoadingFallback = () => (
     <div className="flex items-center justify-center h-64">
@@ -214,6 +220,7 @@ const AppContent: React.FC = () => {
     const [showExtendedWait, setShowExtendedWait] = useState(false);
 
     const { brandingConfig, openGraphConfig, hydratedServiceRequests, notifyDbConnected, platformSettings, deleteBulletin, announcements } = useData();
+    const { themeConfig } = useConfig();
     const {
         activeView, setActiveView, isMobileSidebarOpen, setIsMobileSidebarOpen,
         isSidebarCollapsed, setIsSidebarCollapsed,
@@ -350,7 +357,18 @@ const AppContent: React.FC = () => {
         updateLink('icon', iconUrl);
         updateLink('apple-touch-icon', iconUrl);
 
-    }, [brandingConfig, openGraphConfig]);
+        // Per-org accent theme: override the sky ramp on the root element (inline wins over
+        // the SSR :root block), or clear it when disabled. Re-validate before touching CSSOM
+        // (defense-in-depth; the var NAMES are fixed literals). Then drop the SSR block so a
+        // later disable/change fully reverts — dev (no SSR) relies on this path entirely.
+        const root = document.documentElement;
+        const accent = themeConfig?.enabled ? normalizeHexColor(themeConfig?.accent) : null;
+        const ramp = accent ? accentRampVars(accent) : null;
+        if (ramp) { for (const [k, v] of Object.entries(ramp)) root.style.setProperty(k, v); }
+        else { for (const k of SKY_VAR_NAMES) root.style.removeProperty(k); }
+        document.getElementById('__org_theme__')?.remove();
+
+    }, [brandingConfig, openGraphConfig, themeConfig]);
 
     // Sync selectedRequest with real-time data
     useEffect(() => {
@@ -447,6 +465,7 @@ const AppContent: React.FC = () => {
             case 'quartermaster': return <QuartermasterView />;
             case 'warehouse': return <WarehouseView />;
             case 'marketplace': return <MarketplaceView />;
+            case 'academy': return <AcademyHubView />;
             case 'help': return <HelpView />;
             case 'tos': return <TermsOfServiceView onBack={() => setActiveView('help')} />;
             case 'changelog': return <ChangeLogView onBack={() => setActiveView('help')} />;
@@ -531,7 +550,7 @@ const AppContent: React.FC = () => {
                     </button>
                 </div>
                 <div className="absolute bottom-8 text-[10px] text-slate-600 font-mono uppercase tracking-[0.3em]">
-                    {brandingConfig?.name || 'Operations'} {'//'} Termlink v15.2.1-open
+                    {brandingConfig?.name || 'Operations'} {'//'} Termlink v15.4.1-open
                 </div>
             </div>
         );
@@ -774,7 +793,7 @@ const AppContent: React.FC = () => {
     );
 }
 
-const fullScreenViews = ['admin', 'applicant-detail', 'security-vetting', 'case-file-detail', 'search', 'internal-transfer-detail', 'internal-job-detail', 'intel', 'member-record', 'operation-detail', 'mirrored-operation-detail', 'operations', 'request-detail', 'dispatch', 'wiki', 'government', 'finances', 'quartermaster', 'warehouse', 'marketplace', 'alliances', 'requests', 'warrants', 'roster', 'leaderboard', 'external-tools', 'radio-control', 'profile', 'help', 'tos', 'changelog', 'hr', 'fleet', 'org-chart', 'unit-detail'];
+const fullScreenViews = ['admin', 'applicant-detail', 'security-vetting', 'case-file-detail', 'search', 'internal-transfer-detail', 'internal-job-detail', 'intel', 'member-record', 'operation-detail', 'mirrored-operation-detail', 'operations', 'request-detail', 'dispatch', 'wiki', 'government', 'finances', 'quartermaster', 'warehouse', 'marketplace', 'academy', 'alliances', 'requests', 'warrants', 'roster', 'leaderboard', 'external-tools', 'radio-control', 'profile', 'help', 'tos', 'changelog', 'hr', 'fleet', 'org-chart', 'unit-detail'];
 
 const OperationDetailViewWrapper = () => {
     const { selectedOperation, setActiveView } = useUI();
@@ -819,15 +838,19 @@ const DashboardApp: React.FC = () => (
                                         <GovernmentProvider>
                                             <RequestsProvider>
                                                 <AnnouncementsProvider>
+                                                    <AcademyProvider>
                                                     <DataProvider>
                                                         <AuthProvider>
-                                                            <HIDPTTProvider>
-                                                                <RadioProvider>
-                                                                    <AppContent />
-                                                                </RadioProvider>
-                                                            </HIDPTTProvider>
+                                                            <PersistentNotificationsProvider>
+                                                                <HIDPTTProvider>
+                                                                    <RadioProvider>
+                                                                        <AppContent />
+                                                                    </RadioProvider>
+                                                                </HIDPTTProvider>
+                                                            </PersistentNotificationsProvider>
                                                         </AuthProvider>
                                                     </DataProvider>
+                                                    </AcademyProvider>
                                                 </AnnouncementsProvider>
                                             </RequestsProvider>
                                         </GovernmentProvider>

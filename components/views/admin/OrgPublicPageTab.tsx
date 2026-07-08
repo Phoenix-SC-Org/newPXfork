@@ -5,6 +5,7 @@ import MinimalRichEditor from '../../shared/editor/MinimalRichEditor';
 import { tryParseTiptapJson } from '../../../lib/tiptapValidate';
 import { TabPageHeader, SectionPanel } from '../../shared/ui';
 import { useNotification } from '../../../contexts/NotificationContext';
+import ImageInput from '../../common/ImageInput';
 
 const inputCls = "w-full bg-slate-900/60 border border-slate-700 rounded-lg p-2.5 text-white text-sm focus:ring-1 focus:ring-slate-400/50 focus:border-slate-500 outline-hidden transition-all";
 const inputMonoCls = inputCls + " font-mono";
@@ -342,12 +343,13 @@ const OrgPublicPageTab: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
                             <label className="block text-sm font-medium text-slate-300">Hero Banner Image URL</label>
-                            <input
-                                type="url"
+                            <ImageInput
+                                feature="public-page"
+                                hidePreview
                                 value={config.heroImageUrl || ''}
-                                onChange={(e) => update('heroImageUrl', e.target.value)}
+                                onChange={(v) => update('heroImageUrl', v ?? '')}
                                 placeholder="https://example.com/banner.jpg"
-                                className={inputMonoCls}
+                                inputClassName={inputMonoCls}
                             />
                             <p className="text-[10px] text-slate-500">Must start with https://. Recommended: a wide 2560×640 image. Leave blank for the default gradient.</p>
                         </div>
@@ -365,12 +367,13 @@ const OrgPublicPageTab: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                         <div className="md:col-span-3 space-y-2">
                             <label className="block text-sm font-medium text-slate-300">Profile Image URL</label>
-                            <input
-                                type="url"
+                            <ImageInput
+                                feature="public-page"
+                                hidePreview
                                 value={config.profileImageUrl || ''}
-                                onChange={(e) => update('profileImageUrl', e.target.value)}
+                                onChange={(v) => update('profileImageUrl', v ?? '')}
                                 placeholder="https://example.com/avatar.png"
-                                className={inputMonoCls}
+                                inputClassName={inputMonoCls}
                             />
                             <p className="text-[10px] text-slate-500">Must start with https://. Square image (512×512+). Leave blank to reuse your Organization Identity logo.</p>
                         </div>

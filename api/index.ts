@@ -5,6 +5,8 @@ import { getAnnouncementsState } from '../lib/db.js';
 import { tryParseTiptapJson, tiptapJsonToSafeHtml, isEmptyTiptapDoc } from '../lib/tiptapValidate.js';
 import { sanitizePublicLinkUrl } from '../lib/linkUrl.js';
 import { sanitizeImageUrl } from '../lib/imageUrl.js';
+import { normalizeHexColor } from '../lib/color.js';
+import { accentRampCss } from '../lib/orgTheme.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -63,13 +65,15 @@ export default async function handler(req: Request, res: Response) {
         let splashIconUrl: string;
         let publicPageCfg: any = null;
         let setupCompletedFlag = false;
+        // Custom theme accent (re-validated #rrggbb) when the feature is enabled — else null.
+        let orgAccent: string | null = null;
 
         // Single-org: branding / OG / public-page come straight from the settings table.
         {
             const { data: settings } = await supabase
                 .from('settings')
                 .select('key, value')
-                .in('key', ['brandingConfig', 'openGraphConfig', 'publicPageConfig', 'setup_completed']);
+                .in('key', ['brandingConfig', 'openGraphConfig', 'publicPageConfig', 'setup_completed', 'themeConfig']);
 
             const config: any = settings?.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {}) || {};
             const og = config.openGraphConfig || {};
@@ -86,6 +90,9 @@ export default async function handler(req: Request, res: Response) {
             siteName = branding.name || 'Dashboard';
             linkIconUrl = og.faviconUrl || branding.iconUrl || '/icon.svg';
             splashIconUrl = branding.iconUrl || '/icon.svg';
+
+            const themeCfg = config.themeConfig || {};
+            orgAccent = (themeCfg.enabled === true) ? normalizeHexColor(themeCfg.accent) : null;
         }
 
         // Read static index.html from disk (avoids a self-referential fetch
@@ -144,6 +151,15 @@ export default async function handler(req: Request, res: Response) {
             <link rel="apple-touch-icon" href="${safeLinkIconUrl}">
         `;
         html = html.replace('</head>', `${headLinks}\n</head>`);
+
+        // Per-org accent theme: an UNLAYERED :root override of the sky ramp beats the
+        // @layer theme defaults regardless of source order, re-tinting the app before
+        // React loads (no flash). The declaration body is computed OKLCH NUMBERS from a
+        // RE-VALIDATED accent hex — no attacker-controlled string reaches this CSS context.
+        const orgThemeCss = orgAccent ? accentRampCss(orgAccent) : null;
+        if (orgThemeCss) {
+            html = html.replace('</head>', `<style id="__org_theme__">:root{${orgThemeCss}}</style>\n</head>`);
+        }
 
         // Inject a pre-rendered boot splash so the browser paints a branded
         // loading screen instantly, before any React chunks download. Also
@@ -260,7 +276,7 @@ export default async function handler(req: Request, res: Response) {
     </div>
     <p style="margin-top:1.5rem;font-size:0.625rem;color:#475569;font-family:ui-monospace,monospace;text-align:center">First time visits may take a moment.</p>
   </div>
-  <div style="position:absolute;bottom:2rem;font-size:0.625rem;color:#475569;font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:0.3em;text-align:center;padding:0 1rem">${safeName} // Termlink v15.2.1-open</div>
+  <div style="position:absolute;bottom:2rem;font-size:0.625rem;color:#475569;font-family:ui-monospace,monospace;text-transform:uppercase;letter-spacing:0.3em;text-align:center;padding:0 1rem">${safeName} // Termlink v15.4.1-open</div>
   <style>@keyframes __bsSweep{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}@keyframes __bsPulse{0%,100%{opacity:1}50%{opacity:0.5}}</style>
 </div>
 <script>(function(){var i=document.getElementById('__bs_icon__');if(i){i.onerror=function(){this.style.display='none';};}})();window.__BRANDING__=${safeBrandingJson};window.__SETUP_COMPLETED__=${setupCompletedFlag}${publicPageScript}</script>`;

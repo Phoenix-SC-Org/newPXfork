@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // The shared SSRF-safe outbound fetch. ssrfSafeFetch must: (a) reject hosts
 // resolving to private/reserved IPs, (b) refuse to follow redirects (a hostile
@@ -16,9 +16,14 @@ vi.mock('node:dns/promises', () => {
     const lookup = async () => { if (h.lookupThrows) throw new Error('ENOTFOUND'); return h.lookupResult; };
     return { lookup, default: { lookup } };
 });
-// Stub the undici Agent so construction (the IP-pinning dispatcher) is inert
-// under the test environment; we only assert it is wired, not that it dials.
-vi.mock('undici', () => ({ Agent: class { constructor(public opts: unknown) {} close() { return Promise.resolve(); } } }));
+// Stub undici's Agent (the IP-pinning dispatcher) so construction is inert under
+// the test environment — we assert it is wired, not that it dials — AND undici's
+// own fetch. lib/ssrf uses undici's fetch (not Node's global) so the pinning
+// Agent and fetch come from one undici copy; capture the outbound call here.
+vi.mock('undici', () => ({
+    Agent: class { constructor(public opts: unknown) {} close() { return Promise.resolve(); } },
+    fetch: async (url: string, init: any) => { h.fetchCalls.push({ url, init }); return h.fetchResponse; },
+}));
 
 import { ssrfSafeFetch, assertResolvesToPublicHost } from '../lib/ssrf';
 
@@ -27,9 +32,7 @@ beforeEach(() => {
     h.lookupThrows = false;
     h.fetchResponse = { status: 200 };
     h.fetchCalls = [];
-    vi.stubGlobal('fetch', async (url: string, init: any) => { h.fetchCalls.push({ url, init }); return h.fetchResponse; });
 });
-afterEach(() => { vi.unstubAllGlobals(); });
 
 describe('ssrfSafeFetch', () => {
     it('rejects a host resolving to a private/reserved IP (never fetches)', async () => {

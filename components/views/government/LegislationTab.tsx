@@ -192,6 +192,7 @@ const LegislationTab: React.FC<LegislationTabProps> = ({ onViewLegislation }) =>
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Body</label>
                             <WikiEditor
+                                uploadFeature="legislation"
                                 content={emptyContent}
                                 editable={true}
                                 onChange={(json) => { formBodyRef.current = json; }}

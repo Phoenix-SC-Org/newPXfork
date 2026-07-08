@@ -3,6 +3,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useAuth, useFormatDate } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { TabPageHeader } from '../../shared/ui';
+import ImageInput from '../../common/ImageInput';
 import { AlliancePeer, AllianceSelfProfile, AllianceType, TrustedIntelFeed } from '../../../types';
 
 const TYPE_OPTIONS: AllianceType[] = ['Alliance' as AllianceType, 'Neutral' as AllianceType, 'Rivalry' as AllianceType];
@@ -284,8 +285,8 @@ const AllianceManagementTab: React.FC = () => {
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Icon URL</label>
-                        <input value={profile.iconUrl || ''} onChange={e => setProfile(p => ({ ...p, iconUrl: e.target.value }))}
-                            className="w-full bg-slate-800 border border-slate-600 rounded-sm p-2 text-white text-sm outline-hidden focus:border-slate-500" placeholder="https://…" disabled={!canManage} />
+                        <ImageInput feature="alliance" hidePreview value={profile.iconUrl || ''} onChange={v => setProfile(p => ({ ...p, iconUrl: v ?? '' }))}
+                            placeholder="https://…" inputClassName="w-full bg-slate-800 border border-slate-600 rounded-sm p-2 text-white text-sm outline-hidden focus:border-slate-500" />
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Contact (Discord)</label>

@@ -425,7 +425,8 @@ const DutyRosterView: React.FC = () => {
                                         const member = item.data as User;
                                         return (
                                             <div
-                                                className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group"
+                                                onClick={() => viewMemberProfile(member)}
+                                                className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group cursor-pointer"
                                                 style={{ paddingLeft: `${paddingLeft + 1}rem` }}
                                             >
                                                 {item.level > 0 && (
@@ -455,12 +456,12 @@ const DutyRosterView: React.FC = () => {
                                                     </span>
                                                 </div>
                                                 <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => viewMemberProfile(member)} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
+                                                    <button onClick={(e) => { e.stopPropagation(); viewMemberProfile(member); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
                                                         <i className="fa-solid fa-id-card"></i>
                                                     </button>
                                                     {canManageDuty && (
                                                         <button
-                                                            onClick={() => handleToggleDuty(member)}
+                                                            onClick={(e) => { e.stopPropagation(); handleToggleDuty(member); }}
                                                             disabled={togglingId === member.id}
                                                             className={`p-1.5 rounded-sm transition-colors disabled:opacity-60 disabled:cursor-wait ${member.isDuty ? 'text-red-400 hover:bg-red-500/10' : 'text-green-400 hover:bg-green-500/10'}`}
                                                             title={member.isDuty ? "Force Off Duty" : "Force On Duty"}
@@ -525,7 +526,7 @@ const FlatMemberRow: React.FC<{
     onView: () => void;
     onToggleDuty: () => void;
 }> = ({ member, canManageDuty, togglingId, onView, onToggleDuty }) => (
-    <div className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group">
+    <div onClick={onView} className="flex items-center px-4 h-full hover:bg-slate-800/50 transition-colors border-b border-slate-700/30 group cursor-pointer">
         <div className="flex-1 flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
                 <img src={member.avatarUrl} className="w-8 h-8 rounded-full border border-slate-600 object-cover" alt="" />
@@ -553,12 +554,12 @@ const FlatMemberRow: React.FC<{
             </span>
         </div>
         <div className="w-24 text-right flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-            <button onClick={onView} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
+            <button onClick={(e) => { e.stopPropagation(); onView(); }} className="p-1.5 text-emerald-300 hover:bg-emerald-500/10 rounded-sm transition-colors" title="View Profile">
                 <i className="fa-solid fa-id-card"></i>
             </button>
             {canManageDuty && (
                 <button
-                    onClick={onToggleDuty}
+                    onClick={(e) => { e.stopPropagation(); onToggleDuty(); }}
                     disabled={togglingId === member.id}
                     className={`p-1.5 rounded-sm transition-colors disabled:opacity-60 disabled:cursor-wait ${member.isDuty ? 'text-red-400 hover:bg-red-500/10' : 'text-green-400 hover:bg-green-500/10'}`}
                     title={member.isDuty ? "Force Off Duty" : "Force On Duty"}

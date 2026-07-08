@@ -267,6 +267,7 @@ const WikiView: React.FC = () => {
                                 />
 
                                 <WikiEditor
+                                    uploadFeature="wiki"
                                     content={EMPTY_CONTENT}
                                     editable={true}
                                     onSave={handleCreatePage}

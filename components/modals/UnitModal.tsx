@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import ImageInput from '../common/ImageInput';
 
 interface UnitModalProps {
     isOpen: boolean;
@@ -160,7 +161,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ isOpen, onClose, unit }) => {
                         <h4 className="text-sm font-bold text-white mb-4">Branding & Identity</h4>
                         <div>
                             <label className={labelClass}>Logo URL</label>
-                            <input type="url" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className={inputClass} disabled={isLoading} />
+                            <ImageInput feature="unit" preview="square" value={logoUrl} onChange={(v) => setLogoUrl(v ?? '')} placeholder="https://..." inputClassName={inputClass} />
                         </div>
                         <div className="mt-4">
                             <label className={labelClass}>Motto</label>

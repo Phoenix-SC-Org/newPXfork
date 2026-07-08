@@ -5,6 +5,7 @@ import { useMembers } from '../../contexts/MembersContext';
 
 import WindowFrame from '../layout/WindowFrame';
 import { useNotification } from '../../contexts/NotificationContext';
+import ImageInput from '../common/ImageInput';
 
 interface RankModalProps {
     isOpen: boolean;
@@ -101,15 +102,17 @@ const RankModal: React.FC<RankModalProps> = ({ isOpen, onClose, rank }) => {
                     <div>
                         <label htmlFor="iconUrl" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Icon URL</label>
                         <div className="flex gap-4 items-center">
-                            <input
-                                type="text"
-                                id="iconUrl"
-                                value={iconUrl}
-                                onChange={(e) => setIconUrl(e.target.value)}
-                                placeholder="https://example.com/icon.png"
-                                className="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
-                                disabled={isLoading}
-                            />
+                            <div className="w-full">
+                                <ImageInput
+                                    id="iconUrl"
+                                    feature="rank"
+                                    hidePreview
+                                    value={iconUrl}
+                                    onChange={(v) => setIconUrl(v ?? '')}
+                                    placeholder="https://example.com/icon.png  or  /media/icon.png"
+                                    inputClassName="w-full bg-slate-950/50 border border-slate-700 rounded-lg p-3 text-white focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-hidden transition-all"
+                                />
+                            </div>
                             {iconUrl && (
                                 <div className="w-10 h-10 shrink-0 bg-slate-800 rounded-sm border border-slate-700 flex items-center justify-center">
                                     <img src={iconUrl} alt="Rank" className="w-6 h-6 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />

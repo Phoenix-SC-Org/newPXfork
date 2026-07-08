@@ -39,6 +39,7 @@ const FeaturesSettingsTab: React.FC = () => {
     const quartermaster = (features.quartermaster || {}) as { enabled?: boolean };
     const warehouse = (features.warehouse || {}) as { enabled?: boolean };
     const marketplace = (features.marketplace || {}) as { enabled?: boolean };
+    const academy = (features.academy || {}) as { enabled?: boolean };
     // Leaderboard and External Tools default ON — absent/undefined means enabled.
     const leaderboard = (features.leaderboard || {}) as { enabled?: boolean };
     const externalTools = (features.externalTools || {}) as { enabled?: boolean };
@@ -347,9 +348,38 @@ const FeaturesSettingsTab: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Placeholder for future features */}
-                    <div className="bg-slate-800/20 rounded-lg border border-dashed border-slate-700/50 p-5 text-center">
-                        <p className="text-xs text-slate-500 uppercase tracking-widest">More features coming soon</p>
+                    {/* ACADEMY */}
+                    <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden">
+                        <div className="flex items-start gap-4 p-5">
+                            <div className="w-10 h-10 shrink-0 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                <i className="fa-solid fa-graduation-cap text-purple-400"></i>
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 className="font-semibold text-white">Academy</h3>
+                                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                            A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled <span className="text-purple-300 font-semibold">sessions</span>, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org <span className="text-purple-300 font-semibold">certification</span>. Off by default.
+                                        </p>
+                                    </div>
+                                    <Toggle
+                                        enabled={!!academy.enabled}
+                                        disabled={savingKey === 'academy.enabled'}
+                                        onToggle={() => {
+                                            const next = !academy.enabled;
+                                            applyPatch(
+                                                'academy.enabled',
+                                                { academy: { enabled: next } },
+                                                next
+                                                    ? undefined
+                                                    : 'Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.',
+                                            );
+                                        }}
+                                        activeColor="bg-purple-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

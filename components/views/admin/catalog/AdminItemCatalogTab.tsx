@@ -4,6 +4,7 @@ import { useNotification } from '../../../../contexts/NotificationContext';
 import { useDebouncedValue } from '../../../../hooks/useDebouncedValue';
 import { QmPlatformItemWithUsage, QmPlatformCategory, ToastVariant } from '../../../../types';
 import { CategoryEditor } from './AdminCommodityCatalogTab';
+import ImageInput from '../../../common/ImageInput';
 
 const PAGE_SIZE = 50;
 
@@ -432,10 +433,15 @@ export default function AdminItemCatalogTab() {
                             <div>
                                 <h4 className="text-xs font-bold text-green-400 uppercase tracking-wider mb-3">Media & Links</h4>
                                 <div className="space-y-3">
-                                    <div>
-                                        <label className={labelClass}>Thumbnail URL</label>
-                                        <input value={editForm.thumbnailUrl || ''} onChange={(e) => setEditForm({ ...editForm, thumbnailUrl: e.target.value })} className={inputClass} />
-                                    </div>
+                                    <ImageInput
+                                        label="Thumbnail URL"
+                                        feature="quartermaster"
+                                        preview="square"
+                                        value={editForm.thumbnailUrl || null}
+                                        onChange={(v) => setEditForm({ ...editForm, thumbnailUrl: v })}
+                                        placeholder="https://example.com/item.png"
+                                        inputClassName={inputClass}
+                                    />
                                     <div>
                                         <label className={labelClass}>Screenshot URL</label>
                                         <input value={editForm.screenshotUrl || ''} onChange={(e) => setEditForm({ ...editForm, screenshotUrl: e.target.value })} className={inputClass} />

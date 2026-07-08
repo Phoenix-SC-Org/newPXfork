@@ -24,6 +24,8 @@ export default [
             'node_modules/**',
             'legacy-portal/**',
             'supabase-reports/**',
+            // Reference-only material, not part of the app build.
+            'porting/**',
             'coverage/**',
             '.vite/**',
             // Vite serves /public/ as static assets; not part of the TS compile.

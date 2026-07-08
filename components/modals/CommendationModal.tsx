@@ -119,6 +119,7 @@ const CommendationModal: React.FC<CommendationModalProps> = ({ isOpen, onClose, 
                             accentClass="text-amber-500"
                             disabled={isLoading}
                             iconPlaceholder="e.g., fa-solid fa-medal"
+                            feature="commendation"
                         />
                     </div>
                     <div>

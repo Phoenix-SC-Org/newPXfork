@@ -51,6 +51,9 @@ vi.mock('../lib/db', async () => {
         getJobPostings: async () => [],
         getHRInterviewTemplates: async () => [],
         getPersonnelPositions: async () => [],
+        // Optional-feature gate: these subsets pass the feature gate (module ON) so
+        // the tests exercise the permission gate + producers, not the feature gate.
+        isOptionalFeatureEnabled: async () => true,
         // Government
         getGovernmentStructureState: async () => { h.calls.govStructure++; return { governmentBranches: [] }; },
         getElectionsState: async () => { h.calls.govElections++; return [{ id: 1 }]; },

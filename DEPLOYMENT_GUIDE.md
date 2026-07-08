@@ -7,7 +7,7 @@ This build serves the org dashboard from a single domain. There is **no** billin
 ## Prerequisites
 
 1. **Supabase project** — for the database + realtime.
-2. **A host** — any Node 22.12+ runtime (a VPS, a container, or a PaaS — your choice).
+2. **A host** — any Node 24+ runtime (a VPS, a container, or a PaaS — your choice).
 3. **A domain** — e.g. `yourdomain.com`, pointed at the host. A single record.
 4. **A Discord application** — for login (and optionally a bot for role sync / event posting).
 5. *(Optional)* Google Gemini key, LiveKit credentials, UEX API key.
@@ -24,6 +24,8 @@ This build serves the org dashboard from a single domain. There is **no** billin
    npm run gen:types
    ```
    The app builds and runs without this (queries use explicit column lists), but regenerating keeps the type layer honest.
+
+Running `schema.sql` also sets up the two Supabase **Storage buckets** used for uploaded images — your org logo and icons, and any pictures placed inside wiki or government documents. They're locked down so only the server can write to them (and the private one can't be read without a temporary signed link), so there's nothing to create by hand in Supabase's Storage tab.
 
 > Structural defaults (roles, ranks, units, permissions, locations, settings) are seeded automatically on first boot — see the first-boot section below.
 
@@ -51,6 +53,8 @@ Copy `.env.example` to `.env` and fill it in (or set them in your host's environ
 
 The server fails fast on boot if `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing in production.
 
+Image uploads work out of the box. If you want to change the defaults, three optional variables let you: `MEDIA_MAX_UPLOAD_BYTES` (largest single image, default 5 MB), `MEDIA_MAX_STORAGE_BYTES` (total space uploads may use, default 250 MB), and `MEDIA_GC_DRY_RUN=true` (makes the nightly cleanup only *report* unused images instead of deleting them — handy while you build confidence).
+
 ---
 
 ## 3. Build & Run
@@ -63,7 +67,7 @@ npm run build     # type-checks, builds the client to dist/, compiles the server
 npm start         # node dist-server/server.js — serves the frontend + API on $PORT (default 3000)
 ```
 
-Set the environment variables from step 2, then run the app under a process manager (systemd, pm2, Docker, or your platform's runner) so it restarts on crash/reboot. Node ≥ 22.12 is required (`engines` in `package.json`).
+Set the environment variables from step 2, then run the app under a process manager (systemd, pm2, Docker, or your platform's runner) so it restarts on crash/reboot. Node ≥ 24 is required (`engines` in `package.json`).
 
 > **Using Coolify (or another Nixpacks/PaaS host)?** New Resource → Public/Private Repository → this repo, branch `main`. Build Pack: Nixpacks, with Install `npm install`, Build `npm run build`, Start `npm start`. Add the env vars from step 2 and set a single application domain. Most container/PaaS hosts work the same way.
 
@@ -74,7 +78,7 @@ Set the environment variables from step 2, then run the app under a process mana
 1. Point an **A record** for `yourdomain.com` at your host's IP. No wildcard record or cert is needed — this is a single hostname.
 2. Terminate **HTTPS** in front of the app. The server itself speaks plain HTTP on `$PORT`; put a TLS-terminating reverse proxy (Caddy, nginx, Traefik) or your platform's built-in certificates in front of it. Make sure the proxy forwards the original `Host` and `X-Forwarded-Proto` headers — the server uses them to build OAuth redirect URLs and Open Graph meta. HTTPS is also assumed by the alliance federation handshake.
 3. **Client-IP trust** (rate limiting + abuse blocking key on the client IP, so the server must know which proxy headers to believe):
-   - `TRUST_PROXY_HOPS` — how many reverse proxies sit in front of the app. **Defaults to `0` (secure): with no proxy the server uses the real TCP connection IP, which clients cannot spoof — safe out of the box.** If you run the single TLS-terminating proxy above, set `1`; for deeper chains (CDN → LB → app) set `2+`. Leaving it at `0` behind a proxy is safe but coarse (all clients share the proxy's IP for limits); setting it higher than your real proxy count lets a client spoof a forwarded hop, so match it to your topology.
+   - `TRUST_PROXY_HOPS` — **most setups want `1`** (one reverse proxy or a PaaS like Coolify in front of the app). Leave it at the default `0` only if nothing sits in front and visitors reach the app directly. That's the whole decision for typical installs; the rest is detail. It's the count of reverse proxies in front of the app: with no proxy the default `0` is safe because the server uses the real connection IP, which clients cannot spoof; for deeper chains (CDN → load balancer → app) set `2+`. Leaving it at `0` behind a proxy still works but is coarse (everyone shares the proxy's IP for rate limits), while setting it higher than your real proxy count lets a client fake a forwarded hop — so match it to your actual setup.
    - `TRUST_CF_PROXY=1` — set **only** if the origin is reachable exclusively through Cloudflare (Cloudflare Tunnel or an origin firewall allow-listing Cloudflare's IP ranges). The server then trusts `CF-Connecting-IP` for the real client address. If the origin is reachable directly, leave it unset — otherwise a direct caller can spoof the header to evade rate limits or frame another IP into the abuse blocker.
 4. **Set your public domain in the static SEO files.** `public/sitemap.xml`, `public/robots.txt`, and the `og:url` meta in `index.html` ship with a `https://yourdomain.com` placeholder — replace it with your actual domain so crawlers and social-share cards point at your instance. Everything else is runtime-driven: page title, description, and OG image come from **Admin → Branding** (the server rewrites the meta tags per request from your config and the `X-Forwarded-Host` header), and `og:image` falls back to the bundled `/media/opengraph.jpg`. Only those three static files need a manual edit.
 
@@ -123,3 +127,4 @@ The applied schema version is recorded in `settings.schema_version`. A release t
 - **Live updates not working:** set `SUPABASE_JWT_SECRET` (Dashboard → Settings → API → JWT Secret); without it realtime is disabled (the app still works, refreshing manually).
 - **DB/RLS errors:** confirm `schema.sql` ran and the service-role key is set.
 - **Setup code not appearing:** it only prints when **no Admin exists**. If you already have an Admin, that's expected. Check logs for `admin setup code generated (first boot)`.
+- **Uploaded images fail or don't appear:** make sure `schema.sql` has been run — it creates the image storage buckets. If an upload says you don't have permission, run **Admin → Database Tools → Repair Database** so your Admin role picks up the newer permissions.

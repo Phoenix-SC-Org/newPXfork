@@ -1,5 +1,6 @@
 import React from 'react';
 import AwardIcon from './AwardIcon';
+import ImageInput from './ImageInput';
 import { isSafeImageUrl } from '../../lib/imageUrl';
 
 interface AwardIconInputProps {
@@ -13,6 +14,8 @@ interface AwardIconInputProps {
     accentClass?: string;
     disabled?: boolean;
     iconPlaceholder?: string;
+    /** When set, the Image URL tab also offers a file upload for this feature. */
+    feature?: string;
 }
 
 /**
@@ -28,6 +31,7 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
     accentClass = 'text-sky-400',
     disabled,
     iconPlaceholder = 'e.g., fa-solid fa-star',
+    feature,
 }) => {
     const urlValid = !imageUrl.trim() || isSafeImageUrl(imageUrl);
     const tabBase = 'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-colors';
@@ -69,14 +73,24 @@ const AwardIconInput: React.FC<AwardIconInputProps> = ({
                         />
                     ) : (
                         <>
-                            <input
-                                type="url"
-                                value={imageUrl}
-                                onChange={(e) => onImageUrlChange(e.target.value)}
-                                placeholder="https://cdn.example.com/award.png"
-                                className={`${inputClass} text-xs`}
-                                disabled={disabled}
-                            />
+                            {feature ? (
+                                <ImageInput
+                                    value={imageUrl}
+                                    onChange={(v) => onImageUrlChange(v || '')}
+                                    feature={feature}
+                                    hidePreview
+                                    inputClassName={`${inputClass} text-xs`}
+                                />
+                            ) : (
+                                <input
+                                    type="url"
+                                    value={imageUrl}
+                                    onChange={(e) => onImageUrlChange(e.target.value)}
+                                    placeholder="https://cdn.example.com/award.png"
+                                    className={`${inputClass} text-xs`}
+                                    disabled={disabled}
+                                />
+                            )}
                             {imageUrl.trim() && !urlValid && (
                                 <p className="text-[10px] text-red-400 mt-1.5">
                                     <i className="fa-solid fa-triangle-exclamation mr-1"></i>

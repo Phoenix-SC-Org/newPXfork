@@ -6,6 +6,7 @@ import { escapeLikePattern } from '../pgrest.js';
 import { toServiceRequest } from './mappers.js';
 import { adminAdjustUserReputation } from './users.js';
 import { sendPushToStaff, sendPushToUsers } from '../push.js';
+import { createNotification } from './notifications.js';
 import { stripHtml, stripHtmlSingleLine } from '../textSanitize.js';
 
 type FeedbackViewer = { id?: number; role?: string; permissions?: string[] } | null | undefined;
@@ -219,12 +220,16 @@ export async function updateRequestStatus(requestId: string, status: string, use
                     `Status changed to ${status}.`;
 
             if ([ServiceRequestStatus.Accepted, ServiceRequestStatus.InProgress, ServiceRequestStatus.Success, ServiceRequestStatus.Cancelled, ServiceRequestStatus.Refused].includes(status as ServiceRequestStatus)) {
-                sendPushToUsers([req.client_id], {
+                // Persist a durable inbox notification for the requester; this also
+                // emits the id-only realtime signal AND fires the OS push, so it
+                // replaces the former raw sendPushToUsers (no double-push).
+                await createNotification(req.client_id, {
+                    type: 'request',
                     title: clientTitle,
                     body: clientBody,
-                    tag: 'request-update',
-                    data: { url: '/', requestId: requestId }
-                });
+                    link: 'requests',
+                    metadata: { requestId },
+                }).catch(() => { /* best-effort */ });
             }
         }
         await broadcastRequestUpdate(requestId);

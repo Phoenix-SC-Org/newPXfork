@@ -5,6 +5,8 @@ import { verifyToken, isSessionForceLoggedOut, isSessionRevokedByWatermark, sign
 import { stripSensitiveUserFields, stripSensitiveUserFieldsBulk, RequesterContext } from '../lib/db/userFilters.js';
 import { filterByClearance } from '../lib/clearance.js';
 import type { DiscordConfig } from '../types.js';
+import { normalizeHexColor } from '../lib/color.js';
+import { signDocMediaForClient } from '../lib/orgMediaDocs.js';
 import { log as baseLog } from '../lib/log.js';
 
 const log = baseLog.child({ module: 'api.query' });
@@ -49,6 +51,17 @@ function bootPlatformSettings(platformSettings: unknown): { maintenance_mode: bo
         maintenance_mode: p.maintenance_mode === true,
         maintenance_message: typeof p.maintenance_message === 'string' ? p.maintenance_message : null,
     };
+}
+
+// Theme colours are public-safe (Security rule 4) — but allowlist-rebuild (like the boot
+// branding projection) so a future key added to the stored blob can never ride the unauth
+// boot response, and re-validate the accent to canonical #rrggbb before it can reach a CSS sink.
+export function pickPublicThemeConfig(t: unknown): { enabled: boolean; accent?: string } {
+    const src = (t || {}) as { enabled?: unknown; accent?: unknown };
+    const out: { enabled: boolean; accent?: string } = { enabled: src.enabled === true };
+    const accent = normalizeHexColor(src.accent);
+    if (accent) out.accent = accent;
+    return out;
 }
 
 // --- READ-PATH AUTHORIZATION ---
@@ -114,7 +127,60 @@ const SUBSET_REQUIRED_PERMISSION: Record<string, string> = {
     marketplace: 'marketplace:view',
     marketplace_listings: 'marketplace:view',
     marketplace_contracts: 'marketplace:view',
+    // Academy staff bundle. (The self-service 'academy_my' subset is intentionally
+    // NOT listed — it's scoped to currentUser.id in the db layer, like
+    // 'notifications', so every member has a My Academy without a role perm.)
+    academy: 'academy:view',
 };
+
+// Optional-feature read gate: subsets whose module is toggled OFF return an EMPTY
+// payload (HTTP 200), NOT 403 — a stale or deep-linked client degrades silently (no
+// error toast) instead of throwing, and never receives data for a disabled feature.
+// Mirrors the write-path OPTIONAL_FEATURE_NAMESPACES gate in api/services.ts (both
+// resolve via db.isOptionalFeatureEnabled). finances and quartermaster have NO read
+// subset — their reads are dispatched RPC actions gated by the write path — so they
+// are intentionally absent here. Kept in sync with the write registry by
+// tests/featureGateParity.test.ts.
+export const SUBSET_REQUIRED_FEATURE: Record<string, string> = {
+    academy: 'academy', academy_my: 'academy',
+    marketplace: 'marketplace', marketplace_listings: 'marketplace', marketplace_contracts: 'marketplace',
+    warehouse: 'warehouse', warehouse_catalog: 'warehouse', warehouse_stock: 'warehouse', warehouse_requests: 'warehouse',
+    government: 'government', government_structure: 'government', government_elections: 'government',
+    government_legislation: 'government', government_motions: 'government',
+};
+
+// Empty payload per gated subset, returned when the feature is OFF. Each mirrors the
+// exact key shape its aggregator returns so the client's slice-setters CLEAR (not
+// merely skip) any previously-loaded rows. Fresh objects per call — the payload is
+// handed to stripSecrets and must never share mutable state across requests.
+function emptyGovStructureState(): Record<string, unknown> {
+    return {
+        governmentsConfig: { enabled: false },
+        governmentConfig: null,
+        governmentBranches: [],
+        governmentPositions: [],
+        governmentPositionHolders: [],
+    };
+}
+export function emptyFeatureState(subset: string): Record<string, unknown> {
+    switch (subset) {
+        case 'academy': return { academyCourses: [], academySessions: [] };
+        case 'academy_my': return { academyCatalog: [], academyMyEnrollments: [] };
+        case 'marketplace': return { marketplaceCategories: [], marketplaceListings: [], marketplaceContracts: [] };
+        case 'marketplace_listings': return { marketplaceListings: [] };
+        case 'marketplace_contracts': return { marketplaceContracts: [] };
+        case 'warehouse': return { warehouseCatalog: [], warehouseStock: [], warehouseRequests: [] };
+        case 'warehouse_catalog': return { warehouseCatalog: [] };
+        case 'warehouse_stock': return { warehouseStock: [] };
+        case 'warehouse_requests': return { warehouseRequests: [] };
+        case 'government': return { ...emptyGovStructureState(), governmentElections: [], governmentLegislation: [], governmentMotions: [] };
+        case 'government_structure': return emptyGovStructureState();
+        case 'government_elections': return { governmentElections: [] };
+        case 'government_legislation': return { governmentLegislation: [] };
+        case 'government_motions': return { governmentMotions: [] };
+        default: return {};
+    }
+}
 
 // Mirror the BOLA permission check in api/services.ts: org-owner bypass, then a
 // direct permission grant, plus the intel:view ⇄ intel:view:clearance synonym.
@@ -426,6 +492,7 @@ async function handleInitialState(req: Request, res: Response) {
             setupCompleted,
             discordConfig: bootDiscordConfig(settings.discordConfig),
             brandingConfig: bootBrandingConfig(settings.brandingConfig),
+            themeConfig: pickPublicThemeConfig(settings.themeConfig),
         }));
     }
 
@@ -488,6 +555,7 @@ async function handleInitialState(req: Request, res: Response) {
             setupCompleted,
             brandingConfig: bootBrandingConfig(bootSettings.brandingConfig),
             discordConfig: bootDiscordConfig(bootSettings.discordConfig),
+            themeConfig: pickPublicThemeConfig(bootSettings.themeConfig),
             platformSettings: bootPlatformSettings(platformSettings),
         }));
     }
@@ -502,6 +570,13 @@ async function handleInitialState(req: Request, res: Response) {
         // adminNotes/personnelNotes/conduct/markers as today.
         if (state && Array.isArray((state as any).users)) {
             (state as any).users = stripSensitiveUserFieldsBulk((state as any).users, requesterFromUser(currentUser));
+        }
+
+        // Wiki home content may reference private-bucket images by key. Sign them for a
+        // wiki:view holder so they render on first load, matching the 'main' subset path.
+        const wikiHome = (state as { wikiHomeConfig?: { welcomeContent?: unknown } }).wikiHomeConfig;
+        if (wikiHome?.welcomeContent && callerHasSubsetPermission(currentUser, null, 'wiki:view')) {
+            wikiHome.welcomeContent = await signDocMediaForClient(wikiHome.welcomeContent);
         }
 
         // The self record carried as `currentUser` keeps the viewer's own
@@ -579,6 +654,18 @@ async function handleState(req: Request, res: Response) {
             return res.status(403).json({ message: 'Insufficient permissions' });
         }
 
+        // Optional-feature read gate (mirrors the dispatcher's OPTIONAL_FEATURE_NAMESPACES):
+        // if the subset's module is toggled OFF, return its EMPTY shape at 200 — never
+        // 403 (avoids an error toast for the member-facing marketplace/government/
+        // academy_my subsets) and never real data for a disabled feature. Runs AFTER the
+        // permission gate so a caller lacking the module's *:view perm still 403s first.
+        // Wrapped in stripSecrets like the shared return below.
+        const requiredFeature = SUBSET_REQUIRED_FEATURE[subset as string];
+        if (requiredFeature && !(await db.isOptionalFeatureEnabled(requiredFeature))) {
+            log.warn('subset feature-disabled', { userId: currentUser.id, subset, requiredFeature });
+            return res.status(200).json(stripSecrets(emptyFeatureState(subset as string)));
+        }
+
         let state;
         switch (subset) {
             case 'main': {
@@ -595,6 +682,13 @@ async function handleState(req: Request, res: Response) {
                 // personnelNotes / conductRecord / limitingMarkers.
                 if (mainState && Array.isArray(mainState.users)) {
                     mainState.users = stripSensitiveUserFieldsBulk(mainState.users as any, requesterFromUser(currentUser)) as any;
+                }
+                // Wiki home content may reference private-bucket images by key. Sign them only
+                // for a caller who can view the wiki, so a member without wiki:view never gets
+                // readable URLs even though the config rides this shared subset.
+                const wikiHome = (settings as { wikiHomeConfig?: { welcomeContent?: unknown } }).wikiHomeConfig;
+                if (wikiHome?.welcomeContent && callerHasSubsetPermission(currentUser, null, 'wiki:view')) {
+                    wikiHome.welcomeContent = await signDocMediaForClient(wikiHome.welcomeContent);
                 }
                 state = { ...mainState, ...settings };
                 break;
@@ -719,7 +813,13 @@ async function handleState(req: Request, res: Response) {
             // subset is gated at wiki:view above; additionally filter page bodies
             // by the requester's clearance so below-clearance members (or members
             // lacking a page's marker) never receive classified SOPs.
-            case 'wiki': state = { wikiPages: filterByClearance(await db.getWikiPages(), currentUser) }; break;
+            case 'wiki': {
+                const wikiPages = filterByClearance(await db.getWikiPages(), currentUser);
+                // Swap private-bucket image keys for signed URLs in each visible page's content.
+                await Promise.all(wikiPages.map(async (p: { content?: unknown }) => { if (p.content) p.content = await signDocMediaForClient(p.content); }));
+                state = { wikiPages };
+                break;
+            }
             // Realtime slice subset: wiki_update broadcasts carry the pageId;
             // the client refetches ONLY that page (bodies are heavy TipTap JSON).
             // Same filterByClearance gate as the bulk path above; null when
@@ -728,7 +828,9 @@ async function handleState(req: Request, res: Response) {
                 const { id: pageId } = req.query;
                 if (!pageId || typeof pageId !== 'string') return res.status(400).json({ message: 'Missing id parameter' });
                 const page = await db.getWikiPageById(pageId);
-                state = { wikiPage: page ? (filterByClearance([page], currentUser)[0] ?? null) : null };
+                const visible = page ? (filterByClearance([page], currentUser)[0] ?? null) : null;
+                if (visible?.content) visible.content = await signDocMediaForClient(visible.content);
+                state = { wikiPage: visible };
                 break;
             }
             case 'users_presence': state = await db.getUsersPresenceState(); break;
@@ -768,6 +870,29 @@ async function handleState(req: Request, res: Response) {
             }
             case 'marketplace_contracts': {
                 state = { marketplaceContracts: await db.getMyMarketplaceContracts(currentUser.id) };
+                break;
+            }
+            // Notification Center: the caller's OWN inbox (capped list + unread
+            // count). Self-scoped by currentUser.id inside the db layer — a member
+            // only ever receives their own rows — so it has NO
+            // SUBSET_REQUIRED_PERMISSION entry (every authenticated member has a
+            // personal inbox, gated by user_id scoping, not by a role permission).
+            case 'notifications': {
+                state = await db.getUserNotificationState(currentUser.id);
+                break;
+            }
+            // Academy staff management bundle (gated academy:view above; feature-gated
+            // to an empty payload by the SUBSET_REQUIRED_FEATURE gate before the switch).
+            case 'academy': {
+                state = await db.getAcademyStaffState();
+                break;
+            }
+            // Academy self-service bundle: the published catalog + the caller's own
+            // enrolments, scoped by currentUser.id in the db layer (no
+            // SUBSET_REQUIRED_PERMISSION entry — every member has a My Academy;
+            // feature-gated to empty before the switch).
+            case 'academy_my': {
+                state = await db.getMyAcademyState(currentUser.id);
                 break;
             }
             case 'intel': state = await db.getIntelState(currentUser); break;
