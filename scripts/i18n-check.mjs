@@ -77,6 +77,9 @@ function suspicionReason(key) {
 // an enum value). The static scan cannot see these — list them here so they
 // don't show up as orphans. Keep this list short and documented.
 const DYNAMIC_KEYS = new Set([
+    // components/views/admin/StarCommsTab.tsx: t(p.name) for the code-defined
+    // net-preset catalog (V4). Preset display names resolved dynamically.
+    'Standard Operation', 'Large Operation', 'Training',
     // components/ui/Notice.tsx: t(announcement.type, { context: 'announcement' })
     'Information', 'Warning', 'Danger',
     // components/views/operations/DashboardView.tsx: Enum-Anzeigen

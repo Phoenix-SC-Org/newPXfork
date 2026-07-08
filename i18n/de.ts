@@ -5956,6 +5956,25 @@ export const de: Record<string, string | Record<string, string>> = {
     "A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled sessions, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org certification. Off by default.": "Ein Lernmanagementsystem für deine Organisation. Admins und Ausbilder erstellen Kurse aus Modulen, Lektionen und Lernergebnissen, die als geplante Sessions oder im Selbststudium aus dem Katalog absolviert werden. Mitglieder schreiben sich ein, lernen in ihrem eigenen Tempo, und Ausbilder bewerten jedes Lernergebnis als kompetent oder noch nicht kompetent. Der Abschluss eines Kurses kann eine Organisations-Zertifizierung verleihen. Standardmäßig deaktiviert.",
     "Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.": "Wenn die Academy deaktiviert wird, ist sie für alle Mitglieder ausgeblendet und ihre Aktionen werden serverseitig geschlossen. Kurse, Sessions, Einschreibungen und Fortschritt bleiben erhalten und kehren bei erneuter Aktivierung zurück.",
 
+    // StarComms V4 — net presets (preview; apply pending endpoint)
+    "Net Presets": "Netz-Presets",
+    "Preview a preset of voice nets against StarComms, then create the missing ones. Manual and admin-only — existing nets are never deleted or renamed.": "Ein Preset von Sprach-Netzen mit StarComms abgleichen und anschließend die fehlenden erstellen. Manuell und nur für Admins — vorhandene Netze werden nie gelöscht oder umbenannt.",
+    "No presets available": "Keine Presets verfügbar",
+    "Preview changes": "Änderungen vorschauen",
+    "Desired nets:": "Gewünschte Netze:",
+    "Preview failed.": "Vorschau fehlgeschlagen.",
+    "Would be created": "Würde erstellt",
+    "Nothing to create — all preset nets already exist.": "Nichts zu erstellen — alle Preset-Netze existieren bereits.",
+    "Already exist": "Bereits vorhanden",
+    "Apply preset": "Preset anwenden",
+    "Applying (net creation) is not yet enabled — pending the StarComms create-net endpoint.": "Anwenden (Netz-Erstellung) ist noch nicht aktiviert — der StarComms-Endpunkt zum Erstellen von Netzen fehlt noch.",
+    "Apply is pending the StarComms create-net endpoint (Preview is read-only).": "Anwenden steht noch aus, bis der StarComms-Endpunkt zum Erstellen von Netzen vorliegt (Vorschau ist schreibgeschützt).",
+    "Existing StarComms nets are never deleted or renamed — Apply only creates the missing nets.": "Vorhandene StarComms-Netze werden nie gelöscht oder umbenannt — Anwenden erstellt nur die fehlenden Netze.",
+    "This preset contains duplicate net names; duplicates are ignored.": "Dieses Preset enthält doppelte Netznamen; Duplikate werden ignoriert.",
+    "Some existing nets are not part of this preset and will be left unchanged.": "Einige vorhandene Netze gehören nicht zu diesem Preset und bleiben unverändert.",
+    "Standard Operation": "Standard-Einsatz",
+    "Large Operation": "Großeinsatz",
+
     // StarComms V3 — manual operation control (admin-only write actions)
     "Manual operation control": "Manuelle Einsatzsteuerung",
     "Admin only — no auto-sync": "Nur Admin — keine automatische Synchronisierung",

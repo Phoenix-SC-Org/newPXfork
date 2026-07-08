@@ -6,6 +6,7 @@
 // config summary plus the normalized status, or a typed error.
 
 import { describeCommsConfig, getCachedCommsStatus, getCommsProvider } from '../../lib/comms/index.js';
+import { NET_PRESETS, getNetPreset, buildNetPresetPreview } from '../../lib/comms/netPresets.js';
 
 export const starcommsActions = {
     // Read: config summary, plus live status when enabled AND configured.
@@ -67,5 +68,36 @@ export const starcommsActions = {
         return r.ok
             ? { config, status: r.status, error: null, fetchedAt: r.fetchedAt }
             : { config, status: null, error: { kind: r.error, message: r.message }, fetchedAt: r.fetchedAt };
+    },
+
+    // Net Presets (V4) — read-only catalog. The presets are code-defined
+    // (lib/comms/netPresets.ts) and secret-free; returning them keeps a single
+    // source of truth so the admin UI never duplicates preset definitions.
+    'admin:starcomms_list_net_presets': async () => {
+        return { presets: NET_PRESETS };
+    },
+
+    // Net Presets (V4) — Preview (Step 3). READ-ONLY: fetches current status and
+    // diffs the chosen preset's desired nets against the existing nets. Never
+    // calls a write endpoint and never creates/deletes/renames anything. Gated on
+    // admin:access in api/services.ts. Secret-free (no key in any field).
+    'admin:starcomms_preview_net_preset': async (payload: { presetId?: string }) => {
+        const config = describeCommsConfig();
+        const preset = getNetPreset(payload?.presetId ?? '');
+        if (!preset) {
+            return { config, ok: false, error: { kind: 'unknown_preset', message: 'Unknown net preset.' }, preview: null };
+        }
+        if (!config.enabled) {
+            return { config, ok: false, error: { kind: 'disabled', message: 'StarComms integration is disabled.' }, preview: null };
+        }
+        if (!config.configured) {
+            return { config, ok: false, error: { kind: 'missing_config', message: 'StarComms is not fully configured.' }, preview: null };
+        }
+        const result = await getCommsProvider().getStatus();
+        if (!result.ok) {
+            return { config, ok: false, error: { kind: result.error, message: result.message }, preview: null };
+        }
+        const preview = buildNetPresetPreview(preset, result.status.nets);
+        return { config, ok: true, error: null, preview };
     },
 };

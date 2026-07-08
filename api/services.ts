@@ -740,6 +740,10 @@ export const fullPermissionMap: Record<string, string> = {
     // no dedicated starcomms:manage permission on this branch).
     'admin:starcomms_open': 'admin:access',
     'admin:starcomms_close': 'admin:access',
+    // Net Presets (V4) — admin-only. list_net_presets = code-defined catalog;
+    // preview_net_preset = READ-ONLY diff of a preset vs existing nets (no writes).
+    'admin:starcomms_list_net_presets': 'admin:access',
+    'admin:starcomms_preview_net_preset': 'admin:access',
     // Operational widget read (V2). Base perm operations:view; the dispatcher
     // additionally admits request:dispatch / admin:access via the OR check below
     // (isStarCommsReader), so Dispatch and Admin users also get live data.

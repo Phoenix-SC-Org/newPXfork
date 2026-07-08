@@ -5,6 +5,117 @@ Last verified: **2026-07-08**.
 
 ---
 
+## StarComms V4 — net presets: Preview shipped, Apply DEFERRED (2026-07-08)
+
+Manual net presets, **split into safe steps**. Steps 2–3 (preset model +
+read-only **Preview**) are implemented. Step 4 (**Apply** / actually creating
+nets) is **not implemented** — it is blocked on an unconfirmed StarComms
+create-net endpoint (see "API discovery" below). Nothing here writes to StarComms.
+
+### Status
+Code-complete for **Preview** on `beta/starcomms-v4-net-presets` (branched off
+`1a4de98`, which includes V1–V3.1). All checks green. Not committed/pushed.
+Read-only V1/V2/V2.1 + V3/V3.1 write controls untouched and passing.
+
+### API discovery result (Step 1)
+Searched the whole repo (provider, docs, `.env.example`, OpenAPI). **Only two
+StarComms endpoints are known:**
+- `GET /api/v1/status` — read; returns `nets: [{ id, name, … }]`. **Used by Preview.**
+- `POST /api/v1/operation` `{ open }` — V3 open/close.
+
+**Missing / required before Apply can be built (do NOT guess these):**
+| Need | Endpoint | Status |
+| :--- | :--- | :--- |
+| Create a net | ??? method + path + body | ❌ **unknown — must be provided** |
+| Update a net (optional) | ??? | ❌ unknown |
+| Order nets (optional) | ??? | ❌ unknown |
+
+### Required Owner API key scopes
+- **Preview (implemented):** `read:status` (already in use).
+- **Apply (deferred):** a net-management **write scope** (e.g. `write:net` /
+  `manage:nets`) — exact name **to be confirmed with the create-net endpoint**.
+
+### Endpoint contracts USED (this step)
+- Preview calls **`GET {BASE_URL}/api/v1/status`** (via the existing provider
+  `getStatus()`), then diffs in pure code. No write endpoint is called.
+
+### Data model (Step 2) — code-defined, no schema
+`lib/comms/netPresets.ts`: `NetPreset { id, name, description, nets: [{ name, purpose? }] }`.
+Color/accent/relay are intentionally omitted (not confirmed supported by the API).
+Presets: **Standard Operation** (Command, Flight, Ground, Logistics, Medical,
+Intel), **Large Operation** (Command, Air Command, Ground Command, CAS,
+Logistics, Rescue / Medical, Intel, Staging), **Training** (Instructor, Trainees,
+Support). **No `schema.sql` change; no DB; no new permissions.**
+
+### Preview (Step 3) — read-only
+`buildNetPresetPreview(preset, existingNets)` (pure) → `{ existing, toCreate,
+conflicts, unmanaged, warnings }`, matching by case-insensitive name. Always warns
+that existing nets are never deleted/renamed; flags unmanaged existing nets and
+in-preset duplicates.
+
+### Permission
+Reuses **`admin:access`** for both V4 actions (no schema change, no
+`starcomms:manage`). UI section is admin-gated (`hasPermission('admin:access')`)
+and hidden when disabled.
+
+### Changed files
+**New**
+- `lib/comms/netPresets.ts` — preset catalog + pure `buildNetPresetPreview`.
+- `tests/starcommsNetPresets.test.ts` — pure-diff + action tests.
+
+**Modified**
+- `api/actions/starcomms.ts` — `admin:starcomms_list_net_presets` (catalog),
+  `admin:starcomms_preview_net_preset` (read-only diff; validates
+  enabled/configured/preset; secret-free).
+- `api/services.ts` — two `fullPermissionMap` entries → `admin:access`.
+- `components/views/admin/StarCommsTab.tsx` — "Net Presets" section: preset
+  select → **Preview changes** → diff display (would-create / already-exist /
+  warnings). **Apply button is present but locked** with a "pending create-net
+  endpoint" hint. Disabled when disabled/misconfigured/status-unavailable/
+  non-admin/preview-pending.
+- `i18n/de.ts` — V4 German strings (preset names + preview UI).
+- `scripts/i18n-check.mjs` — preset display names added to `DYNAMIC_KEYS`
+  (resolved via `t(p.name)`).
+
+### Tests run and results (2026-07-08)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — clean (0 warnings, `--max-warnings 0`)
+- `npm run i18n:check` — OK (5254 keys / 5888 de entries)
+- `npm run build` — success (client + server)
+- `npm run test` — **1535 passed / 163 files** (StarComms 69; +11 V4)
+- Bundle grep: `process.env.STARCOMMS*` = 0, `api/v1/operation` = 0, `api/v1/status` = 0
+- V4 coverage: pure diff (existing/missing/case-insensitive/unmanaged/no-delete
+  warning/blank-name ignore); actions gated admin:access; list returns catalog;
+  preview blocked (no fetch) when disabled / missing-config / unknown-preset;
+  **preview reads GET /status only (method GET) — never a write endpoint**;
+  preview detects existing+missing; 401 handled; no key leak.
+
+### Known limitations
+- **Apply not implemented** — net creation is deferred until the create-net
+  endpoint + scope are confirmed. The UI shows the preview and a locked Apply
+  button; no write is possible.
+- **Preview is uncached** (`getStatus()` direct) — accurate but one shard call
+  per Preview click. The V2/V2.1 read cache is unchanged.
+- **Name-based matching** — existing-vs-desired is compared by case-insensitive
+  name (StarComms net `id`s aren't preset-stable). A rename on the shard would
+  read as "missing" until re-matched.
+- Presets are **code-defined** (edit `lib/comms/netPresets.ts` + redeploy); no
+  admin-console editing. Inherits all V3 caveats (env-only config, no WAF, etc.).
+
+### Next steps
+- **V4-Apply** (blocked): once you provide the create-net contract (method, path,
+  body, success/409 semantics) + scope, add `provider.createNet()` + an
+  `admin:starcomms_apply_net_preset` action that **creates missing nets only**
+  (never delete/rename), refreshes status, returns `{ created, skipped, warnings,
+  errors }`, redacts secrets — plus the apply-path tests already listed in the V4
+  spec (apply creates only missing, doesn't delete, 401/timeout safe).
+- **V4.1** — optional net ordering / purpose/color fields **iff** the API
+  confirms support.
+- **V4.2** — dedicated `starcomms:manage` permission (schema change + reseed) to
+  replace `admin:access` reuse, once net management is proven in beta.
+
+---
+
 ## StarComms V3.1 — operational open/close controls (2026-07-08)
 
 Surfaces the existing V3 manual open/close controls inside the Operations/Dispatch
