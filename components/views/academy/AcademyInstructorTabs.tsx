@@ -11,6 +11,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useMembers } from '../../../contexts/MembersContext';
 import { useAcademy } from '../../../contexts/AcademyContext';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import { LessonContentEditor } from './LessonRichText';
 import ImageInput from '../../common/ImageInput';
 import type {
@@ -58,6 +59,7 @@ const Spinner: React.FC = () => (
 // ── Mutation runner: busy flag + toast + reload after every write ─────────────
 function useRunner(reload: () => Promise<void>) {
     const { addToast } = useNotification();
+    const { t } = useI18n();
     const [busy, setBusy] = useState(false);
     const run = (fn: () => Promise<unknown>, ok?: string) => {
         setBusy(true);
@@ -67,7 +69,7 @@ function useRunner(reload: () => Promise<void>) {
                 if (ok) addToast(ok, <i className="fa-solid fa-check"></i>, OK_CLS);
                 await reload();
             } catch (err: any) {
-                addToast(err?.message || 'Action failed', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+                addToast(err?.message || t('Action failed'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
             } finally {
                 setBusy(false);
             }
@@ -85,6 +87,7 @@ const UserPicker: React.FC<{
     onConfirm: (ids: number[]) => void;
     onCancel: () => void;
 }> = ({ users, excludeIds, actionLabel, busy, onConfirm, onCancel }) => {
+    const { t } = useI18n();
     const [q, setQ] = useState('');
     const [selected, setSelected] = useState<Set<number>>(() => new Set());
 
@@ -104,10 +107,10 @@ const UserPicker: React.FC<{
 
     return (
         <div className="bg-slate-900/60 border border-slate-700 rounded-lg p-3 space-y-3">
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search by name or RSI handle…" className={INPUT} />
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('Search by name or RSI handle…')} className={INPUT} />
             <div className="max-h-56 overflow-y-auto custom-scrollbar space-y-1">
                 {filtered.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic px-1 py-3">No members match.</p>
+                    <p className="text-xs text-slate-500 italic px-1 py-3">{t('No members match.')}</p>
                 ) : filtered.map(u => {
                     const on = selected.has(u.id);
                     return (
@@ -126,7 +129,7 @@ const UserPicker: React.FC<{
                 })}
             </div>
             <div className="flex items-center justify-end gap-2">
-                <button type="button" onClick={onCancel} className={BTN_GHOST}>Cancel</button>
+                <button type="button" onClick={onCancel} className={BTN_GHOST}>{t('Cancel')}</button>
                 <button type="button" disabled={busy || selected.size === 0} onClick={() => onConfirm([...selected])} className={BTN_PRIMARY}>
                     {actionLabel} ({selected.size})
                 </button>
@@ -140,6 +143,7 @@ const UserPicker: React.FC<{
 // ════════════════════════════════════════════════════════════════════════════
 
 const LessonRow: React.FC<{ lesson: AcademyLesson; busy: boolean; onSave: (patch: { title: string; content: string; videoUrl: string }) => void; onDelete: () => void; }> = ({ lesson, busy, onSave, onDelete }) => {
+    const { t } = useI18n();
     const [editing, setEditing] = useState(false);
     const [title, setTitle] = useState(lesson.title);
     const [content, setContent] = useState(lesson.content ?? '');
@@ -160,18 +164,19 @@ const LessonRow: React.FC<{ lesson: AcademyLesson; busy: boolean; onSave: (patch
     }
     return (
         <div className="p-3 bg-slate-900/60 border border-purple-500/30 rounded-md space-y-2">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Lesson title" className={INPUT} />
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('Lesson title')} className={INPUT} />
             <LessonContentEditor value={content} onChange={setContent} />
-            <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="Video URL (YouTube / Vimeo)" className={INPUT} />
+            <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder={t('Video URL (YouTube / Vimeo)')} className={INPUT} />
             <div className="flex items-center justify-end gap-2">
-                <button type="button" onClick={() => setEditing(false)} className={BTN_GHOST}>Cancel</button>
-                <button type="button" disabled={busy || !title.trim()} onClick={() => { setEditing(false); onSave({ title: title.trim(), content, videoUrl }); }} className={BTN_PRIMARY}>Save</button>
+                <button type="button" onClick={() => setEditing(false)} className={BTN_GHOST}>{t('Cancel')}</button>
+                <button type="button" disabled={busy || !title.trim()} onClick={() => { setEditing(false); onSave({ title: title.trim(), content, videoUrl }); }} className={BTN_PRIMARY}>{t('Save')}</button>
             </div>
         </div>
     );
 };
 
 const ModuleCard: React.FC<{ mod: AcademyModule; busy: boolean; rpcAction: (action: string, payload: any) => Promise<any>; run: (fn: () => Promise<unknown>, ok?: string) => void; confirm: ReturnType<typeof useNotification>['confirm']; }> = ({ mod, busy, rpcAction, run, confirm }) => {
+    const { t } = useI18n();
     const [renaming, setRenaming] = useState(false);
     const [title, setTitle] = useState(mod.title);
     const [lessonTitle, setLessonTitle] = useState('');
@@ -180,14 +185,14 @@ const ModuleCard: React.FC<{ mod: AcademyModule; busy: boolean; rpcAction: (acti
     const [adding, setAdding] = useState(false);
 
     const addLesson = () => {
-        const t = lessonTitle.trim();
-        if (!t) return;
-        run(() => rpcAction('academy:create_lesson', { moduleId: mod.id, title: t, content: lessonContent || null, videoUrl: lessonVideo.trim() || null }), 'Lesson added');
+        const trimmed = lessonTitle.trim();
+        if (!trimmed) return;
+        run(() => rpcAction('academy:create_lesson', { moduleId: mod.id, title: trimmed, content: lessonContent || null, videoUrl: lessonVideo.trim() || null }), t('Lesson added'));
         setLessonTitle(''); setLessonContent(''); setLessonVideo(''); setAdding(false);
     };
     const removeModule = async () => {
-        const ok = await confirm({ title: 'Delete module?', message: `"${mod.title}" and all its lessons will be removed.`, confirmText: 'Delete', variant: 'danger' });
-        if (ok) run(() => rpcAction('academy:delete_module', { moduleId: mod.id }), 'Module deleted');
+        const ok = await confirm({ title: t('Delete module?'), message: t('"{title}" and all its lessons will be removed.', { title: mod.title }), confirmText: t('Delete'), variant: 'danger' });
+        if (ok) run(() => rpcAction('academy:delete_module', { moduleId: mod.id }), t('Module deleted'));
     };
 
     return (
@@ -196,8 +201,8 @@ const ModuleCard: React.FC<{ mod: AcademyModule; busy: boolean; rpcAction: (acti
                 {renaming ? (
                     <>
                         <input value={title} onChange={e => setTitle(e.target.value)} className={INPUT} />
-                        <button type="button" disabled={busy || !title.trim()} onClick={() => { setRenaming(false); run(() => rpcAction('academy:update_module', { moduleId: mod.id, title: title.trim() }), 'Module renamed'); }} className={BTN_PRIMARY}>Save</button>
-                        <button type="button" onClick={() => { setRenaming(false); setTitle(mod.title); }} className={BTN_GHOST}>Cancel</button>
+                        <button type="button" disabled={busy || !title.trim()} onClick={() => { setRenaming(false); run(() => rpcAction('academy:update_module', { moduleId: mod.id, title: title.trim() }), t('Module renamed')); }} className={BTN_PRIMARY}>{t('Save')}</button>
+                        <button type="button" onClick={() => { setRenaming(false); setTitle(mod.title); }} className={BTN_GHOST}>{t('Cancel')}</button>
                     </>
                 ) : (
                     <>
@@ -212,25 +217,25 @@ const ModuleCard: React.FC<{ mod: AcademyModule; busy: boolean; rpcAction: (acti
             <div className="space-y-1.5">
                 {mod.lessons.map(l => (
                     <LessonRow key={l.id} lesson={l} busy={busy}
-                        onSave={patch => run(() => rpcAction('academy:update_lesson', { lessonId: l.id, title: patch.title, content: patch.content || null, videoUrl: patch.videoUrl.trim() || null }), 'Lesson saved')}
-                        onDelete={() => run(() => rpcAction('academy:delete_lesson', { lessonId: l.id }), 'Lesson deleted')} />
+                        onSave={patch => run(() => rpcAction('academy:update_lesson', { lessonId: l.id, title: patch.title, content: patch.content || null, videoUrl: patch.videoUrl.trim() || null }), t('Lesson saved'))}
+                        onDelete={() => run(() => rpcAction('academy:delete_lesson', { lessonId: l.id }), t('Lesson deleted'))} />
                 ))}
-                {mod.lessons.length === 0 && !adding && <p className="text-[11px] text-slate-600 italic">No lessons yet.</p>}
+                {mod.lessons.length === 0 && !adding && <p className="text-[11px] text-slate-600 italic">{t('No lessons yet.')}</p>}
             </div>
 
             {adding ? (
                 <div className="p-3 bg-slate-900/60 border border-purple-500/30 rounded-md space-y-2">
-                    <input value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} placeholder="Lesson title" className={INPUT} />
+                    <input value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} placeholder={t('Lesson title')} className={INPUT} />
                     <LessonContentEditor value={lessonContent} onChange={setLessonContent} />
-                    <input value={lessonVideo} onChange={e => setLessonVideo(e.target.value)} placeholder="Video URL (YouTube / Vimeo)" className={INPUT} />
+                    <input value={lessonVideo} onChange={e => setLessonVideo(e.target.value)} placeholder={t('Video URL (YouTube / Vimeo)')} className={INPUT} />
                     <div className="flex items-center justify-end gap-2">
-                        <button type="button" onClick={() => setAdding(false)} className={BTN_GHOST}>Cancel</button>
-                        <button type="button" disabled={busy || !lessonTitle.trim()} onClick={addLesson} className={BTN_PRIMARY}>Add Lesson</button>
+                        <button type="button" onClick={() => setAdding(false)} className={BTN_GHOST}>{t('Cancel')}</button>
+                        <button type="button" disabled={busy || !lessonTitle.trim()} onClick={addLesson} className={BTN_PRIMARY}>{t('Add Lesson')}</button>
                     </div>
                 </div>
             ) : (
                 <button type="button" onClick={() => setAdding(true)} className="w-full py-1.5 border border-dashed border-slate-700 rounded-md text-[11px] font-bold text-slate-400 hover:text-purple-400 hover:border-purple-600/40 uppercase tracking-widest">
-                    <i className="fa-solid fa-plus mr-2"></i>Add Lesson
+                    <i className="fa-solid fa-plus mr-2"></i>{t('Add Lesson')}
                 </button>
             )}
         </div>
@@ -238,12 +243,13 @@ const ModuleCard: React.FC<{ mod: AcademyModule; busy: boolean; rpcAction: (acti
 };
 
 const OutcomeRow: React.FC<{ outcome: AcademyOutcome; busy: boolean; run: (fn: () => Promise<unknown>, ok?: string) => void; rpcAction: (action: string, payload: any) => Promise<any>; confirm: ReturnType<typeof useNotification>['confirm']; }> = ({ outcome, busy, run, rpcAction, confirm }) => {
+    const { t } = useI18n();
     const [editing, setEditing] = useState(false);
     const [title, setTitle] = useState(outcome.title);
 
     const remove = async () => {
-        const ok = await confirm({ title: 'Delete outcome?', message: `"${outcome.title}" will be removed.`, confirmText: 'Delete', variant: 'danger' });
-        if (ok) run(() => rpcAction('academy:delete_outcome', { outcomeId: outcome.id }), 'Outcome deleted');
+        const ok = await confirm({ title: t('Delete outcome?'), message: t('"{title}" will be removed.', { title: outcome.title }), confirmText: t('Delete'), variant: 'danger' });
+        if (ok) run(() => rpcAction('academy:delete_outcome', { outcomeId: outcome.id }), t('Outcome deleted'));
     };
 
     return (
@@ -251,16 +257,16 @@ const OutcomeRow: React.FC<{ outcome: AcademyOutcome; busy: boolean; run: (fn: (
             {editing ? (
                 <>
                     <input value={title} onChange={e => setTitle(e.target.value)} className={INPUT} />
-                    <button type="button" disabled={busy || !title.trim()} onClick={() => { setEditing(false); run(() => rpcAction('academy:update_outcome', { outcomeId: outcome.id, title: title.trim() }), 'Outcome saved'); }} className={BTN_PRIMARY}>Save</button>
-                    <button type="button" onClick={() => { setEditing(false); setTitle(outcome.title); }} className={BTN_GHOST}>Cancel</button>
+                    <button type="button" disabled={busy || !title.trim()} onClick={() => { setEditing(false); run(() => rpcAction('academy:update_outcome', { outcomeId: outcome.id, title: title.trim() }), t('Outcome saved')); }} className={BTN_PRIMARY}>{t('Save')}</button>
+                    <button type="button" onClick={() => { setEditing(false); setTitle(outcome.title); }} className={BTN_GHOST}>{t('Cancel')}</button>
                 </>
             ) : (
                 <>
                     <i className="fa-solid fa-bullseye text-purple-400/70"></i>
                     <span className="text-sm text-white flex-1 truncate">{outcome.title}</span>
-                    <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:update_outcome', { outcomeId: outcome.id, required: !outcome.required }), 'Outcome updated')}
+                    <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:update_outcome', { outcomeId: outcome.id, required: !outcome.required }), t('Outcome updated'))}
                         className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${outcome.required ? 'bg-purple-500/10 text-purple-300 border-purple-500/30' : 'bg-slate-700/30 text-slate-400 border-slate-600/40'}`}>
-                        {outcome.required ? 'Required' : 'Optional'}
+                        {outcome.required ? t('Required') : t('Optional')}
                     </button>
                     <button type="button" onClick={() => setEditing(true)} className="text-slate-500 hover:text-purple-400 px-1"><i className="fa-solid fa-pen text-xs"></i></button>
                     <button type="button" disabled={busy} onClick={remove} className="text-slate-500 hover:text-red-400 px-1"><i className="fa-solid fa-trash text-xs"></i></button>
@@ -274,6 +280,7 @@ const CourseEditor: React.FC<{ course: AcademyCourse; canManage: boolean; onBack
     const { rpcAction, certifications } = useData();
     const { allUsers } = useMembers();
     const { confirm, addToast } = useNotification();
+    const { t } = useI18n();
     const { busy, run } = useRunner(onReload);
 
     const [title, setTitle] = useState(course.title);
@@ -289,112 +296,112 @@ const CourseEditor: React.FC<{ course: AcademyCourse; canManage: boolean; onBack
 
     const saveDetails = () => {
         if (!title.trim()) return;
-        run(() => rpcAction('academy:update_course', { courseId: course.id, title: title.trim(), description: description.trim() || null, imageUrl: coverUrl }), 'Course saved');
+        run(() => rpcAction('academy:update_course', { courseId: course.id, title: title.trim(), description: description.trim() || null, imageUrl: coverUrl }), t('Course saved'));
     };
     const addModule = () => {
-        const t = moduleTitle.trim();
-        if (!t) return;
-        run(() => rpcAction('academy:create_module', { courseId: course.id, title: t }), 'Module added');
+        const trimmed = moduleTitle.trim();
+        if (!trimmed) return;
+        run(() => rpcAction('academy:create_module', { courseId: course.id, title: trimmed }), t('Module added'));
         setModuleTitle('');
     };
     const addOutcome = () => {
-        const t = outcomeTitle.trim();
-        if (!t) return;
-        run(() => rpcAction('academy:create_outcome', { courseId: course.id, title: t, required: outcomeRequired }), 'Outcome added');
+        const trimmed = outcomeTitle.trim();
+        if (!trimmed) return;
+        run(() => rpcAction('academy:create_outcome', { courseId: course.id, title: trimmed, required: outcomeRequired }), t('Outcome added'));
         setOutcomeTitle('');
     };
     const addInstructors = (ids: number[]) => {
         setPickingInstructor(false);
-        run(() => rpcAction('academy:add_course_instructors', { courseId: course.id, targetUserIds: ids }), 'Instructor(s) added');
+        run(() => rpcAction('academy:add_course_instructors', { courseId: course.id, targetUserIds: ids }), t('Instructor(s) added'));
     };
     const deleteCourse = async () => {
-        const ok = await confirm({ title: 'Delete course?', message: `"${course.title}" and its curriculum will be permanently removed.`, confirmText: 'Delete', variant: 'danger' });
+        const ok = await confirm({ title: t('Delete course?'), message: t('"{title}" and its curriculum will be permanently removed.', { title: course.title }), confirmText: t('Delete'), variant: 'danger' });
         if (!ok) return;
         // Delete then hand back to the parent to clear the selection and refresh the LIST.
         // Do NOT route through `run`, whose post-action reload would re-fetch this now-deleted
         // course and surface a spurious "Course does not belong to this organisation" error.
         try {
             await rpcAction('academy:delete_course', { courseId: course.id });
-            addToast('Course deleted', <i className="fa-solid fa-check"></i>, OK_CLS);
+            addToast(t('Course deleted'), <i className="fa-solid fa-check"></i>, OK_CLS);
             await onDeleted();
         } catch (err: any) {
-            addToast(err?.message || 'Failed to delete course', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to delete course'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         }
     };
 
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex flex-wrap items-center gap-3">
-                <button type="button" onClick={onBack} className={BTN_GHOST}><i className="fa-solid fa-arrow-left mr-2"></i>Back</button>
-                <Pill label={status.label} cls={status.cls} />
+                <button type="button" onClick={onBack} className={BTN_GHOST}><i className="fa-solid fa-arrow-left mr-2"></i>{t('Back')}</button>
+                <Pill label={t(status.label)} cls={status.cls} />
                 <div className="flex-1"></div>
                 {course.status === 'draft' && (
-                    <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:submit_course', { courseId: course.id }), 'Submitted for approval')} className={BTN_PRIMARY}>Submit for Approval</button>
+                    <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:submit_course', { courseId: course.id }), t('Submitted for approval'))} className={BTN_PRIMARY}>{t('Submit for Approval')}</button>
                 )}
                 {(course.status === 'draft' || course.status === 'archived') && (
-                    <button type="button" disabled={busy} onClick={deleteCourse} className={BTN_DANGER}>Delete Course</button>
+                    <button type="button" disabled={busy} onClick={deleteCourse} className={BTN_DANGER}>{t('Delete Course')}</button>
                 )}
             </div>
 
             {/* Details */}
             <section className="bg-slate-800/40 border border-slate-700 rounded-lg p-4 space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Details</h3>
-                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Course title" className={INPUT} />
-                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Description" className={INPUT} />
-                <ImageInput value={coverUrl} onChange={setCoverUrl} feature="academy" preview="landscape" label="Cover image (shown on the catalogue card and course page)" inputClassName={INPUT} />
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Details')}</h3>
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('Course title')} className={INPUT} />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder={t('Description')} className={INPUT} />
+                <ImageInput value={coverUrl} onChange={setCoverUrl} feature="academy" preview="landscape" label={t('Cover image (shown on the catalogue card and course page)')} inputClassName={INPUT} />
                 <div className="flex justify-end">
-                    <button type="button" disabled={busy || !title.trim()} onClick={saveDetails} className={BTN_PRIMARY}>Save Details</button>
+                    <button type="button" disabled={busy || !title.trim()} onClick={saveDetails} className={BTN_PRIMARY}>{t('Save Details')}</button>
                 </div>
             </section>
 
             {/* Certification reward — cert-award authority only */}
             {canManage && (
                 <section className="bg-slate-800/40 border border-slate-700 rounded-lg p-4 space-y-2">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Certification Reward</h3>
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Certification Reward')}</h3>
                     <select
                         value={course.certificationId ?? ''}
                         disabled={busy}
-                        onChange={e => run(() => rpcAction('academy:set_course_certification', { courseId: course.id, certificationId: e.target.value ? Number(e.target.value) : null }), 'Certification updated')}
+                        onChange={e => run(() => rpcAction('academy:set_course_certification', { courseId: course.id, certificationId: e.target.value ? Number(e.target.value) : null }), t('Certification updated'))}
                         className={INPUT}>
-                        <option value="">No certification</option>
+                        <option value="">{t('No certification')}</option>
                         {certifications.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
-                    <p className="text-[11px] text-slate-500">Awarded on certified completion. Requires the Award Certification permission.</p>
+                    <p className="text-[11px] text-slate-500">{t('Awarded on certified completion. Requires the Award Certification permission.')}</p>
                 </section>
             )}
 
             {/* Modules */}
             <section className="space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Modules &amp; Lessons</h3>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Modules & Lessons')}</h3>
                 {course.modules.map(m => (
                     <ModuleCard key={m.id} mod={m} busy={busy} rpcAction={rpcAction} run={run} confirm={confirm} />
                 ))}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <input value={moduleTitle} onChange={e => setModuleTitle(e.target.value)} placeholder="New module title" className={INPUT} />
-                    <button type="button" disabled={busy || !moduleTitle.trim()} onClick={addModule} className={`${BTN_PRIMARY} shrink-0`}>Add Module</button>
+                    <input value={moduleTitle} onChange={e => setModuleTitle(e.target.value)} placeholder={t('New module title')} className={INPUT} />
+                    <button type="button" disabled={busy || !moduleTitle.trim()} onClick={addModule} className={`${BTN_PRIMARY} shrink-0`}>{t('Add Module')}</button>
                 </div>
             </section>
 
             {/* Outcomes */}
             <section className="space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Competency Outcomes</h3>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Competency Outcomes')}</h3>
                 {course.outcomes.map(o => (
                     <OutcomeRow key={o.id} outcome={o} busy={busy} run={run} rpcAction={rpcAction} confirm={confirm} />
                 ))}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <input value={outcomeTitle} onChange={e => setOutcomeTitle(e.target.value)} placeholder="New outcome title" className={INPUT} />
+                    <input value={outcomeTitle} onChange={e => setOutcomeTitle(e.target.value)} placeholder={t('New outcome title')} className={INPUT} />
                     <div className="flex items-center justify-between sm:justify-start gap-2 shrink-0">
                         <label className="flex items-center gap-1.5 text-[11px] text-slate-400 uppercase tracking-widest">
-                            <input type="checkbox" checked={outcomeRequired} onChange={e => setOutcomeRequired(e.target.checked)} className="accent-purple-500" />Required
+                            <input type="checkbox" checked={outcomeRequired} onChange={e => setOutcomeRequired(e.target.checked)} className="accent-purple-500" />{t('Required')}
                         </label>
-                        <button type="button" disabled={busy || !outcomeTitle.trim()} onClick={addOutcome} className={BTN_PRIMARY}>Add</button>
+                        <button type="button" disabled={busy || !outcomeTitle.trim()} onClick={addOutcome} className={BTN_PRIMARY}>{t('Add')}</button>
                     </div>
                 </div>
             </section>
 
             {/* Instructors */}
             <section className="space-y-3">
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Instructors</h3>
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Instructors')}</h3>
                 <div className="flex flex-wrap gap-2">
                     {course.instructors.map(i => (
                         <span key={i.id} className="flex items-center gap-2 pl-1 pr-2 py-1 bg-slate-800/60 border border-slate-700 rounded-full">
@@ -402,15 +409,15 @@ const CourseEditor: React.FC<{ course: AcademyCourse; canManage: boolean; onBack
                                 ? <img src={i.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
                                 : <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-slate-400"><i className="fa-solid fa-user"></i></span>}
                             <span className="text-xs text-white">{i.name}</span>
-                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:remove_course_instructor', { courseId: course.id, targetUserId: i.id }), 'Instructor removed')} className="text-slate-500 hover:text-red-400"><i className="fa-solid fa-xmark text-xs"></i></button>
+                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:remove_course_instructor', { courseId: course.id, targetUserId: i.id }), t('Instructor removed'))} className="text-slate-500 hover:text-red-400"><i className="fa-solid fa-xmark text-xs"></i></button>
                         </span>
                     ))}
-                    {course.instructors.length === 0 && <p className="text-[11px] text-slate-600 italic">No instructors assigned.</p>}
+                    {course.instructors.length === 0 && <p className="text-[11px] text-slate-600 italic">{t('No instructors assigned.')}</p>}
                 </div>
                 {pickingInstructor ? (
-                    <UserPicker users={allUsers} excludeIds={instructorIds} actionLabel="Add" busy={busy} onConfirm={addInstructors} onCancel={() => setPickingInstructor(false)} />
+                    <UserPicker users={allUsers} excludeIds={instructorIds} actionLabel={t('Add')} busy={busy} onConfirm={addInstructors} onCancel={() => setPickingInstructor(false)} />
                 ) : (
-                    <button type="button" onClick={() => setPickingInstructor(true)} className="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest"><i className="fa-solid fa-plus mr-1"></i>Add Instructor</button>
+                    <button type="button" onClick={() => setPickingInstructor(true)} className="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-widest"><i className="fa-solid fa-plus mr-1"></i>{t('Add Instructor')}</button>
                 )}
             </section>
         </div>
@@ -421,6 +428,7 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
     const { rpcAction } = useData();
     const { academyCourses, refreshAcademy } = useAcademy();
     const { addToast } = useNotification();
+    const { t } = useI18n();
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [detail, setDetail] = useState<AcademyCourse | null>(null);
@@ -434,7 +442,7 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
             const c = await rpcAction('academy:get_course', { courseId }) as AcademyCourse;
             setDetail(c);
         } catch (err: any) {
-            addToast(err?.message || 'Failed to load course', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to load course'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         }
     };
     const openCourse = (courseId: string) => { setSelectedId(courseId); setDetail(null); void loadDetail(courseId); };
@@ -444,17 +452,17 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
     const afterDelete = async () => { setSelectedId(null); setDetail(null); await refreshAcademy(); };
 
     const createCourse = async () => {
-        const t = newTitle.trim();
-        if (!t) return;
+        const trimmed = newTitle.trim();
+        if (!trimmed) return;
         setBusy(true);
         try {
-            const created = await rpcAction('academy:create_course', { title: t, delivery: newDelivery }) as AcademyCourse;
-            addToast('Course created', <i className="fa-solid fa-check"></i>, OK_CLS);
+            const created = await rpcAction('academy:create_course', { title: trimmed, delivery: newDelivery }) as AcademyCourse;
+            addToast(t('Course created'), <i className="fa-solid fa-check"></i>, OK_CLS);
             await refreshAcademy();
             setNewTitle(''); setNewDelivery('cohort'); setCreating(false);
             openCourse(created.id);
         } catch (err: any) {
-            addToast(err?.message || 'Failed to create course', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to create course'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         } finally {
             setBusy(false);
         }
@@ -468,23 +476,23 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
     return (
         <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold text-white">Course Builder</h2>
+                <h2 className="text-lg font-bold text-white">{t('Course Builder')}</h2>
                 {!creating && (
-                    <button type="button" onClick={() => setCreating(true)} className={`${BTN_PRIMARY} shrink-0`}><i className="fa-solid fa-plus mr-2"></i>New Course</button>
+                    <button type="button" onClick={() => setCreating(true)} className={`${BTN_PRIMARY} shrink-0`}><i className="fa-solid fa-plus mr-2"></i>{t('New Course')}</button>
                 )}
             </div>
 
             {creating && (
                 <div className="bg-slate-800/40 border border-purple-500/30 rounded-lg p-4 space-y-3">
-                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Course</h3>
-                    <input value={newTitle} onChange={e => setNewTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void createCourse(); }} placeholder="Course title" className={INPUT} />
-                    <select value={newDelivery} onChange={e => setNewDelivery(e.target.value as 'cohort' | 'self_paced')} title="How this course is run" className={INPUT}>
-                        <option value="cohort">Cohort (sessions)</option>
-                        <option value="self_paced">Self-paced</option>
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('New Course')}</h3>
+                    <input value={newTitle} onChange={e => setNewTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void createCourse(); }} placeholder={t('Course title')} className={INPUT} />
+                    <select value={newDelivery} onChange={e => setNewDelivery(e.target.value as 'cohort' | 'self_paced')} title={t('How this course is run')} className={INPUT}>
+                        <option value="cohort">{t('Cohort (sessions)')}</option>
+                        <option value="self_paced">{t('Self-paced')}</option>
                     </select>
                     <div className="flex items-center justify-end gap-2">
-                        <button type="button" onClick={() => { setCreating(false); setNewTitle(''); setNewDelivery('cohort'); }} className={BTN_GHOST}>Cancel</button>
-                        <button type="button" disabled={busy || !newTitle.trim()} onClick={createCourse} className={BTN_PRIMARY}>Create</button>
+                        <button type="button" onClick={() => { setCreating(false); setNewTitle(''); setNewDelivery('cohort'); }} className={BTN_GHOST}>{t('Cancel')}</button>
+                        <button type="button" disabled={busy || !newTitle.trim()} onClick={createCourse} className={BTN_PRIMARY}>{t('Create')}</button>
                     </div>
                 </div>
             )}
@@ -492,7 +500,7 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
             {academyCourses.length === 0 ? (
                 <div className="text-center py-16 text-slate-500">
                     <i className="fa-solid fa-graduation-cap text-3xl mb-3 text-slate-700"></i>
-                    <p className="text-sm">No courses yet. Create one to start building curriculum.</p>
+                    <p className="text-sm">{t('No courses yet. Create one to start building curriculum.')}</p>
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -504,9 +512,9 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
                                 <i className={`fa-solid ${c.icon || 'fa-graduation-cap'} text-purple-400 text-lg w-6 text-center`}></i>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-bold text-white truncate">{c.title}</p>
-                                    <p className="text-[11px] text-slate-500">{c.instructors.length} instructor{c.instructors.length === 1 ? '' : 's'}</p>
+                                    <p className="text-[11px] text-slate-500">{c.instructors.length === 1 ? t('{count} instructor', { count: c.instructors.length }) : t('{count} instructors', { count: c.instructors.length })}</p>
                                 </div>
-                                <Pill label={st.label} cls={st.cls} />
+                                <Pill label={t(st.label)} cls={st.cls} />
                                 <i className="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
                             </button>
                         );
@@ -522,6 +530,7 @@ export const CourseBuilderTab: React.FC<{ canManage: boolean }> = ({ canManage }
 // ════════════════════════════════════════════════════════════════════════════
 
 const NewSessionForm: React.FC<{ courses: AcademyCourse[]; busy: boolean; onSubmit: (data: { courseId: string; title: string; startsAt: string | null; location: string | null; capacity: number | null }) => void; onCancel: () => void; }> = ({ courses, busy, onSubmit, onCancel }) => {
+    const { t } = useI18n();
     const [courseId, setCourseId] = useState('');
     const [title, setTitle] = useState('');
     const [startsAt, setStartsAt] = useState('');
@@ -535,20 +544,20 @@ const NewSessionForm: React.FC<{ courses: AcademyCourse[]; busy: boolean; onSubm
 
     return (
         <div className="bg-slate-800/40 border border-purple-500/30 rounded-lg p-4 space-y-3">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">New Session</h3>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('New Session')}</h3>
             <select value={courseId} onChange={e => setCourseId(e.target.value)} className={INPUT}>
-                <option value="">Select a published course…</option>
+                <option value="">{t('Select a published course…')}</option>
                 {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Session title (e.g. Alpha Cohort)" className={INPUT} />
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('Session title (e.g. Alpha Cohort)')} className={INPUT} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} className={INPUT} />
-                <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Location" className={INPUT} />
-                <input type="number" min={1} value={capacity} onChange={e => setCapacity(e.target.value)} placeholder="Capacity" className={INPUT} />
+                <input value={location} onChange={e => setLocation(e.target.value)} placeholder={t('Location')} className={INPUT} />
+                <input type="number" min={1} value={capacity} onChange={e => setCapacity(e.target.value)} placeholder={t('Capacity')} className={INPUT} />
             </div>
             <div className="flex items-center justify-end gap-2">
-                <button type="button" onClick={onCancel} className={BTN_GHOST}>Cancel</button>
-                <button type="button" disabled={busy || !courseId || !title.trim()} onClick={submit} className={BTN_PRIMARY}>Create Session</button>
+                <button type="button" onClick={onCancel} className={BTN_GHOST}>{t('Cancel')}</button>
+                <button type="button" disabled={busy || !courseId || !title.trim()} onClick={submit} className={BTN_PRIMARY}>{t('Create Session')}</button>
             </div>
         </div>
     );
@@ -557,6 +566,7 @@ const NewSessionForm: React.FC<{ courses: AcademyCourse[]; busy: boolean; onSubm
 const EnrollmentPanel: React.FC<{ enrollment: AcademyEnrollment; course: AcademyCourse; canManage: boolean; reload: () => Promise<void>; onClose: () => void; }> = ({ enrollment, course, canManage, reload, onClose }) => {
     const { rpcAction } = useData();
     const { confirm } = useNotification();
+    const { t } = useI18n();
     const { busy, run } = useRunner(reload);
 
     const verdictOf = (outcomeId: number): AcademyOutcomeVerdict | null => {
@@ -564,8 +574,8 @@ const EnrollmentPanel: React.FC<{ enrollment: AcademyEnrollment; course: Academy
         return r ? r.verdict : null;
     };
     const certify = async () => {
-        const ok = await confirm({ title: 'Certify & complete?', message: `This will mark ${enrollment.student?.name || 'the student'} as completed and award any linked certification.`, confirmText: 'Certify', variant: 'info' });
-        if (ok) run(() => rpcAction('academy:certify_and_complete', { enrollmentId: enrollment.id }), 'Certified & completed');
+        const ok = await confirm({ title: t('Certify & complete?'), message: t('This will mark {name} as completed and award any linked certification.', { name: enrollment.student?.name || t('the student') }), confirmText: t('Certify'), variant: 'info' });
+        if (ok) run(() => rpcAction('academy:certify_and_complete', { enrollmentId: enrollment.id }), t('Certified & completed'));
     };
 
     return (
@@ -573,34 +583,34 @@ const EnrollmentPanel: React.FC<{ enrollment: AcademyEnrollment; course: Academy
             <div className="flex items-center gap-3">
                 <i className="fa-solid fa-user-graduate text-purple-400"></i>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{enrollment.student?.name || 'Student'}</p>
+                    <p className="text-sm font-bold text-white truncate">{enrollment.student?.name || t('Student')}</p>
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest">{enrollment.status.replace('_', ' ')} · {enrollment.source}</p>
                 </div>
                 <button type="button" onClick={onClose} className="text-slate-500 hover:text-white px-2"><i className="fa-solid fa-xmark"></i></button>
             </div>
 
             <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Competency Assessment</h4>
-                {course.outcomes.length === 0 && <p className="text-[11px] text-slate-600 italic">This course has no outcomes to assess.</p>}
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('Competency Assessment')}</h4>
+                {course.outcomes.length === 0 && <p className="text-[11px] text-slate-600 italic">{t('This course has no outcomes to assess.')}</p>}
                 {course.outcomes.map(o => {
                     const v = verdictOf(o.id);
                     return (
                         <div key={o.id} className="flex items-center gap-2 px-3 py-2 bg-slate-800/40 border border-slate-800 rounded-md">
                             <span className="text-sm text-white flex-1 truncate">{o.title}{o.required && <span className="text-purple-400/70 ml-1">*</span>}</span>
-                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:assess_outcome', { enrollmentId: enrollment.id, outcomeId: o.id, verdict: 'competent' }), 'Assessed')}
-                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${v === 'competent' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'text-slate-400 border-slate-600/40 hover:border-emerald-500/40'}`}>Competent</button>
-                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:assess_outcome', { enrollmentId: enrollment.id, outcomeId: o.id, verdict: 'not_yet_competent' }), 'Assessed')}
-                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${v === 'not_yet_competent' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'text-slate-400 border-slate-600/40 hover:border-amber-500/40'}`}>Not Yet</button>
+                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:assess_outcome', { enrollmentId: enrollment.id, outcomeId: o.id, verdict: 'competent' }), t('Assessed'))}
+                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${v === 'competent' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'text-slate-400 border-slate-600/40 hover:border-emerald-500/40'}`}>{t('Competent')}</button>
+                            <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:assess_outcome', { enrollmentId: enrollment.id, outcomeId: o.id, verdict: 'not_yet_competent' }), t('Assessed'))}
+                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${v === 'not_yet_competent' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'text-slate-400 border-slate-600/40 hover:border-amber-500/40'}`}>{t('Not Yet')}</button>
                         </div>
                     );
                 })}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
-                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:recommend_certification', { enrollmentId: enrollment.id }), 'Recommended for certification')} className={BTN_PRIMARY}>Recommend for Certification</button>
-                {canManage && <button type="button" disabled={busy} onClick={certify} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-white rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed">Certify &amp; Complete</button>}
+                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:recommend_certification', { enrollmentId: enrollment.id }), t('Recommended for certification'))} className={BTN_PRIMARY}>{t('Recommend for Certification')}</button>
+                {canManage && <button type="button" disabled={busy} onClick={certify} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-white rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed">{t('Certify & Complete')}</button>}
                 <div className="flex-1"></div>
-                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:withdraw_enrollment', { enrollmentId: enrollment.id }), 'Withdrawn')} className={BTN_DANGER}>Withdraw</button>
+                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:withdraw_enrollment', { enrollmentId: enrollment.id }), t('Withdrawn'))} className={BTN_DANGER}>{t('Withdraw')}</button>
             </div>
         </div>
     );
@@ -610,6 +620,7 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
     const { rpcAction } = useData();
     const { allUsers } = useMembers();
     const { addToast, confirm } = useNotification();
+    const { t } = useI18n();
     const { busy, run } = useRunner(onReload);
 
     const { session, enrollments } = data;
@@ -627,10 +638,10 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
     const bulkWithdraw = async () => {
         const ids = [...selectedIds];
         if (ids.length === 0) return;
-        const ok = await confirm({ title: `Withdraw ${ids.length} student${ids.length === 1 ? '' : 's'}?`, message: 'They lose their place and progress in this session.', confirmText: 'Withdraw', variant: 'danger' });
+        const ok = await confirm({ title: ids.length === 1 ? t('Withdraw {count} student?', { count: ids.length }) : t('Withdraw {count} students?', { count: ids.length }), message: t('They lose their place and progress in this session.'), confirmText: t('Withdraw'), variant: 'danger' });
         if (!ok) return;
         setSelectedIds(new Set());
-        run(() => rpcAction('academy:withdraw_enrollments_bulk', { sessionId: session.id, enrollmentIds: ids }), `${ids.length} student${ids.length === 1 ? '' : 's'} withdrawn`);
+        run(() => rpcAction('academy:withdraw_enrollments_bulk', { sessionId: session.id, enrollmentIds: ids }), ids.length === 1 ? t('{count} student withdrawn', { count: ids.length }) : t('{count} students withdrawn', { count: ids.length }));
     };
     const bulkRecommend = async () => {
         const ids = [...selectedIds];
@@ -638,10 +649,10 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
         setSelectedIds(new Set());
         try {
             const res = await rpcAction('academy:recommend_enrollments_bulk', { sessionId: session.id, enrollmentIds: ids }) as { recommended: number; skipped: number };
-            addToast(`${res.recommended} recommended${res.skipped ? `, ${res.skipped} not yet competent` : ''}`, <i className="fa-solid fa-check"></i>, OK_CLS);
+            addToast(res.skipped ? t('{recommended} recommended, {skipped} not yet competent', { recommended: res.recommended, skipped: res.skipped }) : t('{count} recommended', { count: res.recommended }), <i className="fa-solid fa-check"></i>, OK_CLS);
             await onReload();
         } catch (err: any) {
-            addToast(err?.message || 'Failed to recommend', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to recommend'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         }
     };
 
@@ -650,38 +661,38 @@ const SessionDetail: React.FC<{ data: { session: AcademySession; enrollments: Ac
             const d = await rpcAction('academy:get_enrollment', { enrollmentId }) as { enrollment: AcademyEnrollment; course: AcademyCourse };
             setEnrollmentDetail(d);
         } catch (err: any) {
-            addToast(err?.message || 'Failed to load enrolment', <i className="fa-solid fa-xmark"></i>, ERR_CLS);
+            addToast(err?.message || t('Failed to load enrolment'), <i className="fa-solid fa-xmark"></i>, ERR_CLS);
         }
     };
     const openEnrollment = (enrollmentId: string) => { setSelectedEnrollmentId(enrollmentId); setEnrollmentDetail(null); void loadEnrollment(enrollmentId); };
     const reloadEnrollmentAndSession = async () => { await onReload(); if (selectedEnrollmentId) await loadEnrollment(selectedEnrollmentId); };
 
-    const assignStudents = (ids: number[]) => { setAssigning(false); run(() => rpcAction('academy:assign_students', { sessionId: session.id, studentIds: ids }), 'Students assigned'); };
+    const assignStudents = (ids: number[]) => { setAssigning(false); run(() => rpcAction('academy:assign_students', { sessionId: session.id, studentIds: ids }), t('Students assigned')); };
 
     return (
         <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">
-                <button type="button" onClick={onBack} className={BTN_GHOST}><i className="fa-solid fa-arrow-left mr-2"></i>Back</button>
+                <button type="button" onClick={onBack} className={BTN_GHOST}><i className="fa-solid fa-arrow-left mr-2"></i>{t('Back')}</button>
                 <div className="min-w-0">
                     <p className="text-sm font-bold text-white truncate">{session.title}</p>
                     <p className="text-[11px] text-slate-500 truncate">{session.courseTitle}</p>
                 </div>
                 <div className="flex-1"></div>
-                <Pill label={st.label} cls={st.cls} />
+                <Pill label={t(st.label)} cls={st.cls} />
             </div>
 
             {/* Controls */}
             <section className="bg-slate-800/40 border border-slate-700 rounded-lg p-4 flex flex-wrap items-center gap-2">
                 {NEXT_STATUS[session.status].map(next => (
-                    <button key={next} type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:set_session_status', { sessionId: session.id, status: next }), `Session ${SESSION_STATUS[next].label.toLowerCase()}`)}
+                    <button key={next} type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:set_session_status', { sessionId: session.id, status: next }), t('Session {status}', { status: t(SESSION_STATUS[next].label).toLowerCase() }))}
                         className={next === 'cancelled' ? BTN_DANGER : BTN_PRIMARY}>
-                        {next === 'in_progress' ? 'Start' : next === 'completed' ? 'Complete' : next === 'cancelled' ? 'Cancel Session' : next}
+                        {next === 'in_progress' ? t('Start') : next === 'completed' ? t('Complete') : next === 'cancelled' ? t('Cancel Session') : next}
                     </button>
                 ))}
                 <div className="flex-1"></div>
-                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:update_session', { sessionId: session.id, enrollmentOpen: !session.enrollmentOpen }), 'Enrolment updated')}
+                <button type="button" disabled={busy} onClick={() => run(() => rpcAction('academy:update_session', { sessionId: session.id, enrollmentOpen: !session.enrollmentOpen }), t('Enrolment updated'))}
                     className={`px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest border ${session.enrollmentOpen ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-slate-700/30 text-slate-400 border-slate-600/40'}`}>
-                    <i className={`fa-solid ${session.enrollmentOpen ? 'fa-lock-open' : 'fa-lock'} mr-2`}></i>Enrolment {session.enrollmentOpen ? 'Open' : 'Closed'}
+                    <i className={`fa-solid ${session.enrollmentOpen ? 'fa-lock-open' : 'fa-lock'} mr-2`}></i>{t('Enrolment')} {session.enrollmentOpen ? t('Open') : t('Closed')}
                 </button>
             </section>
 

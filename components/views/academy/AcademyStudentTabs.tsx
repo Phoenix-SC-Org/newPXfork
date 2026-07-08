@@ -11,6 +11,7 @@ import { useData } from '../../../contexts/DataContext';
 import { useAcademy } from '../../../contexts/AcademyContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { CourseDetailView } from './CourseDetailView';
+import { useI18n } from '../../../i18n/I18nContext';
 import type { AcademyCourse, AcademySession, AcademyEnrollment, AcademyEnrollmentStatus } from '../../../types';
 
 // ── Shared constants / helpers ───────────────────────────────────────────────
@@ -44,7 +45,9 @@ const EmptyState: React.FC<{ icon: string; title: string; message: string }> = (
 // CATALOG TAB — browse published courses → outline + open sessions → enrol
 // ════════════════════════════════════════════════════════════════════════════
 
-const CourseCard: React.FC<{ course: AcademyCourse; loading: boolean; onOpen: () => void }> = ({ course, loading, onOpen }) => (
+const CourseCard: React.FC<{ course: AcademyCourse; loading: boolean; onOpen: () => void }> = ({ course, loading, onOpen }) => {
+    const { t } = useI18n();
+    return (
     <button
         type="button"
         onClick={onOpen}
@@ -56,7 +59,7 @@ const CourseCard: React.FC<{ course: AcademyCourse; loading: boolean; onOpen: ()
                 ? <img src={course.imageUrl} alt="" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center text-3xl text-purple-400/40"><i className={`fa-solid ${course.icon || 'fa-graduation-cap'}`} aria-hidden /></div>}
             {course.delivery === 'self_paced' && (
-                <span className="absolute top-2 left-2 text-[9px] font-black uppercase tracking-widest text-emerald-200 bg-emerald-900/70 border border-emerald-500/30 rounded px-1.5 py-0.5">Self-paced</span>
+                <span className="absolute top-2 left-2 text-[9px] font-black uppercase tracking-widest text-emerald-200 bg-emerald-900/70 border border-emerald-500/30 rounded px-1.5 py-0.5">{t('Self-paced')}</span>
             )}
             {loading && <div className="absolute inset-0 bg-slate-950/50 flex items-center justify-center"><i className="fa-solid fa-spinner animate-spin text-purple-300" aria-hidden /></div>}
         </div>
@@ -70,16 +73,18 @@ const CourseCard: React.FC<{ course: AcademyCourse; loading: boolean; onOpen: ()
             )}
             {course.description && <p className="text-xs text-slate-400 mt-2 line-clamp-2 flex-1">{course.description}</p>}
             <div className="mt-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-purple-400 group-hover:text-purple-300">
-                View course <i className="fa-solid fa-arrow-right group-hover:translate-x-0.5 transition-transform" aria-hidden />
+                {t('View course')} <i className="fa-solid fa-arrow-right group-hover:translate-x-0.5 transition-transform" aria-hidden />
             </div>
         </div>
     </button>
-);
+    );
+};
 
 // Course detail is now the full-page CourseDetailView (CourseDetailView.tsx),
 // rendered in place of the catalogue grid — replaces the old stacked modal.
 
 export const CatalogTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { academyCatalog, academyMyEnrollments, refreshMyAcademy } = useAcademy();
     const { addToast } = useNotification();
@@ -93,7 +98,7 @@ export const CatalogTab: React.FC = () => {
             const d = await rpcAction('academy:get_catalog_course', { courseId }) as CatalogDetail;
             setDetail(d);
         } catch (err) {
-            addToast('Failed to Load Course', <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
+            addToast(t('Failed to Load Course'), <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
         } finally {
             setLoadingId(null);
         }
@@ -117,7 +122,7 @@ export const CatalogTab: React.FC = () => {
         try {
             await rpcAction('academy:self_enroll', { sessionId });
             await refreshMyAcademy();
-            addToast('Enrolled', <i className="fa-solid fa-check" />, OK_TOAST);
+            addToast(t('Enrolled'), <i className="fa-solid fa-check" />, OK_TOAST);
             // Re-fetch the open course so seat counts reflect the new enrolment
             // (guarded so a mid-flight Close doesn't re-open the modal).
             if (detail) {
@@ -125,7 +130,7 @@ export const CatalogTab: React.FC = () => {
                 setDetail((prev) => (prev ? d : null));
             }
         } catch (err) {
-            addToast('Enrolment Failed', <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
+            addToast(t('Enrolment Failed'), <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
         } finally {
             setBusy(false);
         }
@@ -138,15 +143,15 @@ export const CatalogTab: React.FC = () => {
     return (
         <div className="p-4 sm:p-6">
             {academyCatalog.length === 0 ? (
-                <EmptyState icon="fa-graduation-cap" title="No courses available" message="Published courses will appear here once your Academy staff publish them." />
+                <EmptyState icon="fa-graduation-cap" title={t('No courses available')} message={t('Published courses will appear here once your Academy staff publish them.')} />
             ) : (
                 <>
                     <div className="mb-4 relative max-w-sm">
                         <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs" aria-hidden />
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search courses" aria-label="Search courses" className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-purple-500/50 outline-hidden" />
+                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search courses')} aria-label={t('Search courses')} className="w-full bg-slate-800/60 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:ring-2 focus:ring-purple-500/50 outline-hidden" />
                     </div>
                     {filtered.length === 0 ? (
-                        <p className="text-sm text-slate-500 italic py-10 text-center">No courses match &ldquo;{search}&rdquo;.</p>
+                        <p className="text-sm text-slate-500 italic py-10 text-center">{t('No courses match “{query}”.', { query: search })}</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filtered.map((course) => (
@@ -165,6 +170,7 @@ export const CatalogTab: React.FC = () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 const EnrollmentRow: React.FC<{ enrollment: AcademyEnrollment; opening: boolean; onOpen: () => void }> = ({ enrollment: e, opening, onOpen }) => {
+    const { t } = useI18n();
     const meta = STATUS_META[e.status];
     return (
         <button
@@ -177,10 +183,10 @@ const EnrollmentRow: React.FC<{ enrollment: AcademyEnrollment; opening: boolean;
                 <i className="fa-solid fa-book-open-reader" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white truncate">{e.courseTitle || 'Course'}</p>
-                <p className="text-[11px] text-slate-500 truncate">{e.sessionTitle || 'Session'} · {meta.hint}</p>
+                <p className="text-sm font-bold text-white truncate">{e.courseTitle || t('Course')}</p>
+                <p className="text-[11px] text-slate-500 truncate">{e.sessionTitle || t('Session')} · {t(meta.hint)}</p>
             </div>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.badge}`}>{meta.label}</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shrink-0 ${meta.badge}`}>{t(meta.label)}</span>
             {opening
                 ? <i className="fa-solid fa-spinner animate-spin text-purple-400 shrink-0" aria-hidden />
                 : <i className="fa-solid fa-chevron-right text-slate-600 text-xs shrink-0" aria-hidden />}
@@ -192,6 +198,7 @@ const EnrollmentRow: React.FC<{ enrollment: AcademyEnrollment; opening: boolean;
 // LearningModal as the My Learning detail surface.
 
 export const MyLearningTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { academyMyEnrollments, refreshMyAcademy } = useAcademy();
     const { addToast, confirm } = useNotification();
@@ -210,7 +217,7 @@ export const MyLearningTab: React.FC = () => {
             const d = await rpcAction('academy:get_enrollment', { enrollmentId }) as EnrollmentDetail;
             setDetail(d);
         } catch (err) {
-            addToast('Failed to Open', <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
+            addToast(t('Failed to Open'), <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
         } finally {
             setOpeningId(null);
         }
@@ -240,7 +247,7 @@ export const MyLearningTab: React.FC = () => {
         try {
             await rpcAction('academy:mark_lesson', { enrollmentId, lessonId, completed });
         } catch (err) {
-            addToast('Update Failed', <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
+            addToast(t('Update Failed'), <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
             await reloadDetail(enrollmentId); // reconcile with server truth on failure
         } finally {
             setBusy(false);
@@ -252,16 +259,16 @@ export const MyLearningTab: React.FC = () => {
     const closeDetail = useCallback(() => { setDetail(null); void refreshMyAcademy(); }, [refreshMyAcademy]);
 
     const withdraw = useCallback(async (enrollmentId: string) => {
-        const ok = await confirm({ title: 'Withdraw from course?', message: 'You will lose your progress and your place in this session.', confirmText: 'Withdraw', variant: 'danger' });
+        const ok = await confirm({ title: t('Withdraw from course?'), message: t('You will lose your progress and your place in this session.'), confirmText: t('Withdraw'), variant: 'danger' });
         if (!ok) return;
         setBusy(true);
         try {
             await rpcAction('academy:withdraw_enrollment', { enrollmentId });
             await refreshMyAcademy();
-            addToast('Withdrawn', <i className="fa-solid fa-check" />, OK_TOAST);
+            addToast(t('Withdrawn'), <i className="fa-solid fa-check" />, OK_TOAST);
             setDetail(null);
         } catch (err) {
-            addToast('Withdraw Failed', <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
+            addToast(t('Withdraw Failed'), <i className="fa-solid fa-xmark" />, ERR_TOAST, { description: errMsg(err) });
         } finally {
             setBusy(false);
         }
@@ -270,7 +277,7 @@ export const MyLearningTab: React.FC = () => {
     return (
         <div className="p-4 sm:p-6">
             {sorted.length === 0 ? (
-                <EmptyState icon="fa-user-graduate" title="You're not enrolled in anything yet" message="Browse the catalogue and enrol in a session to start learning." />
+                <EmptyState icon="fa-user-graduate" title={t("You're not enrolled in anything yet")} message={t('Browse the catalogue and enrol in a session to start learning.')} />
             ) : (
                 <div className="space-y-2">
                     {sorted.map((e) => (

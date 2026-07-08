@@ -304,7 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const academy = academyEnabled ? (
             <NavItem
                 icon={<i className="fa-solid fa-graduation-cap fa-fw"></i>}
-                label="Academy"
+                label={t('Academy')}
                 isActive={activeView === 'academy'}
                 onClick={() => handleNavClick('academy')}
                 isCollapsed={isSidebarCollapsed}

@@ -18,6 +18,7 @@ import { useAcademy } from '../../../contexts/AcademyContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import type { AcademyCourse, AcademyEnrollment } from '../../../types';
 import WindowFrame from '../../layout/WindowFrame';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const OK_TOAST = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50';
 const ERR_TOAST = 'bg-red-500/10 text-red-400 border-red-500/50';
@@ -31,6 +32,7 @@ const SectionHeader: React.FC<{ label: string; count: number; icon: string; acce
 );
 
 export const ApprovalsTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { academyCourses, refreshAcademy } = useAcademy();
     const { addToast, confirm } = useNotification();
@@ -44,7 +46,7 @@ export const ApprovalsTab: React.FC = () => {
         addToast(message, <i className="fa-solid fa-check" />, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50');
     }, [addToast]);
     const errToast = useCallback((err: unknown) => {
-        addToast(err instanceof Error ? err.message : 'Something went wrong.', <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
+        addToast(err instanceof Error ? err.message : t('Something went wrong.'), <i className="fa-solid fa-triangle-exclamation" />, 'bg-red-500/10 text-red-400 border-red-500/50');
     }, [addToast]);
 
     const pending = academyCourses.filter(c => c.status === 'pending_approval');
@@ -75,7 +77,7 @@ export const ApprovalsTab: React.FC = () => {
         setBusy(true);
         try {
             await rpcAction('academy:approve_course', { courseId: reviewCourse.id });
-            okToast('Course approved and published.');
+            okToast(t('Course approved and published.'));
             await refreshAcademy();
             closeReview();
         } catch (err) {
@@ -88,16 +90,16 @@ export const ApprovalsTab: React.FC = () => {
     const reject = useCallback(async () => {
         if (!reviewCourse) return;
         const ok = await confirm({
-            title: 'Reject to Draft?',
-            message: 'This returns the course to its authors as a draft for revision. No students are affected.',
-            confirmText: 'Reject to Draft',
+            title: t('Reject to Draft?'),
+            message: t('This returns the course to its authors as a draft for revision. No students are affected.'),
+            confirmText: t('Reject to Draft'),
             variant: 'warning',
         });
         if (!ok) return;
         setBusy(true);
         try {
             await rpcAction('academy:reject_course', { courseId: reviewCourse.id });
-            okToast('Course returned to draft.');
+            okToast(t('Course returned to draft.'));
             await refreshAcademy();
             closeReview();
         } catch (err) {
@@ -122,16 +124,16 @@ export const ApprovalsTab: React.FC = () => {
 
     const archiveCourse = useCallback(async (course: AcademyCourse) => {
         const ok = await confirm({
-            title: 'Archive Course?',
-            message: 'Archived courses leave the catalog and cannot be run as new sessions until restored.',
-            confirmText: 'Archive',
+            title: t('Archive Course?'),
+            message: t('Archived courses leave the catalog and cannot be run as new sessions until restored.'),
+            confirmText: t('Archive'),
             variant: 'warning',
         });
         if (!ok) return;
         setBusy(true);
         try {
             await rpcAction('academy:set_course_archived', { courseId: course.id, archived: true });
-            okToast('Course archived.');
+            okToast(t('Course archived.'));
             await refreshAcademy();
         } catch (err) {
             errToast(err);
@@ -144,7 +146,7 @@ export const ApprovalsTab: React.FC = () => {
         setBusy(true);
         try {
             await rpcAction('academy:set_course_archived', { courseId: course.id, archived: false });
-            okToast('Course restored to draft.');
+            okToast(t('Course restored to draft.'));
             await refreshAcademy();
         } catch (err) {
             errToast(err);
@@ -157,9 +159,9 @@ export const ApprovalsTab: React.FC = () => {
         <div className="space-y-8 max-w-3xl">
             {/* ── 1. Pending approval ─────────────────────────────────────── */}
             <section>
-                <SectionHeader label="Awaiting Approval" count={pending.length} icon="fa-solid fa-clipboard-check" accent="text-amber-400" />
+                <SectionHeader label={t('Awaiting Approval')} count={pending.length} icon="fa-solid fa-clipboard-check" accent="text-amber-400" />
                 {pending.length === 0 ? (
-                    <p className="text-sm text-slate-500 italic px-1 py-6 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">No courses awaiting approval.</p>
+                    <p className="text-sm text-slate-500 italic px-1 py-6 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">{t('No courses awaiting approval.')}</p>
                 ) : (
                     <div className="space-y-2">
                         {pending.map(course => (
@@ -168,7 +170,9 @@ export const ApprovalsTab: React.FC = () => {
                                     <p className="text-sm font-bold text-white truncate">{course.title}</p>
                                     <p className="text-[11px] text-slate-500 mt-0.5">
                                         <i className="fa-solid fa-chalkboard-user mr-1.5" aria-hidden />
-                                        {course.instructors?.length ?? 0} instructor{(course.instructors?.length ?? 0) === 1 ? '' : 's'}
+                                        {(course.instructors?.length ?? 0) === 1
+                                            ? t('{count} instructor', { count: course.instructors?.length ?? 0 })
+                                            : t('{count} instructors', { count: course.instructors?.length ?? 0 })}
                                     </p>
                                 </div>
                                 <button
@@ -176,7 +180,7 @@ export const ApprovalsTab: React.FC = () => {
                                     onClick={() => void openReview(course)}
                                     className="shrink-0 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-purple-200 rounded-lg bg-purple-500/15 border border-purple-500/30 hover:bg-purple-500/25 transition-colors"
                                 >
-                                    <i className="fa-solid fa-magnifying-glass mr-1.5" aria-hidden /> Review
+                                    <i className="fa-solid fa-magnifying-glass mr-1.5" aria-hidden /> {t('Review')}
                                 </button>
                             </div>
                         ))}
@@ -186,9 +190,9 @@ export const ApprovalsTab: React.FC = () => {
 
             {/* ── 2. Published ────────────────────────────────────────────── */}
             <section>
-                <SectionHeader label="Published Courses" count={published.length} icon="fa-solid fa-book-open" accent="text-emerald-400" />
+                <SectionHeader label={t('Published Courses')} count={published.length} icon="fa-solid fa-book-open" accent="text-emerald-400" />
                 {published.length === 0 ? (
-                    <p className="text-sm text-slate-500 italic px-1 py-6 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">No published courses yet.</p>
+                    <p className="text-sm text-slate-500 italic px-1 py-6 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">{t('No published courses yet.')}</p>
                 ) : (
                     <div className="space-y-2">
                         {published.map(course => (
@@ -196,7 +200,7 @@ export const ApprovalsTab: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-bold text-white truncate">{course.title}</p>
                                     <p className="text-[11px] text-slate-500 mt-0.5">
-                                        {course.access === 'open' ? 'Open self-enrolment' : 'Gated — assigned only'}
+                                        {course.access === 'open' ? t('Open self-enrolment') : t('Gated — assigned only')}
                                     </p>
                                 </div>
 
@@ -214,7 +218,7 @@ export const ApprovalsTab: React.FC = () => {
                                                     : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
                                             }`}
                                         >
-                                            {a}
+                                            {a === 'open' ? t('Open') : t('Gated')}
                                         </button>
                                     ))}
                                 </div>
@@ -225,7 +229,7 @@ export const ApprovalsTab: React.FC = () => {
                                     onClick={() => void archiveCourse(course)}
                                     className="shrink-0 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 rounded-lg border border-slate-700 hover:text-slate-200 hover:border-slate-500 hover:bg-slate-800 transition-colors disabled:opacity-50"
                                 >
-                                    <i className="fa-solid fa-box-archive mr-1.5" aria-hidden /> Archive
+                                    <i className="fa-solid fa-box-archive mr-1.5" aria-hidden /> {t('Archive')}
                                 </button>
                             </div>
                         ))}
@@ -236,7 +240,7 @@ export const ApprovalsTab: React.FC = () => {
             {/* ── 3. Archived (only when present) ─────────────────────────── */}
             {archived.length > 0 && (
                 <section>
-                    <SectionHeader label="Archived" count={archived.length} icon="fa-solid fa-box-archive" accent="text-slate-500" />
+                    <SectionHeader label={t('Archived')} count={archived.length} icon="fa-solid fa-box-archive" accent="text-slate-500" />
                     <div className="space-y-2">
                         {archived.map(course => (
                             <div key={course.id} className="flex items-center gap-4 p-3 rounded-lg border border-slate-800 bg-slate-900/40">
@@ -247,7 +251,7 @@ export const ApprovalsTab: React.FC = () => {
                                     onClick={() => void unarchiveCourse(course)}
                                     className="shrink-0 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-purple-300 rounded-lg border border-purple-500/30 hover:bg-purple-500/15 transition-colors disabled:opacity-50"
                                 >
-                                    <i className="fa-solid fa-rotate-left mr-1.5" aria-hidden /> Unarchive
+                                    <i className="fa-solid fa-rotate-left mr-1.5" aria-hidden /> {t('Unarchive')}
                                 </button>
                             </div>
                         ))}
@@ -261,7 +265,7 @@ export const ApprovalsTab: React.FC = () => {
                     isOpen
                     onClose={closeReview}
                     title={reviewCourse.title}
-                    subtitle="Curriculum review · pending approval"
+                    subtitle={t('Curriculum review · pending approval')}
                     icon="fa-solid fa-clipboard-check"
                     color="purple"
                     width="max-w-2xl"
@@ -271,7 +275,7 @@ export const ApprovalsTab: React.FC = () => {
                             {!detail ? (
                                 <div className="py-16 text-center text-slate-500">
                                     <i className="fa-solid fa-spinner animate-spin text-2xl" aria-hidden />
-                                    <p className="text-xs mt-3 uppercase tracking-widest font-bold">Loading curriculum…</p>
+                                    <p className="text-xs mt-3 uppercase tracking-widest font-bold">{t('Loading curriculum…')}</p>
                                 </div>
                             ) : (
                                 <>
@@ -284,7 +288,7 @@ export const ApprovalsTab: React.FC = () => {
                                         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5">
                                             <i className="fa-solid fa-certificate text-amber-400" aria-hidden />
                                             <div className="min-w-0">
-                                                <p className="text-[10px] text-amber-500/80 uppercase tracking-widest font-bold">Awards Certification</p>
+                                                <p className="text-[10px] text-amber-500/80 uppercase tracking-widest font-bold">{t('Awards Certification')}</p>
                                                 <p className="text-sm text-amber-200 font-semibold truncate">{detail.certification.name}</p>
                                             </div>
                                         </div>
@@ -292,9 +296,9 @@ export const ApprovalsTab: React.FC = () => {
 
                                     {/* Curriculum: modules → lessons */}
                                     <div>
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3">Curriculum</p>
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3">{t('Curriculum')}</p>
                                         {detail.modules.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic">No modules defined.</p>
+                                            <p className="text-xs text-slate-500 italic">{t('No modules defined.')}</p>
                                         ) : (
                                             <div className="space-y-4">
                                                 {detail.modules.map((mod, mi) => (
@@ -322,14 +326,14 @@ export const ApprovalsTab: React.FC = () => {
                                     {/* Outcomes */}
                                     {detail.outcomes.length > 0 && (
                                         <div>
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2">Learning Outcomes</p>
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-2">{t('Learning Outcomes')}</p>
                                             <ul className="space-y-1.5">
                                                 {detail.outcomes.map(o => (
                                                     <li key={o.id} className="flex items-start gap-2.5 text-sm text-slate-300">
                                                         <i className={`fa-solid fa-circle-check mt-0.5 ${o.required ? 'text-emerald-400' : 'text-slate-600'}`} aria-hidden />
                                                         <span className="flex-1">
                                                             {o.title}
-                                                            {!o.required && <span className="ml-2 text-[10px] text-slate-500 uppercase tracking-widest">optional</span>}
+                                                            {!o.required && <span className="ml-2 text-[10px] text-slate-500 uppercase tracking-widest">{t('optional')}</span>}
                                                             {o.description && <span className="block text-xs text-slate-500 mt-0.5">{o.description}</span>}
                                                         </span>
                                                     </li>
@@ -349,7 +353,7 @@ export const ApprovalsTab: React.FC = () => {
                                 disabled={busy || !detail}
                                 className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-amber-400 rounded-lg hover:bg-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Reject to Draft
+                                {t('Reject to Draft')}
                             </button>
                             <button
                                 type="button"
@@ -357,7 +361,7 @@ export const ApprovalsTab: React.FC = () => {
                                 disabled={busy || !detail}
                                 className="px-6 py-2 text-xs font-black uppercase tracking-widest text-white rounded-lg bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/30 disabled:bg-slate-700 disabled:cursor-not-allowed"
                             >
-                                {busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Approve & Publish'}
+                                {busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Approve & Publish')}
                             </button>
                         </div>
                     </div>
@@ -373,6 +377,7 @@ export const ApprovalsTab: React.FC = () => {
 // idempotent server-side (re-checks required-outcome competency + no duplicate cert).
 // ════════════════════════════════════════════════════════════════════════════
 export const CertifyTab: React.FC = () => {
+    const { t } = useI18n();
     const { rpcAction } = useData();
     const { addToast, confirm } = useNotification();
     const [rows, setRows] = useState<AcademyEnrollment[] | null>(null);
@@ -383,7 +388,7 @@ export const CertifyTab: React.FC = () => {
             const list = await rpcAction('academy:list_recommended', {}) as AcademyEnrollment[];
             setRows(list);
         } catch (err) {
-            addToast(err instanceof Error ? err.message : 'Failed to load certify queue', <i className="fa-solid fa-triangle-exclamation" />, ERR_TOAST);
+            addToast(err instanceof Error ? err.message : t('Failed to load certify queue'), <i className="fa-solid fa-triangle-exclamation" />, ERR_TOAST);
             setRows([]);
         }
     }, [rpcAction, addToast]);
@@ -393,15 +398,15 @@ export const CertifyTab: React.FC = () => {
     }, [load]);
 
     const certify = useCallback(async (e: AcademyEnrollment) => {
-        const ok = await confirm({ title: 'Certify & complete?', message: `This marks ${e.student?.name || 'the student'} as completed for ${e.courseTitle || 'this course'} and awards any linked certification.`, confirmText: 'Certify & Award', variant: 'info' });
+        const ok = await confirm({ title: t('Certify & complete?'), message: t('This marks {name} as completed for {course} and awards any linked certification.', { name: e.student?.name || t('the student'), course: e.courseTitle || t('this course') }), confirmText: t('Certify & Award'), variant: 'info' });
         if (!ok) return;
         setBusyId(e.id);
         try {
             await rpcAction('academy:certify_and_complete', { enrollmentId: e.id });
-            addToast('Certified & completed', <i className="fa-solid fa-check" />, OK_TOAST);
+            addToast(t('Certified & completed'), <i className="fa-solid fa-check" />, OK_TOAST);
             await load();
         } catch (err) {
-            addToast(err instanceof Error ? err.message : 'Failed to certify', <i className="fa-solid fa-triangle-exclamation" />, ERR_TOAST);
+            addToast(err instanceof Error ? err.message : t('Failed to certify'), <i className="fa-solid fa-triangle-exclamation" />, ERR_TOAST);
         } finally {
             setBusyId(null);
         }
@@ -413,11 +418,11 @@ export const CertifyTab: React.FC = () => {
         <div className="space-y-4 max-w-3xl">
             <div className="flex items-center gap-2.5">
                 <i className="fa-solid fa-user-graduate text-purple-400 text-xs" aria-hidden />
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recommended for Certification</h3>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('Recommended for Certification')}</h3>
                 <span className="min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full flex items-center justify-center bg-slate-800 text-slate-400 border border-slate-700">{rows.length}</span>
             </div>
             {rows.length === 0 ? (
-                <p className="text-sm text-slate-500 italic px-1 py-10 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">No students are awaiting certification. Instructors recommend competent students here for sign-off.</p>
+                <p className="text-sm text-slate-500 italic px-1 py-10 text-center bg-slate-900/30 border border-slate-800/60 rounded-lg">{t('No students are awaiting certification. Instructors recommend competent students here for sign-off.')}</p>
             ) : (
                 <div className="space-y-2">
                     {rows.map(e => {
@@ -426,11 +431,11 @@ export const CertifyTab: React.FC = () => {
                         return (
                             <div key={e.id} className="flex flex-wrap items-center gap-4 p-3.5 rounded-lg border border-purple-500/20 bg-purple-500/5">
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-bold text-white truncate">{e.student?.name || 'Student'}</p>
+                                    <p className="text-sm font-bold text-white truncate">{e.student?.name || t('Student')}</p>
                                     <p className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
-                                        <span><i className="fa-solid fa-book-open mr-1" aria-hidden />{e.courseTitle || 'Course'}</span>
+                                        <span><i className="fa-solid fa-book-open mr-1" aria-hidden />{e.courseTitle || t('Course')}</span>
                                         {e.sessionTitle && <span><i className="fa-solid fa-users mr-1" aria-hidden />{e.sessionTitle}</span>}
-                                        {total > 0 && <span><i className="fa-solid fa-list-check mr-1" aria-hidden />{done}/{total} lessons</span>}
+                                        {total > 0 && <span><i className="fa-solid fa-list-check mr-1" aria-hidden />{t('{done}/{total} lessons', { done, total })}</span>}
                                         {e.recommendedAt && <span><i className="fa-solid fa-clock mr-1" aria-hidden />{new Date(e.recommendedAt).toLocaleDateString()}</span>}
                                     </p>
                                 </div>
@@ -440,7 +445,7 @@ export const CertifyTab: React.FC = () => {
                                     onClick={() => void certify(e)}
                                     className="shrink-0 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-white rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed"
                                 >
-                                    {busyId === e.id ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : <><i className="fa-solid fa-certificate mr-1.5" aria-hidden />Certify &amp; Award</>}
+                                    {busyId === e.id ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : <><i className="fa-solid fa-certificate mr-1.5" aria-hidden />{t('Certify & Award')}</>}
                                 </button>
                             </div>
                         );

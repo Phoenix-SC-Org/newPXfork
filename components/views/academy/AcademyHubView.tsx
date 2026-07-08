@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAcademy } from '../../../contexts/AcademyContext';
 import { useData } from '../../../contexts/DataContext';
+import { useI18n } from '../../../i18n/I18nContext';
 import HeroShell from '../../shared/ui/HeroShell';
 import HeroStat from '../../shared/ui/HeroStat';
 import { CatalogTab, MyLearningTab } from './AcademyStudentTabs';
@@ -30,6 +31,7 @@ const AcademyHubView: React.FC = () => {
     const { hasPermission } = useAuth();
     const { academyCourses, academyMyEnrollments, refreshAcademy, refreshMyAcademy } = useAcademy();
     const { isFetching } = useData();
+    const { t } = useI18n();
 
     const canInstruct = hasPermission('academy:instruct');
     const canManage = hasPermission('academy:manage');
@@ -91,17 +93,17 @@ const AcademyHubView: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fade-in">
             <HeroShell
-                chipLabel="MODULE · ACADEMY"
+                chipLabel={t('MODULE · ACADEMY')}
                 chipIcon="fa-graduation-cap"
                 chipAccent="purple"
-                title="Academy"
-                subtitle="Courses, cohort sessions, and competency-based certification for your organisation."
+                title={t('Academy')}
+                subtitle={t('Courses, cohort sessions, and competency-based certification for your organisation.')}
                 syncing={isFetching['academy'] || isFetching['academy_my']}
                 stats={<>
-                    <HeroStat icon="fa-user-graduate" label="My Active" value={stats.myActive} accent="purple" emphasize={stats.myActive > 0} onClick={() => setActiveTab('my-learning')} />
-                    <HeroStat icon="fa-certificate" label="My Completed" value={stats.myCompleted} accent="emerald" />
-                    <HeroStat icon="fa-book-open" label="Published" value={stats.publishedCourses} accent="sky" onClick={() => setActiveTab('catalog')} />
-                    {canManage && <HeroStat icon="fa-clipboard-check" label="Awaiting Approval" value={stats.pendingApprovals} accent="amber" emphasize={stats.pendingApprovals > 0} onClick={() => setActiveTab('approvals')} />}
+                    <HeroStat icon="fa-user-graduate" label={t('My Active')} value={stats.myActive} accent="purple" emphasize={stats.myActive > 0} onClick={() => setActiveTab('my-learning')} />
+                    <HeroStat icon="fa-certificate" label={t('My Completed')} value={stats.myCompleted} accent="emerald" />
+                    <HeroStat icon="fa-book-open" label={t('Published')} value={stats.publishedCourses} accent="sky" onClick={() => setActiveTab('catalog')} />
+                    {canManage && <HeroStat icon="fa-clipboard-check" label={t('Awaiting Approval')} value={stats.pendingApprovals} accent="amber" emphasize={stats.pendingApprovals > 0} onClick={() => setActiveTab('approvals')} />}
                 </>}
             />
 
@@ -114,8 +116,8 @@ const AcademyHubView: React.FC = () => {
                         className="w-full bg-slate-900/60 border border-slate-700 rounded-lg px-4 py-3 text-sm font-bold text-white focus:ring-1 focus:ring-purple-500/50 outline-hidden appearance-none"
                     >
                         {navGroups.map(group => (
-                            <optgroup key={group.title} label={group.title} className="bg-slate-900 text-slate-400">
-                                {group.items.map(item => <option key={item.id} value={item.id} className="text-white">{item.label}</option>)}
+                            <optgroup key={group.title} label={t(group.title)} className="bg-slate-900 text-slate-400">
+                                {group.items.map(item => <option key={item.id} value={item.id} className="text-white">{t(item.label)}</option>)}
                             </optgroup>
                         ))}
                     </select>
@@ -125,9 +127,9 @@ const AcademyHubView: React.FC = () => {
                 <div className="hidden lg:flex flex-col shrink-0 w-60 border-r border-slate-800/60 bg-slate-900/40 overflow-y-auto custom-scrollbar py-5 px-3 gap-5">
                     {navGroups.map(group => (
                         <div key={group.title} className="space-y-0.5">
-                            <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{group.title}</p>
+                            <p className="px-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{t(group.title)}</p>
                             {group.items.map(item => (
-                                <NavigationItem key={item.id} label={item.label} icon={item.icon} isActive={effectiveTab === item.id} onClick={() => setActiveTab(item.id)} badge={item.badge} />
+                                <NavigationItem key={item.id} label={t(item.label)} icon={item.icon} isActive={effectiveTab === item.id} onClick={() => setActiveTab(item.id)} badge={item.badge} />
                             ))}
                         </div>
                     ))}

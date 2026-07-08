@@ -3,11 +3,13 @@
 // image, instructors + certification, enrol CTA (self-paced) or upcoming sessions
 // (cohort), a collapsible module/lesson curriculum, and learning outcomes.
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../../../i18n/I18nContext';
 import type { AcademyCourse, AcademySession, AcademyModule } from '../../../types';
 
 type CatalogDetail = { course: AcademyCourse; sessions: AcademySession[] };
 
 const ModuleAccordion: React.FC<{ modules: AcademyModule[] }> = ({ modules }) => {
+    const { t } = useI18n();
     // Expand the first module by default; the rest collapse so a long course stays scannable.
     const [open, setOpen] = useState<Set<number>>(() => new Set(modules.slice(0, 1).map(m => m.id)));
     const toggle = (id: number) => setOpen(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -16,11 +18,11 @@ const ModuleAccordion: React.FC<{ modules: AcademyModule[] }> = ({ modules }) =>
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Curriculum</p>
-                <span className="text-[11px] text-slate-500">{modules.length} module{modules.length === 1 ? '' : 's'} · {totalLessons} lesson{totalLessons === 1 ? '' : 's'}</span>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('Curriculum')}</p>
+                <span className="text-[11px] text-slate-500">{modules.length === 1 ? t('{count} module', { count: modules.length }) : t('{count} modules', { count: modules.length })} · {totalLessons === 1 ? t('{count} lesson', { count: totalLessons }) : t('{count} lessons', { count: totalLessons })}</span>
             </div>
             {modules.length === 0 ? (
-                <p className="text-xs text-slate-500">No modules published yet.</p>
+                <p className="text-xs text-slate-500">{t('No modules published yet.')}</p>
             ) : modules.map((m, i) => {
                 const isOpen = open.has(m.id);
                 return (
@@ -29,7 +31,7 @@ const ModuleAccordion: React.FC<{ modules: AcademyModule[] }> = ({ modules }) =>
                             <span className="text-purple-400 font-mono text-xs shrink-0">{i + 1}</span>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-white truncate">{m.title}</p>
-                                <p className="text-[11px] text-slate-500">{m.lessons.length} lesson{m.lessons.length === 1 ? '' : 's'}</p>
+                                <p className="text-[11px] text-slate-500">{m.lessons.length === 1 ? t('{count} lesson', { count: m.lessons.length }) : t('{count} lessons', { count: m.lessons.length })}</p>
                             </div>
                             <i className={`fa-solid fa-chevron-down text-slate-500 text-xs shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden />
                         </button>
@@ -38,12 +40,12 @@ const ModuleAccordion: React.FC<{ modules: AcademyModule[] }> = ({ modules }) =>
                                 {m.description && <p className="text-xs text-slate-500 mb-2">{m.description}</p>}
                                 <ul>
                                     {m.lessons.length === 0 ? (
-                                        <li className="text-xs text-slate-600 italic py-1">No lessons yet.</li>
+                                        <li className="text-xs text-slate-600 italic py-1">{t('No lessons yet.')}</li>
                                     ) : m.lessons.map(l => (
                                         <li key={l.id} className="flex items-center gap-2 text-xs text-slate-400 py-1.5 border-t border-slate-800 first:border-t-0">
                                             <i className="fa-solid fa-book-open text-purple-400/70 text-[10px] shrink-0" aria-hidden />
                                             <span className="flex-1 truncate">{l.title}</span>
-                                            {l.videoUrl && <i className="fa-solid fa-play text-[9px] text-slate-500 shrink-0" aria-hidden title="Includes video" />}
+                                            {l.videoUrl && <i className="fa-solid fa-play text-[9px] text-slate-500 shrink-0" aria-hidden title={t('Includes video')} />}
                                             {l.estimatedMinutes != null && <span className="text-slate-600 shrink-0">{l.estimatedMinutes}m</span>}
                                         </li>
                                     ))}
@@ -64,6 +66,7 @@ export const CourseDetailView: React.FC<{
     onEnrol: (sessionId: string) => void;
     onBack: () => void;
 }> = ({ detail, busy, enrolledSessionIds, onEnrol, onBack }) => {
+    const { t } = useI18n();
     const { course, sessions } = detail;
     const totalLessons = useMemo(() => course.modules.reduce((n, m) => n + m.lessons.length, 0), [course.modules]);
     const selfPacedSession = course.delivery === 'self_paced' ? sessions[0] : null;
@@ -84,11 +87,11 @@ export const CourseDetailView: React.FC<{
                     <div className="h-32 sm:h-40 w-full bg-gradient-to-br from-purple-900/40 via-slate-900 to-slate-950" />
                 )}
                 <button type="button" onClick={onBack} className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/70 backdrop-blur text-xs font-bold uppercase tracking-widest text-slate-200 hover:text-white transition-colors">
-                    <i className="fa-solid fa-arrow-left" aria-hidden /> Back
+                    <i className="fa-solid fa-arrow-left" aria-hidden /> {t('Back')}
                 </button>
                 <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6">
                     <span className={`text-[10px] font-black uppercase tracking-widest rounded px-2 py-0.5 border ${course.delivery === 'self_paced' ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30' : 'text-sky-300 bg-sky-500/15 border-sky-500/30'}`}>
-                        {course.delivery === 'self_paced' ? 'Self-paced' : 'Cohort'}
+                        {course.delivery === 'self_paced' ? t('Self-paced') : t('Cohort')}
                     </span>
                     <h1 className="text-2xl sm:text-3xl font-black text-white mt-2 drop-shadow">{course.title}</h1>
                 </div>
@@ -99,7 +102,7 @@ export const CourseDetailView: React.FC<{
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                     {course.instructors.length > 0 && (
                         <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Instructors</span>
+                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{t('Instructors')}</span>
                             <div className="flex flex-wrap gap-x-3 gap-y-1">
                                 {course.instructors.map(ins => (
                                     <span key={ins.id} className="inline-flex items-center gap-1.5 text-xs text-slate-300">
@@ -111,9 +114,9 @@ export const CourseDetailView: React.FC<{
                         </div>
                     )}
                     {course.certification && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-amber-300"><i className="fa-solid fa-certificate" aria-hidden />Awards {course.certification.name}</span>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-amber-300"><i className="fa-solid fa-certificate" aria-hidden />{t('Awards {name}', { name: course.certification.name })}</span>
                     )}
-                    <span className="text-xs text-slate-500">{course.modules.length} module{course.modules.length === 1 ? '' : 's'} · {totalLessons} lesson{totalLessons === 1 ? '' : 's'}</span>
+                    <span className="text-xs text-slate-500">{course.modules.length === 1 ? t('{count} module', { count: course.modules.length }) : t('{count} modules', { count: course.modules.length })} · {totalLessons === 1 ? t('{count} lesson', { count: totalLessons }) : t('{count} lessons', { count: totalLessons })}</span>
                 </div>
 
                 {course.description && <p className="text-sm text-slate-300 whitespace-pre-wrap">{course.description}</p>}
@@ -122,23 +125,23 @@ export const CourseDetailView: React.FC<{
                 {course.delivery === 'self_paced' ? (
                     <div className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-4 flex items-center gap-4">
                         <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-white">{alreadySelfEnrolled ? 'You are enrolled' : 'Learn at your own pace'}</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">{alreadySelfEnrolled ? 'Continue from My Learning whenever suits you.' : 'Enrol any time and work through the curriculum at your own pace.'}</p>
+                            <p className="text-sm font-bold text-white">{alreadySelfEnrolled ? t('You are enrolled') : t('Learn at your own pace')}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">{alreadySelfEnrolled ? t('Continue from My Learning whenever suits you.') : t('Enrol any time and work through the curriculum at your own pace.')}</p>
                         </div>
                         {alreadySelfEnrolled ? (
-                            <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-emerald-400"><i className="fa-solid fa-circle-check mr-1.5" aria-hidden />Enrolled</span>
+                            <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-emerald-400"><i className="fa-solid fa-circle-check mr-1.5" aria-hidden />{t('Enrolled')}</span>
                         ) : (
                             <button type="button" disabled={!selfPacedSession || busy} onClick={() => selfPacedSession && onEnrol(selfPacedSession.id)}
                                 className="shrink-0 px-5 py-2.5 text-xs font-black uppercase tracking-widest rounded-lg bg-purple-600 hover:bg-purple-500 text-white disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed">
-                                {busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Enrol & Start'}
+                                {busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Enrol & Start')}
                             </button>
                         )}
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Upcoming Sessions</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('Upcoming Sessions')}</p>
                         {sessions.length === 0 ? (
-                            <p className="text-xs text-slate-500 italic bg-slate-900/40 border border-slate-800 rounded-lg p-4 text-center">No sessions are open for enrolment right now. Check back soon.</p>
+                            <p className="text-xs text-slate-500 italic bg-slate-900/40 border border-slate-800 rounded-lg p-4 text-center">{t('No sessions are open for enrolment right now. Check back soon.')}</p>
                         ) : sessions.map(s => {
                             const full = s.capacity != null && s.enrollmentCount >= s.capacity;
                             const enrolled = enrolledSessionIds.has(s.id);
@@ -154,11 +157,11 @@ export const CourseDetailView: React.FC<{
                                         </p>
                                     </div>
                                     {enrolled ? (
-                                        <span className="shrink-0 text-[11px] font-bold uppercase tracking-widest text-emerald-400"><i className="fa-solid fa-circle-check mr-1" aria-hidden />Enrolled</span>
+                                        <span className="shrink-0 text-[11px] font-bold uppercase tracking-widest text-emerald-400"><i className="fa-solid fa-circle-check mr-1" aria-hidden />{t('Enrolled')}</span>
                                     ) : (
                                         <button type="button" onClick={() => canEnrol && !busy && onEnrol(s.id)} disabled={!canEnrol || busy}
                                             className="shrink-0 px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-lg bg-purple-600 hover:bg-purple-500 text-white disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed">
-                                            {full ? 'Full' : busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : 'Enrol'}
+                                            {full ? t('Full') : busy ? <i className="fa-solid fa-spinner animate-spin" aria-hidden /> : t('Enrol')}
                                         </button>
                                     )}
                                 </div>
@@ -171,12 +174,12 @@ export const CourseDetailView: React.FC<{
 
                 {course.outcomes.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Learning Outcomes</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('Learning Outcomes')}</p>
                         <ul className="space-y-1.5">
                             {course.outcomes.map(o => (
                                 <li key={o.id} className="flex items-start gap-2 text-xs text-slate-400">
                                     <i className="fa-solid fa-bullseye text-purple-400/70 mt-0.5" aria-hidden />
-                                    <span>{o.title}{o.required && <span className="text-slate-600"> · required</span>}</span>
+                                    <span>{o.title}{o.required && <span className="text-slate-600"> · {t('required')}</span>}</span>
                                 </li>
                             ))}
                         </ul>

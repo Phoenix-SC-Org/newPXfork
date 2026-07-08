@@ -359,9 +359,9 @@ const FeaturesSettingsTab: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-white">Academy</h3>
+                                        <h3 className="font-semibold text-white">{t('Academy')}</h3>
                                         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                            A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled <span className="text-purple-300 font-semibold">sessions</span>, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org <span className="text-purple-300 font-semibold">certification</span>. Off by default.
+                                            {t('A learning-management system for your org. Admins and instructors build courses of modules, lessons, and outcomes that run as scheduled sessions, or self-paced from the catalogue. Members enrol, learn at their own pace, and instructors mark each outcome competent or not yet competent. Finishing a course can award an org certification. Off by default.')}
                                         </p>
                                     </div>
                                     <Toggle
@@ -374,7 +374,7 @@ const FeaturesSettingsTab: React.FC = () => {
                                                 { academy: { enabled: next } },
                                                 next
                                                     ? undefined
-                                                    : 'Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.',
+                                                    : t('Disabling the Academy hides it from all members and closes its actions server-side. Courses, sessions, enrolments, and progress are preserved and will return when re-enabled.'),
                                             );
                                         }}
                                         activeColor="bg-purple-500"
