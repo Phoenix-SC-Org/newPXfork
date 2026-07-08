@@ -9,13 +9,23 @@
 // =============================================================================
 
 import { log as baseLog } from '../log.js';
-import type { CommsConfigSummary, CommsNet, CommsProvider, CommsResult, CommsStatus, CommsWriteResult } from './types.js';
+import type {
+    CommsConfigSummary, CommsNet, CommsProvider, CommsResult, CommsStatus, CommsWriteResult,
+    CommsDataResult, CommsRosterOperator, CommsAssignment, CommsRoleNetRule, CommsCreateNetResult,
+    CommsAssignmentAction, CommsRoleNetRuleInput, CommsErrorKind,
+} from './types.js';
 
 const log = baseLog.child({ module: 'comms.starcomms' });
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const STATUS_PATH = '/api/v1/status';
 const OPERATION_PATH = '/api/v1/operation';
+const ROSTER_PATH = '/api/v1/roster';
+const ASSIGNMENTS_PATH = '/api/v1/assignments';
+const ASSIGNMENTS_BULK_PATH = '/api/v1/assignments/bulk';
+const RULES_PATH = '/api/v1/rules';
+const NETS_PATH = '/api/v1/nets';
+const BULK_ASSIGNMENT_LIMIT = 200;
 
 function readEnabled(): boolean {
     const v = (process.env.STARCOMMS_ENABLED || '').trim().toLowerCase();
@@ -120,6 +130,52 @@ function coerceStatus(body: Record<string, unknown>): CommsStatus {
         nets: coerceNets(body.nets),
         features: enrichKnownFeatures(body, coerceFeatures(body.features)),
     };
+}
+
+// --- V5 lenient coercion -----------------------------------------------------
+
+function asStrArray(v: unknown): string[] {
+    if (!Array.isArray(v)) return [];
+    return v.map((x) => asStr(x)).filter((x): x is string => x !== null);
+}
+
+function coerceRosterOperator(raw: unknown): CommsRosterOperator {
+    const o = asObj(raw);
+    const op: CommsRosterOperator = {
+        ...o,
+        userId: asStr(o.userId) ?? asStr(o.id),
+        displayName: asStr(o.displayName) ?? asStr(o.name),
+        nets: asStrArray(o.nets),
+        transport: asStr(o.transport),
+        transmitting: asBool(o.transmitting),
+        connectedSince: asStr(o.connectedSince) ?? asStr(o.connectedAt),
+    };
+    const roles = asStrArray(o.roleIds ?? o.roles);
+    if (roles.length > 0) op.roleIds = roles;
+    return op;
+}
+
+function coerceAssignment(raw: unknown): CommsAssignment {
+    const o = asObj(raw);
+    return {
+        ...o,
+        userId: asStr(o.userId) ?? asStr(o.id),
+        netUid: asStr(o.netUid) ?? asStr(o.uid),
+        netName: asStr(o.netName) ?? asStr(o.name),
+    };
+}
+
+function coerceRule(raw: unknown): CommsRoleNetRule {
+    const o = asObj(raw);
+    return { ...o, roleId: asStr(o.roleId), netUids: asStrArray(o.netUids) };
+}
+
+/** Assignments/rules responses may be an array or wrapped in a keyed object. */
+function asArrayFrom(body: unknown, ...keys: string[]): unknown[] {
+    if (Array.isArray(body)) return body;
+    const o = asObj(body);
+    for (const k of keys) if (Array.isArray(o[k])) return o[k] as unknown[];
+    return [];
 }
 
 export class StarCommsProvider implements CommsProvider {
@@ -249,5 +305,129 @@ export class StarCommsProvider implements CommsProvider {
             return { ok: false, error: 'network', message: `StarComms returned HTTP ${res.status}.` };
         }
         return { ok: true };
+    }
+
+    // --- Shared request helper (V5 + V4-apply) -------------------------------
+    // Validates config, applies the timeout, sends the owner key ONLY in the
+    // Authorization header, and maps failures to the typed error taxonomy. The
+    // parsed JSON body (or null) is returned on 2xx; callers coerce it. The key
+    // is never returned and only redacted values are logged. getStatus() and
+    // setOperationOpen() keep their own copies (unchanged) to preserve V1–V3.
+    private validateConfig(): { ok: true; baseUrl: string; key: string; timeoutMs: number } | { ok: false; error: CommsErrorKind; message: string } {
+        if (!readEnabled()) return { ok: false, error: 'disabled', message: 'StarComms integration is disabled.' };
+        const baseUrl = readBaseUrl();
+        if (!baseUrl) return { ok: false, error: 'missing_base_url', message: 'STARCOMMS_BASE_URL is not set.' };
+        const key = readApiKey();
+        if (!key) return { ok: false, error: 'missing_api_key', message: 'STARCOMMS_OWNER_API_KEY is not set.' };
+        return { ok: true, baseUrl, key, timeoutMs: readTimeoutMs() };
+    }
+
+    private async request(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ ok: true; body: unknown } | { ok: false; error: CommsErrorKind; message: string }> {
+        const v = this.validateConfig();
+        if (!v.ok) return v;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), v.timeoutMs);
+        let res: Response;
+        try {
+            res = await fetch(`${v.baseUrl}${path}`, {
+                method,
+                headers: {
+                    Authorization: `Bearer ${v.key}`,
+                    Accept: 'application/json',
+                    ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+                },
+                ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+                signal: controller.signal,
+            });
+        } catch (e) {
+            const name = (e as { name?: string })?.name;
+            if (name === 'AbortError') {
+                log.warn('starcomms request timeout', { path, timeoutMs: v.timeoutMs });
+                return { ok: false, error: 'timeout', message: `StarComms request timed out after ${v.timeoutMs}ms.` };
+            }
+            log.warn('starcomms request network error', { path, err: redact(String((e as { message?: string })?.message || e)) });
+            return { ok: false, error: 'network', message: 'Could not reach the StarComms shard.' };
+        } finally {
+            clearTimeout(timer);
+        }
+        if (res.status === 401 || res.status === 403) {
+            log.warn('starcomms request unauthorized', { path, status: res.status });
+            return { ok: false, error: 'unauthorized', message: `StarComms rejected the API key (HTTP ${res.status}). The key may lack the required scope.` };
+        }
+        if (!res.ok) {
+            log.warn('starcomms request http error', { path, status: res.status });
+            return { ok: false, error: 'network', message: `StarComms returned HTTP ${res.status}.` };
+        }
+        const json: unknown = await res.json().catch(() => null);
+        return { ok: true, body: json };
+    }
+
+    // --- V5 reads ------------------------------------------------------------
+
+    async getRoster(): Promise<CommsDataResult<CommsRosterOperator[]>> {
+        const r = await this.request('GET', ROSTER_PATH);
+        if (!r.ok) return r;
+        const rows = asArrayFrom(r.body, 'operators', 'roster');
+        return { ok: true, data: rows.map(coerceRosterOperator) };
+    }
+
+    async getAssignments(): Promise<CommsDataResult<CommsAssignment[]>> {
+        const r = await this.request('GET', ASSIGNMENTS_PATH);
+        if (!r.ok) return r;
+        const rows = asArrayFrom(r.body, 'assignments');
+        return { ok: true, data: rows.map(coerceAssignment) };
+    }
+
+    async getRoleNetRules(): Promise<CommsDataResult<CommsRoleNetRule[]>> {
+        const r = await this.request('GET', RULES_PATH);
+        if (!r.ok) return r;
+        const rows = asArrayFrom(r.body, 'rules');
+        return { ok: true, data: rows.map(coerceRule) };
+    }
+
+    // --- V5 assignment writes ------------------------------------------------
+
+    async assignUserToNet(userId: string, netUid: string): Promise<CommsWriteResult> {
+        const r = await this.request('POST', ASSIGNMENTS_PATH, { userId, netUid, action: 'assign' });
+        return r.ok ? { ok: true } : r;
+    }
+
+    async unassignUserFromNet(userId: string, netUid: string): Promise<CommsWriteResult> {
+        const r = await this.request('POST', ASSIGNMENTS_PATH, { userId, netUid, action: 'unassign' });
+        return r.ok ? { ok: true } : r;
+    }
+
+    async bulkApplyAssignments(actions: CommsAssignmentAction[]): Promise<CommsWriteResult> {
+        if (actions.length === 0) return { ok: true };
+        if (actions.length > BULK_ASSIGNMENT_LIMIT) {
+            return { ok: false, error: 'malformed', message: `Too many assignment actions (max ${BULK_ASSIGNMENT_LIMIT}).` };
+        }
+        const r = await this.request('POST', ASSIGNMENTS_BULK_PATH, { assignments: actions });
+        return r.ok ? { ok: true } : r;
+    }
+
+    // --- V5 role-to-net rules (REPLACES the whole set) -----------------------
+
+    async replaceRoleNetRules(rules: CommsRoleNetRuleInput[]): Promise<CommsWriteResult> {
+        const r = await this.request('POST', RULES_PATH, { rules });
+        return r.ok ? { ok: true } : r;
+    }
+
+    // --- V4 apply repair: create a net --------------------------------------
+
+    async createNet(name: string): Promise<CommsDataResult<CommsCreateNetResult>> {
+        const trimmed = name.trim();
+        if (!trimmed) return { ok: false, error: 'malformed', message: 'Net name is required.' };
+        const r = await this.request('POST', NETS_PATH, { name: trimmed });
+        if (!r.ok) return r;
+        const o = asObj(r.body);
+        return {
+            ok: true,
+            data: {
+                slot: asNum(o.slot),
+                netUid: asStr(o.netUid) ?? asStr(o.uid),
+                name: asStr(o.name) ?? trimmed,
+            },
+        };
     }
 }
