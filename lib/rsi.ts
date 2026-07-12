@@ -18,7 +18,12 @@ export async function verifyRsiHandle(rsiHandle: string, verificationCode: strin
     // that ever passes a trivial value.
     if (typeof verificationCode !== 'string' || verificationCode.length < 10) return false;
     try {
-        const url = `https://robertsspaceindustries.com/citizens/${encodeURIComponent(rsiHandle)}`;
+        // NOTE: RSI now serves citizen profiles under a locale prefix; the
+        // unprefixed /citizens/... path 301-redirects to /en/citizens/... and
+        // ssrfSafeFetch refuses redirects by design (no-redirect SSRF policy).
+        // Target the /en/ URL directly (verified: 200 for existing handles,
+        // 404 for unknown ones).
+        const url = `https://robertsspaceindustries.com/en/citizens/${encodeURIComponent(rsiHandle)}`;
         // The handle is user-supplied (reachable PRE-AUTH via auth:finalize_setup),
         // so route this outbound request through the mandated SSRF guard: it pins
         // the vetted DNS answer (defeats rebind/poisoning of the fixed public host),
