@@ -62,14 +62,14 @@ describe('verifyRsiHandle outbound fetch goes through ssrfSafeFetch', () => {
     it('targets the canonical citizens URL with the verification User-Agent', async () => {
         h.body = VALID_CODE;
         await verifyRsiHandle('SomeHandle', VALID_CODE);
-        expect(h.calls[0].url).toBe('https://robertsspaceindustries.com/citizens/SomeHandle');
+        expect(h.calls[0].url).toBe('https://robertsspaceindustries.com/en/citizens/SomeHandle');
         expect(h.calls[0].init?.headers?.['User-Agent']).toBe('MyRSI-Dashboard-Verification/1.0');
     });
 
     it('encodeURIComponent-escapes reserved chars in the handle (no path injection)', async () => {
         h.body = VALID_CODE;
         await verifyRsiHandle('a/b', VALID_CODE);
-        expect(h.calls[0].url).toBe('https://robertsspaceindustries.com/citizens/a%2Fb');
+        expect(h.calls[0].url).toBe('https://robertsspaceindustries.com/en/citizens/a%2Fb');
     });
 
     it('result reflects html.includes(code): false when the code is absent', async () => {
